@@ -1,0 +1,614 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// ROOTK HR — Prisma schema (canonical copy also in backend/prisma/schema.prisma)
+// Keep both files in sync when models change.
+// Keep field names aligned with src/types/* in the frontend.
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  employee
+}
+
+enum EmployeeStatus {
+  active
+  inactive
+  on_leave
+}
+
+enum LeaveStatus {
+  pending
+  approved
+  rejected
+  cancelled
+}
+
+enum TaskStatus {
+  todo
+  in_progress
+  completed
+}
+
+enum TaskPriority {
+  high
+  medium
+  low
+}
+
+enum WorkOrigin {
+  assigned
+  personal
+}
+
+enum NotificationAudience {
+  all
+  admin
+  employee
+}
+
+enum NotificationCategory {
+  leave
+  attendance
+  work
+  payroll
+  schedule
+  announcement
+  system
+  mention
+}
+
+enum NotificationPriority {
+  low
+  normal
+  high
+  urgent
+}
+
+/// Shared audit / soft-delete / multi-tenant columns (map to BaseEntity).
+/// Apply as mixins conceptually on every tenant-owned model.
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users         User[]
+  employees     Employee[]
+  settings      CompanySettings?
+  leaveRequests LeaveRequest[]
+  attendance    AttendanceRecord[]
+  workTasks     WorkTask[]
+  workMeetings  WorkMeeting[]
+  notifications AppNotification[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  companyId    String
+  employeeId   String?
+  email        String
+  role         UserRole
+  passwordHash String?
+  initials     String
+  /// Display name from Nest; frontend may still use i18n keys in demo mode
+  displayName  String?
+  firstName    String?
+  lastName     String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdBy    String?
+  updatedBy    String?
+  deletedAt    DateTime?
+  isArchived   Boolean  @default(false)
+  version      Int      @default(1)
+  metadata     Json     @default("{}")
+
+  company     Company          @relation(fields: [companyId], references: [id])
+  preferences UserPreferences?
+
+  @@unique([companyId, email])
+  @@index([companyId, role])
+}
+
+model UserPreferences {
+  id            String   @id @default(cuid())
+  companyId     String
+  userId        String   @unique
+  language      String   @default("ar")
+  appearance    String   @default("system")
+  notifications Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdBy     String?
+  updatedBy     String?
+  deletedAt     DateTime?
+  isArchived    Boolean  @default(false)
+  version       Int      @default(1)
+  metadata      Json     @default("{}")
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Employee {
+  id           String         @id @default(cuid())
+  companyId    String
+  /// HR code shown in UI (frontend field `employeeId`)
+  employeeCode String
+  name         String
+  email        String
+  department   String
+  position     String
+  location     String?
+  phone        String?
+  managerName  String?
+  joinDate     DateTime       @db.Date
+  status       EmployeeStatus @default(active)
+  avatarUrl    String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  createdBy    String?
+  updatedBy    String?
+  deletedAt    DateTime?
+  isArchived   Boolean        @default(false)
+  version      Int            @default(1)
+  metadata     Json           @default("{}")
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, email])
+  @@unique([companyId, employeeCode])
+  @@index([companyId, status])
+  @@index([companyId, department])
+}
+
+model CompanySettings {
+  id            String   @id @default(cuid())
+  companyId     String   @unique
+  /// Mapped to frontend `name`
+  companyName   String
+  legalName     String   @default("")
+  email         String   @default("")
+  phone         String   @default("")
+  address       String   @default("")
+  website       String   @default("")
+  timezone      String
+  currency      String
+  language      String
+  appearance    String
+  notifications Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdBy     String?
+  updatedBy     String?
+  deletedAt     DateTime?
+  isArchived    Boolean  @default(false)
+  version       Int      @default(1)
+  metadata      Json     @default("{}")
+
+  company Company @relation(fields: [companyId], references: [id])
+}
+
+model LeaveRequest {
+  id           String      @id @default(cuid())
+  companyId    String
+  employeeId   String
+  type         String
+  status       LeaveStatus @default(pending)
+  startDate    DateTime    @db.Date
+  endDate      DateTime    @db.Date
+  days         Float
+  reason       String
+  submittedAt  DateTime
+  reviewedAt   DateTime?
+  reviewerNote String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  createdBy    String?
+  updatedBy    String?
+  deletedAt    DateTime?
+  isArchived   Boolean     @default(false)
+  version      Int         @default(1)
+  metadata     Json        @default("{}")
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, status])
+  @@index([companyId, employeeId])
+}
+
+model AttendanceRecord {
+  id                  String   @id @default(cuid())
+  companyId           String
+  employeeId          String
+  date                DateTime @db.Date
+  checkIn             DateTime?
+  checkOut            DateTime?
+  status              String
+  workingMinutes      Int      @default(0)
+  grossMinutes        Int      @default(0)
+  breakAppliedMinutes Int      @default(0)
+  earlyLeaveMinutes   Int      @default(0)
+  overtimeMinutes     Int      @default(0)
+  isLate              Boolean  @default(false)
+  isEarlyLeave        Boolean  @default(false)
+  lateMinutes         Int      @default(0)
+  note                String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  createdBy           String?
+  updatedBy           String?
+  deletedAt           DateTime?
+  isArchived          Boolean  @default(false)
+  version             Int      @default(1)
+  metadata            Json     @default("{}")
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, employeeId, date])
+  @@index([companyId, date])
+}
+
+model WorkSchedule {
+  id         String   @id @default(cuid())
+  companyId  String   @unique
+  /// JSON: working days, from/to times, grace, WFH rules, etc.
+  config     Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdBy  String?
+  updatedBy  String?
+  deletedAt  DateTime?
+  isArchived Boolean  @default(false)
+  version    Int      @default(1)
+  metadata   Json     @default("{}")
+
+  holidays Holiday[]
+}
+
+model Holiday {
+  id          String   @id @default(cuid())
+  companyId   String
+  scheduleId  String
+  name        String
+  description String   @default("")
+  date        DateTime @db.Date
+  type        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+  isArchived  Boolean  @default(false)
+  version     Int      @default(1)
+  metadata    Json     @default("{}")
+
+  schedule WorkSchedule @relation(fields: [scheduleId], references: [id])
+
+  @@index([companyId, date])
+}
+
+model WorkTask {
+  id               String       @id @default(cuid())
+  companyId        String
+  title            String
+  description      String       @default("")
+  status           TaskStatus   @default(todo)
+  priority         TaskPriority @default(medium)
+  dueDate          DateTime?    @db.Date
+  tag              String       @default("")
+  estimateMin      Int          @default(0)
+  assigneeIds      String[]
+  relatedMeetingId String?
+  subItems         Json         @default("[]")
+  origin           WorkOrigin   @default(assigned)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  createdBy        String?
+  updatedBy        String?
+  deletedAt        DateTime?
+  isArchived       Boolean      @default(false)
+  version          Int          @default(1)
+  metadata         Json         @default("{}")
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, status])
+  @@index([companyId, dueDate])
+}
+
+model WorkMeeting {
+  id             String     @id @default(cuid())
+  companyId      String
+  title          String
+  date           DateTime   @db.Date
+  startTime      String
+  endTime        String
+  location       String
+  organizerId    String
+  participantIds String[]
+  agenda         String[]
+  notes          String     @default("")
+  joinUrl        String?
+  origin         WorkOrigin @default(assigned)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  createdBy      String?
+  updatedBy      String?
+  deletedAt      DateTime?
+  isArchived     Boolean    @default(false)
+  version        Int        @default(1)
+  metadata       Json       @default("{}")
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, date])
+}
+
+model AppNotification {
+  id           String                 @id @default(cuid())
+  companyId    String
+  titleKey     String
+  bodyKey      String
+  vars         Json?
+  category     NotificationCategory
+  priority     NotificationPriority   @default(normal)
+  audience     NotificationAudience
+  recipientIds String[]
+  href         String?
+  entityType   String?
+  entityId     String?
+  actorId      String?
+  readBy       String[]
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  createdBy    String?
+  updatedBy    String?
+  deletedAt    DateTime?
+  isArchived   Boolean                @default(false)
+  version      Int                    @default(1)
+  metadata     Json                   @default("{}")
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, audience, createdAt])
+  @@index([companyId, category])
+}
+
+model OfficeLocation {
+  id         String   @id @default(cuid())
+  companyId  String
+  name       String
+  city       String
+  address    String
+  timezone   String
+  capacity   Int
+  workingDays String
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdBy  String?
+  updatedBy  String?
+  deletedAt  DateTime?
+  isArchived Boolean  @default(false)
+  version    Int      @default(1)
+  metadata   Json     @default("{}")
+
+  @@index([companyId])
+}
+
+model JobPosition {
+  id         String   @id @default(cuid())
+  companyId  String
+  title      String
+  department String
+  grade      String
+  reportsTo  String
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdBy  String?
+  updatedBy  String?
+  deletedAt  DateTime?
+  isArchived Boolean  @default(false)
+  version    Int      @default(1)
+  metadata   Json     @default("{}")
+
+  @@index([companyId])
+}
+
+model ShiftDefinition {
+  id         String   @id @default(cuid())
+  companyId  String
+  name       String
+  nameKey    String?
+  type       String
+  start      String
+  end        String
+  color      String
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdBy  String?
+  updatedBy  String?
+  deletedAt  DateTime?
+  isArchived Boolean  @default(false)
+  version    Int      @default(1)
+  metadata   Json     @default("{}")
+
+  @@index([companyId])
+}
+
+model ApprovalRule {
+  id               String   @id @default(cuid())
+  companyId        String
+  labelKey         String
+  requiresApproval Boolean
+  approver         String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  createdBy        String?
+  updatedBy        String?
+  deletedAt        DateTime?
+  isArchived       Boolean  @default(false)
+  version          Int      @default(1)
+  metadata         Json     @default("{}")
+
+  @@index([companyId])
+}
+
+/// Payroll persistence can start as JSON documents then normalize.
+model PayrollPoliciesDoc {
+  id         String   @id @default(cuid())
+  companyId  String   @unique
+  payload    Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  version    Int      @default(1)
+}
+
+model PayrollRule {
+  id         String   @id @default(cuid())
+  companyId  String
+  code       String
+  labelKey   String
+  enabled    Boolean  @default(true)
+  payload    Json     @default("{}")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  version    Int      @default(1)
+
+  @@unique([companyId, code])
+  @@index([companyId])
+}
+
+model EmployeeSalaryProfile {
+  id         String   @id @default(cuid())
+  companyId  String
+  employeeId String
+  payload    Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  version    Int      @default(1)
+
+  @@unique([companyId, employeeId])
+}
+
+model PayrollRun {
+  id         String   @id @default(cuid())
+  companyId  String
+  periodId   String
+  status     String
+  payload    Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  version    Int      @default(1)
+
+  @@index([companyId, periodId])
+}
+
+model EmployeePayslip {
+  id         String   @id @default(cuid())
+  companyId  String
+  employeeId String
+  periodId   String
+  payload    Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  version    Int      @default(1)
+
+  @@unique([companyId, employeeId, periodId])
+  @@index([companyId, employeeId])
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  companyId   String
+  type        String
+  employeeId  String?
+  title       String
+  description String
+  timestamp   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+  isArchived  Boolean  @default(false)
+  version     Int      @default(1)
+  metadata    Json     @default("{}")
+
+  @@index([companyId, timestamp])
+}
+
+model Announcement {
+  id         String   @id @default(cuid())
+  companyId  String
+  title      String
+  body       String
+  author     String
+  priority   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdBy  String?
+  updatedBy  String?
+  deletedAt  DateTime?
+  isArchived Boolean  @default(false)
+  version    Int      @default(1)
+  metadata   Json     @default("{}")
+
+  @@index([companyId, priority])
+}
+
+model WeeklyStat {
+  id         String   @id @default(cuid())
+  companyId  String
+  day        String
+  present    Int
+  late       Int
+  absent     Int
+  wfh        Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  version    Int      @default(1)
+  metadata   Json     @default("{}")
+
+  @@index([companyId, day])
+}
+
+model MonthlyStat {
+  id              String   @id @default(cuid())
+  companyId       String
+  month           String
+  attendanceRate  Float
+  lateCount       Int
+  absentCount     Int
+  avgHours        Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  version         Int      @default(1)
+  metadata        Json     @default("{}")
+
+  @@index([companyId, month])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
+}

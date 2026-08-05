@@ -1,0 +1,34 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useSessionStore } from "@/stores/session-store";
+
+export function AuthGate({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const authenticated = useSessionStore((s) => s.authenticated);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!ready) return;
+    if (!authenticated) {
+      router.replace("/login");
+    }
+  }, [authenticated, ready, router, pathname]);
+
+  if (!ready || !authenticated) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background">
+        <div className="h-9 w-9 animate-pulse rounded-lg border border-border bg-card shadow-[var(--shadow-card)]" />
+        <p className="text-xs text-muted-foreground">ROOTK</p>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}

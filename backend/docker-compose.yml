@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: rootk-hr-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: rootk
+      POSTGRES_PASSWORD: rootk
+      POSTGRES_DB: rootk_hr
+    volumes:
+      - rootk_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rootk -d rootk_hr"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  rootk_pg_data:

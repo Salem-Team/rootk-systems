@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+dist/
+
+# Env
+.env
+.env.local
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+
+# IDE / OS
+.DS_Store
+*.log

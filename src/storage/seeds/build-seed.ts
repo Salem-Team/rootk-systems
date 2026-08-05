@@ -1,0 +1,171 @@
+import { enrichWithAudit } from "@/lib/entity";
+import { formatISO, subMinutes } from "date-fns";
+import {
+  activitiesSeed,
+  announcementsSeed,
+  approvalRulesSeed,
+  attendanceRecordsSeed,
+  companySettingsSeed,
+  employeesSeed,
+  jobPositionsSeed,
+  leaveRequestsSeed,
+  monthlyStatsSeed,
+  notificationsSeed,
+  officeLocationsSeed,
+  shiftsSeed,
+  userPreferencesSeed,
+  usersSeed,
+  weeklyStatsSeed,
+  workMeetingsSeed,
+  workScheduleSeed,
+  workTasksSeed,
+} from "@/mocks";
+import type {
+  Activity,
+  Announcement,
+  AppNotification,
+  AppUser,
+  AttendanceRecord,
+  CompanySettings,
+  Employee,
+  Holiday,
+  LeaveRequest,
+  MonthlyStat,
+  WeeklyStat,
+  WorkMeeting,
+  WorkSchedule,
+  WorkTask,
+} from "@/types";
+import type {
+  ApprovalRule,
+  JobPosition,
+  OfficeLocation,
+  ShiftDefinition,
+} from "@/types/org";
+import type { UserPreferences } from "@/types/preferences";
+
+export interface SeedPayload {
+  employees: Employee[];
+  attendance: AttendanceRecord[];
+  leave: LeaveRequest[];
+  schedule: WorkSchedule;
+  settings: CompanySettings;
+  activities: Activity[];
+  announcements: Announcement[];
+  weeklyStats: WeeklyStat[];
+  monthlyStats: MonthlyStat[];
+  notifications: AppNotification[];
+  users: AppUser[];
+  locations: OfficeLocation[];
+  positions: JobPosition[];
+  shifts: ShiftDefinition[];
+  approvalRules: ApprovalRule[];
+  userPreferences: UserPreferences[];
+  workTasks: WorkTask[];
+  workMeetings: WorkMeeting[];
+}
+
+export function buildSeedPayload(): SeedPayload {
+  const holidays: Holiday[] = workScheduleSeed.holidays.map((h) =>
+    enrichWithAudit(h, "system", {
+      createdAt: `${h.date}T00:00:00.000Z`,
+      updatedAt: `${h.date}T00:00:00.000Z`,
+    })
+  );
+
+  return {
+    employees: employeesSeed.map((e) =>
+      enrichWithAudit(e, "system", {
+        createdAt: `${e.joinDate}T00:00:00.000Z`,
+        updatedAt: `${e.joinDate}T00:00:00.000Z`,
+      })
+    ),
+    attendance: attendanceRecordsSeed.map((r) =>
+      enrichWithAudit(r, r.employeeId, {
+        createdAt: r.checkIn ?? `${r.date}T00:00:00.000Z`,
+        updatedAt: r.checkOut ?? r.checkIn ?? `${r.date}T00:00:00.000Z`,
+      })
+    ),
+    leave: leaveRequestsSeed.map((r) =>
+      enrichWithAudit(r, r.employeeId, {
+        createdAt: r.submittedAt,
+        updatedAt: r.reviewedAt ?? r.submittedAt,
+      })
+    ),
+    schedule: enrichWithAudit(
+      {
+        ...workScheduleSeed,
+        holidays,
+        metadata: {
+          attendancePolicy: {
+            minHours: 7,
+            maxHours: 10,
+            overtimeAfterHours: 9,
+            lateAfterMinutes: 15,
+            halfDayHours: 4,
+          },
+          wfhPolicy: {
+            enabled: true,
+            allowedDepartments: [
+              "Engineering",
+              "Design",
+              "Product",
+              "Marketing",
+            ],
+            requiresApproval: true,
+            monthlyQuota: 8,
+            hybridOfficeDays: 3,
+          },
+        },
+      },
+      "system"
+    ),
+    settings: enrichWithAudit(
+      {
+        ...companySettingsSeed,
+        id: companySettingsSeed.id ?? "settings_rootk_001",
+      },
+      "system"
+    ),
+    activities: activitiesSeed.map((a) =>
+      enrichWithAudit(a, a.employeeId ?? "system", {
+        createdAt: a.timestamp,
+        updatedAt: a.timestamp,
+      })
+    ),
+    announcements: announcementsSeed.map((a) =>
+      enrichWithAudit(
+        {
+          id: a.id,
+          title: a.title,
+          body: a.body,
+          author: a.author,
+          priority: a.priority,
+        },
+        "system",
+        {
+          createdAt: a.createdAt,
+          updatedAt: a.createdAt,
+        }
+      )
+    ),
+    weeklyStats: weeklyStatsSeed.map((s) => enrichWithAudit(s, "system")),
+    monthlyStats: monthlyStatsSeed.map((s) => enrichWithAudit(s, "system")),
+    notifications: notificationsSeed.map((n) => {
+      const { minutesAgo, ...rest } = n;
+      const stamp = formatISO(subMinutes(new Date(), minutesAgo));
+      return enrichWithAudit(rest, n.actorId ?? "system", {
+        createdAt: stamp,
+        updatedAt: stamp,
+      });
+    }),
+    users: usersSeed.map((u) => enrichWithAudit(u, "system")),
+    locations: officeLocationsSeed.map((l) => enrichWithAudit(l, "system")),
+    positions: jobPositionsSeed.map((p) => enrichWithAudit(p, "system")),
+    shifts: shiftsSeed.map((s) => enrichWithAudit(s, "system")),
+    approvalRules: approvalRulesSeed.map((r) => enrichWithAudit(r, "system")),
+    userPreferences: userPreferencesSeed.map((p) => enrichWithAudit(p, "system")),
+    workTasks: workTasksSeed.map((t) => enrichWithAudit(t, "system")),
+    workMeetings: workMeetingsSeed.map((m) => enrichWithAudit(m, "system")),
+  };
+}
