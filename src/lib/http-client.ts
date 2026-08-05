@@ -175,8 +175,23 @@ export class HttpClient {
     }
 
     const message = extractMessage(body) || `HTTP ${response.status}`;
+    const nestCode =
+      typeof body === "object" && body && typeof body.code === "string"
+        ? body.code
+        : undefined;
+    const rawDetails =
+      typeof body === "object" && body ? body.details ?? undefined : undefined;
     const details =
-      typeof body === "object" && body ? body.details ?? body : body;
+      nestCode || rawDetails !== undefined
+        ? {
+            ...(rawDetails && typeof rawDetails === "object"
+              ? (rawDetails as Record<string, unknown>)
+              : rawDetails !== undefined
+                ? { value: rawDetails }
+                : {}),
+            ...(nestCode ? { code: nestCode } : {}),
+          }
+        : body;
 
     switch (response.status) {
       case 400:
@@ -190,7 +205,11 @@ export class HttpClient {
       case 409:
         return new ConflictError(message, details);
       default:
-        return new InternalError(message, { path, status: response.status, details });
+        return new InternalError(message, {
+          path,
+          status: response.status,
+          details,
+        });
     }
   }
 }

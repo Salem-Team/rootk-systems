@@ -10,7 +10,7 @@ import type { Response } from "express";
 /**
  * Nest → frontend error envelope.
  * Keeps Nest `statusCode` / `error` for HttpClient mapping,
- * and adds `success: false` + stable `code` for ApiResponse parity.
+ * and adds `success: false` + stable `code` (+ optional details) for ApiResponse parity.
  */
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -40,7 +40,22 @@ export class HttpExceptionFilter implements ExceptionFilter {
         ? String((body as { error: string }).error)
         : HttpStatus[status] ?? "Error";
 
-    const code = statusToCode(status);
+    const customCode =
+      typeof body === "object" &&
+      body &&
+      typeof (body as { code?: unknown }).code === "string"
+        ? String((body as { code: string }).code)
+        : undefined;
+
+    const details =
+      typeof body === "object" &&
+      body &&
+      "details" in body &&
+      (body as { details?: unknown }).details !== undefined
+        ? (body as { details: unknown }).details
+        : undefined;
+
+    const code = customCode ?? statusToCode(status);
 
     res.status(status).json({
       success: false,
@@ -48,6 +63,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message,
       error: errorName,
       code,
+      ...(details !== undefined ? { details } : {}),
     });
   }
 }

@@ -124,6 +124,11 @@ export function LocationsAdminPanel() {
       toast.error(t("admin.geoRequiredHint"));
       return;
     }
+    const radius = Number(draft.radiusMeters) || 200;
+    if (radius < 100) {
+      toast.error(t("admin.radiusTooSmall"));
+      return;
+    }
 
     setBusy(true);
     const res = await saveLocation({
@@ -136,7 +141,7 @@ export function LocationsAdminPanel() {
       workingDays: draft.workingDays,
       latitude: lat,
       longitude: lng,
-      radiusMeters: Number(draft.radiusMeters) || 200,
+      radiusMeters: radius,
       active: true,
     } as Parameters<typeof saveLocation>[0]);
     setBusy(false);
@@ -307,7 +312,7 @@ export function LocationsAdminPanel() {
             <Input
               id="loc-radius"
               type="number"
-              min={50}
+              min={100}
               value={draft.radiusMeters}
               onChange={(e) =>
                 setDraft((d) => ({

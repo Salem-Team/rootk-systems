@@ -36,20 +36,49 @@ export function isWithinGeofence(
   return haversineMeters(point, office) <= office.radiusMeters;
 }
 
-/** Nearest office within its radius, or null if outside every geofence. */
+/** Nearest office within its (accuracy-aware) radius, or null if outside every geofence. */
 export function findMatchingOffice(
+  point: GeoPoint,
+  offices: GeofencedOffice[],
+  accuracyMeters = 0
+): GeoMatch | null {
+  let best: GeoMatch | null = null;
+  for (const office of offices) {
+    const distanceMeters = haversineMeters(point, office);
+    const allowed = effectiveGeofenceRadius(office.radiusMeters, accuracyMeters);
+    if (distanceMeters > allowed) continue;
+    if (!best || distanceMeters < best.distanceMeters) {
+      best = { office, distanceMeters };
+    }
+  }
+  return best;
+}
+
+/** Nearest office regardless of radius — used for outside-geofence diagnostics. */
+export function findNearestOffice(
   point: GeoPoint,
   offices: GeofencedOffice[]
 ): GeoMatch | null {
   let best: GeoMatch | null = null;
   for (const office of offices) {
     const distanceMeters = haversineMeters(point, office);
-    if (distanceMeters > office.radiusMeters) continue;
     if (!best || distanceMeters < best.distanceMeters) {
       best = { office, distanceMeters };
     }
   }
   return best;
+}
+
+/**
+ * Expand the configured radius by GPS uncertainty (capped) so phones with
+ * typical urban accuracy (20–80m) are not falsely rejected at the office edge.
+ */
+export function effectiveGeofenceRadius(
+  radiusMeters: number,
+  accuracyMeters = 0
+): number {
+  const accuracyPad = Math.min(Math.max(accuracyMeters, 0), 75);
+  return Math.max(radiusMeters, 0) + accuracyPad;
 }
 
 export function isValidGeoPoint(
@@ -70,6 +99,9 @@ export function isValidGeoPoint(
 }
 
 export type BrowserGeoCoords = GeoPoint & { accuracy?: number };
+
+export const DEFAULT_OFFICE_RADIUS_METERS = 200;
+export const MIN_OFFICE_RADIUS_METERS = 100;
 
 function asFiniteCoord(value: string): number | null {
   const n = Number(value);

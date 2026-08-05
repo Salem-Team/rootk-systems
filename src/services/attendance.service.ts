@@ -14,6 +14,7 @@ import {
 } from "@/lib/errors";
 import {
   findMatchingOffice,
+  findNearestOffice,
   isValidGeoPoint,
   type GeoPoint,
 } from "@/lib/geo";
@@ -112,9 +113,19 @@ async function assertOfficeGeofence(
         : "Location required for office check-out"
     );
   }
-  const match = findMatchingOffice(location, offices);
+  const accuracy = location.accuracy ?? 0;
+  const match = findMatchingOffice(location, offices, accuracy);
   if (!match) {
-    throw new ForbiddenError("Outside office geofence");
+    const nearest = findNearestOffice(location, offices);
+    throw new ForbiddenError("Outside office geofence", {
+      code: "OUTSIDE_OFFICE",
+      distanceMeters: nearest
+        ? Math.round(nearest.distanceMeters)
+        : undefined,
+      radiusMeters: nearest?.office.radiusMeters,
+      officeName: nearest?.office.name,
+      accuracyMeters: Math.round(accuracy),
+    });
   }
   return {
     latitude: location.latitude,

@@ -332,11 +332,15 @@ export const en = {
     noCheckIn: "Check in before checking out",
     locationRequired: "Location is required for office check-in/out",
     locationPermissionDenied:
-      "Location permission denied — enable it and try again",
-    locationUnavailable: "Could not read your location — try again",
-    outsideOffice: "You are outside the company office area",
+      "Location permission denied — allow location for this site in browser settings",
+    locationUnavailable:
+      "Could not read your location — enable GPS and try again",
+    outsideOffice:
+      "You are outside the company office area — move closer and try again",
     officeLocationNotConfigured:
       "Company office location is not configured — contact admin",
+    employeeInactive:
+      "Employee account is inactive or removed — ask an admin to restore it",
     loadSettings: "Failed to load settings",
     saveSettings: "Failed to save settings",
   },
@@ -477,6 +481,8 @@ export const en = {
     wfhHint: "Mark this check-in as remote",
     officeGeoHint:
       "Office days require your current location inside the company geofence",
+    officeGeoHintDetail:
+      "Your browser will ask for location permission automatically — you do not paste any link.",
     locating: "Getting your location...",
     notCheckedIn: "Not checked in yet",
     checkedInAt: "Checked in at",
@@ -1374,7 +1380,9 @@ export const en = {
       "Could not read coordinates from that link. Open it and copy the full URL from the address bar.",
     mapsUrlApplied: "Office coordinates extracted from the link",
     geoRequiredHint:
-      "Coordinates are required so office check-in/out can verify location. Easiest: paste a Google Maps link.",
+      "Coordinates are required so office check-in/out can verify location. Easiest: paste a Google Maps link. Prefer 150–300m radius — urban GPS accuracy is often 20–80m.",
+    radiusTooSmall:
+      "A radius under 100m causes frequent false rejections due to GPS accuracy — use at least 150m.",
     calendarTitle: "Company calendar",
     calendarDesc: "Official holidays and company events (shared with Work Schedule).",
     calHoliday: "Holiday",

@@ -49,6 +49,24 @@ function main() {
     "far point is outside geofence"
   );
 
+  // 60m away with 40m GPS accuracy against 50m radius should still pass (50+40 pad capped... wait pad is min(40,75)=40 so allowed=90)
+  const edge = { latitude: 30.0080, longitude: 31.4913 }; // ~55m north of HQ
+  const tight = {
+    id: "loc-tight",
+    name: "Tight",
+    latitude: 30.0075,
+    longitude: 31.4913,
+    radiusMeters: 50,
+  };
+  assert(
+    findMatchingOffice(edge, [tight], 40)?.office.id === "loc-tight",
+    "accuracy pad allows near-edge GPS fix"
+  );
+  assert(
+    findMatchingOffice(edge, [tight], 0) === null,
+    "without accuracy pad, edge point is outside 50m"
+  );
+
   const fromAt = parseGoogleMapsUrl(
     "https://www.google.com/maps/place/ROOTK/@30.0075,31.4913,17z"
   );

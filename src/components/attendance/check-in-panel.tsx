@@ -69,6 +69,7 @@ export function CheckInPanel() {
   const isCheckingIn = useAttendanceStore((s) => s.isCheckingIn);
   const isCheckingOut = useAttendanceStore((s) => s.isCheckingOut);
   const error = useAttendanceStore((s) => s.error);
+  const errorDetail = useAttendanceStore((s) => s.errorDetail);
   const clearError = useAttendanceStore((s) => s.clearError);
   const fetchTodayRecord = useAttendanceStore((s) => s.fetchTodayRecord);
   const checkIn = useAttendanceStore((s) => s.checkIn);
@@ -148,10 +149,10 @@ export function CheckInPanel() {
 
   useEffect(() => {
     if (error) {
-      toast.error(t(error));
+      toast.error(t(error), errorDetail ? { description: errorDetail } : undefined);
       clearError();
     }
-  }, [error, t, clearError]);
+  }, [error, errorDetail, t, clearError]);
 
   const clearBurst = useCallback(() => setBurst(null), []);
 
@@ -339,7 +340,7 @@ export function CheckInPanel() {
               : t("attendance.officeGeoHint")}
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {t("admin.geoRequiredHint")}
+            {t("attendance.officeGeoHintDetail")}
           </p>
         </div>
       </motion.div>

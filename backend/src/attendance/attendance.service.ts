@@ -19,6 +19,7 @@ import { isEmployeeWfhAllowed } from "../lib/wfh-policy";
 import {
   DEFAULT_OFFICE_RADIUS_METERS,
   findMatchingOffice,
+  findNearestOffice,
   isValidGeoPoint,
   type GeoPoint,
   type GeofencedOffice,
@@ -157,7 +158,7 @@ export class AttendanceService {
 
   /**
    * Office-day punches must happen inside an active company office geofence.
-   * WFH punches skip this check.
+   * WFH punches skip this check. GPS accuracy is padded into the radius.
    */
   private async assertOfficeGeofence(
     companyId: string,
@@ -166,18 +167,37 @@ export class AttendanceService {
   ) {
     const offices = await this.loadGeofencedOffices(companyId);
     if (offices.length === 0) {
-      throw new BadRequestException("Office location not configured");
+      throw new BadRequestException({
+        message: "Office location not configured",
+        code: "OFFICE_NOT_CONFIGURED",
+      });
     }
     if (!isValidGeoPoint(location)) {
-      throw new BadRequestException(
-        action === "check-in"
-          ? "Location required for office check-in"
-          : "Location required for office check-out"
-      );
+      throw new BadRequestException({
+        message:
+          action === "check-in"
+            ? "Location required for office check-in"
+            : "Location required for office check-out",
+        code: "LOCATION_REQUIRED",
+      });
     }
-    const match = findMatchingOffice(location, offices);
+    const accuracy = location.accuracy ?? 0;
+    const match = findMatchingOffice(location, offices, accuracy);
     if (!match) {
-      throw new ForbiddenException("Outside office geofence");
+      const nearest = findNearestOffice(location, offices);
+      throw new ForbiddenException({
+        message: "Outside office geofence",
+        code: "OUTSIDE_OFFICE",
+        details: {
+          distanceMeters: nearest
+            ? Math.round(nearest.distanceMeters)
+            : undefined,
+          radiusMeters: nearest?.office.radiusMeters,
+          officeName: nearest?.office.name,
+          accuracyMeters:
+            typeof accuracy === "number" ? Math.round(accuracy) : undefined,
+        },
+      });
     }
     return {
       latitude: location.latitude,
@@ -257,7 +277,12 @@ export class AttendanceService {
     const employee = await this.prisma.employee.findFirst({
       where: { id: employeeId, companyId, deletedAt: null },
     });
-    if (!employee) throw new BadRequestException("Employee not found");
+    if (!employee) {
+      throw new BadRequestException({
+        message: "Employee account is inactive or missing",
+        code: "EMPLOYEE_INACTIVE",
+      });
+    }
 
     const schedule = await this.scheduleBundle(companyId);
     if (body.wfh) {
