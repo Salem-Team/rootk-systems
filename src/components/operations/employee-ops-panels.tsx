@@ -14,6 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { OpsWidget } from "@/components/operations/ops-widget";
 import {
+  TaskCompletionEvidenceDialog,
+  TaskEvidenceBadge,
+} from "@/components/work/task-completion-evidence-dialog";
+import {
   buildOpsChecklist,
   buildOpsGoals,
 } from "@/components/operations/operations-mock-data";
@@ -26,6 +30,10 @@ import { getWorkEmployeeIdFromUser, useSessionStore } from "@/stores/session-sto
 import { useTranslation } from "@/hooks/use-translation";
 import { WORK_UPDATED_EVENT } from "@/lib/events";
 import { formatClockRange } from "@/lib/format-time";
+import {
+  nextTaskStatus,
+  taskRequiresEvidence,
+} from "@/lib/task-evidence";
 import { meetingWhen, taskDueBucket } from "@/lib/work-utils";
 import { fadeInUp, snappySpring, staggerContainer } from "@/lib/animations";
 import { cn } from "@/lib/utils";
@@ -46,6 +54,7 @@ export function TaskBoardWidget() {
   );
   const [tasks, setTasks] = useState<WorkTask[]>([]);
   const [filter, setFilter] = useState<TaskStatus | "all">("todo");
+  const [evidenceTask, setEvidenceTask] = useState<WorkTask | null>(null);
 
   const reload = useCallback(async () => {
     const res = await getMyWorkTasks(workEmployeeId);
@@ -76,8 +85,11 @@ export function TaskBoardWidget() {
   );
 
   async function cycleStatus(task: WorkTask) {
-    const order: TaskStatus[] = ["todo", "in_progress", "completed"];
-    const next = order[(order.indexOf(task.status) + 1) % order.length];
+    const next = nextTaskStatus(task.status);
+    if (next === "completed" && taskRequiresEvidence(task)) {
+      setEvidenceTask(task);
+      return;
+    }
     setTasks((prev) =>
       prev.map((x) => (x.id === task.id ? { ...x, status: next } : x))
     );
@@ -86,6 +98,7 @@ export function TaskBoardWidget() {
   }
 
   return (
+    <>
     <OpsWidget
       id="tasks"
       title={t("ops.tasksTitle")}
@@ -177,6 +190,7 @@ export function TaskBoardWidget() {
                                 <Badge variant="outline" className="h-5">
                                   {t(`ops.due.${due}`)}
                                 </Badge>
+                                <TaskEvidenceBadge task={task} />
                               </span>
                             </span>
                           </button>
@@ -201,6 +215,20 @@ export function TaskBoardWidget() {
         })}
       </div>
     </OpsWidget>
+      <TaskCompletionEvidenceDialog
+        task={evidenceTask}
+        open={Boolean(evidenceTask)}
+        onOpenChange={(open) => {
+          if (!open) setEvidenceTask(null);
+        }}
+        onCompleted={(updated) => {
+          setTasks((prev) =>
+            prev.map((x) => (x.id === updated.id ? updated : x))
+          );
+          setEvidenceTask(null);
+        }}
+      />
+    </>
   );
 }
 

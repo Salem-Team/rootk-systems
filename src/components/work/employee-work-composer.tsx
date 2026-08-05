@@ -303,7 +303,7 @@ export function EmployeeWorkComposer({
           if (!open) onModeChange(null);
         }}
       >
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <span className="icon-well h-8 w-8">
@@ -464,7 +464,7 @@ export function EmployeeWorkComposer({
           if (!open) onModeChange(null);
         }}
       >
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <span className="icon-well h-8 w-8">
@@ -502,7 +502,7 @@ export function EmployeeWorkComposer({
               />
             </Field>
 
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3">
               <Field label={t("workAdmin.fieldDate")} htmlFor="emp-meet-date">
                 <Input
                   id="emp-meet-date"
@@ -513,26 +513,28 @@ export function EmployeeWorkComposer({
                   }
                 />
               </Field>
-              <Field label={t("workAdmin.fieldStart")} htmlFor="emp-meet-start">
-                <Time12Input
-                  id="emp-meet-start"
-                  value={meetingDraft.startTime}
-                  onChange={(startTime) =>
-                    setMeetingDraft((p) => ({ ...p, startTime }))
-                  }
-                  aria-label={t("workAdmin.fieldStart")}
-                />
-              </Field>
-              <Field label={t("workAdmin.fieldEnd")} htmlFor="emp-meet-end">
-                <Time12Input
-                  id="emp-meet-end"
-                  value={meetingDraft.endTime}
-                  onChange={(endTime) =>
-                    setMeetingDraft((p) => ({ ...p, endTime }))
-                  }
-                  aria-label={t("workAdmin.fieldEnd")}
-                />
-              </Field>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label={t("workAdmin.fieldStart")} htmlFor="emp-meet-start">
+                  <Time12Input
+                    id="emp-meet-start"
+                    value={meetingDraft.startTime}
+                    onChange={(startTime) =>
+                      setMeetingDraft((p) => ({ ...p, startTime }))
+                    }
+                    aria-label={t("workAdmin.fieldStart")}
+                  />
+                </Field>
+                <Field label={t("workAdmin.fieldEnd")} htmlFor="emp-meet-end">
+                  <Time12Input
+                    id="emp-meet-end"
+                    value={meetingDraft.endTime}
+                    onChange={(endTime) =>
+                      setMeetingDraft((p) => ({ ...p, endTime }))
+                    }
+                    aria-label={t("workAdmin.fieldEnd")}
+                  />
+                </Field>
+              </div>
             </div>
 
             <Field label={t("workHub.location")} htmlFor="emp-meet-loc">

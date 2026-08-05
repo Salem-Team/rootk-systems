@@ -223,6 +223,52 @@ function main() {
     "leave approval rule wiring"
   );
 
+  // Task completion evidence (opt-in per assignment)
+  assert(
+    existsSync(join(root, "src/lib/task-evidence.ts")),
+    "exists src/lib/task-evidence.ts"
+  );
+  assert(
+    fileContains("backend/prisma/schema.prisma", "requireEvidenceLinks") &&
+      fileContains("backend/prisma/schema.prisma", "evidenceNotes"),
+    "prisma WorkTask evidence columns"
+  );
+  assert(
+    fileContains("docs/prisma/schema.prisma", "requireEvidenceLinks"),
+    "docs prisma evidence columns"
+  );
+  assert(
+    fileContains("src/services/work.service.ts", "taskRequiresEvidence") &&
+      fileContains("src/services/work.service.ts", "validateTaskEvidence"),
+    "work service enforces completion evidence"
+  );
+  assert(
+    fileContains(
+      "backend/src/work/work.service.ts",
+      "assertCompletionEvidence"
+    ),
+    "backend enforces completion evidence"
+  );
+  assert(
+    fileContains(
+      "src/components/work/task-completion-evidence-dialog.tsx",
+      "TaskCompletionEvidenceDialog"
+    ),
+    "evidence completion dialog"
+  );
+  assert(
+    fileContains(
+      "src/components/work/admin-work-assign-panel.tsx",
+      "requireEvidenceLinks"
+    ),
+    "admin opt-in evidence toggles"
+  );
+  assert(
+    fileContains("src/components/ui/dialog.tsx", "max-h-[min(92dvh") ||
+      fileContains("src/components/ui/dialog.tsx", "92dvh"),
+    "dialog responsive max-height"
+  );
+
   assert(fileContains("tsconfig.json", '"backend"'), "tsconfig excludes backend");
   assert(fileContains("eslint.config.mjs", "backend/**"), "eslint ignores backend");
   assert(fileContains("eslint.config.mjs", "scripts/**"), "eslint ignores scripts");

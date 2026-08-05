@@ -24,11 +24,18 @@ import {
   createWorkTaskSchema,
   updateWorkMeetingSchema,
   updateWorkTaskSchema,
+  updateWorkTaskStatusSchema,
   type CreateWorkMeetingDto,
   type CreateWorkTaskDto,
+  type TaskEvidenceDto,
   type UpdateWorkMeetingDto,
   type UpdateWorkTaskDto,
 } from "@/schemas/work.schema";
+import {
+  isValidEvidenceUrl,
+  taskRequiresEvidence,
+  validateTaskEvidence,
+} from "@/lib/task-evidence";
 import { fail, fromError, ok } from "@/services/api-result";
 import {
   getSessionRole,
@@ -61,6 +68,11 @@ function emptyTask(id: string): WorkTask {
     estimateMin: 30,
     assigneeIds: [],
     subItems: [],
+    origin: "assigned",
+    requireEvidenceLinks: false,
+    requireEvidenceNotes: false,
+    evidenceLinks: [],
+    evidenceNotes: "",
     companyId: "",
     createdAt: "",
     updatedAt: "",
@@ -210,6 +222,18 @@ export async function createWorkTask(
         assigneeIds: parsed.data.assigneeIds,
         relatedMeetingId: parsed.data.relatedMeetingId,
         origin: parsed.data.origin ?? "assigned",
+        requireEvidenceLinks:
+          role === "employee"
+            ? false
+            : Boolean(parsed.data.requireEvidenceLinks),
+        requireEvidenceNotes:
+          role === "employee"
+            ? false
+            : Boolean(parsed.data.requireEvidenceNotes),
+        evidenceLinks: (parsed.data.evidenceLinks ?? []).filter(
+          isValidEvidenceUrl
+        ),
+        evidenceNotes: parsed.data.evidenceNotes ?? "",
         subItems: (parsed.data.subItems ?? []).map((s) => ({
           id: s.id ?? createId("sub"),
           label: s.label,
@@ -265,6 +289,45 @@ export async function updateWorkTask(
     if (!current) throw new NotFoundError("Task not found");
     assertEmployeeCanEditTask(current);
     const actor = userId;
+    const nextRequireLinks =
+      role === "employee"
+        ? false
+        : parsed.data.requireEvidenceLinks !== undefined
+          ? parsed.data.requireEvidenceLinks
+          : current.requireEvidenceLinks;
+    const nextRequireNotes =
+      role === "employee"
+        ? false
+        : parsed.data.requireEvidenceNotes !== undefined
+          ? parsed.data.requireEvidenceNotes
+          : current.requireEvidenceNotes;
+
+    if (
+      parsed.data.status === "completed" &&
+      current.status !== "completed" &&
+      role === "employee"
+    ) {
+      const check = validateTaskEvidence(
+        {
+          requireEvidenceLinks: nextRequireLinks,
+          requireEvidenceNotes: nextRequireNotes,
+        },
+        {
+          links: parsed.data.evidenceLinks ?? current.evidenceLinks,
+          notes: parsed.data.evidenceNotes ?? current.evidenceNotes,
+        }
+      );
+      if (!check.ok) {
+        throw new ValidationError(
+          check.code === "notes"
+            ? "Completion notes are required"
+            : check.code === "links"
+              ? "Proof links are required"
+              : "Proof links and notes are required"
+        );
+      }
+    }
+
     const next = touchEntity(current, actor, {
       ...parsed.data,
       origin: role === "employee" ? "personal" : parsed.data.origin,
@@ -272,6 +335,16 @@ export async function updateWorkTask(
         role === "employee"
           ? [employeeId]
           : (parsed.data.assigneeIds ?? current.assigneeIds),
+      requireEvidenceLinks: nextRequireLinks,
+      requireEvidenceNotes: nextRequireNotes,
+      evidenceLinks:
+        parsed.data.evidenceLinks !== undefined
+          ? parsed.data.evidenceLinks.filter(isValidEvidenceUrl)
+          : current.evidenceLinks,
+      evidenceNotes:
+        parsed.data.evidenceNotes !== undefined
+          ? parsed.data.evidenceNotes
+          : current.evidenceNotes,
       subItems: parsed.data.subItems
         ? parsed.data.subItems.map((s, i) => ({
             id: s.id ?? current.subItems[i]?.id ?? createId("sub"),
@@ -306,26 +379,70 @@ export async function updateWorkTask(
 /** PATCH /work/tasks/:id/status */
 export async function updateWorkTaskStatus(
   id: string,
-  status: TaskStatus
+  status: TaskStatus,
+  evidence?: TaskEvidenceDto
 ): Promise<ApiResponse<WorkTask>> {
   if (isApiMode()) {
-    const res = await patchWorkTaskStatus(id, status);
+    const res = await patchWorkTaskStatus(id, status, evidence);
     if (res.success) emitWorkUpdated();
     return res;
   }
   try {
+    const parsed = updateWorkTaskStatusSchema.safeParse({ status, evidence });
+    if (!parsed.success) {
+      throw new ValidationError("Invalid status payload", parsed.error.flatten());
+    }
     const current = await workTaskRepository.findById(id);
     if (!current) throw new NotFoundError("Task not found");
     assertEmployeeCanTouchTaskProgress(current);
+
+    if (
+      parsed.data.status === "completed" &&
+      current.status !== "completed" &&
+      getSessionRole() === "employee" &&
+      taskRequiresEvidence(current)
+    ) {
+      const check = validateTaskEvidence(current, {
+        links: parsed.data.evidence?.links ?? current.evidenceLinks,
+        notes: parsed.data.evidence?.notes ?? current.evidenceNotes,
+      });
+      if (!check.ok) {
+        throw new ValidationError(
+          check.code === "notes"
+            ? "Completion notes are required"
+            : check.code === "links"
+              ? "Proof links are required"
+              : "Proof links and notes are required"
+        );
+      }
+    }
+
     if (isPersonalWork(current)) {
-      return updateWorkTask(id, { status });
+      return updateWorkTask(id, {
+        status: parsed.data.status,
+        evidenceLinks: parsed.data.evidence?.links,
+        evidenceNotes: parsed.data.evidence?.notes,
+      });
     }
     const actor = getSessionUserId();
-    const next = touchEntity(current, actor, { status });
+    const next = touchEntity(current, actor, {
+      status: parsed.data.status,
+      ...(parsed.data.evidence?.links !== undefined
+        ? {
+            evidenceLinks: parsed.data.evidence.links.filter(isValidEvidenceUrl),
+          }
+        : {}),
+      ...(parsed.data.evidence?.notes !== undefined
+        ? { evidenceNotes: parsed.data.evidence.notes }
+        : {}),
+    });
     const saved = await workTaskRepository.update(id, next);
     if (!saved) throw new NotFoundError("Task not found");
     emitWorkUpdated();
-    if (status === "completed" && current.status !== "completed") {
+    if (
+      parsed.data.status === "completed" &&
+      current.status !== "completed"
+    ) {
       const { notifyTaskCompleted } = await import(
         "@/services/notification.service"
       );

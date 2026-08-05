@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -22,6 +23,63 @@ type Actor = {
   employeeId: string;
 };
 
+function normalizeEvidenceUrl(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
+function isValidEvidenceUrl(url: string): boolean {
+  const normalized = normalizeEvidenceUrl(url);
+  if (!normalized) return false;
+  try {
+    const parsed = new URL(normalized);
+    return /^https?:\/\//i.test(normalized) && parsed.hostname.includes(".");
+  } catch {
+    return false;
+  }
+}
+
+function sanitizeEvidenceLinks(links: unknown): string[] {
+  if (!Array.isArray(links)) return [];
+  return links
+    .map((link) => normalizeEvidenceUrl(String(link ?? "")))
+    .filter(isValidEvidenceUrl)
+    .slice(0, 10);
+}
+
+function assertCompletionEvidence(
+  task: WorkTask,
+  evidence: { links?: string[]; notes?: string } | undefined,
+  actorRole: Actor["role"]
+) {
+  if (actorRole === "admin") return;
+  const requireLinks = task.requireEvidenceLinks;
+  const requireNotes = task.requireEvidenceNotes;
+  if (!requireLinks && !requireNotes) return;
+
+  const links = sanitizeEvidenceLinks(
+    evidence?.links !== undefined ? evidence.links : task.evidenceLinks
+  );
+  const notes = String(
+    evidence?.notes !== undefined
+      ? evidence.notes
+      : (task.evidenceNotes ?? "")
+  ).trim();
+
+  if (requireLinks && links.length === 0) {
+    throw new BadRequestException(
+      "Proof links are required before completing this task"
+    );
+  }
+  if (requireNotes && notes.length < 3) {
+    throw new BadRequestException(
+      "Completion notes are required before completing this task"
+    );
+  }
+}
+
 function mapTask(row: WorkTask) {
   return {
     id: row.id,
@@ -36,6 +94,10 @@ function mapTask(row: WorkTask) {
     relatedMeetingId: row.relatedMeetingId ?? undefined,
     subItems: row.subItems ?? [],
     origin: row.origin,
+    requireEvidenceLinks: row.requireEvidenceLinks,
+    requireEvidenceNotes: row.requireEvidenceNotes,
+    evidenceLinks: row.evidenceLinks ?? [],
+    evidenceNotes: row.evidenceNotes ?? "",
     ...auditFields(row),
   };
 }
@@ -145,6 +207,12 @@ export class WorkService {
     if (isEmployee && origin !== WorkOrigin.personal) {
       throw new ForbiddenException("Employees can only create personal tasks");
     }
+    const requireEvidenceLinks = isEmployee
+      ? false
+      : Boolean(body.requireEvidenceLinks);
+    const requireEvidenceNotes = isEmployee
+      ? false
+      : Boolean(body.requireEvidenceNotes);
     const row = await this.prisma.workTask.create({
       data: {
         companyId,
@@ -161,6 +229,10 @@ export class WorkService {
         relatedMeetingId: (body.relatedMeetingId as string) ?? undefined,
         subItems: (body.subItems as object) ?? [],
         origin,
+        requireEvidenceLinks,
+        requireEvidenceNotes,
+        evidenceLinks: sanitizeEvidenceLinks(body.evidenceLinks),
+        evidenceNotes: String(body.evidenceNotes ?? ""),
         createdBy: actor.userId,
         updatedBy: actor.userId,
       },
@@ -206,12 +278,37 @@ export class WorkService {
     if (actor.role === "employee" && !ownsPersonalTask(current, actor)) {
       throw new ForbiddenException("You can only edit your personal tasks");
     }
+    const nextStatus = body.status as TaskStatus | undefined;
+    if (
+      nextStatus === TaskStatus.completed &&
+      current.status !== TaskStatus.completed
+    ) {
+      assertCompletionEvidence(
+        {
+          ...current,
+          requireEvidenceLinks:
+            typeof body.requireEvidenceLinks === "boolean"
+              ? body.requireEvidenceLinks
+              : current.requireEvidenceLinks,
+          requireEvidenceNotes:
+            typeof body.requireEvidenceNotes === "boolean"
+              ? body.requireEvidenceNotes
+              : current.requireEvidenceNotes,
+        },
+        {
+          links: body.evidenceLinks as string[] | undefined,
+          notes: body.evidenceNotes as string | undefined,
+        },
+        actor.role
+      );
+    }
+
     const row = await this.prisma.workTask.update({
       where: { id },
       data: {
         title: body.title as string | undefined,
         description: body.description as string | undefined,
-        status: body.status as TaskStatus | undefined,
+        status: nextStatus,
         priority: body.priority as TaskPriority | undefined,
         dueDate:
           body.dueDate === "" || body.dueDate === null
@@ -231,6 +328,26 @@ export class WorkService {
           actor.role === "employee"
             ? WorkOrigin.personal
             : (body.origin as WorkOrigin | undefined),
+        requireEvidenceLinks:
+          actor.role === "employee"
+            ? undefined
+            : typeof body.requireEvidenceLinks === "boolean"
+              ? body.requireEvidenceLinks
+              : undefined,
+        requireEvidenceNotes:
+          actor.role === "employee"
+            ? undefined
+            : typeof body.requireEvidenceNotes === "boolean"
+              ? body.requireEvidenceNotes
+              : undefined,
+        evidenceLinks:
+          body.evidenceLinks !== undefined
+            ? sanitizeEvidenceLinks(body.evidenceLinks)
+            : undefined,
+        evidenceNotes:
+          body.evidenceNotes !== undefined
+            ? String(body.evidenceNotes)
+            : undefined,
         updatedBy: actor.userId,
         version: { increment: 1 },
       },
@@ -242,7 +359,8 @@ export class WorkService {
     companyId: string,
     actor: Actor,
     id: string,
-    status: string
+    status: string,
+    evidence?: { links?: string[]; notes?: string }
   ) {
     const current = await this.prisma.workTask.findFirst({
       where: { id, companyId, deletedAt: null },
@@ -255,12 +373,33 @@ export class WorkService {
       throw new ForbiddenException("You can only update tasks assigned to you");
     }
     if (actor.role === "employee" && ownsPersonalTask(current, actor)) {
-      return this.updateTask(companyId, actor, id, { status });
+      return this.updateTask(companyId, actor, id, {
+        status,
+        evidenceLinks: evidence?.links,
+        evidenceNotes: evidence?.notes,
+      });
     }
+
+    if (
+      status === TaskStatus.completed &&
+      current.status !== TaskStatus.completed
+    ) {
+      assertCompletionEvidence(current, evidence, actor.role);
+    }
+
+    const evidenceLinks =
+      evidence?.links !== undefined
+        ? sanitizeEvidenceLinks(evidence.links)
+        : undefined;
+    const evidenceNotes =
+      evidence?.notes !== undefined ? String(evidence.notes).trim() : undefined;
+
     const row = await this.prisma.workTask.update({
       where: { id },
       data: {
         status: status as TaskStatus,
+        ...(evidenceLinks !== undefined ? { evidenceLinks } : {}),
+        ...(evidenceNotes !== undefined ? { evidenceNotes } : {}),
         updatedBy: actor.userId,
         version: { increment: 1 },
       },

@@ -24,6 +24,10 @@ function emptyTask(id = ""): WorkTask {
     assigneeIds: [],
     subItems: [],
     origin: "assigned",
+    requireEvidenceLinks: false,
+    requireEvidenceNotes: false,
+    evidenceLinks: [],
+    evidenceNotes: "",
     companyId: "",
     createdAt: "",
     updatedAt: "",
@@ -103,9 +107,14 @@ export function patchWorkTask(
 /** PATCH /work/tasks/:id/status */
 export function patchWorkTaskStatus(
   id: string,
-  status: TaskStatus
+  status: TaskStatus,
+  evidence?: { links?: string[]; notes?: string }
 ): Promise<ApiResponse<WorkTask>> {
-  return api.patch(API_ROUTES.work.taskStatus(id), { status }, emptyTask(id));
+  return api.patch(
+    API_ROUTES.work.taskStatus(id),
+    { status, evidence },
+    emptyTask(id)
+  );
 }
 
 /** PATCH /work/tasks/:id/sub-items/:subId */

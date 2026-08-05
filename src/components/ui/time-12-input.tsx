@@ -59,7 +59,7 @@ export function Time12Input({
       id={id}
       role="group"
       aria-label={ariaLabel}
-      className={cn("grid grid-cols-[1fr_1fr_auto] gap-1.5", className)}
+      className={cn("grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-1.5", className)}
     >
       <Select
         value={String(parts.hour12)}

@@ -298,27 +298,33 @@ model Holiday {
 }
 
 model WorkTask {
-  id               String       @id @default(cuid())
-  companyId        String
-  title            String
-  description      String       @default("")
-  status           TaskStatus   @default(todo)
-  priority         TaskPriority @default(medium)
-  dueDate          DateTime?    @db.Date
-  tag              String       @default("")
-  estimateMin      Int          @default(0)
-  assigneeIds      String[]
-  relatedMeetingId String?
-  subItems         Json         @default("[]")
-  origin           WorkOrigin   @default(assigned)
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  createdBy        String?
-  updatedBy        String?
-  deletedAt        DateTime?
-  isArchived       Boolean      @default(false)
-  version          Int          @default(1)
-  metadata         Json         @default("{}")
+  id                    String       @id @default(cuid())
+  companyId             String
+  title                 String
+  description           String       @default("")
+  status                TaskStatus   @default(todo)
+  priority              TaskPriority @default(medium)
+  dueDate               DateTime?    @db.Date
+  tag                   String       @default("")
+  estimateMin           Int          @default(0)
+  assigneeIds           String[]
+  relatedMeetingId      String?
+  subItems              Json         @default("[]")
+  origin                WorkOrigin   @default(assigned)
+  /** Admin requires proof links before the assignee can mark complete. */
+  requireEvidenceLinks  Boolean      @default(false)
+  /** Admin requires written notes before the assignee can mark complete. */
+  requireEvidenceNotes  Boolean      @default(false)
+  evidenceLinks         String[]     @default([])
+  evidenceNotes         String       @default("")
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  createdBy             String?
+  updatedBy             String?
+  deletedAt             DateTime?
+  isArchived            Boolean      @default(false)
+  version               Int          @default(1)
+  metadata              Json         @default("{}")
 
   company Company @relation(fields: [companyId], references: [id])
 

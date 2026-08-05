@@ -30,6 +30,14 @@ export interface WorkTask extends BaseEntity {
   subItems: WorkTaskSubItem[];
   /** Defaults to assigned when omitted (legacy seeds). */
   origin?: WorkOrigin;
+  /** When true, assignee must submit at least one proof link to complete. */
+  requireEvidenceLinks?: boolean;
+  /** When true, assignee must write completion notes to complete. */
+  requireEvidenceNotes?: boolean;
+  /** Proof URLs submitted on completion (PR, doc, drive, etc.). */
+  evidenceLinks?: string[];
+  /** Written proof / handoff notes submitted on completion. */
+  evidenceNotes?: string;
 }
 
 /** Scheduled meeting with assigned participants. */

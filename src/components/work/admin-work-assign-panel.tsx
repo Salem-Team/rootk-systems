@@ -9,11 +9,14 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  FileCheck2,
+  Link2,
   ListTodo,
   Loader2,
   Pencil,
   Plus,
   Search,
+  StickyNote,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -21,6 +24,10 @@ import {
   EmployeeAvatarStack,
   EmployeeMultiPicker,
 } from "@/components/work/employee-multi-picker";
+import {
+  TaskEvidenceBadge,
+  TaskEvidenceDisplay,
+} from "@/components/work/task-completion-evidence-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +40,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Time12Input } from "@/components/ui/time-12-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -54,6 +62,7 @@ import {
 import { useTranslation } from "@/hooks/use-translation";
 import { WORK_UPDATED_EVENT } from "@/lib/events";
 import { formatClockRange } from "@/lib/format-time";
+import { taskHasSubmittedEvidence } from "@/lib/task-evidence";
 import {
   meetingWhen,
   openTaskCount,
@@ -61,6 +70,7 @@ import {
   todayIsoDate,
 } from "@/lib/work-utils";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
+import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
 import type {
   TaskPriority,
@@ -90,6 +100,8 @@ interface TaskFormState {
   assigneeIds: string[];
   relatedMeetingId: string;
   subItemsText: string;
+  requireEvidenceLinks: boolean;
+  requireEvidenceNotes: boolean;
 }
 
 interface MeetingFormState {
@@ -117,6 +129,8 @@ function emptyTaskForm(): TaskFormState {
     assigneeIds: [],
     relatedMeetingId: "",
     subItemsText: "",
+    requireEvidenceLinks: false,
+    requireEvidenceNotes: false,
   };
 }
 
@@ -147,6 +161,8 @@ function taskToForm(task: WorkTask): TaskFormState {
     assigneeIds: [...task.assigneeIds],
     relatedMeetingId: task.relatedMeetingId ?? "",
     subItemsText: task.subItems.map((s) => s.label).join("\n"),
+    requireEvidenceLinks: Boolean(task.requireEvidenceLinks),
+    requireEvidenceNotes: Boolean(task.requireEvidenceNotes),
   };
 }
 
@@ -325,6 +341,8 @@ export function AdminWorkAssignPanel() {
       assigneeIds: taskForm.assigneeIds,
       relatedMeetingId: taskForm.relatedMeetingId || undefined,
       origin: "assigned" as const,
+      requireEvidenceLinks: Boolean(taskForm.requireEvidenceLinks),
+      requireEvidenceNotes: Boolean(taskForm.requireEvidenceNotes),
       subItems: taskForm.subItemsText
         .split("\n")
         .map((line) => line.trim())
@@ -640,7 +658,11 @@ export function AdminWorkAssignPanel() {
                               {t("workHub.subtasks")}
                             </Badge>
                           ) : null}
+                          <TaskEvidenceBadge task={task} />
                         </div>
+                        {taskHasSubmittedEvidence(task) ? (
+                          <TaskEvidenceDisplay task={task} className="mt-3" />
+                        ) : null}
                         <div className="mt-3 flex flex-wrap items-center gap-3">
                           <EmployeeAvatarStack
                             employees={employeeMap}
@@ -827,7 +849,7 @@ export function AdminWorkAssignPanel() {
 
       {/* Task dialog */}
       <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {editingTaskId ? t("workAdmin.editTask") : t("workAdmin.addTask")}
@@ -883,7 +905,7 @@ export function AdminWorkAssignPanel() {
                 />
               </Field>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <Field label={t("workAdmin.fieldPriority")} htmlFor="task-priority">
                 <select
                   id="task-priority"
@@ -918,7 +940,11 @@ export function AdminWorkAssignPanel() {
                   <option value="completed">{t("ops.statusCompleted")}</option>
                 </select>
               </Field>
-              <Field label={t("workAdmin.fieldTag")} htmlFor="task-tag">
+              <Field
+                label={t("workAdmin.fieldTag")}
+                htmlFor="task-tag"
+                className="sm:col-span-2"
+              >
                 <Input
                   id="task-tag"
                   value={taskForm.tag}
@@ -966,6 +992,176 @@ export function AdminWorkAssignPanel() {
                 }
               />
             </Field>
+
+            <div
+              className={cn(
+                "rounded-xl border p-3.5 transition-colors",
+                taskForm.requireEvidenceLinks || taskForm.requireEvidenceNotes
+                  ? "border-amber-500/30 bg-amber-500/[0.06]"
+                  : "border-border/70 bg-muted/20"
+              )}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-start gap-2.5">
+                  <span
+                    className={cn(
+                      "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-card",
+                      taskForm.requireEvidenceLinks ||
+                        taskForm.requireEvidenceNotes
+                        ? "border-amber-500/30 text-amber-700 dark:text-amber-300"
+                        : "border-border/60 text-muted-foreground"
+                    )}
+                  >
+                    <FileCheck2 className="h-3.5 w-3.5" aria-hidden />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">
+                      {t("workAdmin.evidenceSection")}
+                    </p>
+                    <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
+                      {t("workAdmin.evidenceSectionDesc")}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="req-evidence-master"
+                  checked={
+                    taskForm.requireEvidenceLinks ||
+                    taskForm.requireEvidenceNotes
+                  }
+                  onCheckedChange={(checked) =>
+                    setTaskForm((p) =>
+                      checked
+                        ? {
+                            ...p,
+                            requireEvidenceLinks: true,
+                            requireEvidenceNotes: false,
+                          }
+                        : {
+                            ...p,
+                            requireEvidenceLinks: false,
+                            requireEvidenceNotes: false,
+                          }
+                    )
+                  }
+                  aria-label={t("workAdmin.evidenceOnLabel")}
+                />
+              </div>
+
+              <div className="mt-3 rounded-lg border border-border/60 bg-card/80 px-3 py-2.5">
+                <p className="text-[13px] font-medium">
+                  {taskForm.requireEvidenceLinks ||
+                  taskForm.requireEvidenceNotes
+                    ? t("workAdmin.evidenceOnLabel")
+                    : t("workAdmin.evidenceOffLabel")}
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  {taskForm.requireEvidenceLinks ||
+                  taskForm.requireEvidenceNotes
+                    ? t("workAdmin.evidenceOnHint")
+                    : t("workAdmin.evidenceOffHint")}
+                </p>
+              </div>
+
+              {taskForm.requireEvidenceLinks ||
+              taskForm.requireEvidenceNotes ? (
+                <div className="mt-3 space-y-2.5">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                    {t("workAdmin.evidencePickAtLeast")}
+                  </p>
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-card px-3 py-2.5">
+                    <div className="flex min-w-0 items-start gap-2.5">
+                      <Link2
+                        className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary"
+                        aria-hidden
+                      />
+                      <div className="min-w-0">
+                        <Label
+                          htmlFor="req-evidence-links"
+                          className="text-sm font-medium"
+                        >
+                          {t("workAdmin.requireEvidenceLinks")}
+                        </Label>
+                        <p className="text-[11px] text-muted-foreground">
+                          {t("workAdmin.requireEvidenceLinksDesc")}
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      id="req-evidence-links"
+                      checked={taskForm.requireEvidenceLinks}
+                      onCheckedChange={(checked) =>
+                        setTaskForm((p) => {
+                          const next = {
+                            ...p,
+                            requireEvidenceLinks: checked,
+                          };
+                          if (!checked && !p.requireEvidenceNotes) {
+                            return {
+                              ...next,
+                              requireEvidenceNotes: true,
+                            };
+                          }
+                          return next;
+                        })
+                      }
+                      aria-label={t("workAdmin.requireEvidenceLinks")}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-card px-3 py-2.5">
+                    <div className="flex min-w-0 items-start gap-2.5">
+                      <StickyNote
+                        className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary"
+                        aria-hidden
+                      />
+                      <div className="min-w-0">
+                        <Label
+                          htmlFor="req-evidence-notes"
+                          className="text-sm font-medium"
+                        >
+                          {t("workAdmin.requireEvidenceNotes")}
+                        </Label>
+                        <p className="text-[11px] text-muted-foreground">
+                          {t("workAdmin.requireEvidenceNotesDesc")}
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      id="req-evidence-notes"
+                      checked={taskForm.requireEvidenceNotes}
+                      onCheckedChange={(checked) =>
+                        setTaskForm((p) => {
+                          const next = {
+                            ...p,
+                            requireEvidenceNotes: checked,
+                          };
+                          if (!checked && !p.requireEvidenceLinks) {
+                            return {
+                              ...next,
+                              requireEvidenceLinks: true,
+                            };
+                          }
+                          return next;
+                        })
+                      }
+                      aria-label={t("workAdmin.requireEvidenceNotes")}
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              {editingTaskId
+                ? (() => {
+                    const editing = tasks.find((x) => x.id === editingTaskId);
+                    return editing &&
+                      (editing.requireEvidenceLinks ||
+                        editing.requireEvidenceNotes ||
+                        taskHasSubmittedEvidence(editing)) ? (
+                      <TaskEvidenceDisplay task={editing} className="mt-3" />
+                    ) : null;
+                  })()
+                : null}
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -985,7 +1181,7 @@ export function AdminWorkAssignPanel() {
 
       {/* Meeting dialog */}
       <Dialog open={meetingDialogOpen} onOpenChange={setMeetingDialogOpen}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {editingMeetingId
@@ -1006,7 +1202,7 @@ export function AdminWorkAssignPanel() {
                 }
               />
             </Field>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3">
               <Field label={t("workAdmin.fieldDate")} htmlFor="meet-date">
                 <Input
                   id="meet-date"
@@ -1017,26 +1213,28 @@ export function AdminWorkAssignPanel() {
                   }
                 />
               </Field>
-              <Field label={t("workAdmin.fieldStart")} htmlFor="meet-start">
-                <Time12Input
-                  id="meet-start"
-                  value={meetingForm.startTime}
-                  onChange={(startTime) =>
-                    setMeetingForm((p) => ({ ...p, startTime }))
-                  }
-                  aria-label={t("workAdmin.fieldStart")}
-                />
-              </Field>
-              <Field label={t("workAdmin.fieldEnd")} htmlFor="meet-end">
-                <Time12Input
-                  id="meet-end"
-                  value={meetingForm.endTime}
-                  onChange={(endTime) =>
-                    setMeetingForm((p) => ({ ...p, endTime }))
-                  }
-                  aria-label={t("workAdmin.fieldEnd")}
-                />
-              </Field>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label={t("workAdmin.fieldStart")} htmlFor="meet-start">
+                  <Time12Input
+                    id="meet-start"
+                    value={meetingForm.startTime}
+                    onChange={(startTime) =>
+                      setMeetingForm((p) => ({ ...p, startTime }))
+                    }
+                    aria-label={t("workAdmin.fieldStart")}
+                  />
+                </Field>
+                <Field label={t("workAdmin.fieldEnd")} htmlFor="meet-end">
+                  <Time12Input
+                    id="meet-end"
+                    value={meetingForm.endTime}
+                    onChange={(endTime) =>
+                      setMeetingForm((p) => ({ ...p, endTime }))
+                    }
+                    aria-label={t("workAdmin.fieldEnd")}
+                  />
+                </Field>
+              </div>
             </div>
             <Field label={t("workHub.location")} htmlFor="meet-loc">
               <Input
@@ -1198,13 +1396,15 @@ function Field({
   label,
   htmlFor,
   children,
+  className,
 }: {
   label: string;
   htmlFor: string;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className={cn("space-y-1.5", className)}>
       <Label htmlFor={htmlFor}>{label}</Label>
       {children}
     </div>

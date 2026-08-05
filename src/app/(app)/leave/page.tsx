@@ -104,7 +104,7 @@ export default function LeavePage() {
           {t("leave.newRequest")}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{t("leave.formTitle")}</DialogTitle>
           <DialogDescription>{t("leave.formDesc")}</DialogDescription>

@@ -45,6 +45,11 @@ import {
   removePersonalWork,
 } from "@/components/work/employee-work-composer";
 import {
+  TaskCompletionEvidenceDialog,
+  TaskEvidenceBadge,
+  TaskEvidenceDisplay,
+} from "@/components/work/task-completion-evidence-dialog";
+import {
   buildOpsChecklist,
   buildOpsGoals,
 } from "@/components/operations/operations-mock-data";
@@ -59,6 +64,11 @@ import { getWorkEmployeeIdFromUser, useSessionStore } from "@/stores/session-sto
 import { useTranslation } from "@/hooks/use-translation";
 import { WORK_UPDATED_EVENT } from "@/lib/events";
 import { demoNow } from "@/lib/mock-date";
+import {
+  completionNeedsEvidenceDialog,
+  nextTaskStatus,
+  taskRequiresEvidence,
+} from "@/lib/task-evidence";
 import {
   employeeOwnsPersonalMeeting,
   employeeOwnsPersonalTask,
@@ -113,6 +123,7 @@ export function EmployeeWorkHub() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const [evidenceTask, setEvidenceTask] = useState<WorkTask | null>(null);
 
   const employeeMap = useMemo(
     () => new Map(employees.map((e) => [e.id, e])),
@@ -216,13 +227,23 @@ export function EmployeeWorkHub() {
   async function cycleTaskStatus(id: string) {
     const task = tasks.find((x) => x.id === id);
     if (!task) return;
-    const order: TaskStatus[] = ["todo", "in_progress", "completed"];
-    const next = order[(order.indexOf(task.status) + 1) % order.length];
+    const next = nextTaskStatus(task.status);
+    if (next === "completed" && taskRequiresEvidence(task)) {
+      setEvidenceTask(task);
+      return;
+    }
     setTasks((prev) =>
       prev.map((x) => (x.id === id ? { ...x, status: next } : x))
     );
     const res = await updateWorkTaskStatus(id, next);
     if (!res.success) await reload();
+  }
+
+  function handleEvidenceCompleted(updated: WorkTask) {
+    setTasks((prev) =>
+      prev.map((x) => (x.id === updated.id ? updated : x))
+    );
+    setEvidenceTask(null);
   }
 
   async function toggleSubItem(taskId: string, subId: string) {
@@ -526,6 +547,7 @@ export function EmployeeWorkHub() {
                                   {task.tag}
                                 </Badge>
                               ) : null}
+                              <TaskEvidenceBadge task={task} />
                             </span>
                             <span className="mt-2 block text-[11px] text-muted-foreground">
                               {t("workHub.subProgress", {
@@ -869,6 +891,15 @@ export function EmployeeWorkHub() {
         editingMeeting={editingMeeting}
         onSaved={reload}
       />
+
+      <TaskCompletionEvidenceDialog
+        task={evidenceTask}
+        open={Boolean(evidenceTask)}
+        onOpenChange={(open) => {
+          if (!open) setEvidenceTask(null);
+        }}
+        onCompleted={handleEvidenceCompleted}
+      />
     </div>
   );
 }
@@ -1044,8 +1075,21 @@ function TaskDetailCard({
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           ) : null}
-          <Button type="button" size="sm" variant="outline" onClick={onCycleStatus}>
-            {t("ops.cycleTaskStatus")}
+          <Button
+            type="button"
+            size="sm"
+            variant={
+              completionNeedsEvidenceDialog(task) ? "default" : "outline"
+            }
+            onClick={onCycleStatus}
+          >
+            {task.status === "completed"
+              ? t("workEvidence.reopen")
+              : task.status === "todo"
+                ? t("workEvidence.startWork")
+                : completionNeedsEvidenceDialog(task)
+                  ? t("workEvidence.submitComplete")
+                  : t("workEvidence.markComplete")}
           </Button>
         </div>
       </div>
@@ -1060,6 +1104,7 @@ function TaskDetailCard({
         </Badge>
         <Badge variant="secondary">{t(statusLabelKey(task.status))}</Badge>
         {task.tag ? <Badge variant="outline">{task.tag}</Badge> : null}
+        <TaskEvidenceBadge task={task} />
       </div>
 
       {task.description ? (
@@ -1067,6 +1112,8 @@ function TaskDetailCard({
           {task.description}
         </p>
       ) : null}
+
+      <TaskEvidenceDisplay task={task} className="mt-4" />
 
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
         <MetaChip label={t("workHub.owner")} value={ownerLabel || "—"} />

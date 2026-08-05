@@ -13,6 +13,29 @@ const optionalDueDateSchema = z
   .optional()
   .default("");
 
+const evidenceUrlSchema = z
+  .string()
+  .trim()
+  .transform((value) => {
+    if (!value) return "";
+    if (/^https?:\/\//i.test(value)) return value;
+    return `https://${value}`;
+  })
+  .refine(
+    (value) => value === "" || z.string().url().safeParse(value).success,
+    { message: "Invalid evidence URL" }
+  );
+
+export const taskEvidenceSchema = z.object({
+  links: z.array(evidenceUrlSchema).max(10).optional(),
+  notes: z.string().trim().max(4000).optional(),
+});
+
+export const updateWorkTaskStatusSchema = z.object({
+  status: taskStatusSchema,
+  evidence: taskEvidenceSchema.optional(),
+});
+
 export const createWorkTaskSchema = z.object({
   title: z.string().trim().min(2).max(200),
   description: z.string().trim().max(4000).default(""),
@@ -26,6 +49,10 @@ export const createWorkTaskSchema = z.object({
   assigneeIds: z.array(z.string().min(1)).min(1),
   relatedMeetingId: z.string().min(1).optional(),
   origin: workOriginSchema.default("assigned"),
+  requireEvidenceLinks: z.boolean().optional(),
+  requireEvidenceNotes: z.boolean().optional(),
+  evidenceLinks: z.array(evidenceUrlSchema).max(10).optional(),
+  evidenceNotes: z.string().trim().max(4000).optional(),
   subItems: z
     .array(
       z.object({
@@ -90,5 +117,7 @@ export const updateWorkMeetingSchema = createWorkMeetingBaseSchema
 
 export type CreateWorkTaskDto = z.infer<typeof createWorkTaskSchema>;
 export type UpdateWorkTaskDto = z.infer<typeof updateWorkTaskSchema>;
+export type UpdateWorkTaskStatusDto = z.infer<typeof updateWorkTaskStatusSchema>;
+export type TaskEvidenceDto = z.infer<typeof taskEvidenceSchema>;
 export type CreateWorkMeetingDto = z.infer<typeof createWorkMeetingSchema>;
 export type UpdateWorkMeetingDto = z.infer<typeof updateWorkMeetingSchema>;

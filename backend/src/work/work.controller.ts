@@ -82,13 +82,18 @@ export class WorkController {
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload | undefined,
     @Param("id") id: string,
-    @Body() body: { status: string }
+    @Body()
+    body: {
+      status: string;
+      evidence?: { links?: string[]; notes?: string };
+    }
   ) {
     return this.service.updateTaskStatus(
       companyId,
       toActor(user),
       id,
-      body.status
+      body.status,
+      body.evidence
     );
   }
 
