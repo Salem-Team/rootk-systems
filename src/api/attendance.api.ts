@@ -59,6 +59,7 @@ export function postCheckIn(body: {
   employeeId?: string;
   wfh?: boolean;
   note?: string;
+  location?: { latitude: number; longitude: number; accuracy?: number };
 }): Promise<ApiResponse<AttendanceRecord>> {
   return api.post(API_ROUTES.attendance.checkIn, body, emptyRecord());
 }
@@ -66,6 +67,7 @@ export function postCheckIn(body: {
 /** POST /attendance/check-out */
 export function postCheckOut(body?: {
   employeeId?: string;
+  location?: { latitude: number; longitude: number; accuracy?: number };
 }): Promise<ApiResponse<AttendanceRecord>> {
   return api.post(API_ROUTES.attendance.checkOut, body ?? {}, emptyRecord());
 }

@@ -190,6 +190,39 @@ function main() {
     "seed company id"
   );
 
+  assert(
+    fileContains("src/lib/geo.ts", "parseGoogleMapsUrl") &&
+      fileContains("src/lib/geo.ts", "findMatchingOffice"),
+    "geo helpers (Maps URL + geofence)"
+  );
+  assert(
+    fileContains("backend/src/lib/geo.ts", "resolveGoogleMapsUrl"),
+    "backend Maps URL resolve"
+  );
+  assert(
+    fileContains("backend/prisma/schema.prisma", "radiusMeters"),
+    "office geofence columns"
+  );
+  assert(
+    fileContains("src/services/attendance.service.ts", "assertOfficeGeofence") ||
+      fileContains("src/services/attendance.service.ts", "Outside office geofence"),
+    "attendance enforces office geofence"
+  );
+  assert(
+    fileContains("src/api/routes.ts", "resolveMapsUrl"),
+    "route resolve-maps-url"
+  );
+  assert(
+    fileContains("src/components/admin/shifts-panel.tsx", "onCreate") ||
+      fileContains("src/components/admin/shifts-panel.tsx", "addShift"),
+    "shifts admin CRUD UI"
+  );
+  assert(
+    fileContains("src/services/leave.service.ts", "applyApprovedLeaveLocal") ||
+      fileContains("src/services/leave.service.ts", "approvalLeave"),
+    "leave approval rule wiring"
+  );
+
   assert(fileContains("tsconfig.json", '"backend"'), "tsconfig excludes backend");
   assert(fileContains("eslint.config.mjs", "backend/**"), "eslint ignores backend");
   assert(fileContains("eslint.config.mjs", "scripts/**"), "eslint ignores scripts");

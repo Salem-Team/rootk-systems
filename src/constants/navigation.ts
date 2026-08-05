@@ -127,7 +127,17 @@ export const MOBILE_NAV: AppNavItem[] = [
   },
 ];
 
-export const ADMIN_ONLY_ROUTES = ["/employees", "/reports"];
+export const ADMIN_ONLY_ROUTES = [
+  "/employees",
+  "/reports",
+];
+
+/** Surfaces that admins fully own; employees keep shared pages with scoped UI. */
+export const ADMIN_CONTROL_SURFACES = [
+  "/employees",
+  "/reports",
+  "/settings",
+] as const;
 
 export function navForRole(role: UserRole, items: AppNavItem[] = APP_NAV) {
   return items.filter((item) => item.roles.includes(role));
@@ -138,4 +148,9 @@ export function canAccessRoute(role: UserRole, pathname: string): boolean {
     return role === "admin";
   }
   return true;
+}
+
+/** True when the signed-in admin should see every company control surface. */
+export function isAdminFullAccess(role: UserRole): boolean {
+  return role === "admin";
 }

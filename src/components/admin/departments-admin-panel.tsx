@@ -66,7 +66,7 @@ export function DepartmentsAdminPanel() {
         presentRate,
         color: COLORS[department],
       };
-    }).filter((r) => r.employees > 0 || true);
+    }).filter((r) => r.employees > 0);
   }, [employees]);
 
   if (loading) {

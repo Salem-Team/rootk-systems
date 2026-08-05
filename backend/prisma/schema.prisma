@@ -385,23 +385,29 @@ model AppNotification {
 }
 
 model OfficeLocation {
-  id         String   @id @default(cuid())
-  companyId  String
-  name       String
-  city       String
-  address    String
-  timezone   String
-  capacity   Int
-  workingDays String
-  active     Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  createdBy  String?
-  updatedBy  String?
-  deletedAt  DateTime?
-  isArchived Boolean  @default(false)
-  version    Int      @default(1)
-  metadata   Json     @default("{}")
+  id            String   @id @default(cuid())
+  companyId     String
+  name          String
+  city          String
+  address       String
+  timezone      String
+  capacity      Int
+  workingDays   String
+  /// WGS84 latitude — required for office-day geofenced check-in/out.
+  latitude      Float?
+  /// WGS84 longitude — required for office-day geofenced check-in/out.
+  longitude     Float?
+  /// Allowed distance from office pin for check-in/out (meters).
+  radiusMeters  Int      @default(200)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdBy     String?
+  updatedBy     String?
+  deletedAt     DateTime?
+  isArchived    Boolean  @default(false)
+  version       Int      @default(1)
+  metadata      Json     @default("{}")
 
   @@index([companyId])
 }

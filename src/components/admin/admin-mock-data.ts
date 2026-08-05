@@ -12,6 +12,7 @@ export type AdminSection =
   | "notifications"
   | "approvals"
   | "employeePrefs"
+  | "myPrefs"
   | "appearance"
   | "demo";
 
@@ -23,6 +24,9 @@ export interface OfficeBranch {
   timezone: string;
   capacity: number;
   workingDays: string;
+  latitude?: number;
+  longitude?: number;
+  radiusMeters?: number;
 }
 
 export interface ShiftDefinition {
@@ -137,7 +141,21 @@ export const ADMIN_SHIFTS: ShiftDefinition[] = [
   },
 ];
 
-export const ADMIN_BRANCHES: OfficeBranch[] = [];
+export const ADMIN_BRANCHES: OfficeBranch[] = [
+  {
+    id: "loc-cairo-hq",
+    name: "Cairo HQ",
+    city: "Cairo",
+    address: "New Cairo",
+    timezone: "Africa/Cairo",
+    capacity: 120,
+    workingDays: "Sun–Thu",
+    // Approx. New Cairo — replace with the real office pin in Settings → Locations.
+    latitude: 30.0075,
+    longitude: 31.4913,
+    radiusMeters: 250,
+  },
+];
 
 export const ADMIN_DEPARTMENTS: DepartmentAdminCard[] = [];
 

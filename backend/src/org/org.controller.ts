@@ -1,4 +1,4 @@
-import { Controller, UseGuards, Get, Patch, Put, Delete, Body, Param } from "@nestjs/common";
+import { Body, Controller, UseGuards, Get, Patch, Put, Delete, Post, Param } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import { OrgService } from "./org.service";
 import { ActorId, CompanyId } from "../common/tenant";
@@ -13,6 +13,12 @@ export class OrgController {
   @Get("locations")
   locations(@CompanyId() companyId: string) {
     return this.service.listLocations(companyId);
+  }
+
+  @Post("locations/resolve-maps-url")
+  @Roles("admin")
+  resolveMapsUrl(@Body() body: { url?: string }) {
+    return this.service.resolveMapsUrl(String(body.url ?? ""));
   }
 
   @Put("locations")

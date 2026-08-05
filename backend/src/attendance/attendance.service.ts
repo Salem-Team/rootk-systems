@@ -16,6 +16,13 @@ import {
   type WorkClockSchedule,
 } from "../lib/work-time";
 import { isEmployeeWfhAllowed } from "../lib/wfh-policy";
+import {
+  DEFAULT_OFFICE_RADIUS_METERS,
+  findMatchingOffice,
+  isValidGeoPoint,
+  type GeoPoint,
+  type GeofencedOffice,
+} from "../lib/geo";
 import { NotificationsService } from "../notifications/notifications.service";
 import { writeActivity } from "../common/activity-writer";
 
@@ -23,6 +30,8 @@ type ScheduleBundle = WorkClockSchedule & {
   wfhDays: string[];
   metadata: unknown;
 };
+
+type PunchLocation = GeoPoint & { accuracy?: number };
 
 const DEFAULT_SCHEDULE: ScheduleBundle = {
   fromTime: "09:00",
@@ -80,6 +89,12 @@ function mapAttendance(row: {
   };
 }
 
+function asMetadata(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? { ...(value as Record<string, unknown>) }
+    : {};
+}
+
 @Injectable()
 export class AttendanceService {
   constructor(
@@ -111,6 +126,68 @@ export class AttendanceService {
         attendancePolicy.halfDayHours ?? DEFAULT_SCHEDULE.halfDayHours,
       wfhDays: Array.isArray(cfg?.wfhDays) ? (cfg!.wfhDays as string[]) : [],
       metadata: schedule?.metadata ?? {},
+    };
+  }
+
+  private async loadGeofencedOffices(
+    companyId: string
+  ): Promise<GeofencedOffice[]> {
+    const rows = await this.prisma.officeLocation.findMany({
+      where: {
+        companyId,
+        active: true,
+        deletedAt: null,
+        latitude: { not: null },
+        longitude: { not: null },
+      },
+    });
+    return rows
+      .filter(
+        (row): row is typeof row & { latitude: number; longitude: number } =>
+          row.latitude != null && row.longitude != null
+      )
+      .map((row) => ({
+        id: row.id,
+        name: row.name,
+        latitude: row.latitude,
+        longitude: row.longitude,
+        radiusMeters: row.radiusMeters || DEFAULT_OFFICE_RADIUS_METERS,
+      }));
+  }
+
+  /**
+   * Office-day punches must happen inside an active company office geofence.
+   * WFH punches skip this check.
+   */
+  private async assertOfficeGeofence(
+    companyId: string,
+    location: PunchLocation | undefined,
+    action: "check-in" | "check-out"
+  ) {
+    const offices = await this.loadGeofencedOffices(companyId);
+    if (offices.length === 0) {
+      throw new BadRequestException("Office location not configured");
+    }
+    if (!isValidGeoPoint(location)) {
+      throw new BadRequestException(
+        action === "check-in"
+          ? "Location required for office check-in"
+          : "Location required for office check-out"
+      );
+    }
+    const match = findMatchingOffice(location, offices);
+    if (!match) {
+      throw new ForbiddenException("Outside office geofence");
+    }
+    return {
+      latitude: location.latitude,
+      longitude: location.longitude,
+      accuracy: location.accuracy,
+      matchedLocationId: match.office.id,
+      matchedLocationName: match.office.name,
+      distanceMeters: Math.round(match.distanceMeters),
+      radiusMeters: match.office.radiusMeters,
+      at: new Date().toISOString(),
     };
   }
 
@@ -156,7 +233,12 @@ export class AttendanceService {
   async checkIn(
     companyId: string,
     actorId: string,
-    body: { employeeId?: string; wfh?: boolean; note?: string }
+    body: {
+      employeeId?: string;
+      wfh?: boolean;
+      note?: string;
+      location?: PunchLocation;
+    }
   ) {
     const employeeId = body.employeeId;
     if (!employeeId) throw new BadRequestException("employeeId required");
@@ -186,9 +268,15 @@ export class AttendanceService {
         dateKey,
       });
       if (!allowed) {
-        throw new ForbiddenException("WFH is not allowed for this employee today");
+        throw new ForbiddenException(
+          "WFH is not allowed for this employee today"
+        );
       }
     }
+
+    const geoSnapshot = body.wfh
+      ? null
+      : await this.assertOfficeGeofence(companyId, body.location, "check-in");
 
     const now = new Date();
     const lateMinutes = computeLateMinutes(
@@ -204,6 +292,10 @@ export class AttendanceService {
         ? "late"
         : "present";
 
+    const nextMeta = asMetadata(existing?.metadata);
+    if (geoSnapshot) nextMeta.checkInLocation = geoSnapshot;
+    if (body.wfh) delete nextMeta.checkInLocation;
+
     const data = {
       checkIn: now,
       status,
@@ -216,6 +308,7 @@ export class AttendanceService {
       breakAppliedMinutes: 0,
       workingMinutes: 0,
       note: body.note ?? existing?.note ?? null,
+      metadata: nextMeta as Prisma.InputJsonValue,
       updatedBy: actorId,
       version: existing ? { increment: 1 } : undefined,
       deletedAt: null,
@@ -237,6 +330,7 @@ export class AttendanceService {
             isLate,
             lateMinutes,
             note: body.note,
+            metadata: nextMeta as Prisma.InputJsonValue,
             createdBy: actorId,
             updatedBy: actorId,
           },
@@ -282,7 +376,7 @@ export class AttendanceService {
   async checkOut(
     companyId: string,
     actorId: string,
-    body: { employeeId?: string }
+    body: { employeeId?: string; location?: PunchLocation }
   ) {
     const employeeId = body.employeeId;
     if (!employeeId) throw new BadRequestException("employeeId required");
@@ -298,6 +392,11 @@ export class AttendanceService {
       throw new ConflictException("Already checked out today");
     }
 
+    const isWfhDay = existing.status === "wfh";
+    const geoSnapshot = isWfhDay
+      ? null
+      : await this.assertOfficeGeofence(companyId, body.location, "check-out");
+
     const schedule = await this.scheduleBundle(companyId);
     const now = new Date();
     const settled = settleWorkDay({
@@ -309,6 +408,9 @@ export class AttendanceService {
       wasLate: existing.isLate,
       lateMinutes: existing.lateMinutes,
     });
+
+    const nextMeta = asMetadata(existing.metadata);
+    if (geoSnapshot) nextMeta.checkOutLocation = geoSnapshot;
 
     const row = await this.prisma.attendanceRecord.update({
       where: { id: existing.id },
@@ -323,6 +425,7 @@ export class AttendanceService {
         isLate: settled.isLate,
         lateMinutes: settled.lateMinutes,
         status: settled.status,
+        metadata: nextMeta as Prisma.InputJsonValue,
         updatedBy: actorId,
         version: { increment: 1 },
       },

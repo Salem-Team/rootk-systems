@@ -31,6 +31,7 @@ import {
   NotificationSettingsPanel,
 } from "@/components/admin/notifications-approvals-panels";
 import type { AdminSection } from "@/components/admin/admin-mock-data";
+import { SettingsForm } from "@/components/settings/settings-form";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -141,7 +142,11 @@ export function CompanyAdminWorkspace() {
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           >
             {section === "profile" ? (
-              <CompanyProfilePanel form={form} onChange={updateField} />
+              <CompanyProfilePanel
+                form={form}
+                onChange={updateField}
+                onNavigate={setSection}
+              />
             ) : null}
             {section === "policies" ? <WorkPoliciesPanel /> : null}
             {section === "shifts" ? <ShiftsPanel /> : null}
@@ -159,6 +164,9 @@ export function CompanyAdminWorkspace() {
             ) : null}
             {section === "approvals" ? <ApprovalsPanel /> : null}
             {section === "employeePrefs" ? <EmployeePreferencesPanel /> : null}
+            {section === "myPrefs" ? (
+              <SettingsForm hideCompanyPolicy />
+            ) : null}
             {section === "appearance" ? (
               <motion.section
                 variants={fadeInUp}

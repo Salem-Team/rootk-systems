@@ -321,6 +321,30 @@ export function CheckInPanel() {
       </motion.div>
     ) : null;
 
+  const officeGeoHint =
+    (canCheckIn && !(wfh && wfhAllowed)) ||
+    (canCheckOut && todayRecord?.status !== "wfh") ? (
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-start gap-3 list-row px-3.5 py-3 sm:px-4"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <MapPin className="h-4 w-4" aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-medium tracking-tight">
+            {isCheckingIn || isCheckingOut
+              ? t("attendance.locating")
+              : t("attendance.officeGeoHint")}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {t("admin.geoRequiredHint")}
+          </p>
+        </div>
+      </motion.div>
+    ) : null;
+
   return (
     <motion.div variants={fadeInUp} initial="hidden" animate="visible">
       <section
@@ -529,6 +553,7 @@ export function CheckInPanel() {
           </div>
 
           {wfhToggle}
+          {officeGeoHint}
           {actionButtons}
         </div>
       </section>

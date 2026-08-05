@@ -3,7 +3,9 @@ import {
   checkIn as checkInService,
   checkOut as checkOutService,
   getMyTodayRecord,
+  type PunchLocation,
 } from "@/services/attendance.service";
+import { getBrowserLocation } from "@/lib/geo";
 import { getWorkEmployeeId } from "@/stores/session-store";
 import type { TranslationPath } from "@/i18n";
 import type { AttendanceRecord } from "@/types";
@@ -19,6 +21,38 @@ interface AttendanceState {
   checkOut: () => Promise<boolean>;
   clearError: () => void;
   reset: () => void;
+}
+
+function mapPunchError(
+  code?: string,
+  message?: string
+): TranslationPath {
+  const msg = message ?? "";
+  if (/Location permission denied/i.test(msg)) {
+    return "errors.locationPermissionDenied";
+  }
+  if (/Location unavailable/i.test(msg)) {
+    return "errors.locationUnavailable";
+  }
+  if (/Outside office/i.test(msg) || /geofence/i.test(msg)) {
+    return "errors.outsideOffice";
+  }
+  if (/Location required/i.test(msg)) {
+    return "errors.locationRequired";
+  }
+  if (/Office location not configured/i.test(msg)) {
+    return "errors.officeLocationNotConfigured";
+  }
+  if (code === "FORBIDDEN") return "errors.outsideOffice";
+  if (code === "CONFLICT") return "errors.alreadyCheckedIn";
+  return "errors.checkInFailed";
+}
+
+async function resolveOfficeLocation(
+  requireGeo: boolean
+): Promise<PunchLocation | undefined> {
+  if (!requireGeo) return undefined;
+  return getBrowserLocation();
 }
 
 export const useAttendanceStore = create<AttendanceState>((set) => ({
@@ -44,16 +78,31 @@ export const useAttendanceStore = create<AttendanceState>((set) => ({
 
   checkIn: async (options) => {
     const employeeId = getWorkEmployeeId();
+    const wfh = Boolean(options?.wfh);
     set({ isCheckingIn: true, error: null });
     try {
-      const res = await checkInService(employeeId, options);
+      let location: PunchLocation | undefined;
+      try {
+        location = await resolveOfficeLocation(!wfh);
+      } catch (geoError) {
+        const message =
+          geoError instanceof Error ? geoError.message : "Location unavailable";
+        set({
+          error: mapPunchError(undefined, message),
+          isCheckingIn: false,
+        });
+        return false;
+      }
+
+      const res = await checkInService(employeeId, {
+        wfh,
+        note: options?.note,
+        location,
+      });
       if (!res.success) {
         const code = res.error?.code;
         set({
-          error:
-            code === "CONFLICT"
-              ? "errors.alreadyCheckedIn"
-              : "errors.checkInFailed",
+          error: mapPunchError(code, res.message),
           isCheckingIn: false,
         });
         return false;
@@ -70,17 +119,38 @@ export const useAttendanceStore = create<AttendanceState>((set) => ({
     const employeeId = getWorkEmployeeId();
     set({ isCheckingOut: true, error: null });
     try {
-      const res = await checkOutService(employeeId);
+      const current = useAttendanceStore.getState().todayRecord;
+      const requireGeo = current?.status !== "wfh";
+      let location: PunchLocation | undefined;
+      try {
+        location = await resolveOfficeLocation(requireGeo);
+      } catch (geoError) {
+        const message =
+          geoError instanceof Error ? geoError.message : "Location unavailable";
+        set({
+          error: mapPunchError(undefined, message),
+          isCheckingOut: false,
+        });
+        return false;
+      }
+
+      const res = await checkOutService(employeeId, { location });
       if (!res.success) {
         const code = res.error?.code;
         const message = res.message ?? "";
+        if (code === "CONFLICT" && /Already checked out/i.test(message)) {
+          set({ error: "errors.alreadyCheckedOut", isCheckingOut: false });
+          return false;
+        }
+        if (code === "CONFLICT" || code === "NOT_FOUND") {
+          set({ error: "errors.noCheckIn", isCheckingOut: false });
+          return false;
+        }
         set({
           error:
-            code === "CONFLICT" && /Already checked out/i.test(message)
-              ? "errors.alreadyCheckedOut"
-              : code === "CONFLICT" || code === "NOT_FOUND"
-                ? "errors.noCheckIn"
-                : "errors.checkOutFailed",
+            mapPunchError(code, message) === "errors.checkInFailed"
+              ? "errors.checkOutFailed"
+              : mapPunchError(code, message),
           isCheckingOut: false,
         });
         return false;

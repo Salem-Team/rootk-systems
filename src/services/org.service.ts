@@ -1,4 +1,5 @@
 import { isApiMode } from "@/lib/env";
+import { parseGoogleMapsUrl } from "@/lib/geo";
 import {
   deleteLocationRemote,
   deletePositionRemote,
@@ -11,6 +12,7 @@ import {
   putLocation,
   putPosition,
   putShift,
+  resolveMapsUrlRemote,
 } from "@/api/org.api";
 import {
   approvalsRepository,
@@ -18,7 +20,7 @@ import {
   positionsRepository,
   shiftsRepository,
 } from "@/repositories/org.repository";
-import { fromError, ok } from "@/services/api-result";
+import { fail, fromError, ok } from "@/services/api-result";
 import { simulateDelay } from "@/services/fake-api";
 import type { ApiResponse } from "@/types";
 import type {
@@ -63,6 +65,26 @@ export async function deleteLocation(
   } catch (error) {
     return fromError(error, false);
   }
+}
+
+/** Resolve Google Maps link → lat/lng (local parse, or API for short links). */
+export async function resolveMapsUrl(
+  url: string
+): Promise<ApiResponse<{ latitude: number; longitude: number } | null>> {
+  const trimmed = url.trim();
+  const local = parseGoogleMapsUrl(trimmed);
+  if (local) return ok(local);
+
+  if (isApiMode()) {
+    return resolveMapsUrlRemote(trimmed);
+  }
+
+  // Local demo cannot follow short-link redirects (CORS). Ask for full URL.
+  return fail(
+    null,
+    "Could not extract coordinates from Google Maps URL",
+    "VALIDATION_ERROR"
+  );
 }
 
 /** GET /org/positions */

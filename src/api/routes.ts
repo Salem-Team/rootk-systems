@@ -69,6 +69,7 @@ export const API_ROUTES = {
   org: {
     locations: "/org/locations",
     locationById: (id: string) => `/org/locations/${id}`,
+    resolveMapsUrl: "/org/locations/resolve-maps-url",
     positions: "/org/positions",
     positionById: (id: string) => `/org/positions/${id}`,
     shifts: "/org/shifts",

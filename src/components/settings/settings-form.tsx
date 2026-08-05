@@ -52,7 +52,11 @@ const DEFAULT_NOTIFS: UserPreferences["notifications"] = {
   mention: true,
 };
 
-export function SettingsForm() {
+export function SettingsForm({
+  hideCompanyPolicy = false,
+}: {
+  hideCompanyPolicy?: boolean;
+} = {}) {
   const { t, setLocale } = useTranslation();
   const user = useSessionStore((s) => s.user);
   const { setTheme, theme } = useTheme();
@@ -101,9 +105,23 @@ export function SettingsForm() {
   const navItems: { id: PrefSection; label: string; icon: typeof Palette }[] = [
     { id: "appearance", label: t("settings.appearance"), icon: Palette },
     { id: "notifications", label: t("settings.notifications"), icon: Bell },
-    { id: "company", label: t("settings.companyPolicy"), icon: Shield },
+    ...(hideCompanyPolicy
+      ? []
+      : [
+          {
+            id: "company" as const,
+            label: t("settings.companyPolicy"),
+            icon: Shield,
+          },
+        ]),
     { id: "profile", label: t("settings.myPreferences"), icon: UserRound },
   ];
+
+  useEffect(() => {
+    if (hideCompanyPolicy && section === "company") {
+      setSection("appearance");
+    }
+  }, [hideCompanyPolicy, section]);
 
   if (loading || !prefs) {
     return (

@@ -21,6 +21,9 @@ export const officeLocationsSeed: SeedOf<OfficeLocation>[] =
     timezone: b.timezone,
     capacity: b.capacity,
     workingDays: b.workingDays,
+    latitude: b.latitude,
+    longitude: b.longitude,
+    radiusMeters: b.radiusMeters ?? 200,
     active: true,
   }));
 

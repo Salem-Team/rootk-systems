@@ -27,6 +27,13 @@ export function deleteLocationRemote(
   return api.delete(API_ROUTES.org.locationById(id), false);
 }
 
+/** POST /org/locations/resolve-maps-url */
+export function resolveMapsUrlRemote(url: string): Promise<
+  ApiResponse<{ latitude: number; longitude: number } | null>
+> {
+  return api.post(API_ROUTES.org.resolveMapsUrl, { url }, null);
+}
+
 /** GET /org/positions */
 export function fetchPositions(): Promise<ApiResponse<JobPosition[]>> {
   return api.getList(API_ROUTES.org.positions);

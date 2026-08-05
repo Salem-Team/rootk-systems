@@ -16,6 +16,12 @@ export interface OfficeLocation extends BaseEntity {
   timezone: string;
   capacity: number;
   workingDays: string;
+  /** WGS84 latitude — required for office-day geofenced punches. */
+  latitude?: number;
+  /** WGS84 longitude — required for office-day geofenced punches. */
+  longitude?: number;
+  /** Allowed distance from the office pin in meters. */
+  radiusMeters?: number;
   active: boolean;
 }
 

@@ -327,6 +327,12 @@ export const ar: TranslationKeys = {
     alreadyCheckedIn: "مسجّل حضور النهاردة بالفعل",
     alreadyCheckedOut: "مسجّل انصراف النهاردة بالفعل",
     noCheckIn: "سجّل الحضور الأول قبل الانصراف",
+    locationRequired: "لازم نفعّل الموقع عشان نسجّل الحضور من المكتب",
+    locationPermissionDenied: "المتصفح رافض صلاحية الموقع — فعّلها وجرّب تاني",
+    locationUnavailable: "مقدرناش نقرأ موقعك دلوقتي — حاول تاني",
+    outsideOffice: "إنت برّه نطاق مكتب الشركة — قرّب للمكتب وجرّب تاني",
+    officeLocationNotConfigured:
+      "موقع المكتب مش متضبط عند الأدمن — كلّم الإدارة",
     loadSettings: "فشل تحميل الإعدادات",
     saveSettings: "فشل حفظ الإعدادات",
   },
@@ -465,6 +471,9 @@ export const ar: TranslationKeys = {
     scheduledEnd: "نهاية الدوام",
     wfhMode: "العمل عن بُعد",
     wfhHint: "سجّل الحضور ده كشغل عن بُعد",
+    officeGeoHint:
+      "أيام المكتب بتحتاج موقعك الحالي جوّه نطاق مكتب الشركة",
+    locating: "بنحدّد موقعك...",
     notCheckedIn: "لسه ما سجّلتش حضور",
     checkedInAt: "وقت الحضور",
     checkedOutAt: "وقت الانصراف",
@@ -1115,6 +1124,7 @@ export const ar: TranslationKeys = {
     navNotifications: "الإشعارات",
     navApprovals: "الموافقات",
     navEmployeePrefs: "تفضيلات الموظفين",
+    navMyPrefs: "تفضيلاتي",
     navAppearance: "المظهر",
     navDemo: "بيانات التجربة",
     companyProfile: "ملف الشركة",
@@ -1122,7 +1132,7 @@ export const ar: TranslationKeys = {
     brandPreview: "لون العلامة",
     defaultLanguage: "اللغة الافتراضية",
     companyDefaultsHint:
-      "هذه إعدادات الشركة الافتراضية فقط. لغة ومظهر الموظف الشخصي موجودان في «تفضيلات الموظفين».",
+      "دي إعدادات الشركة الافتراضية. تفضيلاتك الشخصية (لغة/مظهر/إشعارات) من قسم «تفضيلاتي».",
     employeePrefsTitle: "رؤية تفضيلات الموظفين",
     employeePrefsDesc:
       "اطّلع على تخصيص كل موظف للغة والمظهر والإعدادات الشخصية مقارنةً بإعدادات الشركة.",
@@ -1155,6 +1165,11 @@ export const ar: TranslationKeys = {
     policiesSaved: "تم حفظ سياسات العمل — الحضور والرواتب سيستخدمانها.",
     wfhSaved: "تم حفظ سياسة العمل عن بُعد.",
     shiftSaved: "تم تحديث الوردية.",
+    shiftCreated: "تمت إضافة الوردية.",
+    shiftRemoved: "تم حذف الوردية.",
+    addShift: "إضافة وردية",
+    shiftNamePlaceholder: "اسم الوردية",
+    shiftType: "نوع الوردية",
     locationSaved: "تم حفظ الموقع.",
     locationRemoved: "تم حذف الموقع.",
     positionSaved: "تم حفظ المنصب.",
@@ -1164,9 +1179,14 @@ export const ar: TranslationKeys = {
     approvalSaved: "تم تحديث قاعدة الموافقة.",
     city: "المدينة",
     departmentsLiveDesc:
-      "أعداد المدراء والموظفين مستخرجة مباشرة من سجل الموظفين.",
+      "ملخص حي من سجل الموظفين — غيّر القسم من صفحة الموظفين.",
+    branchesLiveDesc:
+      "الفروع دي من مواقع المكاتب النشطة (مع إحداثيات الحضور لو متظبطة).",
+    branchesEmpty:
+      "مفيش فروع لسه — أضف موقع مكتب من قسم المواقع.",
+    manageLocations: "إدارة المواقع",
     shiftsTitle: "إدارة الورديات",
-    shiftsDesc: "جداول زمنية للصباحي والمسائي والليلي والمرن.",
+    shiftsDesc: "إنشاء وتعديل وحذف الورديات — CRUD كامل.",
     shiftMorning: "وردية صباحية",
     shiftEvening: "وردية مسائية",
     shiftNight: "وردية ليلية",
@@ -1194,8 +1214,22 @@ export const ar: TranslationKeys = {
     grade: "الدرجة",
     reportingManager: "يرفع تقاريره إلى",
     locationsTitle: "مواقع المكاتب",
-    locationsDesc: "السعة والتوقيت ونمط العمل لكل موقع — CRUD كامل.",
+    locationsDesc:
+      "السعة والتوقيت ونمط العمل لكل موقع — مع إحداثيات GPS لنطاق الحضور.",
     capacity: "السعة",
+    latitude: "خط العرض",
+    longitude: "خط الطول",
+    radiusMeters: "نطاق الحضور (متر)",
+    mapsUrl: "لينك Google Maps",
+    mapsUrlApply: "استخراج الموقع",
+    mapsUrlHint:
+      "افتح المكان على Google Maps → شارك → انسخ اللينك والصقه هنا. هيتعبّى خط العرض والطول لوحده.",
+    mapsUrlRequired: "الصق لينك Google Maps الأول",
+    mapsUrlInvalid:
+      "مقدرناش نقرأ الإحداثيات من اللينك. افتح اللينك وانسخ الرابط الكامل من شريط العنوان.",
+    mapsUrlApplied: "تم استخراج إحداثيات المكتب من اللينك",
+    geoRequiredHint:
+      "الإحداثيات مطلوبة عشان الحضور/الانصراف من المكتب يتأكد من الموقع. أسهل طريقة: الصق لينك Google Maps.",
     calendarTitle: "تقويم الشركة",
     calendarDesc: "الإجازات الرسمية وفعاليات الشركة (مشتركة مع جدول العمل).",
     calHoliday: "إجازة",
@@ -1247,6 +1281,8 @@ export const ar: TranslationKeys = {
     notifResetDone: "تمت إعادة ضبط {count} موظفًا لسياسة الشركة",
     approvalsTitle: "إعدادات الموافقات",
     approvalsDesc: "من يعتمد الحضور والإجازة والعمل عن بُعد والوقت الإضافي.",
+    approvalsLeaveHint:
+      "لو موافقة الإجازة متوقفة، الطلبات بتتوافق تلقائي. باقي القواعد جاهزة للربط التدريجي.",
     approvalAttendance: "موافقة الحضور",
     approvalLeave: "موافقة الإجازة",
     approvalWfh: "موافقة العمل عن بُعد",

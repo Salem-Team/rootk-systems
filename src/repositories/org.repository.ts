@@ -33,6 +33,9 @@ class LocationsRepository extends CollectionRepository<OfficeLocation> {
         timezone: input.timezone,
         capacity: input.capacity,
         workingDays: input.workingDays,
+        latitude: input.latitude,
+        longitude: input.longitude,
+        radiusMeters: input.radiusMeters ?? existing.radiusMeters ?? 200,
         active: input.active ?? existing.active,
       });
       await this.update(existing.id, next);
@@ -47,6 +50,9 @@ class LocationsRepository extends CollectionRepository<OfficeLocation> {
         timezone: input.timezone,
         capacity: input.capacity,
         workingDays: input.workingDays,
+        latitude: input.latitude,
+        longitude: input.longitude,
+        radiusMeters: input.radiusMeters ?? 200,
         active: input.active ?? true,
       },
       actorId

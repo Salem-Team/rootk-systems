@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type {
   ApprovalRule,
   JobPosition,
@@ -7,6 +7,7 @@ import type {
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { auditFields } from "../common/mappers";
+import { resolveGoogleMapsUrl } from "../lib/geo";
 
 function mapLoc(row: OfficeLocation) {
   return {
@@ -17,6 +18,9 @@ function mapLoc(row: OfficeLocation) {
     timezone: row.timezone,
     capacity: row.capacity,
     workingDays: row.workingDays,
+    latitude: row.latitude ?? undefined,
+    longitude: row.longitude ?? undefined,
+    radiusMeters: row.radiusMeters,
     active: row.active,
     ...auditFields(row),
   };
@@ -68,6 +72,20 @@ export class OrgService {
       .then((rows) => rows.map(mapLoc));
   }
 
+  async resolveMapsUrl(url: string) {
+    const trimmed = String(url ?? "").trim();
+    if (!trimmed) {
+      throw new BadRequestException("Google Maps URL required");
+    }
+    const point = await resolveGoogleMapsUrl(trimmed);
+    if (!point) {
+      throw new BadRequestException(
+        "Could not extract coordinates from Google Maps URL"
+      );
+    }
+    return point;
+  }
+
   async upsertLocation(companyId: string, actorId: string, body: Record<string, unknown>) {
     if (body.id) {
       const current = await this.prisma.officeLocation.findFirst({
@@ -83,6 +101,24 @@ export class OrgService {
           timezone: body.timezone as string | undefined,
           capacity: body.capacity !== undefined ? Number(body.capacity) : undefined,
           workingDays: body.workingDays as string | undefined,
+          latitude:
+            body.latitude !== undefined && body.latitude !== null && body.latitude !== ""
+              ? Number(body.latitude)
+              : body.latitude === null
+                ? null
+                : undefined,
+          longitude:
+            body.longitude !== undefined &&
+            body.longitude !== null &&
+            body.longitude !== ""
+              ? Number(body.longitude)
+              : body.longitude === null
+                ? null
+                : undefined,
+          radiusMeters:
+            body.radiusMeters !== undefined
+              ? Number(body.radiusMeters)
+              : undefined,
           active: body.active as boolean | undefined,
           updatedBy: actorId,
           version: { increment: 1 },
@@ -99,6 +135,17 @@ export class OrgService {
         timezone: String(body.timezone ?? "Africa/Cairo"),
         capacity: Number(body.capacity ?? 20),
         workingDays: String(body.workingDays ?? "Sun-Thu"),
+        latitude:
+          body.latitude !== undefined && body.latitude !== null && body.latitude !== ""
+            ? Number(body.latitude)
+            : null,
+        longitude:
+          body.longitude !== undefined &&
+          body.longitude !== null &&
+          body.longitude !== ""
+            ? Number(body.longitude)
+            : null,
+        radiusMeters: Number(body.radiusMeters ?? 200),
         active: body.active !== false,
         createdBy: actorId,
         updatedBy: actorId,
@@ -233,31 +280,64 @@ export class OrgService {
     let rows = await this.prisma.approvalRule.findMany({
       where: { companyId, deletedAt: null },
     });
-    if (rows.length === 0) {
+
+    const defaults = [
+      {
+        labelKey: "admin.approvalAttendance",
+        requiresApproval: false,
+        approver: "manager",
+      },
+      {
+        labelKey: "admin.approvalLeave",
+        requiresApproval: true,
+        approver: "hr",
+      },
+      {
+        labelKey: "admin.approvalWfh",
+        requiresApproval: true,
+        approver: "manager",
+      },
+      {
+        labelKey: "admin.approvalOvertime",
+        requiresApproval: true,
+        approver: "hr",
+      },
+    ] as const;
+
+    const existingKeys = new Set(rows.map((r) => r.labelKey));
+    const missing = defaults.filter((d) => !existingKeys.has(d.labelKey));
+    if (missing.length > 0) {
       await this.prisma.approvalRule.createMany({
-        data: [
-          {
-            companyId,
-            labelKey: "admin.approvalLeave",
-            requiresApproval: true,
-            approver: "manager",
-            createdBy: "system",
-            updatedBy: "system",
-          },
-          {
-            companyId,
-            labelKey: "admin.approvalOvertime",
-            requiresApproval: true,
-            approver: "hr",
-            createdBy: "system",
-            updatedBy: "system",
-          },
-        ],
+        data: missing.map((d) => ({
+          companyId,
+          labelKey: d.labelKey,
+          requiresApproval: d.requiresApproval,
+          approver: d.approver,
+          createdBy: "system",
+          updatedBy: "system",
+        })),
       });
       rows = await this.prisma.approvalRule.findMany({
         where: { companyId, deletedAt: null },
       });
     }
+
+    if (rows.length === 0) {
+      await this.prisma.approvalRule.createMany({
+        data: defaults.map((d) => ({
+          companyId,
+          labelKey: d.labelKey,
+          requiresApproval: d.requiresApproval,
+          approver: d.approver,
+          createdBy: "system",
+          updatedBy: "system",
+        })),
+      });
+      rows = await this.prisma.approvalRule.findMany({
+        where: { companyId, deletedAt: null },
+      });
+    }
+
     return rows.map(mapApproval);
   }
 

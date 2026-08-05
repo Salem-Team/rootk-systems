@@ -14,6 +14,7 @@ import {
   Shield,
   SlidersHorizontal,
   Timer,
+  UserRound,
   Users,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
@@ -42,6 +43,7 @@ const ITEMS: {
     labelKey: "admin.navEmployeePrefs",
     icon: SlidersHorizontal,
   },
+  { id: "myPrefs", labelKey: "admin.navMyPrefs", icon: UserRound },
   { id: "appearance", labelKey: "admin.navAppearance", icon: Palette },
   { id: "demo", labelKey: "admin.navDemo", icon: Database },
 ];

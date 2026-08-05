@@ -115,6 +115,26 @@ export class LeaveService {
     const employee = await this.prisma.employee.findFirst({
       where: { id: employeeId!, companyId },
     });
+
+    const leaveRule = await this.prisma.approvalRule.findFirst({
+      where: {
+        companyId,
+        labelKey: "admin.approvalLeave",
+        deletedAt: null,
+      },
+    });
+    const needsApproval = leaveRule?.requiresApproval !== false;
+
+    if (!needsApproval) {
+      return this.decide(
+        companyId,
+        actorId,
+        row.id,
+        "approved",
+        "Auto-approved (leave approval rule off)"
+      );
+    }
+
     await this.notifications.notifyDomain({
       companyId,
       actorId,

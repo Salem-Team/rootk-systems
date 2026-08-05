@@ -6,7 +6,17 @@ import {
   postCheckOut,
 } from "@/api/attendance.api";
 import { isApiMode } from "@/lib/env";
-import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from "@/lib/errors";
+import {
+  findMatchingOffice,
+  isValidGeoPoint,
+  type GeoPoint,
+} from "@/lib/geo";
 import { enrichWithAudit, touchEntity } from "@/lib/entity";
 import {
   mockNow,
@@ -22,6 +32,7 @@ import { isEmployeeWfhAllowed } from "@/lib/wfh-policy";
 import {
   attendanceRepository,
   employeeRepository,
+  locationsRepository,
   scheduleRepository,
 } from "@/repositories";
 import { checkInSchema, checkOutSchema } from "@/schemas";
@@ -31,6 +42,8 @@ import type { ApiResponse, AttendanceRecord, AttendanceStatus } from "@/types";
 import type { ScheduleAdminMetadata } from "@/types/org";
 
 export type { AttendanceFilters };
+
+export type PunchLocation = GeoPoint & { accuracy?: number };
 
 function emptyRecord(employeeId: string, date: string): AttendanceRecord {
   return {
@@ -67,6 +80,51 @@ async function loadWorkClock(): Promise<WorkClockSchedule> {
     gracePeriodMinutes: schedule.gracePeriodMinutes,
     breakMinutes: schedule.breakMinutes,
     attendancePolicy: meta.attendancePolicy,
+  };
+}
+
+async function assertOfficeGeofence(
+  location: PunchLocation | undefined,
+  action: "check-in" | "check-out"
+) {
+  const offices = (await locationsRepository.list())
+    .filter(
+      (loc) =>
+        loc.active &&
+        typeof loc.latitude === "number" &&
+        typeof loc.longitude === "number"
+    )
+    .map((loc) => ({
+      id: loc.id,
+      name: loc.name,
+      latitude: loc.latitude as number,
+      longitude: loc.longitude as number,
+      radiusMeters: loc.radiusMeters ?? 200,
+    }));
+
+  if (offices.length === 0) {
+    throw new ValidationError("Office location not configured");
+  }
+  if (!isValidGeoPoint(location)) {
+    throw new ValidationError(
+      action === "check-in"
+        ? "Location required for office check-in"
+        : "Location required for office check-out"
+    );
+  }
+  const match = findMatchingOffice(location, offices);
+  if (!match) {
+    throw new ForbiddenError("Outside office geofence");
+  }
+  return {
+    latitude: location.latitude,
+    longitude: location.longitude,
+    accuracy: location.accuracy,
+    matchedLocationId: match.office.id,
+    matchedLocationName: match.office.name,
+    distanceMeters: Math.round(match.distanceMeters),
+    radiusMeters: match.office.radiusMeters,
+    at: new Date().toISOString(),
   };
 }
 
@@ -117,13 +175,14 @@ export async function getMyTodayRecord(
 /** POST /attendance/check-in */
 export async function checkIn(
   employeeId = getWorkEmployeeId(),
-  options?: { wfh?: boolean; note?: string }
+  options?: { wfh?: boolean; note?: string; location?: PunchLocation }
 ): Promise<ApiResponse<AttendanceRecord>> {
   if (isApiMode()) {
     return postCheckIn({
       employeeId,
       wfh: options?.wfh,
       note: options?.note,
+      location: options?.location,
     });
   }
 
@@ -132,6 +191,7 @@ export async function checkIn(
       employeeId,
       wfh: options?.wfh,
       note: options?.note,
+      location: options?.location,
     });
     if (!parsed.success) {
       throw new ValidationError("Invalid check-in payload", parsed.error.flatten());
@@ -164,6 +224,10 @@ export async function checkIn(
       }
     }
 
+    const geoSnapshot = parsed.data.wfh
+      ? null
+      : await assertOfficeGeofence(parsed.data.location, "check-in");
+
     const lateMinutes = computeLateMinutes(
       now,
       date,
@@ -177,6 +241,9 @@ export async function checkIn(
         ? "late"
         : "present";
     const checkInIso = toCompanyIso(now, date);
+    const nextMeta = { ...(existing?.metadata ?? {}) };
+    if (geoSnapshot) nextMeta.checkInLocation = geoSnapshot;
+    if (parsed.data.wfh) delete nextMeta.checkInLocation;
 
     if (existing) {
       const updated = touchEntity(existing, actorId, {
@@ -185,6 +252,7 @@ export async function checkIn(
         isLate,
         lateMinutes,
         note: parsed.data.note ?? existing.note,
+        metadata: nextMeta,
       });
       await attendanceRepository.persist(
         items.map((r) => (r.id === updated.id ? updated : r))
@@ -218,6 +286,7 @@ export async function checkIn(
         earlyLeaveMinutes: 0,
         overtimeMinutes: 0,
         note: parsed.data.note,
+        metadata: nextMeta,
       },
       actorId
     );
@@ -252,14 +321,23 @@ export async function checkIn(
 
 /** POST /attendance/check-out */
 export async function checkOut(
-  employeeId = getWorkEmployeeId()
+  employeeId = getWorkEmployeeId(),
+  options?: { location?: PunchLocation }
 ): Promise<ApiResponse<AttendanceRecord>> {
-  if (isApiMode()) return postCheckOut({ employeeId });
+  if (isApiMode()) {
+    return postCheckOut({ employeeId, location: options?.location });
+  }
 
   try {
-    const parsed = checkOutSchema.safeParse({ employeeId });
+    const parsed = checkOutSchema.safeParse({
+      employeeId,
+      location: options?.location,
+    });
     if (!parsed.success) {
-      throw new ValidationError("Invalid check-out payload", parsed.error.flatten());
+      throw new ValidationError(
+        "Invalid check-out payload",
+        parsed.error.flatten()
+      );
     }
 
     const actorId = getWorkEmployeeId();
@@ -275,6 +353,11 @@ export async function checkOut(
     if (!record.checkIn) throw new ConflictError("No check-in found for today");
     if (record.checkOut) throw new ConflictError("Already checked out today");
 
+    const geoSnapshot =
+      record.status === "wfh"
+        ? null
+        : await assertOfficeGeofence(parsed.data.location, "check-out");
+
     const settled = settleWorkDay({
       dateKey: date,
       checkInIso: record.checkIn,
@@ -284,6 +367,9 @@ export async function checkOut(
       wasLate: record.isLate,
       lateMinutes: record.lateMinutes,
     });
+
+    const nextMeta = { ...(record.metadata ?? {}) };
+    if (geoSnapshot) nextMeta.checkOutLocation = geoSnapshot;
 
     const updated = touchEntity(record, actorId, {
       checkOut: toCompanyIso(now, date),
@@ -296,6 +382,7 @@ export async function checkOut(
       isLate: settled.isLate,
       lateMinutes: settled.lateMinutes,
       status: settled.status,
+      metadata: nextMeta,
     });
 
     await attendanceRepository.persist(

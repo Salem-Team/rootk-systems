@@ -5,4 +5,4 @@ export const DEFAULT_COMPANY_ID = "cmp_rootk_001";
 export const STORAGE_NAMESPACE = "rootk.hr";
 
 /** Bump when seed shape changes to force demo reset. */
-export const SEED_VERSION = 10;
+export const SEED_VERSION = 11;

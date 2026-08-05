@@ -424,6 +424,20 @@ async function main() {
     }
   }
 
+  // Backfill geofence pins for offices created before lat/lng existed.
+  await prisma.officeLocation.updateMany({
+    where: {
+      companyId: COMPANY_ID,
+      deletedAt: null,
+      OR: [{ latitude: null }, { longitude: null }],
+    },
+    data: {
+      latitude: 30.0075,
+      longitude: 31.4913,
+      radiusMeters: 250,
+    },
+  });
+
   // Sample org data
   const locCount = await prisma.officeLocation.count({
     where: { companyId: COMPANY_ID, deletedAt: null },
@@ -438,6 +452,10 @@ async function main() {
         timezone: "Africa/Cairo",
         capacity: 120,
         workingDays: "sun-thu",
+        // Approx. New Cairo business district — adjust in admin to the real pin.
+        latitude: 30.0075,
+        longitude: 31.4913,
+        radiusMeters: 250,
         createdBy: "system",
         updatedBy: "system",
       },

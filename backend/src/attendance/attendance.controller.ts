@@ -49,7 +49,13 @@ export class AttendanceController {
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
     @CurrentUser() user: JwtPayload,
-    @Body() body: { employeeId?: string; wfh?: boolean; note?: string }
+    @Body()
+    body: {
+      employeeId?: string;
+      wfh?: boolean;
+      note?: string;
+      location?: { latitude: number; longitude: number; accuracy?: number };
+    }
   ) {
     return this.service.checkIn(companyId, actorId, {
       ...body,
@@ -62,10 +68,15 @@ export class AttendanceController {
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
     @CurrentUser() user: JwtPayload,
-    @Body() body: { employeeId?: string }
+    @Body()
+    body: {
+      employeeId?: string;
+      location?: { latitude: number; longitude: number; accuracy?: number };
+    }
   ) {
     return this.service.checkOut(companyId, actorId, {
       employeeId: resolveActorEmployeeId(user, body.employeeId),
+      location: body.location,
     });
   }
 }

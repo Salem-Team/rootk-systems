@@ -1,10 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Building2, Clock, Globe2, MapPin, Palette } from "lucide-react";
+import { Building2, Clock, Globe2, Loader2, MapPin, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,23 +15,52 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ADMIN_BRANCHES, BRAND_PREVIEW } from "@/components/admin/admin-mock-data";
+import { BRAND_PREVIEW } from "@/components/admin/admin-mock-data";
 import { LOGO_SRC } from "@/constants";
+import { getLocations } from "@/services/org.service";
+import { getWorkSchedule } from "@/services/schedule.service";
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp } from "@/lib/animations";
 import type { CompanySettings } from "@/types";
+import type { OfficeLocation } from "@/types/org";
 
 export function CompanyProfilePanel({
   form,
   onChange,
+  onNavigate,
 }: {
   form: CompanySettings;
   onChange: <K extends keyof CompanySettings>(
     key: K,
     value: CompanySettings[K]
   ) => void;
+  onNavigate?: (section: "policies" | "locations") => void;
 }) {
   const { t } = useTranslation();
+  const [branches, setBranches] = useState<OfficeLocation[]>([]);
+  const [hoursLabel, setHoursLabel] = useState("09:00 – 18:00");
+  const [loadingMeta, setLoadingMeta] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    void (async () => {
+      const [locs, schedule] = await Promise.all([
+        getLocations(),
+        getWorkSchedule(),
+      ]);
+      if (!mounted) return;
+      if (locs.success) setBranches(locs.data.filter((l) => l.active));
+      if (schedule.success) {
+        setHoursLabel(
+          `${schedule.data.fromTime || "09:00"} – ${schedule.data.toTime || "18:00"}`
+        );
+      }
+      setLoadingMeta(false);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <motion.div variants={fadeInUp} className="space-y-5">
@@ -178,52 +207,81 @@ export function CompanyProfilePanel({
         <div className="panel-body flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2 text-sm">
             <span className="rounded-lg border border-border bg-muted/30 px-3 py-1.5 font-mono tabular-nums">
-              09:00 – 18:00
+              {loadingMeta ? "…" : hoursLabel}
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 px-3 py-1.5 text-muted-foreground">
               <Globe2 className="h-3.5 w-3.5" aria-hidden />
               {form.timezone}
             </span>
           </div>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/schedule">{t("settings.openSchedule")}</Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onNavigate?.("policies")}
+            >
+              {t("admin.navPolicies")}
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/schedule">{t("settings.openSchedule")}</Link>
+            </Button>
+          </div>
         </div>
       </section>
 
       <section className="surface-panel overflow-hidden">
-        <div className="panel-header">
-          <h3 className="flex items-center gap-2 text-[0.95rem] font-semibold">
-            <Building2 className="h-3.5 w-3.5 text-primary" aria-hidden />
-            {t("admin.branches")}
-          </h3>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            {t("admin.branchesDesc")}
-          </p>
+        <div className="panel-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="flex items-center gap-2 text-[0.95rem] font-semibold">
+              <Building2 className="h-3.5 w-3.5 text-primary" aria-hidden />
+              {t("admin.branches")}
+            </h3>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {t("admin.branchesLiveDesc")}
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onNavigate?.("locations")}
+          >
+            {t("admin.manageLocations")}
+          </Button>
         </div>
-        <ul className="panel-body grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {ADMIN_BRANCHES.length === 0 ? (
-            <li className="col-span-full text-sm text-muted-foreground">
-              {t("common.noResults")}
-            </li>
-          ) : (
-            ADMIN_BRANCHES.map((branch) => (
-            <li
-              key={branch.id}
-              className="rounded-xl border border-border/70 bg-muted/20 p-3.5 transition-colors hover:border-primary/20 hover:bg-muted/35"
-            >
-              <p className="text-[13px] font-semibold">{branch.name}</p>
-              <p className="mt-1 flex items-start gap-1.5 text-xs text-muted-foreground">
-                <MapPin className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
-                {branch.address}
-              </p>
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                {branch.city} · {branch.timezone}
-              </p>
-            </li>
-            ))
-          )}
-        </ul>
+        {loadingMeta ? (
+          <div className="panel-body flex justify-center py-10 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
+          </div>
+        ) : (
+          <ul className="panel-body grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {branches.length === 0 ? (
+              <li className="col-span-full rounded-xl border border-dashed border-border/80 bg-muted/15 px-4 py-6 text-sm text-muted-foreground">
+                {t("admin.branchesEmpty")}
+              </li>
+            ) : (
+              branches.map((branch) => (
+                <li
+                  key={branch.id}
+                  className="rounded-xl border border-border/70 bg-muted/20 p-3.5 transition-colors hover:border-primary/20 hover:bg-muted/35"
+                >
+                  <p className="text-[13px] font-semibold">{branch.name}</p>
+                  <p className="mt-1 flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <MapPin className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+                    {branch.address || branch.city}
+                  </p>
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    {branch.city} · {branch.timezone}
+                    {branch.latitude != null && branch.longitude != null
+                      ? ` · ${branch.radiusMeters ?? 200}m`
+                      : ""}
+                  </p>
+                </li>
+              ))
+            )}
+          </ul>
+        )}
       </section>
     </motion.div>
   );

@@ -404,6 +404,9 @@ export function ApprovalsPanel() {
         <p className="mt-0.5 text-sm text-muted-foreground">
           {t("admin.approvalsDesc")}
         </p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {t("admin.approvalsLeaveHint")}
+        </p>
       </div>
       <motion.ul
         variants={staggerContainer}
