@@ -27,18 +27,25 @@ import { createLeaveRequest } from "@/services/leave.service";
 import { getWorkSchedule } from "@/services/schedule.service";
 import { emitLeaveUpdated } from "@/lib/events";
 import { countWorkingDaysInRange } from "@/lib/working-days";
-import { workScheduleSeed } from "@/mocks/schedule";
 import { getWorkEmployeeId } from "@/stores/session-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { demoNow } from "@/lib/mock-date";
 import { cn } from "@/lib/utils";
-import type { LeaveRequest, LeaveType, WorkSchedule } from "@/types";
+import type { DayOfWeek, LeaveRequest, LeaveType, WorkSchedule } from "@/types";
 
 type LeaveFormValues = {
   type: LeaveType;
   reason: string;
   range: { from: Date; to?: Date };
 };
+
+const DEFAULT_WORKING_DAYS: DayOfWeek[] = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+];
 
 interface LeaveFormProps {
   onSuccess?: (request: LeaveRequest) => void;
@@ -70,19 +77,8 @@ export function LeaveForm({ onSuccess, onCancel }: LeaveFormProps) {
   const [schedule, setSchedule] = useState<
     Pick<WorkSchedule, "workingDays" | "holidays">
   >({
-    workingDays: workScheduleSeed.workingDays,
-    holidays: workScheduleSeed.holidays.map((h) => ({
-      ...h,
-      companyId: "cmp_rootk_001",
-      createdAt: "",
-      updatedAt: "",
-      createdBy: "system",
-      updatedBy: "system",
-      deletedAt: null,
-      isArchived: false,
-      version: 1,
-      metadata: {},
-    })),
+    workingDays: DEFAULT_WORKING_DAYS,
+    holidays: [],
   });
 
   useEffect(() => {

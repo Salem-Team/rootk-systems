@@ -6,12 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { getSettings } from "@/services/settings.service";
 import { getWorkSchedule } from "@/services/schedule.service";
 import { useTranslation } from "@/hooks/use-translation";
+import { formatClockRange } from "@/lib/format-time";
 import { normalizeCompanyNotifications } from "@/lib/notification-policy";
 import type { CompanySettings, WorkSchedule } from "@/types";
 
 /** Read-only company policy mirror for employees — reflects admin changes. */
 export function CompanyPolicySection() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [settings, setSettings] = useState<CompanySettings | null>(null);
   const [schedule, setSchedule] = useState<WorkSchedule | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,7 +69,9 @@ export function CompanyPolicySection() {
     },
     {
       label: t("admin.workingHours"),
-      value: schedule ? `${schedule.fromTime} – ${schedule.toTime}` : "—",
+      value: schedule
+        ? formatClockRange(schedule.fromTime, schedule.toTime, locale)
+        : "—",
     },
     {
       label: t("admin.gracePeriod"),

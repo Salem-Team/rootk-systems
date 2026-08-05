@@ -287,23 +287,17 @@ export async function deleteEmployee(
 
 /**
  * GET /employees/:id/profile-extras
- * Local mode returns deterministic mock enrichment.
+ * Local mode returns deterministic enrichment; API mode never fabricates.
  */
 export async function loadEmployeeProfileExtras(
   employee: Employee
-): Promise<ApiResponse<EmployeeProfileExtras>> {
+): Promise<ApiResponse<EmployeeProfileExtras | null>> {
   if (isApiMode()) {
-    const res = await fetchEmployeeProfileExtras(employee.id);
-    if (res.success && res.data) return { ...res, data: res.data };
-    return fail(
-      buildMockEmployeeProfileExtras(employee),
-      res.message ?? "Profile extras unavailable",
-      res.error?.code ?? "NOT_FOUND"
-    );
+    return fetchEmployeeProfileExtras(employee.id);
   }
   try {
     return ok(buildMockEmployeeProfileExtras(employee));
   } catch (error) {
-    return fromError(error, buildMockEmployeeProfileExtras(employee));
+    return fromError(error, null);
   }
 }

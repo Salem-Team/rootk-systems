@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Time12Input } from "@/components/ui/time-12-input";
 import {
   getApprovalRules,
   updateApprovalRule,
@@ -262,24 +263,24 @@ export function NotificationSettingsPanel({
           >
             <div className="space-y-1.5">
               <Label htmlFor="quiet-start">{t("admin.notifQuietStart")}</Label>
-              <Input
+              <Time12Input
                 id="quiet-start"
-                type="time"
                 value={policy.quietHoursStart}
-                onChange={(e) =>
-                  onPatch?.({ quietHoursStart: e.target.value || "22:00" })
+                onChange={(quietHoursStart) =>
+                  onPatch?.({ quietHoursStart: quietHoursStart || "22:00" })
                 }
+                aria-label={t("admin.notifQuietStart")}
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="quiet-end">{t("admin.notifQuietEnd")}</Label>
-              <Input
+              <Time12Input
                 id="quiet-end"
-                type="time"
                 value={policy.quietHoursEnd}
-                onChange={(e) =>
-                  onPatch?.({ quietHoursEnd: e.target.value || "07:00" })
+                onChange={(quietHoursEnd) =>
+                  onPatch?.({ quietHoursEnd: quietHoursEnd || "07:00" })
                 }
+                aria-label={t("admin.notifQuietEnd")}
               />
             </div>
           </div>

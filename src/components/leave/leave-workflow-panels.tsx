@@ -56,7 +56,7 @@ export function LeaveBalanceVisualization({
         </span>
       </p>
       <Progress value={remainingPct} className="mt-3 h-2" />
-      <dl className="mt-3 grid grid-cols-3 gap-2">
+      <dl className="mt-3 grid grid-cols-3 gap-1.5 sm:gap-2">
         <MetaChip label={t("leaveWorkflow.remaining")} value={remaining} />
         <MetaChip label={t("leaveWorkflow.used")} value={used} />
         <MetaChip label={t("common.pending")} value={pending} />
@@ -149,7 +149,7 @@ export function DepartmentLeaveCalendar() {
       </div>
       <div className="panel-body">
         <div
-          className="grid grid-cols-7 gap-1.5"
+          className="grid grid-cols-7 gap-1 sm:gap-1.5"
           role="img"
           aria-label={t("leaveWorkflow.deptCalendar")}
         >

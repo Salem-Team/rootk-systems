@@ -202,7 +202,12 @@ export function CompanyProfilePanel({
           </p>
         </div>
         <ul className="panel-body grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {ADMIN_BRANCHES.map((branch) => (
+          {ADMIN_BRANCHES.length === 0 ? (
+            <li className="col-span-full text-sm text-muted-foreground">
+              {t("common.noResults")}
+            </li>
+          ) : (
+            ADMIN_BRANCHES.map((branch) => (
             <li
               key={branch.id}
               className="rounded-xl border border-border/70 bg-muted/20 p-3.5 transition-colors hover:border-primary/20 hover:bg-muted/35"
@@ -216,7 +221,8 @@ export function CompanyProfilePanel({
                 {branch.city} · {branch.timezone}
               </p>
             </li>
-          ))}
+            ))
+          )}
         </ul>
       </section>
     </motion.div>

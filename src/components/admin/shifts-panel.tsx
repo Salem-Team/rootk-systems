@@ -5,8 +5,8 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Loader2, Save, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Time12Input } from "@/components/ui/time-12-input";
 import { getShifts, saveShift } from "@/services/org.service";
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
@@ -111,34 +111,30 @@ export function ShiftsPanel() {
                 <div>
                   <p className="text-[13px] font-semibold">{label}</p>
                   <div className="mt-1 flex items-center gap-2">
-                    <Input
-                      type="time"
-                      className="h-8 w-[7.5rem] font-mono text-xs"
+                    <Time12Input
+                      className="w-[13.5rem]"
                       value={shift.start}
-                      onChange={(e) =>
+                      onChange={(start) =>
                         setShifts((prev) =>
                           prev.map((s) =>
-                            s.id === shift.id
-                              ? { ...s, start: e.target.value }
-                              : s
+                            s.id === shift.id ? { ...s, start } : s
                           )
                         )
                       }
+                      aria-label={t("schedule.fromTime")}
                     />
                     <span className="text-xs text-muted-foreground">–</span>
-                    <Input
-                      type="time"
-                      className="h-8 w-[7.5rem] font-mono text-xs"
+                    <Time12Input
+                      className="w-[13.5rem]"
                       value={shift.end}
-                      onChange={(e) =>
+                      onChange={(end) =>
                         setShifts((prev) =>
                           prev.map((s) =>
-                            s.id === shift.id
-                              ? { ...s, end: e.target.value }
-                              : s
+                            s.id === shift.id ? { ...s, end } : s
                           )
                         )
                       }
+                      aria-label={t("schedule.toTime")}
                     />
                   </div>
                 </div>

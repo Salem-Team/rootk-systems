@@ -10,6 +10,7 @@ import {
 import { getWorkEmployeeIdFromUser, useSessionStore } from "@/stores/session-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { WORK_UPDATED_EVENT } from "@/lib/events";
+import { formatClockRange } from "@/lib/format-time";
 import { meetingWhen, openTaskCount } from "@/lib/work-utils";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -21,7 +22,7 @@ export function SidebarEmployeeTasks({
 }: {
   collapsed?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const workEmployeeId = useSessionStore((s) =>
     getWorkEmployeeIdFromUser(s.user)
   );
@@ -96,7 +97,11 @@ export function SidebarEmployeeTasks({
               {nextMeeting.title}
             </span>
             <span className="mt-0.5 block font-mono text-[10px] text-white/45">
-              {nextMeeting.startTime}–{nextMeeting.endTime}
+              {formatClockRange(
+                nextMeeting.startTime,
+                nextMeeting.endTime,
+                locale
+              )}
             </span>
           </span>
         </Link>

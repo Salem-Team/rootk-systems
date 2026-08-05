@@ -54,12 +54,12 @@ import {
   formatLiveDuration,
 } from "@/lib/utils";
 
+type Locale = typeof enUS;
+
 function formatTime(iso: string | undefined, dateLocale: Locale): string {
   if (!iso) return "—";
   return format(parseISO(iso), "h:mm a", { locale: dateLocale });
 }
-
-type Locale = typeof enUS;
 
 export function CheckInPanel() {
   const { t, locale } = useTranslation();

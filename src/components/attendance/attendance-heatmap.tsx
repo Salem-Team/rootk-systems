@@ -48,7 +48,7 @@ export function AttendanceHeatmap({ records }: AttendanceHeatmapProps) {
           <h3 className="text-[0.95rem] font-semibold">{t("attendance.heatmapTitle")}</h3>
           <p className="text-sm text-muted-foreground">{t("attendance.heatmapDesc")}</p>
         </div>
-        <div className="space-y-3">
+        <div className="panel-body space-y-3">
           <div
             className="overflow-x-auto pb-1"
             role="img"

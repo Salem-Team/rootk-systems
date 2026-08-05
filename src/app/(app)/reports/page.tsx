@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { format } from "date-fns";
+import { ar as arLocale, enUS } from "date-fns/locale";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
@@ -378,7 +379,7 @@ export default function ReportsPage() {
                           </CardDescription>
                         </CardHeader>
                         <CardContent>
-                          <DataTable className="min-w-[560px]">
+                          <DataTable className="min-w-[32rem] sm:min-w-[560px]">
                             <DataTableHeader>
                               <DataTableHeaderRow>
                                 <DataTableHead>
@@ -464,7 +465,8 @@ function AttendanceTable({
   emptyTitle?: string;
   emptyDescription?: string;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const dateLocale = locale === "ar" ? arLocale : enUS;
   const title = emptyTitle ?? t("reports.emptyTitle");
   const description = emptyDescription ?? t("reports.emptyDesc");
 
@@ -486,7 +488,9 @@ function AttendanceTable({
           : "",
         record.date,
         t(`status.${record.status}`),
-        record.checkIn ? format(new Date(record.checkIn), "HH:mm") : "",
+        record.checkIn
+          ? format(new Date(record.checkIn), "h:mm a", { locale: dateLocale })
+          : "",
         showHours
           ? formatHours(record.workingMinutes)
           : record.lateMinutes > 0
@@ -526,7 +530,7 @@ function AttendanceTable({
         </Button>
       </CardHeader>
       <CardContent>
-        <DataTable className="min-w-[720px]">
+        <DataTable className="min-w-[36rem] sm:min-w-[640px]">
           <DataTableHeader>
             <DataTableHeaderRow>
               <DataTableHead>{t("common.name")}</DataTableHead>
@@ -558,7 +562,9 @@ function AttendanceTable({
                   </DataTableCell>
                   <DataTableCell className="text-muted-foreground">
                     {record.checkIn
-                      ? format(new Date(record.checkIn), "HH:mm")
+                      ? format(new Date(record.checkIn), "h:mm a", {
+                          locale: dateLocale,
+                        })
                       : "—"}
                   </DataTableCell>
                   <DataTableCell>

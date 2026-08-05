@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Time12Input } from "@/components/ui/time-12-input";
 import {
   createWorkMeeting,
   createWorkTask,
@@ -184,6 +185,10 @@ export function EmployeeWorkComposer({
   }, [mode, editingTask, editingMeeting, selfId]);
 
   async function saveTask() {
+    if (!selfId) {
+      toast.error(t("common.error"));
+      return;
+    }
     if (!taskDraft.title.trim()) {
       toast.error(t("workHub.validationTask"));
       return;
@@ -237,6 +242,10 @@ export function EmployeeWorkComposer({
   }
 
   async function saveMeeting() {
+    if (!selfId) {
+      toast.error(t("common.error"));
+      return;
+    }
     if (!meetingDraft.title.trim() || !meetingDraft.location.trim()) {
       toast.error(t("workHub.validationMeeting"));
       return;
@@ -290,7 +299,9 @@ export function EmployeeWorkComposer({
     <>
       <Dialog
         open={taskOpen}
-        onOpenChange={(open) => onModeChange(open ? "task" : null)}
+        onOpenChange={(open) => {
+          if (!open) onModeChange(null);
+        }}
       >
         <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
@@ -449,7 +460,9 @@ export function EmployeeWorkComposer({
 
       <Dialog
         open={meetingOpen}
-        onOpenChange={(open) => onModeChange(open ? "meeting" : null)}
+        onOpenChange={(open) => {
+          if (!open) onModeChange(null);
+        }}
       >
         <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
@@ -501,26 +514,23 @@ export function EmployeeWorkComposer({
                 />
               </Field>
               <Field label={t("workAdmin.fieldStart")} htmlFor="emp-meet-start">
-                <Input
+                <Time12Input
                   id="emp-meet-start"
-                  type="time"
                   value={meetingDraft.startTime}
-                  onChange={(e) =>
-                    setMeetingDraft((p) => ({
-                      ...p,
-                      startTime: e.target.value,
-                    }))
+                  onChange={(startTime) =>
+                    setMeetingDraft((p) => ({ ...p, startTime }))
                   }
+                  aria-label={t("workAdmin.fieldStart")}
                 />
               </Field>
               <Field label={t("workAdmin.fieldEnd")} htmlFor="emp-meet-end">
-                <Input
+                <Time12Input
                   id="emp-meet-end"
-                  type="time"
                   value={meetingDraft.endTime}
-                  onChange={(e) =>
-                    setMeetingDraft((p) => ({ ...p, endTime: e.target.value }))
+                  onChange={(endTime) =>
+                    setMeetingDraft((p) => ({ ...p, endTime }))
                   }
+                  aria-label={t("workAdmin.fieldEnd")}
                 />
               </Field>
             </div>
@@ -629,26 +639,55 @@ export function EmployeeComposerTriggers({
   onAddTask,
   onAddMeeting,
   className,
+  disabled = false,
 }: {
   onAddTask: () => void;
   onAddMeeting: () => void;
   className?: string;
+  disabled?: boolean;
 }) {
   const { t } = useTranslation();
   return (
-    <div className={cn("flex flex-wrap gap-2", className)}>
-      <Button type="button" size="sm" onClick={onAddTask} className="h-9">
-        <ListPlus className="h-4 w-4" />
+    <div
+      className={cn(
+        "relative z-10 flex flex-col gap-2 sm:flex-row sm:flex-wrap",
+        className
+      )}
+    >
+      <Button
+        type="button"
+        size="default"
+        disabled={disabled}
+        onClick={onAddTask}
+        aria-label={t("workHub.addPersonalTask")}
+        className={cn(
+          "h-10 w-full gap-2 rounded-xl px-4 text-[13px] font-semibold sm:w-auto",
+          "border border-white/20 bg-white text-[#082868]",
+          "shadow-[0_8px_24px_rgba(0,0,0,0.28)]",
+          "hover:bg-white/95 hover:text-[#061c4a]",
+          "focus-visible:ring-white/40 focus-visible:ring-offset-[#082868]",
+          "disabled:opacity-50"
+        )}
+      >
+        <ListPlus className="h-4 w-4" aria-hidden />
         {t("workHub.addPersonalTask")}
       </Button>
       <Button
         type="button"
-        size="sm"
-        variant="secondary"
+        size="default"
+        disabled={disabled}
         onClick={onAddMeeting}
-        className="h-9 border border-white/15 bg-white/10 text-white hover:bg-white/15"
+        aria-label={t("workHub.addPersonalMeeting")}
+        className={cn(
+          "h-10 w-full gap-2 rounded-xl px-4 text-[13px] font-semibold sm:w-auto",
+          "border-2 border-white/70 bg-transparent text-white",
+          "shadow-none",
+          "hover:border-white hover:bg-white/15 hover:text-white",
+          "focus-visible:ring-white/40 focus-visible:ring-offset-[#082868]",
+          "disabled:opacity-50"
+        )}
       >
-        <CalendarPlus className="h-4 w-4" />
+        <CalendarPlus className="h-4 w-4" aria-hidden />
         {t("workHub.addPersonalMeeting")}
       </Button>
     </div>

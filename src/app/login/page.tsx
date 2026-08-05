@@ -150,7 +150,7 @@ export default function LoginPage() {
           className="flex items-center justify-between px-5 py-5 md:px-10 lg:px-14"
         >
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl border border-white/20 bg-white shadow-[0_8px_28px_rgba(0,0,0,0.35)]">
+            <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl border border-white/25 bg-white shadow-[0_10px_30px_rgba(0,0,0,0.35)] ring-1 ring-white/10">
               <Image
                 src={LOGO_SRC}
                 alt={t("app.short")}
@@ -160,7 +160,12 @@ export default function LoginPage() {
                 priority
               />
             </div>
-            <p className="text-[15px] font-bold tracking-tight text-white">
+            <p
+              className="text-[15px] font-extrabold tracking-[-0.02em] text-white md:text-[16px]"
+              style={{
+                textShadow: "0 8px 24px rgba(0,0,0,0.35)",
+              }}
+            >
               {t("app.short")}
             </p>
           </div>
@@ -170,57 +175,103 @@ export default function LoginPage() {
         </motion.header>
 
         <main className="flex flex-1 items-center px-5 py-6 md:px-10 md:py-10 lg:px-14">
-          <div className="mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:gap-20">
-            {/* Brand stage — hero signal */}
+          <div className="mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:gap-16 xl:gap-24">
+            {/* Brand stage — hero lockup for large screens */}
             <motion.section
               variants={reduceMotion ? undefined : staggerContainer}
               initial={reduceMotion ? false : "hidden"}
               animate="visible"
-              className="relative hidden lg:block"
+              className="relative hidden lg:flex lg:min-h-[28rem] lg:items-center"
+              aria-label={t("app.short")}
             >
-              <motion.div
-                variants={reduceMotion ? undefined : fadeInUp}
-                className="mb-8 inline-flex items-center gap-3"
+              {/* Soft brand glow behind lockup */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute start-1/2 top-1/2 h-[22rem] w-[22rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#4d8fdc]/18 blur-[90px]"
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute start-[42%] top-[48%] h-[14rem] w-[14rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.07] blur-[60px]"
+              />
+
+              <div
+                dir="ltr"
+                className="relative flex flex-col items-start gap-7 xl:gap-8"
               >
                 <motion.div
-                  animate={
-                    reduceMotion
-                      ? undefined
-                      : { rotate: [0, -2.5, 2.5, 0], y: [0, -3, 0] }
-                  }
-                  transition={{
-                    duration: 8,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                  className="flex h-[4.5rem] w-[4.5rem] items-center justify-center overflow-hidden rounded-[1.35rem] border border-white/25 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.4)]"
+                  variants={reduceMotion ? undefined : fadeInUp}
+                  className="relative"
                 >
-                  <Image
-                    src={LOGO_SRC}
-                    alt=""
-                    width={72}
-                    height={72}
-                    className="h-full w-full object-contain p-1.5"
-                    priority
+                  {/* Outer ring */}
+                  <div
+                    aria-hidden
+                    className="absolute -inset-4 rounded-[2rem] border border-white/[0.08]"
+                  />
+                  <div
+                    aria-hidden
+                    className="absolute -inset-8 rounded-[2.5rem] border border-white/[0.04]"
+                  />
+
+                  <motion.div
+                    animate={
+                      reduceMotion
+                        ? undefined
+                        : { y: [0, -6, 0], rotate: [0, -1.2, 1.2, 0] }
+                    }
+                    transition={{
+                      duration: 9,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                    className="relative flex h-[6.25rem] w-[6.25rem] items-center justify-center overflow-hidden rounded-[1.55rem] border border-white/30 bg-white shadow-[0_28px_70px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.12)_inset] xl:h-[7rem] xl:w-[7rem] xl:rounded-[1.75rem]"
+                  >
+                    <Image
+                      src={LOGO_SRC}
+                      alt=""
+                      width={112}
+                      height={112}
+                      className="h-full w-full object-contain p-2"
+                      priority
+                    />
+                  </motion.div>
+                </motion.div>
+
+                <motion.div
+                  variants={reduceMotion ? undefined : fadeInUp}
+                  className="relative"
+                >
+                  <h1
+                    className="font-[family-name:var(--font-display)] text-[clamp(4.75rem,9.2vw,7.5rem)] font-extrabold leading-[0.86] tracking-[-0.055em]"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(180deg, #ffffff 0%, #e8f1ff 38%, #b7d0f2 72%, #7ea8dc 100%)",
+                      WebkitBackgroundClip: "text",
+                      backgroundClip: "text",
+                      color: "transparent",
+                      filter:
+                        "drop-shadow(0 18px 40px rgba(0,0,0,0.35)) drop-shadow(0 2px 0 rgba(255,255,255,0.08))",
+                    }}
+                  >
+                    {t("app.short")}
+                  </h1>
+
+                  {/* Brand underline accent */}
+                  <motion.div
+                    aria-hidden
+                    initial={reduceMotion ? false : { scaleX: 0, opacity: 0 }}
+                    animate={{ scaleX: 1, opacity: 1 }}
+                    transition={{
+                      delay: 0.35,
+                      duration: 0.7,
+                      ease: easeOutExpo,
+                    }}
+                    className="mt-5 h-[3px] w-[min(100%,14rem)] origin-left rounded-full"
+                    style={{
+                      backgroundImage: `linear-gradient(90deg, #ffffff 0%, #8fb4e4 45%, transparent 100%)`,
+                    }}
                   />
                 </motion.div>
-              </motion.div>
-
-              <motion.h1
-                variants={reduceMotion ? undefined : fadeInUp}
-                className="max-w-xl font-extrabold tracking-[-0.04em]"
-                style={{
-                  fontSize: "clamp(4.2rem, 8vw, 6.25rem)",
-                  lineHeight: 0.9,
-                  backgroundImage:
-                    "linear-gradient(175deg, #ffffff 8%, #d7e6fb 55%, #8fb4e4 100%)",
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  color: "transparent",
-                }}
-              >
-                {t("app.short")}
-              </motion.h1>
+              </div>
             </motion.section>
 
             {/* Sign-in surface */}

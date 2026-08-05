@@ -104,9 +104,9 @@ export function AttendanceCalendar({ records }: AttendanceCalendarProps) {
             </div>
           </div>
         </div>
-        <div className="space-y-4">
+        <div className="panel-body space-y-3 sm:space-y-4">
           <div
-            className="grid grid-cols-7 gap-1.5"
+            className="grid grid-cols-7 gap-1 sm:gap-1.5"
             role="grid"
             aria-label={t("attendance.calendarTitle")}
           >
@@ -114,7 +114,7 @@ export function AttendanceCalendar({ records }: AttendanceCalendarProps) {
               <div
                 key={day}
                 role="columnheader"
-                className="px-1 pb-1 text-center text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+                className="truncate px-0.5 pb-1 text-center text-[9px] font-medium uppercase tracking-wide text-muted-foreground sm:px-1 sm:text-[10px]"
               >
                 {day}
               </div>

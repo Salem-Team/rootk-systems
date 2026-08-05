@@ -74,24 +74,10 @@ export default function SchedulePage() {
             : t("employeeHome.scheduleDesc")
         }
       />
-      <div className="space-y-6">
-        {!isAdmin ? (
-          <div className="surface-panel relative overflow-hidden px-4 py-3.5">
-            <div
-              aria-hidden
-              className="absolute inset-y-0 start-0 w-0.5 bg-primary"
-            />
-            <p className="section-label text-primary/80">
-              {t("employeeHome.readOnlyTitle")}
-            </p>
-            <p className="mt-1 ps-0 text-sm text-muted-foreground">
-              {t("employeeHome.readOnlyHint")}
-            </p>
-          </div>
-        ) : null}
+      <div className="space-y-4 sm:space-y-6">
         <WeeklyPlanner schedule={schedule} />
         {isAdmin ? (
-          <div className="grid gap-6 xl:grid-cols-5">
+          <div className="grid gap-4 sm:gap-6 xl:grid-cols-5">
             <div className="xl:col-span-3">
               <ScheduleForm schedule={schedule} onSaved={handleSaved} />
             </div>

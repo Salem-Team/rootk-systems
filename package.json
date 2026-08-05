@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "smoke": "node scripts/smoke-check.js",
+    "verify:payroll": "npx --yes tsx scripts/verify-payroll-engine.ts",
     "docker:db": "docker compose -f backend/docker-compose.yml up -d",
     "docker:db:down": "docker compose -f backend/docker-compose.yml down",
     "api:dev": "npm run start:dev --prefix backend",

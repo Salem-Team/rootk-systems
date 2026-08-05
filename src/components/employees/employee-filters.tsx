@@ -75,7 +75,7 @@ export function EmployeeFilters({
             </div>
           </div>
 
-          <div className="grid flex-1 gap-4 sm:grid-cols-3">
+          <div className="grid flex-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
             <div className="space-y-2">
               <Label htmlFor="department-filter">{t("common.department")}</Label>
               <Select

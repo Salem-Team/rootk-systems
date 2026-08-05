@@ -34,6 +34,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Time12Input } from "@/components/ui/time-12-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getWorkforceEmployees } from "@/services/employees.service";
 import {
@@ -52,6 +53,7 @@ import {
 } from "@/stores/session-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { WORK_UPDATED_EVENT } from "@/lib/events";
+import { formatClockRange } from "@/lib/format-time";
 import {
   meetingWhen,
   openTaskCount,
@@ -448,14 +450,14 @@ export function AdminWorkAssignPanel() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">
               {t("workAdmin.eyebrow")}
             </p>
-            <h1 className="font-display mt-2 text-[1.7rem] font-bold leading-tight tracking-tight text-white sm:text-[2rem]">
+            <h1 className="font-display mt-2 text-[1.45rem] font-bold leading-tight tracking-tight text-white sm:text-[2rem]">
               {t("workAdmin.title")}
             </h1>
-            <p className="mt-2 text-[14px] leading-relaxed text-white/72">
+            <p className="mt-2 hidden text-[14px] leading-relaxed text-white/72 sm:block">
               {t("workAdmin.description")}
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[28rem]">
+          <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4 lg:w-auto">
             <StatChip
               icon={<ListTodo className="h-3.5 w-3.5" />}
               label={t("workAdmin.kpiOpen")}
@@ -488,21 +490,24 @@ export function AdminWorkAssignPanel() {
         }}
       >
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-2xl bg-muted/60 p-1.5 sm:w-auto sm:inline-grid">
-            <TabsTrigger value="tasks" className="rounded-xl px-4 py-2.5 text-[13px]">
-              <ListTodo className="me-1.5 h-3.5 w-3.5" aria-hidden />
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-xl bg-muted/60 p-1 sm:inline-grid sm:w-auto sm:rounded-2xl sm:p-1.5">
+            <TabsTrigger
+              value="tasks"
+              className="min-h-10 gap-1 rounded-lg px-2 text-[12px] sm:min-h-11 sm:rounded-xl sm:px-4 sm:text-[13px]"
+            >
+              <ListTodo className="hidden h-3.5 w-3.5 sm:me-1.5 sm:inline" aria-hidden />
               {t("workAdmin.tabTasks")}
-              <span className="ms-1.5 font-mono text-[10px] opacity-70">
+              <span className="ms-1 font-mono text-[10px] opacity-70 sm:ms-1.5">
                 {tasks.length}
               </span>
             </TabsTrigger>
             <TabsTrigger
               value="meetings"
-              className="rounded-xl px-4 py-2.5 text-[13px]"
+              className="min-h-10 gap-1 rounded-lg px-2 text-[12px] sm:min-h-11 sm:rounded-xl sm:px-4 sm:text-[13px]"
             >
-              <CalendarDays className="me-1.5 h-3.5 w-3.5" aria-hidden />
+              <CalendarDays className="hidden h-3.5 w-3.5 sm:me-1.5 sm:inline" aria-hidden />
               {t("workAdmin.tabMeetings")}
-              <span className="ms-1.5 font-mono text-[10px] opacity-70">
+              <span className="ms-1 font-mono text-[10px] opacity-70 sm:ms-1.5">
                 {meetings.length}
               </span>
             </TabsTrigger>
@@ -737,7 +742,12 @@ export function AdminWorkAssignPanel() {
                           {format(parseISO(meeting.date), "EEEE · d MMM", {
                             locale: dateLocale,
                           })}{" "}
-                          · {meeting.startTime}–{meeting.endTime}
+                          ·{" "}
+                          {formatClockRange(
+                            meeting.startTime,
+                            meeting.endTime,
+                            locale
+                          )}
                         </p>
                         <p className="mt-1 text-[12px] text-muted-foreground">
                           {meeting.location}
@@ -1008,26 +1018,23 @@ export function AdminWorkAssignPanel() {
                 />
               </Field>
               <Field label={t("workAdmin.fieldStart")} htmlFor="meet-start">
-                <Input
+                <Time12Input
                   id="meet-start"
-                  type="time"
                   value={meetingForm.startTime}
-                  onChange={(e) =>
-                    setMeetingForm((p) => ({
-                      ...p,
-                      startTime: e.target.value,
-                    }))
+                  onChange={(startTime) =>
+                    setMeetingForm((p) => ({ ...p, startTime }))
                   }
+                  aria-label={t("workAdmin.fieldStart")}
                 />
               </Field>
               <Field label={t("workAdmin.fieldEnd")} htmlFor="meet-end">
-                <Input
+                <Time12Input
                   id="meet-end"
-                  type="time"
                   value={meetingForm.endTime}
-                  onChange={(e) =>
-                    setMeetingForm((p) => ({ ...p, endTime: e.target.value }))
+                  onChange={(endTime) =>
+                    setMeetingForm((p) => ({ ...p, endTime }))
                   }
+                  aria-label={t("workAdmin.fieldEnd")}
                 />
               </Field>
             </div>
@@ -1175,12 +1182,12 @@ function StatChip({
   value: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.07] px-3 py-2.5 backdrop-blur-sm">
-      <p className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-white/55">
-        {icon}
-        {label}
+    <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.07] px-2.5 py-2 backdrop-blur-sm sm:px-3 sm:py-2.5">
+      <p className="flex min-w-0 items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-white/55">
+        <span className="shrink-0">{icon}</span>
+        <span className="truncate">{label}</span>
       </p>
-      <p className="mt-1 font-display text-xl font-bold tabular-nums text-white">
+      <p className="mt-1 font-display text-lg font-bold tabular-nums text-white sm:text-xl">
         {value}
       </p>
     </div>

@@ -61,27 +61,27 @@ export function AdminSectionNav({
       aria-label={t("admin.navLabel")}
       className="surface-panel overflow-hidden"
     >
-      <div className="border-b border-border/60 px-4 py-3">
+      <div className="border-b border-border/60 px-3 py-2.5 sm:px-4 sm:py-3">
         <p className="section-label text-primary/70">{t("admin.controlCenter")}</p>
         <p className="mt-1 text-sm font-semibold tracking-tight">
           {t("admin.navTitle")}
         </p>
       </div>
-      <ul className="grid gap-0.5 p-2 sm:grid-cols-2 lg:grid-cols-1">
+      <ul className="flex gap-1 overflow-x-auto p-2 [scrollbar-width:none] lg:grid lg:grid-cols-1 lg:gap-0.5 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
         {ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive = active === item.id;
           return (
-            <li key={item.id}>
+            <li key={item.id} className="shrink-0 lg:shrink lg:w-full">
               <button
                 type="button"
                 onClick={() => onChange(item.id)}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "group relative flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  "group relative flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-start text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-[13px] lg:gap-2.5",
                   isActive
                     ? "bg-primary/[0.08] text-primary"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    : "bg-muted/40 text-muted-foreground hover:bg-muted/50 hover:text-foreground lg:bg-transparent"
                 )}
               >
                 {isActive ? (

@@ -45,17 +45,6 @@ export function Sidebar() {
         <BrandMark collapsed={sidebarCollapsed} />
       </div>
 
-      {!sidebarCollapsed ? (
-        <div className="mx-2.5 mt-3 rounded-xl border border-white/[0.09] bg-gradient-to-b from-white/[0.09] to-white/[0.02] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/38">
-            {t("roles.switchLabel")}
-          </p>
-          <p className="mt-0.5 text-[13.5px] font-bold tracking-tight text-white">
-            {role === "admin" ? t("roles.admin") : t("roles.employee")}
-          </p>
-        </div>
-      ) : null}
-
       <ScrollArea className="flex-1 px-2 py-3">
         <motion.nav
           key={role}

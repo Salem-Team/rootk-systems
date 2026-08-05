@@ -25,6 +25,7 @@ import {
 import { getWorkEmployeeIdFromUser, useSessionStore } from "@/stores/session-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { WORK_UPDATED_EVENT } from "@/lib/events";
+import { formatClockRange } from "@/lib/format-time";
 import { meetingWhen, taskDueBucket } from "@/lib/work-utils";
 import { fadeInUp, snappySpring, staggerContainer } from "@/lib/animations";
 import { cn } from "@/lib/utils";
@@ -252,7 +253,7 @@ function MeetingGroup({
   title: string;
   items: WorkMeeting[];
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const reduceMotion = useReducedMotion();
 
   return (
@@ -279,7 +280,7 @@ function MeetingGroup({
               <p className="text-sm font-semibold">{m.title}</p>
               <span className="inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
                 <Clock3 className="h-3 w-3" aria-hidden />
-                {m.startTime}–{m.endTime}
+                {formatClockRange(m.startTime, m.endTime, locale)}
               </span>
             </div>
             <p className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">

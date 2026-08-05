@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { mockNow } from "@/lib/mock-date";
+import { demoNow } from "@/lib/mock-date";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -26,7 +26,7 @@ export function formatLiveDuration(totalSeconds: number): string {
 export function elapsedSeconds(fromIso?: string, toIso?: string): number {
   if (!fromIso) return 0;
   const start = new Date(fromIso).getTime();
-  const end = toIso ? new Date(toIso).getTime() : mockNow().getTime();
+  const end = toIso ? new Date(toIso).getTime() : demoNow().getTime();
   return Math.max(0, Math.floor((end - start) / 1000));
 }
 

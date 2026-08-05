@@ -54,16 +54,14 @@ function hash(input: string): number {
   return h;
 }
 
-export function sparklineFor(seed: string, points = 8): SparkPoint[] {
-  const base = hash(seed);
-  return Array.from({ length: points }, (_, i) => ({
-    v: 40 + ((base + i * 17) % 55),
-  }));
+export function sparklineFor(...args: unknown[]): SparkPoint[] {
+  void args;
+  return [];
 }
 
-export function trendDelta(seed: string): number {
-  const n = hash(seed) % 11;
-  return n - 5; // -5 .. +5
+export function trendDelta(...args: unknown[]): number {
+  void args;
+  return 0;
 }
 
 export function buildDepartmentStats(
@@ -112,19 +110,9 @@ export function buildDepartmentStats(
   }).sort((a, b) => b.rate - a.rate);
 }
 
-export function buildBirthdays(employees: Employee[]): BirthdayItem[] {
-  const today = demoNow();
-  return employees.slice(0, 6).map((e, index) => {
-    const daysAway = (hash(e.id) % 18) + index;
-    const date = addDays(today, daysAway);
-    return {
-      id: e.id,
-      name: e.name,
-      department: e.department,
-      dateLabel: format(date, "MMM d"),
-      daysAway,
-    };
-  });
+export function buildBirthdays(...args: unknown[]): BirthdayItem[] {
+  void args;
+  return [];
 }
 
 export function buildCompanyCalendarEvents(input: {
@@ -193,37 +181,35 @@ export function groupActivitiesByDay(
     }));
 }
 
-export function personalWeekHours(seed = "me"): PersonalWeekPoint[] {
-  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  return days.map((day) => {
-    const h = hash(`${seed}-${day}`);
-    const isWeekend = day === "Fri" || day === "Sat";
-    return {
-      day,
-      hours: isWeekend ? 0 : 7 + (h % 20) / 10,
-      present: isWeekend ? 0 : 1,
-    };
-  });
+export function personalWeekHours(...args: unknown[]): PersonalWeekPoint[] {
+  void args;
+  return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => ({
+    day,
+    hours: 0,
+    present: 0,
+  }));
 }
 
-export function personalMonthlyScore(seed = "me"): number {
-  return 86 + (hash(seed) % 12);
+export function personalMonthlyScore(...args: unknown[]): number {
+  void args;
+  return 0;
 }
 
-export function attendanceStreak(seed = "me"): number {
-  return 5 + (hash(seed) % 10);
+export function attendanceStreak(...args: unknown[]): number {
+  void args;
+  return 0;
 }
 
-export function leaveBalanceMock(seed = "me"): {
+export function leaveBalanceMock(...args: unknown[]): {
   remaining: number;
   used: number;
   pending: number;
 } {
-  const h = hash(seed);
+  void args;
   return {
-    remaining: 12 + (h % 8),
-    used: 4 + (h % 5),
-    pending: h % 3,
+    remaining: 0,
+    used: 0,
+    pending: 0,
   };
 }
 

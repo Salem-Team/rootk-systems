@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Time12Input } from "@/components/ui/time-12-input";
 import { updateWorkSchedule } from "@/services/schedule.service";
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp } from "@/lib/animations";
@@ -115,19 +116,19 @@ export function ScheduleForm({ schedule, onSaved }: ScheduleFormProps) {
         <CardContent className="space-y-8">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Field label={t("schedule.fromTime")} htmlFor="fromTime">
-              <Input
+              <Time12Input
                 id="fromTime"
-                type="time"
                 value={fromTime}
-                onChange={(e) => setFromTime(e.target.value)}
+                onChange={setFromTime}
+                aria-label={t("schedule.fromTime")}
               />
             </Field>
             <Field label={t("schedule.toTime")} htmlFor="toTime">
-              <Input
+              <Time12Input
                 id="toTime"
-                type="time"
                 value={toTime}
-                onChange={(e) => setToTime(e.target.value)}
+                onChange={setToTime}
+                aria-label={t("schedule.toTime")}
               />
             </Field>
             <Field

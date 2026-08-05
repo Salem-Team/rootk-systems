@@ -26,14 +26,14 @@ export function PageHeader({
 
   if (reduceMotion) {
     return (
-      <header className={cn("mb-7", className)}>
+      <header className={cn("mb-5 sm:mb-7", className)}>
         {showBreadcrumbs ? (
           <div className="mb-3.5 hidden sm:block">
             <Breadcrumbs />
           </div>
         ) : null}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0 space-y-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+          <div className="min-w-0 space-y-1.5 sm:space-y-2">
             {eyebrow ? <p className="type-eyebrow">{eyebrow}</p> : null}
             <h1 className="type-title">{title}</h1>
             {description ? (
@@ -44,7 +44,7 @@ export function PageHeader({
             <div className="flex flex-wrap items-center gap-2">{actions}</div>
           ) : null}
         </div>
-        <div className="soft-divider mt-5" aria-hidden />
+        <div className="soft-divider mt-4 sm:mt-5" aria-hidden />
       </header>
     );
   }
@@ -54,15 +54,15 @@ export function PageHeader({
       variants={staggerFast}
       initial="hidden"
       animate="visible"
-      className="mb-5 sm:mb-7"
+      className={cn("mb-5 sm:mb-7", className)}
     >
       {showBreadcrumbs ? (
         <motion.div variants={fadeInUp} className="mb-3.5 hidden sm:block">
           <Breadcrumbs />
         </motion.div>
       ) : null}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0 space-y-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+        <div className="min-w-0 space-y-1.5 sm:space-y-2">
           {eyebrow ? (
             <motion.p variants={fadeInUp} className="type-eyebrow">
               {eyebrow}
@@ -90,7 +90,7 @@ export function PageHeader({
         ) : null}
       </div>
       <motion.div
-        className="soft-divider mt-5 origin-center"
+        className="soft-divider mt-4 origin-center sm:mt-5"
         aria-hidden
         inherit={false}
         initial={{ scaleX: 0.42, opacity: 0 }}

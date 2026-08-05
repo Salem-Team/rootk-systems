@@ -165,15 +165,7 @@ export function MobileDrawer() {
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <div className="border-b border-sidebar-border px-4 py-3">
-              <p className="text-[10px] uppercase tracking-[0.14em] text-sidebar-foreground/45">
-                {t("roles.switchLabel")}
-              </p>
-              <p className="mt-1 text-sm font-medium text-sidebar-foreground">
-                {role === "admin" ? t("roles.admin") : t("roles.employee")}
-              </p>
-            </div>
-            <ScrollArea className="h-[calc(100vh-7.5rem)] px-3 py-4">
+            <ScrollArea className="h-[calc(100vh-3.5rem)] px-3 py-4">
               <nav className="space-y-1">
                 {items.map((item) => {
                   const active =

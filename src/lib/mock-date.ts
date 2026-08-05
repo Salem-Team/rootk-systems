@@ -19,7 +19,7 @@ export function mockNow(): Date {
 }
 
 export function todayKey(): string {
-  return MOCK_TODAY;
+  return demoTodayKey();
 }
 
 /** Real clock in API mode; frozen demo day in local mode. */

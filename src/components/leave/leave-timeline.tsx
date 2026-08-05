@@ -113,13 +113,13 @@ export function LeaveTimeline({
                     </p>
                     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                       <span>
-                        {format(parseISO(request.submittedAt), "MMM d · HH:mm", {
+                        {format(parseISO(request.submittedAt), "MMM d · h:mm a", {
                           locale: dateLocale,
                         })}
                       </span>
                       {request.reviewedAt ? (
                         <span>
-                          {format(parseISO(request.reviewedAt), "MMM d · HH:mm", {
+                          {format(parseISO(request.reviewedAt), "MMM d · h:mm a", {
                             locale: dateLocale,
                           })}
                         </span>

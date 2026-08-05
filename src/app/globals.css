@@ -334,7 +334,13 @@
     border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
     background: color-mix(in oklab, var(--card) 94%, transparent);
     box-shadow: var(--shadow-card);
-    padding: 0.85rem 1rem;
+    padding: 0.65rem 0.75rem;
+  }
+
+  @media (min-width: 640px) {
+    .toolbar-surface {
+      padding: 0.85rem 1rem;
+    }
   }
 
   .kpi-tile {
@@ -342,12 +348,18 @@
     border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
     background: var(--card);
     box-shadow: var(--shadow-card);
-    padding: 1rem 1.1rem;
+    padding: 0.85rem 0.9rem;
     transition:
       border-color var(--duration-fast) var(--ease-out),
       box-shadow var(--duration-fast) var(--ease-out),
       transform var(--duration-fast) var(--ease-out),
       background-color var(--duration-fast) var(--ease-out);
+  }
+
+  @media (min-width: 640px) {
+    .kpi-tile {
+      padding: 1rem 1.1rem;
+    }
   }
 
   .kpi-tile:hover {
@@ -534,7 +546,7 @@
   }
 
   .content-frame {
-    @apply mx-auto w-full max-w-[1440px];
+    @apply mx-auto w-full min-w-0 max-w-[1440px];
   }
 
   .section-label {
@@ -831,5 +843,27 @@
   :root {
     --space-page-x: 2rem;
     --space-page-y: 1.75rem;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .payslip-statement,
+  .payslip-statement * {
+    visibility: visible !important;
+  }
+  .payslip-statement {
+    position: absolute;
+    inset-inline-start: 0;
+    top: 0;
+    width: 100%;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+  .print\:hidden {
+    display: none !important;
   }
 }

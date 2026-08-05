@@ -132,7 +132,7 @@ export function PortalAttendancePanel({
         </div>
         <div className="panel-body">
           <div
-            className="grid grid-cols-7 gap-1.5 sm:gap-2"
+            className="grid grid-cols-7 gap-1 sm:gap-1.5"
             role="img"
             aria-label={t("portal.attendanceCalendar")}
           >
@@ -265,7 +265,7 @@ export function PortalLeavePanel({
                 <StatusBadge status={leave.status} />
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                {format(new Date(leave.submittedAt), "MMM d · HH:mm", {
+                {format(new Date(leave.submittedAt), "MMM d · h:mm a", {
                   locale: dateLocale,
                 })}
               </p>
@@ -447,7 +447,7 @@ export function PortalTimelinePanel() {
                 {t(item.bodyKey)}
               </p>
               <p className="mt-2 text-[11px] text-muted-foreground">
-                {format(new Date(item.at), "MMM d, yyyy · HH:mm", {
+                {format(new Date(item.at), "MMM d, yyyy · h:mm a", {
                   locale: dateLocale,
                 })}
               </p>

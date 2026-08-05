@@ -88,7 +88,7 @@ export function EmployeeOverviewHero({
           )}
         </div>
 
-        <div className="relative mt-4 grid grid-cols-3 gap-2">
+        <div className="relative mt-4 grid grid-cols-3 gap-1.5 sm:gap-2">
           <HeroStat
             icon={Flame}
             label={t("employeeHome.statStreak")}

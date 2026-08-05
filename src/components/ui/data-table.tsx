@@ -6,9 +6,12 @@ export function DataTable({
 }: React.HTMLAttributes<HTMLTableElement>) {
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-card)]">
-      <div className="table-scroll overflow-x-auto">
+      <div className="table-scroll -mx-px overflow-x-auto overscroll-x-contain">
         <table
-          className={cn("w-full min-w-[640px] text-start text-sm", className)}
+          className={cn(
+            "w-full min-w-[36rem] text-start text-sm sm:min-w-[640px]",
+            className
+          )}
           {...props}
         />
       </div>

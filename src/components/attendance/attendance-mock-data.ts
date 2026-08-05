@@ -71,14 +71,6 @@ export interface HeatmapDay {
   kind: CalendarDayKind;
 }
 
-function hashSeed(input: string): number {
-  let h = 0;
-  for (let i = 0; i < input.length; i += 1) {
-    h = (h * 31 + input.charCodeAt(i)) % 1000;
-  }
-  return h;
-}
-
 export function resolveWorkMode(
   record: AttendanceRecord | null
 ): WorkMode {
@@ -203,20 +195,20 @@ export function buildWeeklySummary(
   const lateDays = weekRecords.filter((r) => r.isLate || r.status === "late").length;
   const absentDays = Math.max(0, 5 - presentDays);
   const minutes = weekRecords.reduce((sum, r) => sum + (r.workingMinutes || 0), 0);
-  const hoursWorked = Math.round((minutes / 60) * 10) / 10 || presentDays * 8.2;
+  const hoursWorked = Math.round((minutes / 60) * 10) / 10;
   const overtimeHours =
     Math.round(Math.max(0, hoursWorked - presentDays * 8) * 10) / 10;
-  const attendanceRate = Math.min(
-    100,
-    Math.round((presentDays / 5) * 1000) / 10 || 92
-  );
+  const attendanceRate =
+    presentDays === 0
+      ? 0
+      : Math.min(100, Math.round((presentDays / 5) * 1000) / 10);
 
   return {
     hoursWorked,
-    presentDays: presentDays || 4,
-    lateDays: lateDays || 1,
+    presentDays,
+    lateDays,
     absentDays,
-    overtimeHours: overtimeHours || 1.5,
+    overtimeHours,
     attendanceRate,
   };
 }
@@ -226,21 +218,22 @@ export function buildMonthlyAnalytics(
 ): MonthlyChartPoint[] {
   const weeks = ["W1", "W2", "W3", "W4"] as const;
   return weeks.map((label, index) => {
-    const seed = hashSeed(`month-${label}-${records.length}`);
     const slice = records.slice(index * 3, index * 3 + 5);
-    const present =
-      slice.filter((r) =>
-        ["present", "wfh", "early_leave", "half_day"].includes(r.status)
-      ).length || 3 + (seed % 2);
-    const late =
-      slice.filter((r) => r.isLate || r.status === "late").length || seed % 3;
+    const present = slice.filter((r) =>
+      ["present", "wfh", "early_leave", "half_day"].includes(r.status)
+    ).length;
+    const late = slice.filter(
+      (r) => r.isLate || r.status === "late"
+    ).length;
     const absent = Math.max(0, 5 - present - late);
     const hours =
       Math.round(
-        (slice.reduce((s, r) => s + r.workingMinutes, 0) / 60 ||
-          32 + (seed % 8)) * 10
+        (slice.reduce((s, r) => s + r.workingMinutes, 0) / 60) * 10
       ) / 10;
-    const rate = Math.min(99, Math.round(((present + late * 0.5) / 5) * 100));
+    const rate =
+      present + late === 0
+        ? 0
+        : Math.min(99, Math.round(((present + late * 0.5) / 5) * 100));
     return { label, present, late, absent, hours, rate };
   });
 }
@@ -307,17 +300,7 @@ export function buildCalendarMonth(
     } else if (d > demoNow()) {
       kind = "empty";
     } else {
-      const seed = hashSeed(date);
-      const cycle: CalendarDayKind[] = [
-        "present",
-        "present",
-        "late",
-        "wfh",
-        "present",
-        "absent",
-        "leave",
-      ];
-      kind = cycle[seed % cycle.length];
+      kind = "absent";
     }
     return { date, kind, inMonth: true, isToday };
   });
@@ -356,17 +339,7 @@ export function buildHeatmap(
     if (record) {
       kind = kindFromRecord(record);
     } else {
-      const seed = hashSeed(date);
-      const cycle: CalendarDayKind[] = [
-        "present",
-        "present",
-        "present",
-        "late",
-        "wfh",
-        "absent",
-        "leave",
-      ];
-      kind = cycle[seed % cycle.length];
+      kind = "empty";
     }
     return { date, level: levelFromKind(kind), kind };
   });

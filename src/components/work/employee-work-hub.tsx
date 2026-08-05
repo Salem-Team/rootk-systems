@@ -37,6 +37,7 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MetaChip } from "@/components/shared/meta-chip";
+import { formatClockRange } from "@/lib/format-time";
 import {
   EmployeeComposerTriggers,
   EmployeeWorkComposer,
@@ -256,11 +257,21 @@ export function EmployeeWorkHub() {
   }
 
   function openCreateTask() {
+    if (!workEmployeeId) {
+      toast.error(t("common.error"));
+      return;
+    }
+    setEditingMeeting(null);
     setEditingTask(null);
     setComposerMode("task");
   }
 
   function openCreateMeeting() {
+    if (!workEmployeeId) {
+      toast.error(t("common.error"));
+      return;
+    }
+    setEditingTask(null);
     setEditingMeeting(null);
     setComposerMode("meeting");
   }
@@ -330,19 +341,20 @@ export function EmployeeWorkHub() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">
               {format(demoNow(), "EEEE · d MMM", { locale: dateLocale })}
             </p>
-            <h1 className="font-display mt-2 text-[1.7rem] font-bold leading-tight tracking-tight text-white sm:text-[2rem]">
+            <h1 className="font-display mt-2 text-[1.45rem] font-bold leading-tight tracking-tight text-white sm:text-[2rem]">
               {t("workHub.heroTitle", { name: t(user.firstNameKey) })}
             </h1>
-            <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-white/72">
+            <p className="mt-2 hidden max-w-xl text-[14px] leading-relaxed text-white/72 sm:block">
               {t("workHub.heroDesc")}
             </p>
             <EmployeeComposerTriggers
               className="mt-4"
+              disabled={!workEmployeeId}
               onAddTask={openCreateTask}
               onAddMeeting={openCreateMeeting}
             />
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[28rem]">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <HeroStat
               icon={<ListTodo className="h-3.5 w-3.5" />}
               label={t("workHub.statOpen")}
@@ -372,20 +384,26 @@ export function EmployeeWorkHub() {
         onValueChange={(v) => setTab(v as WorkTab)}
         className="space-y-4"
       >
-        <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl bg-muted/60 p-1.5 sm:w-auto sm:inline-grid">
-          <TabsTrigger value="tasks" className="rounded-xl px-4 py-2.5 text-[13px]">
-            <ListTodo className="me-1.5 h-3.5 w-3.5" aria-hidden />
+        <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-xl bg-muted/60 p-1 sm:inline-grid sm:w-auto sm:rounded-2xl sm:p-1.5">
+          <TabsTrigger
+            value="tasks"
+            className="min-h-10 gap-1 rounded-lg px-2 text-[11px] sm:min-h-11 sm:rounded-xl sm:px-4 sm:text-[13px]"
+          >
+            <ListTodo className="hidden h-3.5 w-3.5 sm:me-1.5 sm:inline" aria-hidden />
             {t("workHub.tabTasks")}
           </TabsTrigger>
           <TabsTrigger
             value="meetings"
-            className="rounded-xl px-4 py-2.5 text-[13px]"
+            className="min-h-10 gap-1 rounded-lg px-2 text-[11px] sm:min-h-11 sm:rounded-xl sm:px-4 sm:text-[13px]"
           >
-            <CalendarDays className="me-1.5 h-3.5 w-3.5" aria-hidden />
+            <CalendarDays className="hidden h-3.5 w-3.5 sm:me-1.5 sm:inline" aria-hidden />
             {t("workHub.tabMeetings")}
           </TabsTrigger>
-          <TabsTrigger value="day" className="rounded-xl px-4 py-2.5 text-[13px]">
-            <Target className="me-1.5 h-3.5 w-3.5" aria-hidden />
+          <TabsTrigger
+            value="day"
+            className="min-h-10 gap-1 rounded-lg px-2 text-[11px] sm:min-h-11 sm:rounded-xl sm:px-4 sm:text-[13px]"
+          >
+            <Target className="hidden h-3.5 w-3.5 sm:me-1.5 sm:inline" aria-hidden />
             {t("workHub.tabDay")}
           </TabsTrigger>
         </TabsList>
@@ -865,12 +883,12 @@ function HeroStat({
   value: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.07] px-3 py-2.5 backdrop-blur-sm">
-      <p className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-white/55">
-        {icon}
-        {label}
+    <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.07] px-2.5 py-2 backdrop-blur-sm sm:px-3 sm:py-2.5">
+      <p className="flex min-w-0 items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-white/55">
+        <span className="shrink-0">{icon}</span>
+        <span className="truncate">{label}</span>
       </p>
-      <p className="mt-1 font-display text-xl font-bold tabular-nums text-white">
+      <p className="mt-1 font-display text-lg font-bold tabular-nums text-white sm:text-xl">
         {value}
       </p>
     </div>
@@ -892,7 +910,7 @@ function MeetingList({
   dateLocale: Locale;
   onCreate?: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
 
   return (
     <section>
@@ -923,7 +941,7 @@ function MeetingList({
                   </p>
                   <span className="inline-flex shrink-0 items-center gap-1 font-mono text-[11px] text-muted-foreground">
                     <Clock3 className="h-3 w-3" />
-                    {m.startTime}–{m.endTime}
+                    {formatClockRange(m.startTime, m.endTime, locale)}
                   </span>
                 </div>
                 <div className="mt-1.5">
@@ -983,7 +1001,7 @@ function TaskDetailCard({
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const related = meetings.find((m) => m.id === task.relatedMeetingId);
   const subDone = task.subItems.filter((s) => s.done).length;
   const subPct = Math.round((subDone / Math.max(task.subItems.length, 1)) * 100);
@@ -1121,7 +1139,8 @@ function TaskDetailCard({
               {related.title}
             </span>
             <span className="mt-0.5 block text-[12px] text-muted-foreground">
-              {related.startTime}–{related.endTime} · {related.location}
+              {formatClockRange(related.startTime, related.endTime, locale)} ·{" "}
+              {related.location}
             </span>
           </span>
         </button>
@@ -1145,7 +1164,7 @@ function MeetingDetailCard({
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
 
   return (
     <motion.article
@@ -1196,7 +1215,7 @@ function MeetingDetailCard({
           label={t("workHub.when")}
           value={`${format(parseISO(meeting.date), "EEEE · d MMM", {
             locale: dateLocale,
-          })} · ${meeting.startTime}–${meeting.endTime}`}
+          })} · ${formatClockRange(meeting.startTime, meeting.endTime, locale)}`}
         />
         <MetaChip label={t("workHub.location")} value={meeting.location} />
         <MetaChip

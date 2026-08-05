@@ -9,6 +9,13 @@ import {
   mergePolicy,
   policyJson,
 } from "../lib/payroll-defaults";
+import { calculateEmployeePayslip } from "../lib/payroll-engine";
+import type {
+  DayOfWeek,
+  EmployeeSalaryProfile,
+  PayrollRule,
+  SchedulePayrollContext,
+} from "../lib/payroll-engine-types";
 
 type LateTier = { afterMinutes: number; dayFraction: number };
 
@@ -26,7 +33,28 @@ type SalaryPayload = {
   };
   bonuses?: number;
   commission?: number;
+  incentives?: number;
+  manualAdjustments?: number;
+  deductions?: {
+    insurance?: number;
+    tax?: number;
+    loan?: number;
+    advances?: number;
+    recurring?: number;
+    penalties?: number;
+  };
   currency?: string;
+  salaryType?: string;
+  salaryGrade?: string;
+  payrollGroup?: string;
+  paymentMethod?: string;
+  insuranceStatus?: string;
+  taxStatus?: string;
+  contractType?: string;
+  bankAccount?: string;
+  iban?: string;
+  joiningDate?: string;
+  effectiveFrom?: string;
   [key: string]: unknown;
 };
 
@@ -45,30 +73,182 @@ function roundMoney(value: number, mode?: string): number {
   }
 }
 
-function allowancesTotal(a: SalaryPayload["allowances"]): number {
-  if (!a) return 0;
-  return (
-    (a.housing ?? 0) +
-    (a.transportation ?? 0) +
-    (a.meal ?? 0) +
-    (a.phone ?? 0) +
-    (a.other ?? 0) +
-    (a.shift ?? 0)
-  );
+
+const WEEK_DAYS: DayOfWeek[] = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+];
+
+function dayOfWeekFromDateKey(dateKey: string): DayOfWeek {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  const utc = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
+  return WEEK_DAYS[utc.getUTCDay()];
 }
 
-function lateDayFraction(lateMinutes: number, policy: PolicyPayload): number {
-  const grace = policy.late?.graceMinutes ?? 15;
-  const over = Math.max(0, lateMinutes - grace);
-  if (over <= 0) return 0;
-  const tiers = [...(policy.late?.tiers ?? [])].sort(
-    (a, b) => a.afterMinutes - b.afterMinutes
-  );
-  let fraction = 0;
-  for (const tier of tiers) {
-    if (over >= tier.afterMinutes) fraction = tier.dayFraction;
+function listWorkingDates(
+  start: string,
+  end: string,
+  workingDays: DayOfWeek[],
+  holidayDates: Set<string>
+): string[] {
+  const out: string[] = [];
+  const cursor = parseDate(start);
+  const last = parseDate(end);
+  while (cursor <= last) {
+    const key = dateOnly(cursor);
+    const dow = dayOfWeekFromDateKey(key);
+    if (workingDays.includes(dow) && !holidayDates.has(key)) out.push(key);
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
-  return fraction;
+  return out;
+}
+
+function countWorkingDaysInRange(
+  start: string,
+  end: string,
+  workingDays: DayOfWeek[],
+  holidayDates: Set<string>
+): number {
+  return listWorkingDates(start, end, workingDays, holidayDates).length;
+}
+
+function leaveDaysInPeriod(
+  startDate: string,
+  endDate: string,
+  periodStart: string,
+  periodEnd: string,
+  workingDays: DayOfWeek[],
+  holidayDates: Set<string>,
+  fallbackDays: number
+): number {
+  const start = startDate > periodStart ? startDate : periodStart;
+  const end = endDate < periodEnd ? endDate : periodEnd;
+  if (start > end) return 0;
+  const counted = countWorkingDaysInRange(start, end, workingDays, holidayDates);
+  return counted > 0 ? counted : fallbackDays;
+}
+
+function isNightShiftHint(checkIn?: string | null): boolean {
+  if (!checkIn) return false;
+  const match = checkIn.match(/T(\d{2}):/);
+  if (!match) return false;
+  const hour = Number(match[1]);
+  return hour >= 20 || hour < 6;
+}
+
+function inferEarlyLeaveMinutes(
+  row: {
+    earlyLeaveMinutes?: number | null;
+    isEarlyLeave: boolean;
+    workingMinutes: number;
+  },
+  scheduledNet: number
+): number {
+  if (typeof row.earlyLeaveMinutes === "number" && row.earlyLeaveMinutes > 0) {
+    return row.earlyLeaveMinutes;
+  }
+  if (!row.isEarlyLeave) return 0;
+  if (row.workingMinutes > 0 && scheduledNet > row.workingMinutes) {
+    return scheduledNet - row.workingMinutes;
+  }
+  return Math.round(scheduledNet * 0.25);
+}
+
+function aggregateAttendanceOvertime(
+  rows: {
+    date: string;
+    workingMinutes: number;
+    overtimeMinutes?: number;
+    checkOut?: string | null;
+  }[],
+  scheduleCtx: SchedulePayrollContext,
+  holidayDates: Set<string>
+): { regular: number; weekend: number; holiday: number } {
+  let regular = 0;
+  let weekend = 0;
+  let holiday = 0;
+  const minNet = scheduleCtx.minimumWorkingMinutes;
+  for (const row of rows) {
+    if (!row.checkOut && row.workingMinutes <= 0) continue;
+    const day = dayOfWeekFromDateKey(row.date);
+    const fromField = (row.overtimeMinutes ?? 0) / 60;
+    const fromExcess = Math.max(0, (row.workingMinutes - minNet) / 60);
+    const otHours = fromField > 0 ? fromField : fromExcess;
+    if (holidayDates.has(row.date)) {
+      holiday += otHours > 0 ? otHours : row.workingMinutes / 60;
+    } else if (scheduleCtx.weekendDays.includes(day)) {
+      weekend += row.workingMinutes / 60;
+    } else {
+      regular += otHours;
+    }
+  }
+  return {
+    regular: Math.round(regular * 100) / 100,
+    weekend: Math.round(weekend * 100) / 100,
+    holiday: Math.round(holiday * 100) / 100,
+  };
+}
+
+function toEngineProfile(
+  employeeId: string,
+  profile: SalaryPayload
+): EmployeeSalaryProfile {
+  const a = profile.allowances ?? {};
+  const d = profile.deductions ?? {};
+  const now = new Date().toISOString();
+  return {
+    id: `sal_${employeeId}`,
+    employeeId,
+    basicSalary: profile.basicSalary,
+    allowances: {
+      housing: a.housing ?? 0,
+      transportation: a.transportation ?? 0,
+      meal: a.meal ?? 0,
+      phone: a.phone ?? 0,
+      other: a.other ?? 0,
+      shift: a.shift ?? 0,
+    },
+    bonuses: profile.bonuses ?? 0,
+    commission: profile.commission ?? 0,
+    incentives: profile.incentives ?? 0,
+    manualAdjustments: profile.manualAdjustments ?? 0,
+    deductions: {
+      insurance: d.insurance ?? 0,
+      tax: d.tax ?? 0,
+      loan: d.loan ?? 0,
+      advances: d.advances ?? 0,
+      recurring: d.recurring ?? 0,
+      penalties: d.penalties ?? 0,
+    },
+    salaryGrade: (profile.salaryGrade as EmployeeSalaryProfile["salaryGrade"]) ?? "G3",
+    salaryType: (profile.salaryType as EmployeeSalaryProfile["salaryType"]) ?? "monthly",
+    payrollGroup: (profile.payrollGroup as EmployeeSalaryProfile["payrollGroup"]) ?? "standard",
+    currency: profile.currency ?? "EGP",
+    bankAccount: String(profile.bankAccount ?? ""),
+    iban: String(profile.iban ?? ""),
+    paymentMethod: (profile.paymentMethod as EmployeeSalaryProfile["paymentMethod"]) ?? "bank_transfer",
+    insuranceStatus: (profile.insuranceStatus as EmployeeSalaryProfile["insuranceStatus"]) ?? "insured",
+    taxStatus: (profile.taxStatus as EmployeeSalaryProfile["taxStatus"]) ?? "resident",
+    contractType: (profile.contractType as EmployeeSalaryProfile["contractType"]) ?? "full_time",
+    joiningDate: String(profile.joiningDate ?? now.slice(0, 10)),
+    effectiveFrom: String(profile.effectiveFrom ?? now.slice(0, 10)),
+    history: [],
+    incrementHistory: [],
+    companyId: "cmp_rootk_001",
+    createdAt: now,
+    updatedAt: now,
+    createdBy: "system",
+    updatedBy: "system",
+    deletedAt: null,
+    isArchived: false,
+    version: 1,
+    metadata: {},
+  };
 }
 
 function periodBounds(now = new Date()) {
@@ -308,7 +488,93 @@ export class PayrollService {
         },
       });
     }
-    return { id: row.id, ...(row.payload as SalaryPayload) };
+
+    const payload = row.payload as SalaryPayload;
+    const basic = payload.basicSalary ?? basicSalary;
+    if (!payload.deductions) {
+      payload.deductions = {
+        insurance: Math.round(basic * 0.11),
+        tax: Math.round(basic * 0.08),
+        loan: 0,
+        advances: 0,
+        recurring: 150,
+        penalties: 0,
+      };
+      await this.prisma.employeeSalaryProfile.update({
+        where: { id: row.id },
+        data: { payload: payload as unknown as Prisma.InputJsonValue },
+      });
+    }
+
+    return { id: row.id, ...payload };
+  }
+
+  private async loadScheduleContext(companyId: string): Promise<{
+    schedule: SchedulePayrollContext;
+    holidayDates: Set<string>;
+  }> {
+    const scheduleRow = await this.prisma.workSchedule.findUnique({
+      where: { companyId },
+      include: { holidays: { where: { deletedAt: null } } },
+    });
+    const cfg = (scheduleRow?.config ?? {}) as Record<string, unknown>;
+    const workingDays = (Array.isArray(cfg.workingDays)
+      ? cfg.workingDays
+      : ["sunday", "monday", "tuesday", "wednesday", "thursday"]) as DayOfWeek[];
+    const weekendDays = (Array.isArray(cfg.weekendDays)
+      ? cfg.weekendDays
+      : ["friday", "saturday"]) as DayOfWeek[];
+    const schedule: SchedulePayrollContext = {
+      workingDays,
+      weekendDays,
+      gracePeriodMinutes: Number(cfg.gracePeriodMinutes ?? 15),
+      breakMinutes: Number(cfg.breakMinutes ?? 60),
+      fromTime: String(cfg.fromTime ?? "09:00"),
+      toTime: String(cfg.toTime ?? "18:00"),
+      minimumWorkingMinutes: Number(cfg.minimumWorkingMinutes ?? 480),
+    };
+    const holidayDates = new Set(
+      (scheduleRow?.holidays ?? [])
+        .filter((h) => h.type === "holiday")
+        .map((h) => dateOnly(h.date))
+    );
+    return { schedule, holidayDates };
+  }
+
+  private async loadEngineRules(companyId: string): Promise<PayrollRule[]> {
+    await this.ensureRules(companyId);
+    const rows = await this.prisma.payrollRule.findMany({ where: { companyId } });
+    return rows.map((row, index) => {
+      const p = (row.payload ?? {}) as Record<string, unknown>;
+      const when = (p.when ?? {}) as Record<string, unknown>;
+      const then = (p.then ?? {}) as Record<string, unknown>;
+      const now = new Date().toISOString();
+      return {
+        id: row.id,
+        name: String(p.name ?? row.labelKey ?? row.code),
+        enabled: row.enabled,
+        priority: Number(p.priority ?? (index + 1) * 10),
+        when: {
+          field: String(when.field ?? "late_minutes") as PayrollRule["when"]["field"],
+          operator: String(when.operator ?? "gt") as PayrollRule["when"]["operator"],
+          value: Number(when.value ?? 0),
+        },
+        then: {
+          action: String(then.action ?? "deduct_fixed") as PayrollRule["then"]["action"],
+          amount: Number(then.amount ?? 0),
+        },
+        description: String(p.description ?? ""),
+        companyId,
+        createdAt: row.createdAt?.toISOString?.() ?? now,
+        updatedAt: row.updatedAt?.toISOString?.() ?? now,
+        createdBy: "system",
+        updatedBy: "system",
+        deletedAt: null,
+        isArchived: false,
+        version: row.version,
+        metadata: {},
+      };
+    });
   }
 
   private async computePayslip(
@@ -318,213 +584,159 @@ export class PayrollService {
     policy: PolicyPayload,
     profile: SalaryPayload
   ) {
-    const attendance = await this.prisma.attendanceRecord.findMany({
-      where: {
-        companyId,
-        employeeId,
-        deletedAt: null,
-        date: {
-          gte: parseDate(period.startDate),
-          lte: parseDate(period.endDate),
-        },
-      },
+    const [{ schedule, holidayDates }, rules, attendance, leaves] =
+      await Promise.all([
+        this.loadScheduleContext(companyId),
+        this.loadEngineRules(companyId),
+        this.prisma.attendanceRecord.findMany({
+          where: {
+            companyId,
+            employeeId,
+            deletedAt: null,
+            date: {
+              gte: parseDate(period.startDate),
+              lte: parseDate(period.endDate),
+            },
+          },
+        }),
+        this.prisma.leaveRequest.findMany({
+          where: {
+            companyId,
+            employeeId,
+            deletedAt: null,
+            status: "approved",
+            startDate: { lte: parseDate(period.endDate) },
+            endDate: { gte: parseDate(period.startDate) },
+          },
+        }),
+      ]);
+
+    const asOf = dateOnly(new Date());
+    const through = asOf < period.endDate ? asOf : period.endDate;
+    const empLeaves = leaves.map((r) => ({
+      id: r.id,
+      type: r.type as "annual" | "sick" | "personal" | "unpaid" | "maternity" | "emergency",
+      status: "approved" as const,
+      startDate: dateOnly(r.startDate),
+      endDate: dateOnly(r.endDate),
+      days: leaveDaysInPeriod(
+        dateOnly(r.startDate),
+        dateOnly(r.endDate),
+        period.startDate,
+        period.endDate,
+        schedule.workingDays,
+        holidayDates,
+        r.days
+      ),
+    }));
+
+    const existingRows = attendance.map((r) => {
+      const checkIn = r.checkIn ? r.checkIn.toISOString() : undefined;
+      const checkOut = r.checkOut ? r.checkOut.toISOString() : undefined;
+      return {
+        date: dateOnly(r.date),
+        status: r.status as
+          | "present"
+          | "absent"
+          | "late"
+          | "wfh"
+          | "early_leave"
+          | "half_day"
+          | "on_leave",
+        lateMinutes: r.lateMinutes,
+        workingMinutes: r.workingMinutes,
+        earlyLeaveMinutes: inferEarlyLeaveMinutes(
+          r,
+          schedule.minimumWorkingMinutes
+        ),
+        overtimeMinutes: r.overtimeMinutes ?? 0,
+        checkIn,
+        checkOut,
+        isEarlyLeave: r.isEarlyLeave,
+        isNightShift: isNightShiftHint(checkIn),
+        isBusinessTrip: (r.note ?? "").toLowerCase().includes("trip"),
+      };
     });
 
-    const basic = profile.basicSalary;
-    const allow = allowancesTotal(profile.allowances);
-    const gross = basic + allow + (profile.bonuses ?? 0) + (profile.commission ?? 0);
-    const daily = gross / Math.max(period.workingDays, 1);
-    const hourly =
-      daily / Math.max((policy.minimumWorkingMinutes ?? 480) / 60, 1);
+    const existingDates = new Set(existingRows.map((r) => r.date));
+    const onLeave = (date: string) =>
+      empLeaves.some((l) => l.startDate <= date && l.endDate >= date);
 
-    let absenceDays = 0;
-    let halfDays = 0;
-    let earlyDays = 0;
-    let lateDayFrac = 0;
-    let otMinutes = 0;
-    let missingPunch = 0;
+    const synthesizedAbsent = listWorkingDates(
+      period.startDate,
+      through,
+      schedule.workingDays,
+      holidayDates
+    )
+      .filter((date) => !existingDates.has(date) && !onLeave(date))
+      .map((date) => ({
+        date,
+        status: "absent" as const,
+        lateMinutes: 0,
+        workingMinutes: 0,
+        earlyLeaveMinutes: 0,
+        overtimeMinutes: 0,
+        isEarlyLeave: false,
+      }));
 
-    for (const row of attendance) {
-      if (row.status === "absent") absenceDays += 1;
-      if (row.status === "half_day") halfDays += 1;
-      if (row.status === "early_leave" || row.isEarlyLeave) {
-        const frac = Math.min(
-          policy.earlyLeaveDayFraction ?? 0.25,
-          (row.earlyLeaveMinutes || 0) / Math.max(policy.minimumWorkingMinutes ?? 480, 1)
-        );
-        earlyDays += Math.max(frac, policy.earlyLeaveDayFraction ?? 0.25);
-      }
-      if (row.isLate || row.status === "late") {
-        lateDayFrac += lateDayFraction(row.lateMinutes, policy);
-      }
-      otMinutes += row.overtimeMinutes ?? 0;
-      if (row.checkIn && !row.checkOut && row.status !== "on_leave") {
-        missingPunch += 1;
-      }
-    }
-
-    const cap = policy.monthlyDeductionCap ?? 0.4;
-    let dayFrac =
-      absenceDays * (policy.absenceDayFraction ?? 1) +
-      halfDays * (policy.halfDayFraction ?? 0.5) +
-      earlyDays +
-      lateDayFrac +
-      missingPunch * (policy.missingPunchDayFraction ?? 0.5);
-    dayFrac = Math.min(dayFrac, period.workingDays * cap);
-
-    const attendanceDeduction = roundMoney(
-      dayFrac * daily,
-      policy.autoRounding
+    const attendanceRows = [...existingRows, ...synthesizedAbsent];
+    const ot = aggregateAttendanceOvertime(
+      attendanceRows,
+      schedule,
+      holidayDates
     );
-    const overtimePay = roundMoney(
-      (otMinutes / 60) * hourly * (policy.overtimeRate ?? 1.5),
-      policy.autoRounding
-    );
-    const net = roundMoney(
-      gross + overtimePay - attendanceDeduction,
-      policy.autoRounding
-    );
-    const bonusesTotal = profile.bonuses ?? 0;
-    const employeeCost = attendanceDeduction;
-    const employerCost = roundMoney(net * 1.12, policy.autoRounding);
 
-    const attendanceImpacts: Array<{
-      id: string;
-      kind: string;
-      label: string;
-      date: string;
-      minutes?: number;
-      dayFraction: number;
-      amount: number;
-    }> = [];
-    for (const row of attendance) {
-      const date = dateOnly(row.date);
-      if (row.status === "absent") {
-        attendanceImpacts.push({
-          id: `abs-${date}`,
-          kind: "absence",
-          label: "absence",
-          date,
-          dayFraction: policy.absenceDayFraction ?? 1,
-          amount: roundMoney(
-            (policy.absenceDayFraction ?? 1) * daily,
-            policy.autoRounding
-          ),
-        });
-      }
-      if (row.status === "half_day") {
-        attendanceImpacts.push({
-          id: `half-${date}`,
-          kind: "half_day",
-          label: "half_day",
-          date,
-          dayFraction: policy.halfDayFraction ?? 0.5,
-          amount: roundMoney(
-            (policy.halfDayFraction ?? 0.5) * daily,
-            policy.autoRounding
-          ),
-        });
-      }
-      if (row.status === "early_leave" || row.isEarlyLeave) {
-        const frac = Math.max(
-          policy.earlyLeaveDayFraction ?? 0.25,
-          Math.min(
-            policy.earlyLeaveDayFraction ?? 0.25,
-            (row.earlyLeaveMinutes || 0) /
-              Math.max(policy.minimumWorkingMinutes ?? 480, 1)
-          )
-        );
-        attendanceImpacts.push({
-          id: `early-${date}`,
-          kind: "early_leave",
-          label: "early_leave",
-          date,
-          minutes: row.earlyLeaveMinutes || undefined,
-          dayFraction: frac,
-          amount: roundMoney(frac * daily, policy.autoRounding),
-        });
-      }
-      if (row.isLate || row.status === "late") {
-        const frac = lateDayFraction(row.lateMinutes, policy);
-        if (frac > 0) {
-          attendanceImpacts.push({
-            id: `late-${date}`,
-            kind: "late",
-            label: "late_minutes",
-            date,
-            minutes: row.lateMinutes || undefined,
-            dayFraction: frac,
-            amount: roundMoney(frac * daily, policy.autoRounding),
-          });
-        }
-      }
-    }
+    const engineProfile = toEngineProfile(employeeId, profile);
+    const policies = {
+      ...policy,
+      id: "policy",
+      companyId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: "system",
+      updatedBy: "system",
+      deletedAt: null,
+      isArchived: false,
+      version: 1,
+      metadata: {},
+    } as unknown as import("../lib/payroll-engine-types").PayrollPolicies;
 
-    const lines = [
-      {
-        id: "basic",
-        code: "basic",
-        label: "Basic salary",
-        category: "earning",
-        amount: basic,
+    const slip = calculateEmployeePayslip({
+      profile: engineProfile,
+      policies,
+      rules,
+      period: {
+        id: period.periodId,
+        label: period.label,
+        year: period.year,
+        month: period.month,
+        startDate: period.startDate,
+        endDate: period.endDate,
+        payDate: period.payDate,
+        workingDays: period.workingDays,
+        cycle: "monthly",
+        paymentDay: policy.paymentDay ?? 1,
       },
-      {
-        id: "allowances",
-        code: "allowances",
-        label: "Allowances",
-        category: "allowance",
-        amount: allow,
-      },
-      {
-        id: "overtime",
-        code: "overtime",
-        label: "Overtime",
-        category: "overtime",
-        amount: overtimePay,
-      },
-      {
-        id: "attendance_deduction",
-        code: "attendance_deduction",
-        label: "Attendance deductions",
-        category: "deduction",
-        amount: -attendanceDeduction,
-      },
-    ].filter((l) => l.amount !== 0);
+      schedule,
+      attendance: attendanceRows,
+      leaves: empLeaves,
+      overtimeHours: ot.regular,
+      weekendOvertimeHours: ot.weekend,
+      holidayOvertimeHours: ot.holiday,
+      asOfDate: asOf,
+    });
 
     return {
-      employeeId,
-      periodId: period.periodId,
-      currency: profile.currency ?? policy.currency ?? "EGP",
-      basicSalary: basic,
-      allowancesTotal: allow,
-      bonusesTotal,
-      incentives: 0,
-      manualAdjustments: 0,
-      gross,
-      overtimePay,
-      overtimeMinutes: otMinutes,
-      shiftAllowance: profile.allowances?.shift ?? 0,
-      deductionsTotal: employeeCost,
-      insurance: 0,
-      tax: 0,
-      loans: 0,
-      advances: 0,
-      penalties: 0,
-      attendanceDeductions: attendanceDeduction,
-      leaveDeductions: 0,
-      net,
-      employeeCost,
-      employerCost,
-      lines,
-      attendanceImpacts,
-      leaveImpacts: [],
-      dailyRate: roundMoney(daily, policy.autoRounding),
-      hourlyRate: roundMoney(hourly, policy.autoRounding),
+      ...slip,
       status: "draft",
       generatedAt: new Date().toISOString(),
-      // legacy aliases kept for older dashboard aggregations / clients
-      attendanceDeduction,
-      netPay: net,
+      // legacy aliases for older aggregations
+      attendanceDeduction: slip.attendanceDeductions,
+      netPay: slip.net,
+      overtimeMinutes: Math.round(
+        (ot.regular + ot.weekend + ot.holiday) * 60
+      ),
+      basicSalary: profile.basicSalary,
     };
   }
 
@@ -648,7 +860,7 @@ export class PayrollService {
         profile
       );
       payslips.push(slip);
-      totalDeductions += slip.attendanceDeductions;
+      totalDeductions += slip.deductionsTotal;
       totalOvertime += slip.overtimePay;
       netPayroll += slip.net;
       estimatedCost += slip.employerCost;
@@ -864,11 +1076,22 @@ export class PayrollService {
   }
 
   async payslips(companyId: string, employeeId?: string) {
-    const rows = await this.prisma.employeePayslip.findMany({
-      where: { companyId, ...(employeeId ? { employeeId } : {}) },
-      orderBy: { createdAt: "desc" },
+    if (employeeId) {
+      return [await this.ensureCurrentPayslip(companyId, employeeId)];
+    }
+    const employees = await this.prisma.employee.findMany({
+      where: {
+        companyId,
+        deletedAt: null,
+        status: { in: ["active", "on_leave"] },
+      },
+      orderBy: { employeeCode: "asc" },
     });
-    return rows.map((r) => this.toClientPayslip(r));
+    const slips = [];
+    for (const emp of employees) {
+      slips.push(await this.ensureCurrentPayslip(companyId, emp.id));
+    }
+    return slips;
   }
 
   /**
@@ -876,23 +1099,7 @@ export class PayrollService {
    * when no row exists yet (demo / first open before payroll advance).
    */
   async payslip(companyId: string, employeeId: string) {
-    const row = await this.prisma.employeePayslip.findFirst({
-      where: { companyId, employeeId },
-      orderBy: { createdAt: "desc" },
-    });
-    if (row) {
-      const payload = (row.payload ?? {}) as Record<string, unknown>;
-      const hasClientShape =
-        typeof payload.net === "number" &&
-        Array.isArray(payload.attendanceImpacts) &&
-        Array.isArray(payload.lines) &&
-        (payload.lines as unknown[]).every(
-          (l) => l && typeof (l as { id?: unknown }).id === "string"
-        );
-      if (hasClientShape) return this.toClientPayslip(row);
-      // Rebuild legacy / incomplete payloads so the FE never crashes.
-      return this.ensureCurrentPayslip(companyId, employeeId);
-    }
+    // Always recompute the current period so profile/policy/attendance stay accurate.
     return this.ensureCurrentPayslip(companyId, employeeId);
   }
 

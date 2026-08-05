@@ -14,14 +14,14 @@ export function MetaChip({ label, value, className }: MetaChipProps) {
   return (
     <div
       className={cn(
-        "rounded-xl border border-border/60 bg-muted/25 px-3 py-2",
+        "min-w-0 rounded-xl border border-border/60 bg-muted/25 px-2 py-2 sm:px-3",
         className
       )}
     >
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
-      <p className="mt-0.5 truncate text-[13px] font-medium text-foreground">
+      <p className="mt-0.5 truncate text-[12px] font-medium text-foreground sm:text-[13px]">
         {value}
       </p>
     </div>

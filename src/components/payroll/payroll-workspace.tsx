@@ -9,13 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { PayrollKpiRow } from "@/components/payroll/payroll-kpi-row";
 import { PayrollTimeline } from "@/components/payroll/payroll-timeline";
-import { SalaryBreakdown } from "@/components/payroll/salary-breakdown";
 import { SalaryProfilePanel } from "@/components/payroll/salary-profile-panel";
 import { PayrollPoliciesPanel } from "@/components/payroll/payroll-policies-panel";
 import { PayrollRulesEngine } from "@/components/payroll/payroll-rules-engine";
 import { PayrollApprovalWorkflow } from "@/components/payroll/payroll-approval-workflow";
 import { PayrollReportsPanel } from "@/components/payroll/payroll-reports-panel";
 import { PayslipHistoryPanel } from "@/components/payroll/payslip-history-panel";
+import { PayslipStatementView } from "@/components/payroll/payslip-statement";
 import { formatEgp } from "@/lib/payroll";
 import { formatHmDuration } from "@/lib/duration-format";
 import {
@@ -55,6 +55,7 @@ import type {
 export function PayrollWorkspace() {
   const { t, locale } = useTranslation();
   const role = useSessionStore((s) => s.role);
+  const sessionUser = useSessionStore((s) => s.user);
   const workEmployeeId = useSessionStore((s) =>
     getWorkEmployeeIdFromUser(s.user)
   );
@@ -84,17 +85,19 @@ export function PayrollWorkspace() {
     void (async () => {
       try {
         if (role === "employee") {
-          const [dash, slip, profile, history] = await Promise.all([
+          const [dash, slip, profile, history, emp] = await Promise.all([
             getPayrollDashboard(),
             getEmployeePayslip(workEmployeeId),
             getSalaryProfile(workEmployeeId),
             getPayslipHistory(workEmployeeId),
+            getWorkforceEmployees(),
           ]);
           if (!mounted) return;
           if (dash.success) setSummary(dash.data);
           if (slip.success) setMyPayslip(slip.data);
           if (profile.success) setMyProfile(profile.data);
           if (history.success) setMyHistory(history.data);
+          if (emp.success) setEmployees(emp.data);
         } else {
           const [dash, pol, ruleRes, slips, rep, emp] = await Promise.all([
             getPayrollDashboard(),
@@ -146,6 +149,23 @@ export function PayrollWorkspace() {
     [payslips, selectedEmployeeId]
   );
 
+  const selectedEmployee = useMemo(
+    () => employees.find((e) => e.id === selectedEmployeeId) ?? null,
+    [employees, selectedEmployeeId]
+  );
+
+  const myEmployee = useMemo(
+    () =>
+      employees.find((e) => e.id === workEmployeeId) ??
+      ({
+        name: t(sessionUser.nameKey),
+        employeeId: workEmployeeId,
+        department: "Operations" as Employee["department"],
+        email: sessionUser.email,
+      } satisfies Pick<Employee, "name" | "employeeId" | "department" | "email">),
+    [employees, workEmployeeId, sessionUser, t]
+  );
+
   const [selectedProfileState, setSelectedProfileState] =
     useState<EmployeeSalaryProfile | null>(null);
 
@@ -183,30 +203,35 @@ export function PayrollWorkspace() {
 
         <div className="lg:hidden">
           <Tabs defaultValue="slip" className="space-y-4">
-            <div className="sticky top-14 z-20 -mx-4 bg-background/90 px-4 py-2 backdrop-blur-xl">
-              <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl border border-border/60 bg-card p-1 shadow-sm">
+            <div className="sticky top-14 z-20 -mx-3 bg-background/90 px-3 py-2 backdrop-blur-xl sm:-mx-4 sm:px-4">
+              <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-xl border border-border/60 bg-card p-1 shadow-sm sm:rounded-2xl">
                 <TabsTrigger
                   value="slip"
-                  className="min-h-11 rounded-xl text-[12px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
+                  className="min-h-10 truncate rounded-lg px-1 text-[11px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md sm:min-h-11 sm:rounded-xl sm:text-[12px]"
                 >
                   {t("payroll.mobileTabSlip")}
                 </TabsTrigger>
                 <TabsTrigger
                   value="profile"
-                  className="min-h-11 rounded-xl text-[12px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
+                  className="min-h-10 truncate rounded-lg px-1 text-[11px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md sm:min-h-11 sm:rounded-xl sm:text-[12px]"
                 >
                   {t("payroll.mobileTabProfile")}
                 </TabsTrigger>
                 <TabsTrigger
                   value="history"
-                  className="min-h-11 rounded-xl text-[12px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
+                  className="min-h-10 truncate rounded-lg px-1 text-[11px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md sm:min-h-11 sm:rounded-xl sm:text-[12px]"
                 >
                   {t("payroll.mobileTabHistory")}
                 </TabsTrigger>
               </TabsList>
             </div>
             <TabsContent value="slip" className="mt-0 space-y-4">
-              <SalaryBreakdown payslip={myPayslip} />
+              <PayslipStatementView
+                payslip={myPayslip}
+                profile={myProfile}
+                employee={myEmployee}
+                periodLabel={summary.period.label}
+              />
               <ImpactLists payslip={myPayslip} />
             </TabsContent>
             <TabsContent value="profile" className="mt-0 space-y-4">
@@ -219,8 +244,13 @@ export function PayrollWorkspace() {
         </div>
 
         <div className="hidden space-y-6 lg:block">
+          <PayslipStatementView
+            payslip={myPayslip}
+            profile={myProfile}
+            employee={myEmployee}
+            periodLabel={summary.period.label}
+          />
           <SalaryProfilePanel profile={myProfile} payslip={myPayslip} />
-          <SalaryBreakdown payslip={myPayslip} />
           <PayslipHistoryPanel items={myHistory} />
           <ImpactLists payslip={myPayslip} />
         </div>
@@ -268,13 +298,25 @@ export function PayrollWorkspace() {
       <PayrollKpiRow summary={summary} />
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
-          <TabsTrigger value="overview">{t("payroll.tabOverview")}</TabsTrigger>
-          <TabsTrigger value="salary">{t("payroll.tabSalary")}</TabsTrigger>
-          <TabsTrigger value="policies">{t("payroll.tabPolicies")}</TabsTrigger>
-          <TabsTrigger value="rules">{t("payroll.tabRules")}</TabsTrigger>
-          <TabsTrigger value="workflow">{t("payroll.tabWorkflow")}</TabsTrigger>
-          <TabsTrigger value="reports">{t("payroll.tabReports")}</TabsTrigger>
+        <TabsList className="flex h-auto w-full flex-nowrap justify-start gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap">
+          <TabsTrigger value="overview" className="shrink-0">
+            {t("payroll.tabOverview")}
+          </TabsTrigger>
+          <TabsTrigger value="salary" className="shrink-0">
+            {t("payroll.tabSalary")}
+          </TabsTrigger>
+          <TabsTrigger value="policies" className="shrink-0">
+            {t("payroll.tabPolicies")}
+          </TabsTrigger>
+          <TabsTrigger value="rules" className="shrink-0">
+            {t("payroll.tabRules")}
+          </TabsTrigger>
+          <TabsTrigger value="workflow" className="shrink-0">
+            {t("payroll.tabWorkflow")}
+          </TabsTrigger>
+          <TabsTrigger value="reports" className="shrink-0">
+            {t("payroll.tabReports")}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4 space-y-4">
@@ -304,7 +346,12 @@ export function PayrollWorkspace() {
                 value={selectedEmployeeId}
                 onChange={setSelectedEmployeeId}
               />
-              <SalaryBreakdown payslip={selectedPayslip} />
+              <PayslipStatementView
+                payslip={selectedPayslip}
+                profile={selectedProfileState}
+                employee={selectedEmployee}
+                periodLabel={summary.period.label}
+              />
               <ImpactLists payslip={selectedPayslip} />
             </div>
           ) : null}
@@ -323,7 +370,14 @@ export function PayrollWorkspace() {
               payslip={selectedPayslip}
             />
           ) : null}
-          {selectedPayslip ? <SalaryBreakdown payslip={selectedPayslip} /> : null}
+          {selectedPayslip ? (
+            <PayslipStatementView
+              payslip={selectedPayslip}
+              profile={selectedProfileState}
+              employee={selectedEmployee}
+              periodLabel={summary.period.label}
+            />
+          ) : null}
           {selectedPayslip ? <ImpactLists payslip={selectedPayslip} /> : null}
         </TabsContent>
 

@@ -137,7 +137,7 @@ export function EmployeeTable({
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <table
-            className="w-full min-w-[720px] text-start text-sm"
+            className="w-full min-w-[36rem] text-start text-sm sm:min-w-[640px]"
             aria-label={t("employees.title")}
           >
             <thead className="border-b border-border/70 bg-muted/30">

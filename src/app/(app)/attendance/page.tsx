@@ -124,8 +124,8 @@ export default function AttendancePage() {
             onValueChange={setMobileTab}
             className="space-y-4"
           >
-            <div className="sticky top-14 z-20 -mx-4 bg-background/90 px-4 py-2 backdrop-blur-xl">
-              <TabsList className="grid h-auto w-full grid-cols-4 gap-1 rounded-2xl border border-border/60 bg-card p-1 shadow-sm">
+            <div className="sticky top-14 z-20 -mx-3 bg-background/90 px-3 py-2 backdrop-blur-xl sm:-mx-4 sm:px-4">
+              <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-xl border border-border/60 bg-card p-1 shadow-sm sm:grid-cols-4 sm:rounded-2xl">
                 {(
                   [
                     ["today", "attendance.mobileTabToday"],
@@ -137,7 +137,7 @@ export default function AttendancePage() {
                   <TabsTrigger
                     key={value}
                     value={value}
-                    className="rounded-xl px-1 py-2.5 text-[11px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
+                    className="min-h-10 truncate rounded-lg px-1.5 py-2 text-[11px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md sm:min-h-11 sm:rounded-xl sm:text-[12px]"
                   >
                     {t(label)}
                   </TabsTrigger>

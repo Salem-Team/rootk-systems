@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Time12Input } from "@/components/ui/time-12-input";
 import {
   DEFAULT_POLICY,
   type PolicyState,
@@ -235,20 +236,20 @@ export function WorkPoliciesPanel() {
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="fromTime">{t("common.from")}</Label>
-              <Input
+              <Time12Input
                 id="fromTime"
-                type="time"
                 value={fromTime}
-                onChange={(e) => setFromTime(e.target.value)}
+                onChange={setFromTime}
+                aria-label={t("common.from")}
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="toTime">{t("common.to")}</Label>
-              <Input
+              <Time12Input
                 id="toTime"
-                type="time"
                 value={toTime}
-                onChange={(e) => setToTime(e.target.value)}
+                onChange={setToTime}
+                aria-label={t("common.to")}
               />
             </div>
           </div>

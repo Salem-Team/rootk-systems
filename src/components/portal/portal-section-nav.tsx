@@ -112,7 +112,7 @@ export function PortalSectionNav({
   return (
     <>
       {/* Mobile: single compact sticky strip */}
-      <div className="sticky top-14 z-30 -mx-4 border-b border-border/50 bg-background/94 px-3 py-2 backdrop-blur-xl lg:hidden">
+      <div className="sticky top-14 z-20 -mx-3 border-b border-border/50 bg-background/94 px-3 py-2 backdrop-blur-xl sm:-mx-4 sm:px-4 lg:hidden">
         <div
           className="flex items-center gap-1"
           role="tablist"

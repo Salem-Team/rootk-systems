@@ -173,7 +173,7 @@ export function LeaveCard({
           ) : null}
 
           <p className="mt-2.5 text-[11px] text-muted-foreground">
-            {format(parseISO(request.submittedAt), "MMM d, yyyy · HH:mm", {
+            {format(parseISO(request.submittedAt), "MMM d, yyyy · h:mm a", {
               locale: dateLocale,
             })}
           </p>

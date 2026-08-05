@@ -172,7 +172,7 @@ export default function EmployeesPage() {
             <Button
               type="button"
               size="lg"
-              className="gap-2 bg-[#082868] text-white shadow-[0_10px_24px_rgba(8,40,104,0.28)] hover:bg-[#0a327c]"
+              className="w-full gap-2 bg-[#082868] text-white shadow-[0_10px_24px_rgba(8,40,104,0.28)] hover:bg-[#0a327c] sm:w-auto"
               onClick={() => {
                 setEditing(null);
                 setFormOpen(true);
