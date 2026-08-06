@@ -12,7 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FilterShell } from "@/components/shared/filter-shell";
-import { DEPARTMENTS } from "@/constants";
+import { departmentLabel } from "@/lib/department-label";
+import { useDepartments } from "@/hooks/use-departments";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import type { Department, EmployeeStatus, ViewMode } from "@/types";
@@ -44,6 +45,7 @@ export function EmployeeFilters({
   onViewModeChange,
 }: EmployeeFiltersProps) {
   const { t } = useTranslation();
+  const { activeNames } = useDepartments();
 
   const statusOptions: { value: EmployeeStatus | "all"; label: string }[] = [
     { value: "all", label: t("employees.allStatuses") },
@@ -97,9 +99,9 @@ export function EmployeeFilters({
                   <SelectItem value="all">
                     {t("employees.allDepartments")}
                   </SelectItem>
-                  {DEPARTMENTS.map((dept) => (
+                  {activeNames.map((dept) => (
                     <SelectItem key={dept} value={dept}>
-                      {t(`departments.${dept}`)}
+                      {departmentLabel(dept, t)}
                     </SelectItem>
                   ))}
                 </SelectContent>

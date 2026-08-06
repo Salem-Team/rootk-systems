@@ -10,6 +10,7 @@ import type { EmployeeProfileExtras } from "@/types/employee-profile";
 import { buildPortalDocuments } from "@/components/portal/portal-mock-data";
 import { useEmployeeProfileExtras } from "@/hooks/use-employee-profile-extras";
 import { useTranslation } from "@/hooks/use-translation";
+import { departmentLabel } from "@/lib/department-label";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 import { getInitials } from "@/lib/utils";
 import type { Employee } from "@/types";
@@ -70,7 +71,7 @@ export function PortalProfilePanel({ employee }: { employee: Employee }) {
             <Row icon={MapPin} label={employee.location} />
           </InfoBlock>
           <InfoBlock title={t("portal.employmentInfo")}>
-            <Meta label={t("common.department")} value={t(`departments.${employee.department}`)} />
+            <Meta label={t("common.department")} value={departmentLabel(employee.department, t)} />
             <Meta label={t("common.position")} value={employee.position} />
             <Meta label={t("employees.hiredOn", { date: employee.joinDate })} value="" />
             <Meta

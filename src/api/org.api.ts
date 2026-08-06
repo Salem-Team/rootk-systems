@@ -5,6 +5,7 @@ import type {
   ApprovalRule,
   JobPosition,
   OfficeLocation,
+  OrgDepartment,
   ShiftDefinition,
 } from "@/types/org";
 
@@ -25,6 +26,25 @@ export function deleteLocationRemote(
   id: string
 ): Promise<ApiResponse<boolean>> {
   return api.delete(API_ROUTES.org.locationById(id), false);
+}
+
+/** GET /org/departments */
+export function fetchDepartments(): Promise<ApiResponse<OrgDepartment[]>> {
+  return api.getList(API_ROUTES.org.departments);
+}
+
+/** PUT /org/departments */
+export function putDepartment(
+  input: Partial<OrgDepartment> & { id?: string }
+): Promise<ApiResponse<OrgDepartment | null>> {
+  return api.put(API_ROUTES.org.departments, input, null);
+}
+
+/** DELETE /org/departments/:id */
+export function deleteDepartmentRemote(
+  id: string
+): Promise<ApiResponse<boolean>> {
+  return api.delete(API_ROUTES.org.departmentById(id), false);
 }
 
 /** POST /org/locations/resolve-maps-url */

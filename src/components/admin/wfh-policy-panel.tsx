@@ -17,7 +17,7 @@ import {
   getWorkSchedule,
   updateWorkSchedule,
 } from "@/services/schedule.service";
-import { DEPARTMENTS } from "@/constants";
+import { useDepartments } from "@/hooks/use-departments";
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp } from "@/lib/animations";
 import { cn } from "@/lib/utils";
@@ -35,6 +35,7 @@ const DAY_OPTS: { id: DayOfWeek; key: TranslationPath }[] = [
 
 export function WfhPolicyPanel() {
   const { t } = useTranslation();
+  const { activeNames } = useDepartments();
   const [policy, setPolicy] = useState<WfhPolicy>(DEFAULT_WFH);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -164,7 +165,7 @@ export function WfhPolicyPanel() {
         <div>
           <p className="section-label mb-2">{t("admin.allowedDepartments")}</p>
           <div className="flex flex-wrap gap-2">
-            {DEPARTMENTS.map((dept) => {
+            {activeNames.map((dept) => {
               const on = policy.allowedDepartments.includes(dept);
               return (
                 <button

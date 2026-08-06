@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { CHART } from "@/constants/chart-colors";
 import { useTranslation } from "@/hooks/use-translation";
+import { departmentLabel } from "@/lib/department-label";
 import { fadeInUp } from "@/lib/animations";
 import type { DepartmentStat } from "@/components/dashboard/dashboard-mock-data";
 
@@ -34,7 +35,7 @@ export function DepartmentComparison({
   const data = useMemo(
     () =>
       stats.slice(0, 6).map((row) => ({
-        name: t(`departments.${row.department}`),
+        name: departmentLabel(row.department, t),
         rate: row.rate,
         present: row.present,
         late: row.late,

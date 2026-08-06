@@ -18,8 +18,11 @@ export const StorageKeys = {
   monthlyStats: key("monthly-stats"),
   notifications: key("notifications"),
   users: key("users"),
+  /** Local-mode email→password map (never synced to API). */
+  credentials: key("credentials"),
   locations: key("locations"),
   positions: key("positions"),
+  departments: key("departments"),
   shifts: key("shifts"),
   approvalRules: key("approval-rules"),
   userPreferences: key("user-preferences"),

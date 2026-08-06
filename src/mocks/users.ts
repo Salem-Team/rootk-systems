@@ -1,7 +1,7 @@
 import type { AppUser } from "@/types";
 import type { SeedOf } from "@/types/seed";
 
-/** Demo principals for role switch — future JWT subjects. */
+/** Demo principals for credential login — future JWT subjects. */
 export const usersSeed: SeedOf<AppUser>[] = [
   {
     id: "emp-001",

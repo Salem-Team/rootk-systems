@@ -8,6 +8,7 @@ import {
   type HeatCell,
 } from "@/components/reports/analytics-mock-data";
 import { useTranslation } from "@/hooks/use-translation";
+import { departmentLabel } from "@/lib/department-label";
 import { fadeInUp } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 import type { TranslationPath } from "@/i18n";
@@ -33,7 +34,7 @@ export function AnalyticsHeatmaps() {
         description={t("analytics.heatmapDeptDesc")}
         cells={deptHeat}
         reduceMotion={!!reduceMotion}
-        translateRow={(row) => t(`departments.${row}` as TranslationPath)}
+        translateRow={(row) => departmentLabel(row, t)}
       />
       <HeatmapCard
         title={t("analytics.heatmapWeek")}

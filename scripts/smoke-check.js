@@ -80,6 +80,10 @@ function main() {
     "src/lib/wfh-policy.ts",
     "src/lib/duration-format.ts",
     "src/lib/payroll/engine.ts",
+    "src/lib/payroll/charge.ts",
+    "src/lib/work-deduction-policy.ts",
+    "src/components/admin/work-deduction-rules-panel.tsx",
+    "src/components/admin/deduction-charge-editor.tsx",
     "src/components/providers/notification-audio-provider.tsx",
     "src/services/notification.service.ts",
     "src/hooks/use-notifications.ts",
@@ -267,6 +271,26 @@ function main() {
     fileContains("src/components/ui/dialog.tsx", "max-h-[min(92dvh") ||
       fileContains("src/components/ui/dialog.tsx", "92dvh"),
     "dialog responsive max-height"
+  );
+
+  assert(
+    fileContains("src/i18n/locales/ar.ts", "deductionRules"),
+    "deduction rules i18n ar"
+  );
+  assert(
+    fileContains("src/i18n/locales/en.ts", "deductionRules"),
+    "deduction rules i18n en"
+  );
+  assert(
+    fileContains("backend/src/lib/payroll-charge.ts", "resolveAbsenceCharge"),
+    "backend payroll charge resolver"
+  );
+  assert(
+    fileContains(
+      "src/components/admin/company-admin-workspace.tsx",
+      "WorkDeductionRulesPanel"
+    ),
+    "work policies mounts deduction panel"
   );
 
   assert(fileContains("tsconfig.json", '"backend"'), "tsconfig excludes backend");

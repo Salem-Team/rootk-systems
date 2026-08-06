@@ -11,6 +11,7 @@ import {
   CalendarDays,
   Check,
   IdCard,
+  KeyRound,
   Loader2,
   Mail,
   MapPin,
@@ -42,7 +43,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { DEPARTMENTS } from "@/constants";
 import {
   createEmployee,
   deleteEmployee,
@@ -55,7 +55,9 @@ import {
 import { demoTodayKey } from "@/lib/mock-date";
 import { softSpring } from "@/lib/animations";
 import { cn, getInitials } from "@/lib/utils";
+import { useDepartments } from "@/hooks/use-departments";
 import { useTranslation } from "@/hooks/use-translation";
+import { departmentLabel } from "@/lib/department-label";
 import type { Employee, EmployeeStatus } from "@/types";
 
 const LOCATIONS = [
@@ -68,18 +70,39 @@ const LOCATIONS = [
 ] as const;
 const NONE_MANAGER = "__none__";
 
-const employeeFormSchema = z.object({
-  name: z.string().trim().min(2, "name"),
-  email: z.string().trim().email("email"),
-  phone: z.string().trim().max(40).optional().or(z.literal("")),
-  department: departmentSchema,
-  position: z.string().trim().min(2, "position"),
-  location: z.string().trim().min(1).max(120),
-  joinDate: z.string().min(4),
-  status: employeeStatusSchema,
-  manager: z.string().trim().max(120).optional().or(z.literal("")),
-  employeeId: z.string().trim().max(40).optional().or(z.literal("")),
-});
+const employeeFormSchema = z
+  .object({
+    name: z.string().trim().min(2, "name"),
+    email: z.string().trim().email("email"),
+    phone: z.string().trim().max(40).optional().or(z.literal("")),
+    department: departmentSchema,
+    position: z.string().trim().min(2, "position"),
+    location: z.string().trim().min(1).max(120),
+    joinDate: z.string().min(4),
+    status: employeeStatusSchema,
+    manager: z.string().trim().max(120).optional().or(z.literal("")),
+    employeeId: z.string().trim().max(40).optional().or(z.literal("")),
+    password: z.string().optional().or(z.literal("")),
+    confirmPassword: z.string().optional().or(z.literal("")),
+  })
+  .superRefine((data, ctx) => {
+    const password = data.password?.trim() ?? "";
+    const confirm = data.confirmPassword?.trim() ?? "";
+    if (password.length > 0 && password.length < 6) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "password_short",
+        path: ["password"],
+      });
+    }
+    if (password !== confirm) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "password_mismatch",
+        path: ["confirmPassword"],
+      });
+    }
+  });
 
 type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
 
@@ -95,6 +118,8 @@ function emptyValues(): EmployeeFormValues {
     status: "active",
     manager: "",
     employeeId: "",
+    password: "",
+    confirmPassword: "",
   };
 }
 
@@ -110,6 +135,8 @@ function fromEmployee(employee: Employee): EmployeeFormValues {
     status: employee.status,
     manager: employee.manager ?? "",
     employeeId: employee.employeeId,
+    password: "",
+    confirmPassword: "",
   };
 }
 
@@ -184,6 +211,7 @@ export function EmployeeFormDialog({
   onDeleted?: (id: string) => void;
 }) {
   const { t } = useTranslation();
+  const { activeNames } = useDepartments();
   const reduceMotion = useReducedMotion();
   const editing = Boolean(employee);
   const [saving, setSaving] = useState(false);
@@ -280,6 +308,10 @@ export function EmployeeFormDialog({
     if (code === "name") return t("employees.fieldNameRequired");
     if (code === "email") return t("employees.fieldEmailInvalid");
     if (code === "position") return t("employees.fieldPositionRequired");
+    if (code === "password_short") return t("employees.fieldPasswordShort");
+    if (code === "password_mismatch")
+      return t("employees.fieldPasswordMismatch");
+    if (code === "password_required") return t("employees.fieldPasswordRequired");
     return undefined;
   }
 
@@ -314,6 +346,12 @@ export function EmployeeFormDialog({
       }
     }
 
+    const password = data.password?.trim() ?? "";
+    if (!editing && password.length < 6) {
+      form.setError("password", { message: "password_required" });
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
@@ -327,12 +365,16 @@ export function EmployeeFormDialog({
         status: data.status,
         manager: data.manager?.trim() || undefined,
         employeeId: data.employeeId?.trim() || undefined,
+        ...(password ? { password } : {}),
       };
 
       const res =
         editing && employee
           ? await updateEmployee(employee.id, payload)
-          : await createEmployee(payload);
+          : await createEmployee({
+              ...payload,
+              password,
+            });
 
       if (!res.success) {
         toast.error(res.message ?? t("common.error"));
@@ -428,7 +470,7 @@ export function EmployeeFormDialog({
                 <p className="truncate text-xs text-muted-foreground">
                   {values.position?.trim() || t("employees.previewRole")}
                   {" · "}
-                  {t(`departments.${values.department}`)}
+                  {departmentLabel(values.department, t)}
                 </p>
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                   <StatusBadge status={values.status} />
@@ -557,9 +599,9 @@ export function EmployeeFormDialog({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {DEPARTMENTS.map((d) => (
+                        {activeNames.map((d) => (
                           <SelectItem key={d} value={d}>
-                            {t(`departments.${d}`)}
+                            {d}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -690,6 +732,64 @@ export function EmployeeFormDialog({
                         </SelectItem>
                       </SelectContent>
                     </Select>
+                  )}
+                />
+              </div>
+            </FormSection>
+
+            <FormSection
+              step={4}
+              icon={KeyRound}
+              title={t("employees.sectionAccess")}
+              description={
+                editing
+                  ? t("employees.sectionAccessEditDesc")
+                  : t("employees.sectionAccessDesc")
+              }
+              delay={0.14}
+            >
+              <div className="space-y-1.5">
+                <Label htmlFor="emp-password">
+                  {editing
+                    ? t("employees.resetPassword")
+                    : t("employees.accountPassword")}
+                </Label>
+                <div className="relative">
+                  <KeyRound className="pointer-events-none absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/70" />
+                  <Input
+                    id="emp-password"
+                    type="password"
+                    autoComplete="new-password"
+                    className="ps-9"
+                    placeholder={
+                      editing
+                        ? t("employees.resetPasswordPlaceholder")
+                        : t("employees.passwordPlaceholder")
+                    }
+                    {...form.register("password")}
+                  />
+                </div>
+                <FieldError
+                  message={fieldMessage(
+                    form.formState.errors.password?.message
+                  )}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="emp-confirm-password">
+                  {t("employees.confirmPassword")}
+                </Label>
+                <Input
+                  id="emp-confirm-password"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder={t("employees.confirmPasswordPlaceholder")}
+                  {...form.register("confirmPassword")}
+                />
+                <FieldError
+                  message={fieldMessage(
+                    form.formState.errors.confirmPassword?.message
                   )}
                 />
               </div>

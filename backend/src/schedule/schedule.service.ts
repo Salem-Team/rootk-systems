@@ -115,6 +115,10 @@ export class ScheduleService {
           ...((currentMeta.attendancePolicy as object) ?? {}),
           ...((incoming.attendancePolicy as object) ?? {}),
         },
+        deductionPolicy:
+          incoming.deductionPolicy !== undefined
+            ? incoming.deductionPolicy
+            : currentMeta.deductionPolicy,
       };
     }
 

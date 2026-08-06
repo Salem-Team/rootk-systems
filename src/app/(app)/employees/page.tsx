@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageTransition } from "@/components/shared/page-transition";
@@ -68,6 +68,29 @@ export default function EmployeesPage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const skipFilterFetch = useRef(true);
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
+
+  /** Always reload from API/DB — never treat local React state as source of truth. */
+  const reloadEmployees = useCallback(async () => {
+    const current = filtersRef.current;
+    const [empRes, rosterRes] = await Promise.all([
+      getEmployees({
+        query: current.query || undefined,
+        department:
+          current.department === "all" ? undefined : current.department,
+        status: current.status === "all" ? undefined : current.status,
+      }),
+      getEmployees(),
+    ]);
+    if (empRes.success) setEmployees(empRes.data);
+    if (rosterRes.success) setRoster(rosterRes.data);
+    setSelected((curr) => {
+      if (!curr) return null;
+      const source = rosterRes.success ? rosterRes.data : empRes.success ? empRes.data : [];
+      return source.find((e) => e.id === curr.id) ?? null;
+    });
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -98,21 +121,15 @@ export default function EmployeesPage() {
     let mounted = true;
     startTransition(() => {
       void (async () => {
-        const res = await getEmployees({
-          query: filters.query || undefined,
-          department:
-            filters.department === "all" ? undefined : filters.department,
-          status: filters.status === "all" ? undefined : filters.status,
-        });
-        if (!mounted || !res.success) return;
-        setEmployees(res.data);
+        await reloadEmployees();
+        if (!mounted) return;
       })();
     });
 
     return () => {
       mounted = false;
     };
-  }, [filters.query, filters.department, filters.status, startTransition]);
+  }, [filters.query, filters.department, filters.status, startTransition, reloadEmployees]);
 
   const attendanceByEmployee = useMemo(() => {
     return attendance.reduce<Record<string, AttendanceRecord>>((acc, record) => {
@@ -122,7 +139,11 @@ export default function EmployeesPage() {
   }, [attendance]);
 
   const displayed = useMemo(
-    () => sortEmployees(employees, filters.sort),
+    () =>
+      sortEmployees(
+        employees.filter((e) => !e.deletedAt),
+        filters.sort
+      ),
     [employees, filters.sort]
   );
 
@@ -131,31 +152,18 @@ export default function EmployeesPage() {
     setDrawerOpen(true);
   };
 
-  function upsertLocal(employee: Employee) {
-    setEmployees((prev) => {
-      const idx = prev.findIndex((e) => e.id === employee.id);
-      if (idx < 0) return [employee, ...prev];
-      const next = [...prev];
-      next[idx] = employee;
-      return next;
-    });
-    setRoster((prev) => {
-      const idx = prev.findIndex((e) => e.id === employee.id);
-      if (idx < 0) return [employee, ...prev];
-      const next = [...prev];
-      next[idx] = employee;
-      return next;
-    });
-    setSelected((curr) => (curr?.id === employee.id ? employee : curr));
+  async function handleSaved(_employee: Employee) {
+    await reloadEmployees();
+    setEditing(null);
   }
 
-  function removeLocal(id: string) {
-    setEmployees((prev) => prev.filter((e) => e.id !== id));
-    setRoster((prev) => prev.filter((e) => e.id !== id));
+  async function handleDeleted(id: string) {
+    await reloadEmployees();
     if (selected?.id === id) {
       setSelected(null);
       setDrawerOpen(false);
     }
+    setEditing(null);
   }
 
   if (initialLoading) {
@@ -218,7 +226,7 @@ export default function EmployeesPage() {
 
         <EmployeeProfileDrawer
           employee={selected}
-          roster={roster}
+          roster={roster.filter((e) => !e.deletedAt)}
           open={drawerOpen}
           onOpenChange={setDrawerOpen}
           onSelectEmployee={openEmployee}
@@ -232,9 +240,13 @@ export default function EmployeesPage() {
           open={formOpen}
           onOpenChange={setFormOpen}
           employee={editing}
-          roster={roster}
-          onSaved={upsertLocal}
-          onDeleted={removeLocal}
+          roster={roster.filter((e) => !e.deletedAt)}
+          onSaved={(employee) => {
+            void handleSaved(employee);
+          }}
+          onDeleted={(id) => {
+            void handleDeleted(id);
+          }}
         />
       </PageTransition>
     </RoleGate>

@@ -9,6 +9,14 @@ import type {
   LeaveImpactLine,
   DeductionPriorityItem,
 } from "@/types/payroll";
+import {
+  earlyLeaveFallbackMinutes,
+  resolveAbsenceCharge,
+  resolveEarlyLeaveCap,
+  resolveHalfDayCharge,
+  resolveLateTierCharge,
+  resolveMissingPunchCharge,
+} from "@/lib/payroll/charge";
 
 function roundAmount(
   value: number,
@@ -209,9 +217,10 @@ function minutesDeductionFromPolicy(
     );
     const tier = tiers.find((t) => minutes >= t.afterMinutes);
     if (tier) {
+      const hit = resolveLateTierCharge(tier, rate);
       return {
-        dayFraction: tier.dayFraction,
-        amount: rate * tier.dayFraction,
+        dayFraction: hit.dayFraction,
+        amount: hit.amount,
         minutes,
         label: `late_tier_${tier.afterMinutes}`,
       };
@@ -226,12 +235,11 @@ function minutesDeductionFromPolicy(
   };
 
   if (kind === "early") {
-    const capFraction = policies.earlyLeaveDayFraction;
-    const capAmount = rate * capFraction;
-    if (byMinutes.amount > capAmount) {
+    const cap = resolveEarlyLeaveCap(policies, rate);
+    if (byMinutes.amount > cap.amount) {
       return {
-        dayFraction: capFraction,
-        amount: capAmount,
+        dayFraction: cap.dayFraction,
+        amount: cap.amount,
         minutes,
         label: "early_leave",
       };
@@ -345,32 +353,30 @@ export function calculateEmployeePayslip(
     const earlyLeave = row.isEarlyLeave || row.status === "early_leave";
 
     if (row.status === "absent" && !onLeave && !absentRuleOverride) {
-      const dayFraction = policies.absenceDayFraction;
-      const amount = rate * dayFraction;
-      attendanceDeduction += amount;
+      const hit = resolveAbsenceCharge(policies, rate);
+      attendanceDeduction += hit.amount;
       attendanceImpacts.push({
         id: `att-${row.date}-absence`,
         employeeId: input.profile.employeeId,
         date: row.date,
         kind: "absence",
         attendanceStatus: row.status,
-        dayFraction,
-        amount,
+        dayFraction: hit.dayFraction,
+        amount: hit.amount,
         label: "absence",
       });
     } else if (row.status === "half_day") {
       if (!halfDayRuleOverride) {
-        const dayFraction = policies.halfDayFraction;
-        const amount = rate * dayFraction;
-        attendanceDeduction += amount;
+        const hit = resolveHalfDayCharge(policies, rate);
+        attendanceDeduction += hit.amount;
         attendanceImpacts.push({
           id: `att-${row.date}-half`,
           employeeId: input.profile.employeeId,
           date: row.date,
           kind: "half_day",
           attendanceStatus: row.status,
-          dayFraction,
-          amount,
+          dayFraction: hit.dayFraction,
+          amount: hit.amount,
           label: "half_day",
         });
       }
@@ -406,13 +412,15 @@ export function calculateEmployeePayslip(
       const earlyMinutes = Math.max(
         0,
         row.earlyLeaveMinutes ??
-          (earlyLeave ? Math.round(hoursPerDay * 60 * 0.25) : 0)
+          (earlyLeave
+            ? earlyLeaveFallbackMinutes(policies, hoursPerDay)
+            : 0)
       );
       if (!earlyRuleOverride && (earlyLeave || earlyMinutes > 0)) {
         const earlyHit = minutesDeductionFromPolicy(
           earlyMinutes > 0
             ? earlyMinutes
-            : Math.round(hoursPerDay * 60 * policies.earlyLeaveDayFraction),
+            : earlyLeaveFallbackMinutes(policies, hoursPerDay),
           policies,
           rate,
           hourly,
@@ -527,15 +535,15 @@ export function calculateEmployeePayslip(
       Boolean(row.isBusinessTrip);
 
     if (!skipMissingPunch && !row.checkIn) {
-      const amount = rate * policies.missingPunchDayFraction;
-      attendanceDeduction += amount;
+      const hit = resolveMissingPunchCharge(policies, rate);
+      attendanceDeduction += hit.amount;
       attendanceImpacts.push({
         id: `att-${row.date}-missing-in`,
         employeeId: input.profile.employeeId,
         date: row.date,
         kind: "missing_check_in",
-        dayFraction: policies.missingPunchDayFraction,
-        amount,
+        dayFraction: hit.dayFraction,
+        amount: hit.amount,
         label: "missing_check_in",
       });
     }
@@ -545,15 +553,15 @@ export function calculateEmployeePayslip(
       !row.checkOut &&
       row.date !== input.asOfDate
     ) {
-      const amount = rate * policies.missingPunchDayFraction;
-      attendanceDeduction += amount;
+      const hit = resolveMissingPunchCharge(policies, rate);
+      attendanceDeduction += hit.amount;
       attendanceImpacts.push({
         id: `att-${row.date}-missing-out`,
         employeeId: input.profile.employeeId,
         date: row.date,
         kind: "missing_check_out",
-        dayFraction: policies.missingPunchDayFraction,
-        amount,
+        dayFraction: hit.dayFraction,
+        amount: hit.amount,
         label: "missing_check_out",
       });
     }

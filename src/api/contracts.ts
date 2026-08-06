@@ -89,10 +89,14 @@ export interface CreateEmployeeInput {
   manager?: string;
   /** Optional HR code; Nest may auto-generate if omitted. */
   employeeId?: string;
+  /** Initial login password (required on create). */
+  password: string;
 }
 
-export interface UpdateEmployeeInput extends Partial<CreateEmployeeInput> {
+export interface UpdateEmployeeInput extends Partial<Omit<CreateEmployeeInput, "password">> {
   version?: number;
+  /** Optional admin password reset. */
+  password?: string;
 }
 
 export type CreateWorkTaskInput = CreateWorkTaskDto;

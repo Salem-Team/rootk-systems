@@ -168,7 +168,15 @@ export interface PayrollPeriod {
 
 export interface LateDeductionPolicy {
   graceMinutes: number;
-  tiers: { afterMinutes: number; dayFraction: number }[];
+  tiers: {
+    afterMinutes: number;
+    dayFraction: number;
+    /** Optional charge override from Work Policies (fixed amount or day quantity). */
+    charge?: {
+      mode: "day_fraction" | "fixed_amount";
+      value: number;
+    };
+  }[];
 }
 
 export interface PayrollPolicies extends BaseEntity {
@@ -178,6 +186,11 @@ export interface PayrollPolicies extends BaseEntity {
   halfDayFraction: number;
   earlyLeaveDayFraction: number;
   missingPunchDayFraction: number;
+  /** Work-policy charge specs (preferred over bare fractions when present). */
+  absenceCharge?: { mode: "day_fraction" | "fixed_amount"; value: number };
+  halfDayCharge?: { mode: "day_fraction" | "fixed_amount"; value: number };
+  earlyLeaveCharge?: { mode: "day_fraction" | "fixed_amount"; value: number };
+  missingPunchCharge?: { mode: "day_fraction" | "fixed_amount"; value: number };
   overtimeRate: number;
   holidayOvertimeRate: number;
   weekendOvertimeRate: number;

@@ -4,6 +4,7 @@ import { MapPin } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { DepartmentBadge } from "@/components/employees/department-badge";
+import { EmployeePerformanceButton } from "@/components/employees/employee-performance-dialog";
 import { MotionCard } from "@/components/shared/motion-card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { useTranslation } from "@/hooks/use-translation";
@@ -98,6 +99,14 @@ export function EmployeeCard({
               <span className="text-[11px] text-muted-foreground">—</span>
             </div>
           )}
+
+          <div className="mt-3 flex justify-end">
+            <EmployeePerformanceButton
+              employee={employee}
+              size="sm"
+              variant="secondary"
+            />
+          </div>
         </CardContent>
       </Card>
     </MotionCard>

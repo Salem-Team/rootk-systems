@@ -12,6 +12,7 @@ import {
   monthlyStatsSeed,
   notificationsSeed,
   officeLocationsSeed,
+  orgDepartmentsSeed,
   shiftsSeed,
   userPreferencesSeed,
   usersSeed,
@@ -40,6 +41,7 @@ import type {
   ApprovalRule,
   JobPosition,
   OfficeLocation,
+  OrgDepartment,
   ShiftDefinition,
 } from "@/types/org";
 import type { UserPreferences } from "@/types/preferences";
@@ -57,6 +59,7 @@ export interface SeedPayload {
   notifications: AppNotification[];
   users: AppUser[];
   locations: OfficeLocation[];
+  departments: OrgDepartment[];
   positions: JobPosition[];
   shifts: ShiftDefinition[];
   approvalRules: ApprovalRule[];
@@ -161,6 +164,7 @@ export function buildSeedPayload(): SeedPayload {
     }),
     users: usersSeed.map((u) => enrichWithAudit(u, "system")),
     locations: officeLocationsSeed.map((l) => enrichWithAudit(l, "system")),
+    departments: orgDepartmentsSeed.map((d) => enrichWithAudit(d, "system")),
     positions: jobPositionsSeed.map((p) => enrichWithAudit(p, "system")),
     shifts: shiftsSeed.map((s) => enrichWithAudit(s, "system")),
     approvalRules: approvalRulesSeed.map((r) => enrichWithAudit(r, "system")),

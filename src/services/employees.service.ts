@@ -185,6 +185,16 @@ export async function createEmployee(
       ...createAuditFields(actor),
     };
     const created = await employeeRepository.create(employee);
+    const { provisionLocalEmployeeAccount } = await import(
+      "@/services/auth.service"
+    );
+    await provisionLocalEmployeeAccount({
+      employeeId: created.id,
+      email: created.email,
+      name: created.name,
+      password: data.password,
+      actorId: actor,
+    });
     try {
       const { ensureSalaryProfileForEmployee } = await import(
         "@/services/payroll.service"
@@ -225,14 +235,42 @@ export async function updateEmployee(
       );
     }
     const actor = getSessionUserId();
+    const { password, ...rest } = parsed.data;
+    const previous = await employeeRepository.findById(id);
+    if (!previous) throw new NotFoundError("Employee not found");
     const updated = await employeeRepository.mutate(id, (current) =>
       touchEntity(current, actor, {
-        ...parsed.data,
-        phone: parsed.data.phone ?? current.phone,
-        location: parsed.data.location ?? current.location,
+        ...rest,
+        phone: rest.phone ?? current.phone,
+        location: rest.location ?? current.location,
       })
     );
     if (!updated) throw new NotFoundError("Employee not found");
+
+    const nextEmail = updated.email.trim().toLowerCase();
+    const prevEmail = previous.email.trim().toLowerCase();
+    if (password) {
+      const { resetLocalEmployeePassword } = await import(
+        "@/services/auth.service"
+      );
+      const { removeLocalCredential } = await import(
+        "@/lib/local-credentials"
+      );
+      if (prevEmail !== nextEmail) removeLocalCredential(prevEmail);
+      await resetLocalEmployeePassword(nextEmail, password);
+    } else if (prevEmail !== nextEmail) {
+      const {
+        getLocalCredential,
+        setLocalCredential,
+        removeLocalCredential,
+      } = await import("@/lib/local-credentials");
+      const existing = getLocalCredential(prevEmail);
+      if (existing) {
+        setLocalCredential(nextEmail, existing);
+        removeLocalCredential(prevEmail);
+      }
+    }
+
     return ok(updated, "Employee updated");
   } catch (error) {
     return fromError(error, emptyEmployee());
@@ -271,13 +309,28 @@ export async function updateEmployeeStatus(
   }
 }
 
-/** DELETE /employees/:id (soft) */
+/** DELETE /employees/:id — hard delete from DB / local store. */
 export async function deleteEmployee(
   id: string
 ): Promise<ApiResponse<boolean>> {
   if (isApiMode()) return deleteEmployeeRemote(id);
   try {
-    const removed = await employeeRepository.delete(id, true);
+    const employee = await employeeRepository.findById(id);
+    if (!employee) throw new NotFoundError("Employee not found");
+
+    const { userRepository } = await import("@/repositories");
+    const { removeLocalCredential } = await import(
+      "@/lib/local-credentials"
+    );
+    const account = await userRepository.findByEmail(employee.email, {
+      includeInactive: true,
+    });
+    if (account) {
+      await userRepository.delete(account.id, false);
+    }
+    removeLocalCredential(employee.email);
+
+    const removed = await employeeRepository.delete(id, false);
     if (!removed) throw new NotFoundError("Employee not found");
     return ok(true, "Employee deleted");
   } catch (error) {

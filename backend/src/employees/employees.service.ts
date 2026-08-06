@@ -9,7 +9,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { mapEmployee, parseDate } from "../common/mappers";
 import { NotificationsService } from "../notifications/notifications.service";
 import { writeActivity } from "../common/activity-writer";
-import { hashDemoPassword } from "../auth/password.util";
+import { hashPassword } from "../auth/password.util";
 import { AppRole } from "../common/roles";
 
 function requireCreateFields(body: {
@@ -18,6 +18,7 @@ function requireCreateFields(body: {
   department?: string;
   position?: string;
   joinDate?: string;
+  password?: string;
 }) {
   const missing: string[] = [];
   if (!body.name?.trim()) missing.push("name");
@@ -25,10 +26,21 @@ function requireCreateFields(body: {
   if (!body.department?.trim()) missing.push("department");
   if (!body.position?.trim()) missing.push("position");
   if (!body.joinDate?.trim()) missing.push("joinDate");
+  if (!body.password?.trim()) missing.push("password");
   if (missing.length) {
     throw new BadRequestException(
       `Missing required fields: ${missing.join(", ")}`
     );
+  }
+  if ((body.password?.trim().length ?? 0) < 6) {
+    throw new BadRequestException("Password must be at least 6 characters");
+  }
+}
+
+function assertOptionalPassword(password?: string) {
+  if (password === undefined || password === null || password === "") return;
+  if (password.trim().length < 6) {
+    throw new BadRequestException("Password must be at least 6 characters");
   }
 }
 
@@ -95,9 +107,11 @@ export class EmployeesService {
       status?: string;
       manager?: string;
       employeeId?: string;
+      password: string;
     }
   ) {
     requireCreateFields(body);
+    const password = body.password.trim();
     try {
       const row = await this.prisma.employee.create({
         data: {
@@ -150,22 +164,50 @@ export class EmployeesService {
           email: { equals: body.email, mode: "insensitive" },
         },
       });
-      if (!existingUser) {
-        const initials = body.name
-          .split(/\s+/)
-          .filter(Boolean)
-          .slice(0, 2)
-          .map((p) => p[0]?.toUpperCase() ?? "")
-          .join("");
+      if (existingUser && !existingUser.deletedAt) {
+        throw new ConflictException(
+          "A login account with this email already exists"
+        );
+      }
+
+      const initials = body.name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((p) => p[0]?.toUpperCase() ?? "")
+        .join("");
+
+      if (existingUser?.deletedAt) {
+        await this.prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            employeeId: row.id,
+            email: body.email.trim().toLowerCase(),
+            role: AppRole.employee,
+            initials: initials || "EM",
+            displayName: body.name.trim(),
+            passwordHash: hashPassword(password),
+            isActive: true,
+            deletedAt: null,
+            isArchived: false,
+            updatedBy: actorId,
+            version: { increment: 1 },
+            metadata: {
+              nameKey: "user.employeeFullName",
+              firstNameKey: "user.employeeFirstName",
+            },
+          },
+        });
+      } else {
         const createdUser = await this.prisma.user.create({
           data: {
             companyId,
             employeeId: row.id,
-            email: body.email,
+            email: body.email.trim().toLowerCase(),
             role: AppRole.employee,
             initials: initials || "EM",
-            displayName: body.name,
-            passwordHash: hashDemoPassword(),
+            displayName: body.name.trim(),
+            passwordHash: hashPassword(password),
             isActive: true,
             createdBy: actorId,
             updatedBy: actorId,
@@ -245,11 +287,20 @@ export class EmployeesService {
     });
     if (!current) throw new NotFoundException("Employee not found");
 
+    const password =
+      typeof body.password === "string" ? body.password.trim() : undefined;
+    assertOptionalPassword(password);
+
+    const nextEmail =
+      typeof body.email === "string" ? body.email.trim() : undefined;
+    const nextName =
+      typeof body.name === "string" ? body.name.trim() : undefined;
+
     const row = await this.prisma.employee.update({
       where: { id },
       data: {
-        name: body.name as string | undefined,
-        email: body.email as string | undefined,
+        name: nextName,
+        email: nextEmail,
         department: body.department as string | undefined,
         position: body.position as string | undefined,
         location: body.location as string | undefined,
@@ -264,6 +315,45 @@ export class EmployeesService {
         version: { increment: 1 },
       },
     });
+
+    const linkedUser = await this.prisma.user.findFirst({
+      where: {
+        companyId,
+        employeeId: id,
+        deletedAt: null,
+      },
+    });
+    if (linkedUser) {
+      const userPatch: Prisma.UserUpdateInput = {
+        updatedBy: actorId,
+        version: { increment: 1 },
+      };
+      if (nextEmail) userPatch.email = nextEmail.toLowerCase();
+      if (nextName) {
+        userPatch.displayName = nextName;
+        const initials = nextName
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((p) => p[0]?.toUpperCase() ?? "")
+          .join("");
+        if (initials) userPatch.initials = initials;
+      }
+      if (password) {
+        userPatch.passwordHash = hashPassword(password);
+      }
+      await this.prisma.user.update({
+        where: { id: linkedUser.id },
+        data: userPatch,
+      });
+      if (password) {
+        await this.prisma.refreshToken.updateMany({
+          where: { userId: linkedUser.id, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+      }
+    }
+
     return mapEmployee(row);
   }
 
@@ -289,21 +379,39 @@ export class EmployeesService {
     return mapEmployee(row);
   }
 
-  async remove(companyId: string, actorId: string, id: string) {
+  async remove(companyId: string, _actorId: string, id: string) {
     const current = await this.prisma.employee.findFirst({
-      where: { id, companyId, deletedAt: null },
+      where: { id, companyId },
     });
     if (!current) throw new NotFoundException("Employee not found");
 
-    await this.prisma.employee.update({
-      where: { id },
-      data: {
-        deletedAt: new Date(),
-        isArchived: true,
-        updatedBy: actorId,
-        version: { increment: 1 },
-      },
+    await this.prisma.$transaction(async (tx) => {
+      const linkedUsers = await tx.user.findMany({
+        where: { companyId, employeeId: id },
+      });
+      const userIds = linkedUsers.map((u) => u.id);
+
+      if (userIds.length) {
+        await tx.refreshToken.deleteMany({
+          where: { userId: { in: userIds } },
+        });
+        await tx.userPreferences.deleteMany({
+          where: { userId: { in: userIds } },
+        });
+        await tx.user.deleteMany({
+          where: { id: { in: userIds } },
+        });
+      }
+
+      await tx.employeeSalaryProfile.deleteMany({
+        where: { companyId, employeeId: id },
+      });
+
+      // Keep historical attendance/leave/work rows (string refs, no FK),
+      // but remove the employee + login account permanently.
+      await tx.employee.delete({ where: { id } });
     });
+
     return true;
   }
 

@@ -41,6 +41,31 @@ export class OrgController {
     return this.service.deleteLocation(companyId, actorId, id);
   }
 
+  @Get("departments")
+  departments(@CompanyId() companyId: string) {
+    return this.service.listDepartments(companyId);
+  }
+
+  @Put("departments")
+  @Roles("admin")
+  upsertDepartment(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.service.upsertDepartment(companyId, actorId, body);
+  }
+
+  @Delete("departments/:id")
+  @Roles("admin")
+  deleteDepartment(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @Param("id") id: string
+  ) {
+    return this.service.deleteDepartment(companyId, actorId, id);
+  }
+
   @Get("positions")
   positions(@CompanyId() companyId: string) {
     return this.service.listPositions(companyId);

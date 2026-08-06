@@ -16,15 +16,8 @@ export type LeaveType =
   | "unpaid"
   | "maternity"
   | "emergency";
-export type Department =
-  | "Engineering"
-  | "Design"
-  | "Product"
-  | "HR"
-  | "Finance"
-  | "Marketing"
-  | "Operations"
-  | "Sales";
+/** Department name stored on employees/positions (denormalized from org catalog). */
+export type Department = string;
 export type ViewMode = "grid" | "table";
 export type DayOfWeek =
   | "sunday"

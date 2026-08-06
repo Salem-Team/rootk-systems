@@ -9,7 +9,6 @@ import {
   MobileDrawer,
 } from "@/components/layout/mobile-nav";
 import { AuthGate } from "@/components/layout/auth-gate";
-import { RoleBanner } from "@/components/layout/role-banner";
 import { RoleRedirect } from "@/components/layout/role-redirect";
 import { RouteProgress } from "@/components/layout/route-progress";
 import { PreferenceSync } from "@/components/shared/preference-sync";
@@ -45,7 +44,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
         >
           <Navbar />
-          <RoleBanner />
           <main
             id="main-content"
             tabIndex={-1}

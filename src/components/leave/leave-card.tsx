@@ -21,6 +21,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { MetaChip } from "@/components/shared/meta-chip";
 import { approveLeave, rejectLeave } from "@/services/leave.service";
 import { useTranslation } from "@/hooks/use-translation";
+import { departmentLabel } from "@/lib/department-label";
 import { emitLeaveUpdated } from "@/lib/events";
 import { fadeInUp } from "@/lib/animations";
 import {
@@ -129,7 +130,7 @@ export function LeaveCard({
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
                   {employee?.department
-                    ? t(`departments.${employee.department}`)
+                    ? departmentLabel(employee.department, t)
                     : "—"}{" "}
                   · {typeLabel}
                 </p>

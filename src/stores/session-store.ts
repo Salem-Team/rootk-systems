@@ -46,10 +46,7 @@ function fromAppUser(user: AppUser): SessionUser {
   };
 }
 
-const USERS: Record<UserRole, SessionUser> = {
-  admin: toSessionUser("admin"),
-  employee: toSessionUser("employee"),
-};
+const EMPTY_USER: SessionUser = toSessionUser("admin");
 
 interface SessionState {
   role: UserRole;
@@ -57,16 +54,13 @@ interface SessionState {
   authenticated: boolean;
   accessToken: string | null;
   refreshToken: string | null;
-  /** Local demo sign-in (no backend). */
-  signIn: (role: UserRole) => void;
-  /** Apply backend auth payload (JWT + user). */
+  /** Apply auth payload (JWT or local session). */
   applyAuthSession: (input: {
     user: AppUser | SessionUser;
     role: UserRole;
     accessToken: string;
     refreshToken?: string | null;
   }) => void;
-  setRole: (role: UserRole) => void;
   setTokens: (tokens: AuthTokens) => void;
   signOut: () => void;
   isAdmin: () => boolean;
@@ -75,52 +69,34 @@ interface SessionState {
 
 /**
  * UI + auth session.
- * Local mode: role demo switch.
- * API mode: JWT access/refresh from NestJS auth endpoints.
+ * Role comes only from the authenticated account — no view switching.
  */
 export const useSessionStore = create<SessionState>()(
   persist(
     (set, get) => ({
       role: "admin",
-      user: USERS.admin,
+      user: EMPTY_USER,
       authenticated: false,
       accessToken: null,
       refreshToken: null,
-      signIn: (role) =>
-        set({
-          authenticated: true,
-          role,
-          user: USERS[role],
-          // Opaque demo token so Bearer wiring can be exercised in hybrid tests
-          accessToken: `demo.${role}.${USERS[role].id}`,
-          refreshToken: `demo-refresh.${role}`,
-        }),
       applyAuthSession: ({ user, role, accessToken, refreshToken }) =>
         set({
           authenticated: true,
           role,
-          user: "email" in user && "nameKey" in user ? fromAppUser(user as AppUser) : (user as SessionUser),
+          user:
+            "email" in user && "nameKey" in user
+              ? fromAppUser(user as AppUser)
+              : (user as SessionUser),
           accessToken,
           refreshToken: refreshToken ?? null,
         }),
-      setRole: (role) =>
-        set((state) => ({
-          role,
-          user: USERS[role],
-          accessToken: state.accessToken?.startsWith("demo.")
-            ? `demo.${role}.${USERS[role].id}`
-            : state.accessToken,
-          refreshToken: state.refreshToken?.startsWith("demo-refresh.")
-            ? `demo-refresh.${role}`
-            : state.refreshToken,
-        })),
       setTokens: ({ accessToken, refreshToken }) =>
         set({ accessToken, refreshToken }),
       signOut: () =>
         set({
           authenticated: false,
           role: "admin",
-          user: USERS.admin,
+          user: EMPTY_USER,
           accessToken: null,
           refreshToken: null,
         }),
@@ -149,11 +125,10 @@ export const useSessionStore = create<SessionState>()(
               >
             >
           | undefined;
-        const role = p?.role ?? current.role;
         return {
           ...current,
-          role,
-          user: p?.user ?? USERS[role],
+          role: p?.role ?? current.role,
+          user: p?.user ?? current.user,
           authenticated: p?.authenticated ?? false,
           accessToken: p?.accessToken ?? null,
           refreshToken: p?.refreshToken ?? null,
@@ -176,7 +151,9 @@ export function getSessionRole(): UserRole {
  * Local demo: same as `user.id` (e.g. emp-003).
  * API mode: linked `user.employeeId` (User.sub is a separate cuid).
  */
-export function getWorkEmployeeIdFromUser(user: Pick<SessionUser, "id" | "employeeId">): string {
+export function getWorkEmployeeIdFromUser(
+  user: Pick<SessionUser, "id" | "employeeId">
+): string {
   if (isApiMode() && user.employeeId) return user.employeeId;
   return user.id;
 }

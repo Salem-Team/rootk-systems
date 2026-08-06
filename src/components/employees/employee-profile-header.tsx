@@ -4,6 +4,7 @@ import { CalendarDays, MapPin, MessageSquare, Pencil, Phone } from "lucide-react
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DepartmentBadge } from "@/components/employees/department-badge";
+import { EmployeePerformanceButton } from "@/components/employees/employee-performance-dialog";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { useTranslation } from "@/hooks/use-translation";
 import { getInitials } from "@/lib/utils";
@@ -82,6 +83,11 @@ export function EmployeeProfileHeader({
           <Phone className="h-3.5 w-3.5" />
           {t("employees.actionCall")}
         </Button>
+        <EmployeePerformanceButton
+          employee={employee}
+          size="sm"
+          variant="outline"
+        />
         <Button
           type="button"
           size="sm"

@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { DepartmentBadge } from "@/components/employees/department-badge";
 import { buildDeptAnalytics } from "@/components/reports/analytics-mock-data";
 import { useTranslation } from "@/hooks/use-translation";
+import { departmentLabel } from "@/lib/department-label";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
 export function DepartmentAnalyticsPanel() {
@@ -47,14 +48,14 @@ export function DepartmentAnalyticsPanel() {
         <RankList
           title={t("analytics.topDepartments")}
           items={top.map((r) => ({
-            name: t(`departments.${r.department}`),
+            name: departmentLabel(r.department, t),
             value: `${r.attendance}%`,
           }))}
         />
         <RankList
           title={t("analytics.lowestDepartments")}
           items={low.map((r) => ({
-            name: t(`departments.${r.department}`),
+            name: departmentLabel(r.department, t),
             value: `${r.attendance}%`,
           }))}
         />

@@ -15,13 +15,19 @@ export class UserRepository extends CollectionRepository<AppUser> {
     });
   }
 
-  async findByEmail(email: string): Promise<AppUser | null> {
+  async findByEmail(
+    email: string,
+    opts: { includeInactive?: boolean } = {}
+  ): Promise<AppUser | null> {
     return this.withLatency(async () => {
       const users = await this.list();
+      const needle = email.toLowerCase();
       return (
-        users.find(
-          (u) => u.email.toLowerCase() === email.toLowerCase() && u.isActive
-        ) ?? null
+        users.find((u) => {
+          if (u.email.toLowerCase() !== needle) return false;
+          if (opts.includeInactive) return true;
+          return u.isActive && !u.deletedAt;
+        }) ?? null
       );
     });
   }

@@ -439,6 +439,34 @@ async function main() {
   });
 
   // Sample org data
+  const deptCount = await prisma.department.count({
+    where: { companyId: COMPANY_ID, deletedAt: null },
+  });
+  if (deptCount === 0) {
+    const seedDepartments = [
+      { name: "Engineering", nameAr: "الهندسة", code: "ENG", color: "#082868" },
+      { name: "Design", nameAr: "التصميم", code: "DES", color: "#0ea5e9" },
+      { name: "Product", nameAr: "المنتج", code: "PRD", color: "#14b8a6" },
+      { name: "HR", nameAr: "الموارد البشرية", code: "HR", color: "#f59e0b" },
+      { name: "Finance", nameAr: "المالية", code: "FIN", color: "#64748b" },
+      { name: "Marketing", nameAr: "التسويق", code: "MKT", color: "#f43f5e" },
+      { name: "Operations", nameAr: "العمليات", code: "OPS", color: "#f97316" },
+      { name: "Sales", nameAr: "المبيعات", code: "SAL", color: "#10b981" },
+    ];
+    await prisma.department.createMany({
+      data: seedDepartments.map((d) => ({
+        companyId: COMPANY_ID,
+        name: d.name,
+        nameAr: d.nameAr,
+        code: d.code,
+        color: d.color,
+        active: true,
+        createdBy: "system",
+        updatedBy: "system",
+      })),
+    });
+  }
+
   const locCount = await prisma.officeLocation.count({
     where: { companyId: COMPANY_ID, deletedAt: null },
   });
@@ -613,8 +641,11 @@ async function main() {
   }
 
   console.log("Seed complete.");
-  console.log("Demo password: Rootk@2026");
+  console.log("Bootstrap password (seed accounts only): Rootk@2026");
   console.log("Accounts: admin@rootk.systems / employee@rootk.systems");
+  console.log(
+    "New employees must receive an admin-assigned password — demo-login is disabled."
+  );
 }
 
 main()

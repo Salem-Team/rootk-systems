@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Bell,
   Globe2,
+  KeyRound,
   Loader2,
   Moon,
   Palette,
@@ -17,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { CompanyPolicySection } from "@/components/settings/company-policy-section";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -30,13 +32,19 @@ import {
   ensureUserPreferences,
   saveUserPreferences,
 } from "@/services/user-preferences.service";
+import { changeOwnPassword } from "@/services/auth.service";
 import { useSessionStore } from "@/stores/session-store";
 import { useTranslation } from "@/hooks/use-translation";
 import type { Locale } from "@/i18n";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 import type { UserPreferences } from "@/types/preferences";
 
-type PrefSection = "appearance" | "notifications" | "profile" | "company";
+type PrefSection =
+  | "appearance"
+  | "notifications"
+  | "profile"
+  | "company"
+  | "security";
 
 const DEFAULT_NOTIFS: UserPreferences["notifications"] = {
   email: true,
@@ -65,6 +73,10 @@ export function SettingsForm({
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [prefs, setPrefs] = useState<UserPreferences | null>(null);
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -102,9 +114,39 @@ export function SettingsForm({
     toast.success(t("settings.prefsSaved"));
   }
 
+  async function handleChangePassword() {
+    if (newPassword.trim().length < 6) {
+      toast.error(t("auth.passwordTooShort"));
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error(t("settings.passwordMismatch"));
+      return;
+    }
+    setPasswordSaving(true);
+    const res = await changeOwnPassword({
+      currentPassword,
+      newPassword: newPassword.trim(),
+    });
+    setPasswordSaving(false);
+    if (!res.success) {
+      const message =
+        res.error?.code === "UNAUTHORIZED"
+          ? t("settings.currentPasswordWrong")
+          : (res.message ?? t("settings.passwordChangeFailed"));
+      toast.error(message);
+      return;
+    }
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    toast.success(t("settings.passwordChanged"));
+  }
+
   const navItems: { id: PrefSection; label: string; icon: typeof Palette }[] = [
     { id: "appearance", label: t("settings.appearance"), icon: Palette },
     { id: "notifications", label: t("settings.notifications"), icon: Bell },
+    { id: "security", label: t("settings.security"), icon: KeyRound },
     ...(hideCompanyPolicy
       ? []
       : [
@@ -332,6 +374,77 @@ export function SettingsForm({
 
             {section === "company" ? <CompanyPolicySection /> : null}
 
+            {section === "security" ? (
+              <section className="surface-panel overflow-hidden">
+                <div className="panel-header">
+                  <h3 className="flex items-center gap-2 text-[0.95rem] font-semibold">
+                    <KeyRound className="h-3.5 w-3.5 text-primary" aria-hidden />
+                    {t("settings.security")}
+                  </h3>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    {t("settings.securityDesc")}
+                  </p>
+                </div>
+                <div className="panel-body grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label htmlFor="settings-current-password">
+                      {t("settings.currentPassword")}
+                    </Label>
+                    <Input
+                      id="settings-current-password"
+                      type="password"
+                      autoComplete="current-password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="settings-new-password">
+                      {t("settings.newPassword")}
+                    </Label>
+                    <Input
+                      id="settings-new-password"
+                      type="password"
+                      autoComplete="new-password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="settings-confirm-password">
+                      {t("settings.confirmNewPassword")}
+                    </Label>
+                    <Input
+                      id="settings-confirm-password"
+                      type="password"
+                      autoComplete="new-password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Button
+                      type="button"
+                      onClick={() => void handleChangePassword()}
+                      disabled={
+                        passwordSaving ||
+                        !currentPassword ||
+                        !newPassword ||
+                        !confirmPassword
+                      }
+                    >
+                      {passwordSaving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <KeyRound className="h-4 w-4" />
+                      )}
+                      {t("settings.changePassword")}
+                    </Button>
+                  </div>
+                </div>
+              </section>
+            ) : null}
+
             {section === "profile" ? (
               <section className="surface-panel overflow-hidden">
                 <div className="panel-header">
@@ -368,7 +481,7 @@ export function SettingsForm({
           </motion.div>
         </AnimatePresence>
 
-        {section === "company" ? null : (
+        {section === "company" || section === "security" ? null : (
           <div className="flex justify-end">
             <Button
               size="lg"

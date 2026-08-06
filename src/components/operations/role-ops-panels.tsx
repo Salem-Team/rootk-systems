@@ -24,6 +24,7 @@ import {
   buildDepartmentStats,
 } from "@/components/dashboard/dashboard-mock-data";
 import { useTranslation } from "@/hooks/use-translation";
+import { departmentLabel } from "@/lib/department-label";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 import { LateDurationBadge } from "@/components/shared/late-duration-badge";
@@ -139,7 +140,7 @@ export function ManagerOpsPanel({
             <li key={d.department}>
               <div className="mb-1 flex items-center justify-between text-sm">
                 <span className="font-medium">
-                  {t(`departments.${d.department}`)}
+                  {departmentLabel(d.department, t)}
                 </span>
                 <span className="tabular-nums text-muted-foreground">
                   {d.rate}%

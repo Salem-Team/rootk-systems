@@ -210,9 +210,18 @@ export interface PayrollPeriod {
   paymentDay: number;
 }
 
+export interface DeductionCharge {
+  mode: "day_fraction" | "fixed_amount";
+  value: number;
+}
+
 export interface LateDeductionPolicy {
   graceMinutes: number;
-  tiers: { afterMinutes: number; dayFraction: number }[];
+  tiers: {
+    afterMinutes: number;
+    dayFraction: number;
+    charge?: DeductionCharge;
+  }[];
 }
 
 export interface PayrollPolicies extends BaseEntity {
@@ -222,6 +231,10 @@ export interface PayrollPolicies extends BaseEntity {
   halfDayFraction: number;
   earlyLeaveDayFraction: number;
   missingPunchDayFraction: number;
+  absenceCharge?: DeductionCharge;
+  halfDayCharge?: DeductionCharge;
+  earlyLeaveCharge?: DeductionCharge;
+  missingPunchCharge?: DeductionCharge;
   overtimeRate: number;
   holidayOvertimeRate: number;
   weekendOvertimeRate: number;

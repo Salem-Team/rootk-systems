@@ -1,6 +1,6 @@
 import { randomBytes, scryptSync, timingSafeEqual } from "crypto";
 
-/** Demo password used by seed + local/API login docs. */
+/** Bootstrap password for prisma seed only — production accounts use admin-set passwords. */
 export const DEMO_PASSWORD = "Rootk@2026";
 
 const FIXED_DEMO_SALT = "rootk_demo_salt_v1";

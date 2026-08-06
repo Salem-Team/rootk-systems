@@ -1,13 +1,13 @@
 /**
  * Typed public env for frontend ↔ backend wiring.
- * Change NEXT_PUBLIC_DATA_SOURCE=api when NestJS is ready.
+ * Production / Nest builds should use `NEXT_PUBLIC_DATA_SOURCE=api`.
  */
 
 export type DataSource = "local" | "api";
 
 function readDataSource(): DataSource {
-  const raw = (process.env.NEXT_PUBLIC_DATA_SOURCE ?? "local").toLowerCase();
-  return raw === "api" ? "api" : "local";
+  const raw = (process.env.NEXT_PUBLIC_DATA_SOURCE ?? "api").toLowerCase();
+  return raw === "local" ? "local" : "api";
 }
 
 export const env = {

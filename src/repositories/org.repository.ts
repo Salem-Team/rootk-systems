@@ -7,6 +7,7 @@ import type {
   ApprovalRule,
   JobPosition,
   OfficeLocation,
+  OrgDepartment,
   ShiftDefinition,
 } from "@/types/org";
 
@@ -58,6 +59,58 @@ class LocationsRepository extends CollectionRepository<OfficeLocation> {
       actorId
     );
     return this.create(created);
+  }
+}
+
+class DepartmentsRepository extends CollectionRepository<OrgDepartment> {
+  constructor() {
+    super(getStorageAdapter(), StorageKeys.departments);
+  }
+
+  async list(): Promise<OrgDepartment[]> {
+    return this.findAll();
+  }
+
+  async upsert(
+    input: {
+      id?: string;
+      name: string;
+      nameAr?: string;
+      code?: string;
+      color?: string;
+      active?: boolean;
+    },
+    actorId = "system"
+  ): Promise<OrgDepartment> {
+    const name = input.name.trim();
+    const existing = input.id ? await this.findById(input.id) : null;
+    if (existing) {
+      const next = touchEntity(existing, actorId, {
+        name,
+        nameAr: input.nameAr,
+        code: input.code,
+        color: input.color ?? existing.color,
+        active: input.active ?? existing.active,
+      });
+      await this.update(existing.id, next);
+      return next;
+    }
+    const created = enrichWithAudit(
+      {
+        id: input.id || createId("dept"),
+        name,
+        nameAr: input.nameAr,
+        code: input.code,
+        color: input.color ?? "#082868",
+        active: input.active ?? true,
+      },
+      actorId
+    );
+    return this.create(created);
+  }
+
+  async softDelete(id: string, actorId = "system"): Promise<boolean> {
+    return this.delete(id, false);
   }
 }
 
@@ -170,6 +223,7 @@ class ApprovalsRepository extends CollectionRepository<ApprovalRule> {
 }
 
 export const locationsRepository = new LocationsRepository();
+export const departmentsRepository = new DepartmentsRepository();
 export const positionsRepository = new PositionsRepository();
 export const shiftsRepository = new ShiftsRepository();
 export const approvalsRepository = new ApprovalsRepository();

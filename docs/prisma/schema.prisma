@@ -418,6 +418,29 @@ model OfficeLocation {
   @@index([companyId])
 }
 
+/// Company department catalog — employees/positions store `name` as a denormalized string.
+model Department {
+  id         String   @id @default(cuid())
+  companyId  String
+  name       String
+  /// Optional Arabic display label for the UI.
+  nameAr     String?
+  code       String?
+  color      String   @default("#082868")
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdBy  String?
+  updatedBy  String?
+  deletedAt  DateTime?
+  isArchived Boolean  @default(false)
+  version    Int      @default(1)
+  metadata   Json     @default("{}")
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
 model JobPosition {
   id         String   @id @default(cuid())
   companyId  String

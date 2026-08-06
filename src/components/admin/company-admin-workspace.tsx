@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { AdminSectionNav } from "@/components/admin/admin-section-nav";
 import { CompanyProfilePanel } from "@/components/admin/company-profile-panel";
+import { WorkDeductionRulesPanel } from "@/components/admin/work-deduction-rules-panel";
 import { WorkPoliciesPanel } from "@/components/admin/work-policies-panel";
 import { ShiftsPanel } from "@/components/admin/shifts-panel";
 import { WfhPolicyPanel } from "@/components/admin/wfh-policy-panel";
@@ -148,7 +149,12 @@ export function CompanyAdminWorkspace() {
                 onNavigate={setSection}
               />
             ) : null}
-            {section === "policies" ? <WorkPoliciesPanel /> : null}
+            {section === "policies" ? (
+              <div className="space-y-5">
+                <WorkPoliciesPanel />
+                <WorkDeductionRulesPanel />
+              </div>
+            ) : null}
             {section === "shifts" ? <ShiftsPanel /> : null}
             {section === "wfh" ? <WfhPolicyPanel /> : null}
             {section === "departments" ? <DepartmentsAdminPanel /> : null}

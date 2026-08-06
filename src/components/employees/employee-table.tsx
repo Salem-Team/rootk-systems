@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DepartmentBadge } from "@/components/employees/department-badge";
+import { EmployeePerformanceButton } from "@/components/employees/employee-performance-dialog";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { useTranslation } from "@/hooks/use-translation";
@@ -108,6 +109,18 @@ export function EmployeeTable({
             <span className="text-xs text-muted-foreground">—</span>
           );
         },
+      },
+      {
+        id: "actions",
+        header: t("common.actions"),
+        enableSorting: false,
+        cell: ({ row }) => (
+          <EmployeePerformanceButton
+            employee={row.original}
+            size="sm"
+            variant="outline"
+          />
+        ),
       },
     ],
     [attendanceByEmployee, t]

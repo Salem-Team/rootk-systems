@@ -25,7 +25,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FilterShell } from "@/components/shared/filter-shell";
-import { DEPARTMENTS } from "@/constants";
+import { departmentLabel } from "@/lib/department-label";
+import { useDepartments } from "@/hooks/use-departments";
 import { useTranslation } from "@/hooks/use-translation";
 import { demoNow } from "@/lib/mock-date";
 import { cn } from "@/lib/utils";
@@ -64,6 +65,7 @@ export function ReportFilters({
   employees = [],
 }: ReportFiltersProps) {
   const { t, locale } = useTranslation();
+  const { activeNames } = useDepartments();
   const dateLocale = locale === "ar" ? arLocale : enUS;
 
   const statusOptions: { value: AttendanceStatus | "all"; label: string }[] = [
@@ -144,9 +146,9 @@ export function ReportFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("employees.allDepartments")}</SelectItem>
-                {DEPARTMENTS.map((d) => (
+                {activeNames.map((d) => (
                   <SelectItem key={d} value={d}>
-                    {t(`departments.${d}`)}
+                    {departmentLabel(d, t)}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -7,7 +7,7 @@
 export const API_ROUTES = {
   auth: {
     login: "/auth/login",
-    demoLogin: "/auth/demo-login",
+    changePassword: "/auth/change-password",
     refresh: "/auth/refresh",
     logout: "/auth/logout",
     me: "/auth/me",
@@ -72,6 +72,8 @@ export const API_ROUTES = {
     resolveMapsUrl: "/org/locations/resolve-maps-url",
     positions: "/org/positions",
     positionById: (id: string) => `/org/positions/${id}`,
+    departments: "/org/departments",
+    departmentById: (id: string) => `/org/departments/${id}`,
     shifts: "/org/shifts",
     shiftById: (id: string) => `/org/shifts/${id}`,
     approvals: "/org/approvals",

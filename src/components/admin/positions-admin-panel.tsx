@@ -22,22 +22,22 @@ import {
   getPositions,
   savePosition,
 } from "@/services/org.service";
-import { DEPARTMENTS } from "@/constants";
+import { useDepartments } from "@/hooks/use-departments";
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp } from "@/lib/animations";
-import type { Department } from "@/types";
 import type { JobPosition } from "@/types/org";
 
 export function PositionsAdminPanel() {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
+  const { activeNames } = useDepartments();
   const [items, setItems] = useState<JobPosition[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState({
     id: "",
     title: "",
-    department: "Engineering" as Department,
+    department: "Engineering",
     grade: "L3",
     reportsTo: "",
   });
@@ -143,11 +143,11 @@ export function PositionsAdminPanel() {
               onChange={(e) =>
                 setDraft((d) => ({
                   ...d,
-                  department: e.target.value as Department,
+                  department: e.target.value,
                 }))
               }
             >
-              {DEPARTMENTS.map((d) => (
+              {activeNames.map((d) => (
                 <option key={d} value={d}>
                   {d}
                 </option>

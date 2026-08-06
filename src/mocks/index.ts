@@ -15,6 +15,7 @@ export { notificationsSeed } from "./notifications";
 export { usersSeed } from "./users";
 export { userPreferencesSeed } from "./user-preferences";
 export {
+  orgDepartmentsSeed,
   officeLocationsSeed,
   jobPositionsSeed,
   shiftsSeed,

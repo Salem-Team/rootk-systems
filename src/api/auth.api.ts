@@ -27,19 +27,12 @@ export function loginWithCredentials(input: {
   );
 }
 
-/**
- * POST /auth/demo-login
- * Temporary Nest endpoint for role-based demo until real credentials ship.
- */
-export function demoLogin(
-  role: UserRole
-): Promise<ApiResponse<AuthSessionPayload>> {
-  return api.post(
-    API_ROUTES.auth.demoLogin,
-    { role },
-    emptySession(),
-    { skipAuth: true }
-  );
+/** POST /auth/change-password */
+export function changePasswordRemote(input: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<ApiResponse<boolean>> {
+  return api.post(API_ROUTES.auth.changePassword, input, false);
 }
 
 /** POST /auth/refresh */

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   UnauthorizedException,
 } from "@nestjs/common";
@@ -8,9 +9,7 @@ import { createHash, randomUUID } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { mapUser } from "../common/mappers";
 import type { JwtPayload } from "../common/decorators/current-user";
-import { verifyPassword } from "./password.util";
-
-type DemoRole = "admin" | "employee";
+import { hashPassword, verifyPassword } from "./password.util";
 
 function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -48,32 +47,6 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  private async userByRole(role: DemoRole) {
-    const companyId = this.companyId();
-    const row = await this.prisma.user.findFirst({
-      where: { companyId, role, deletedAt: null, isActive: true },
-      orderBy: { createdAt: "asc" },
-    });
-    if (!row) {
-      throw new UnauthorizedException(
-        `No ${role} user seeded. Run: npx prisma db seed`
-      );
-    }
-    return row;
-  }
-
-  async demoLogin(role: DemoRole = "admin") {
-    const row = await this.userByRole(role);
-    const user = mapUser(row);
-    const tokens = await this.issueTokens({
-      sub: row.id,
-      role: row.role,
-      companyId: row.companyId,
-      employeeId: row.employeeId ?? undefined,
-    });
-    return { user, role: row.role, tokens };
-  }
-
   async login(email: string, password: string) {
     const companyId = this.companyId();
     const row = await this.prisma.user.findFirst({
@@ -95,6 +68,45 @@ export class AuthService {
       employeeId: row.employeeId ?? undefined,
     });
     return { user, role: row.role, tokens };
+  }
+
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string
+  ) {
+    if (newPassword.length < 6) {
+      throw new BadRequestException("Password must be at least 6 characters");
+    }
+    if (currentPassword === newPassword) {
+      throw new BadRequestException(
+        "New password must be different from the current password"
+      );
+    }
+
+    const row = await this.prisma.user.findFirst({
+      where: { id: userId, deletedAt: null, isActive: true },
+    });
+    if (!row || !verifyPassword(currentPassword, row.passwordHash)) {
+      throw new UnauthorizedException("Current password is incorrect");
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash: hashPassword(newPassword),
+        updatedBy: userId,
+        version: { increment: 1 },
+      },
+    });
+
+    // Force re-login on other devices.
+    await this.prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+
+    return true;
   }
 
   async refresh(refreshToken: string) {

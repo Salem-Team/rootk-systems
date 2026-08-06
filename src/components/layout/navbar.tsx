@@ -19,7 +19,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
-import { RoleSwitcher } from "@/components/layout/role-switcher";
 import { NotificationsPopover } from "@/components/layout/notifications-popover";
 import { useUiStore } from "@/stores/ui-store";
 import { useSessionStore } from "@/stores/session-store";
@@ -105,9 +104,6 @@ export function Navbar() {
             </p>
           </div>
 
-          <div className="hidden sm:block">
-            <RoleSwitcher />
-          </div>
           <LanguageSwitcher />
 
           <Button

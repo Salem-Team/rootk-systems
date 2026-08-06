@@ -59,6 +59,7 @@ import {
 import { getEmployees } from "@/services/employees.service";
 import { RoleGate } from "@/components/shared/role-gate";
 import { useTranslation } from "@/hooks/use-translation";
+import { departmentLabel } from "@/lib/department-label";
 import type { TranslationPath } from "@/i18n";
 import { fadeInUp } from "@/lib/animations";
 import { downloadCsv, formatHours } from "@/lib/utils";
@@ -484,7 +485,7 @@ function AttendanceTable({
       return [
         employee?.name ?? record.employeeId,
         employee?.department
-          ? t(`departments.${employee.department}`)
+          ? departmentLabel(employee.department, t)
           : "",
         record.date,
         t(`status.${record.status}`),
@@ -553,7 +554,7 @@ function AttendanceTable({
                   </DataTableCell>
                   <DataTableCell className="text-muted-foreground">
                     {employee?.department
-                      ? t(`departments.${employee.department}`)
+                      ? departmentLabel(employee.department, t)
                       : "—"}
                   </DataTableCell>
                   <DataTableCell>{record.date}</DataTableCell>
