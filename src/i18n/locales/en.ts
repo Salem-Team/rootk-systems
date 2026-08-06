@@ -748,6 +748,7 @@ export const en = {
     emailTaken: "This work email is already in the directory.",
     codeTaken: "This employee ID is already in use.",
     confirmDelete: "Confirm delete",
+    adminDeleteBlocked: "The primary admin account is protected and cannot be deleted.",
     actCheckIn: "Checked in",
     actCheckInDetail: "Arrived at the Cairo office",
     actCheckOut: "Checked out",

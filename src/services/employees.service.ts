@@ -322,9 +322,22 @@ export async function deleteEmployee(
     const { removeLocalCredential } = await import(
       "@/lib/local-credentials"
     );
+    const { isProtectedAdminAccount } = await import(
+      "@/lib/protected-accounts"
+    );
+    const { ForbiddenError } = await import("@/lib/errors");
     const account = await userRepository.findByEmail(employee.email, {
       includeInactive: true,
     });
+    if (
+      isProtectedAdminAccount({
+        employeeId: employee.id,
+        email: employee.email,
+        userRole: account?.role,
+      })
+    ) {
+      throw new ForbiddenError("The system admin account cannot be deleted");
+    }
     if (account) {
       await userRepository.delete(account.id, false);
     }

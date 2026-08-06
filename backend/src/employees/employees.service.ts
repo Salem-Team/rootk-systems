@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  ForbiddenException,
 } from "@nestjs/common";
 import { EmployeeStatus, Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
@@ -11,6 +12,7 @@ import { NotificationsService } from "../notifications/notifications.service";
 import { writeActivity } from "../common/activity-writer";
 import { hashPassword } from "../auth/password.util";
 import { AppRole } from "../common/roles";
+import { isProtectedAdminAccount } from "../common/protected-accounts";
 
 function requireCreateFields(body: {
   name?: string;
@@ -385,10 +387,24 @@ export class EmployeesService {
     });
     if (!current) throw new NotFoundException("Employee not found");
 
+    const linkedUsers = await this.prisma.user.findMany({
+      where: { companyId, employeeId: id },
+      select: { id: true, role: true },
+    });
+    const adminLinked = linkedUsers.some((u) => u.role === AppRole.admin);
+    if (
+      isProtectedAdminAccount({
+        employeeId: current.id,
+        email: current.email,
+        userRole: adminLinked ? AppRole.admin : null,
+      })
+    ) {
+      throw new ForbiddenException(
+        "The system admin account cannot be deleted"
+      );
+    }
+
     await this.prisma.$transaction(async (tx) => {
-      const linkedUsers = await tx.user.findMany({
-        where: { companyId, employeeId: id },
-      });
       const userIds = linkedUsers.map((u) => u.id);
 
       if (userIds.length) {

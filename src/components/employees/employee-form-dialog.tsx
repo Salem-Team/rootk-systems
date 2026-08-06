@@ -53,6 +53,7 @@ import {
   employeeStatusSchema,
 } from "@/schemas/employee.schema";
 import { demoTodayKey } from "@/lib/mock-date";
+import { isProtectedAdminAccount } from "@/lib/protected-accounts";
 import { softSpring } from "@/lib/animations";
 import { cn, getInitials } from "@/lib/utils";
 import { useDepartments } from "@/hooks/use-departments";
@@ -217,6 +218,13 @@ export function EmployeeFormDialog({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const canDelete =
+    Boolean(onDeleted) &&
+    editing &&
+    !isProtectedAdminAccount({
+      employeeId: employee?.id,
+      email: employee?.email,
+    });
 
   const usedCodes = useMemo(() => {
     const set = new Set(
@@ -390,6 +398,15 @@ export function EmployeeFormDialog({
 
   async function handleDelete() {
     if (!employee || !onDeleted) return;
+    if (
+      isProtectedAdminAccount({
+        employeeId: employee.id,
+        email: employee.email,
+      })
+    ) {
+      toast.error(t("employees.adminDeleteBlocked"));
+      return;
+    }
     if (!confirmDelete) {
       setConfirmDelete(true);
       return;
@@ -797,7 +814,7 @@ export function EmployeeFormDialog({
           </div>
 
           <div className="flex flex-col gap-2 border-t border-border/60 bg-card/95 px-5 py-4 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
-            {editing && onDeleted ? (
+            {canDelete ? (
               <div className="flex flex-col gap-1.5">
                 <Button
                   type="button"
@@ -831,7 +848,9 @@ export function EmployeeFormDialog({
               </div>
             ) : (
               <p className="max-w-[220px] text-[11px] leading-relaxed text-muted-foreground">
-                {t("employees.formSecureNote")}
+                {editing && onDeleted
+                  ? t("employees.adminDeleteBlocked")
+                  : t("employees.formSecureNote")}
               </p>
             )}
             <div className="flex gap-2 sm:ms-auto">

@@ -271,6 +271,7 @@ async function main() {
       metadata: {
         nameKey: "user.adminFullName",
         firstNameKey: "user.adminFirstName",
+        protected: true,
       },
     },
     {

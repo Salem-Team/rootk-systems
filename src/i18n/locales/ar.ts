@@ -743,6 +743,7 @@ export const ar: TranslationKeys = {
     emailTaken: "إيميل الشغل ده موجود بالفعل في الدليل.",
     codeTaken: "كود الموظف ده مستخدم بالفعل.",
     confirmDelete: "أكيد الحذف",
+    adminDeleteBlocked: "حساب الأدمن الأساسي محمي ومش ينفع يتمسح.",
     actCheckIn: "تسجيل حضور",
     actCheckInDetail: "وصل إلى مكتب القاهرة",
     actCheckOut: "تسجيل انصراف",
