@@ -188,7 +188,15 @@ export function getSessionRole(): UserRole {
 export function getWorkEmployeeIdFromUser(
   user: Pick<SessionUser, "id" | "employeeId">
 ): string {
-  if (isApiMode() && user.employeeId) return user.employeeId;
+  if (isApiMode()) {
+    if (!user.employeeId) {
+      console.warn(
+        "[session] API mode user missing employeeId — employee feeds will be empty"
+      );
+      return "";
+    }
+    return user.employeeId;
+  }
   return user.id;
 }
 

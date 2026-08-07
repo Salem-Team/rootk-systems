@@ -1057,8 +1057,13 @@ export const en = {
     checkPriorities: "Confirm top 3 priorities",
     checkInbox: "Clear urgent inbox",
     checkCheckout: "Check out before leaving",
-    goalsTitle: "Today's goals",
-    goalsDesc: "UI progress — personal focus targets",
+    goalsTitle: "My targets",
+    goalsDesc: "Live progress on targets assigned by admin",
+    goalsEmpty: "No targets assigned yet",
+    goalsEmptyHint:
+      "When an admin assigns you a target, it will appear here with live progress.",
+    goalsOpenAll: "Open all targets",
+    goalsAssignedBadge: "From admin",
     goalDeepWork: "Deep work block",
     goalReviews: "Complete reviews",
     goalLearning: "Learning time",
@@ -1717,6 +1722,8 @@ export const en = {
     meetingInviteBody: "You're invited to “{title}”.",
     meetingScheduledAdminTitle: "Meeting scheduled",
     meetingScheduledAdminBody: "“{title}” was added to the team calendar.",
+    targetTasksReadyTitle: "Target tasks ready",
+    targetTasksReadyBody: "{count} tasks were opened for “{title}”.",
     scheduleReminderTitle: "Schedule reminder",
     scheduleReminderBody: "Tomorrow is a scheduled WFH day.",
     announcementTitle: "Company announcement",
@@ -2520,6 +2527,8 @@ export const en = {
       delayedTasks: "Delayed tasks",
       monthlyTrend: "Monthly performance trend",
       targetsList: "Assigned targets",
+      targetsListHint:
+        "Every target admin assigned to you — open it to track progress and linked tasks.",
     },
     report: {
       title: "People performance report",

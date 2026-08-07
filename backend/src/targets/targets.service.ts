@@ -707,23 +707,39 @@ export class TargetsService {
       },
     });
 
+    let linkedTaskCount = 0;
     if (generateTasks) {
-      await this.generateLinkedTasks(companyId, actor, created.id, type, {
-        quantity,
-        title,
-        endDate,
-        priority,
-        assigneeIds,
-        description: String(body.description ?? ""),
-      });
+      linkedTaskCount = await this.generateLinkedTasks(
+        companyId,
+        actor,
+        created.id,
+        type,
+        {
+          quantity,
+          title,
+          endDate,
+          priority,
+          assigneeIds,
+          description: String(body.description ?? ""),
+        }
+      );
     }
 
     await this.writeHistory(companyId, created.id, actor.userId, "assigned", {
       quantity,
       assigneeIds,
+      linkedTaskCount,
     });
 
     await this.notifyAssignees(companyId, actor.userId, created, "assigned");
+    if (linkedTaskCount > 0) {
+      await this.notifyLinkedTasksCreated(
+        companyId,
+        actor.userId,
+        created,
+        linkedTaskCount
+      );
+    }
 
     await writeActivity(this.prisma, {
       companyId,
@@ -1258,8 +1274,9 @@ export class TargetsService {
       assigneeIds: string[];
       description: string;
     }
-  ) {
+  ): Promise<number> {
     const count = Math.min(opts.quantity, MAX_AUTO_TASKS_PER_TARGET);
+    if (count <= 0) return 0;
     const data = Array.from({ length: count }, (_, i) => ({
       companyId,
       title: buildTaskTitle(type.taskTitleTemplate, type.name, i + 1),
@@ -1277,6 +1294,43 @@ export class TargetsService {
     }));
 
     await this.prisma.workTask.createMany({ data });
+    return count;
+  }
+
+  private async notifyLinkedTasksCreated(
+    companyId: string,
+    actorId: string,
+    target: { id: string; title: string; assigneeIds: string[] },
+    taskCount: number
+  ) {
+    const users = await this.prisma.user.findMany({
+      where: {
+        companyId,
+        employeeId: { in: target.assigneeIds },
+        deletedAt: null,
+        isActive: true,
+      },
+      select: { id: true },
+    });
+    if (users.length === 0) return;
+
+    await this.notifications.notifyDomain({
+      companyId,
+      actorId,
+      category: "work",
+      priority: "normal",
+      audience: "employee",
+      titleKey: "notifications.targetTasksReadyTitle",
+      bodyKey: "notifications.targetTasksReadyBody",
+      vars: {
+        title: target.title,
+        count: taskCount,
+      },
+      href: "/tasks",
+      entityType: "performance_target",
+      entityId: target.id,
+      recipientIds: users.map((u) => u.id),
+    });
   }
 
   private async writeHistory(

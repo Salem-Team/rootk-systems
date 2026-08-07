@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import {
   AlertTriangle,
@@ -25,8 +25,10 @@ import { StaggerItem, StaggerList } from "@/components/shared/stagger";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import { CHART } from "@/constants/chart-colors";
 import { chartTooltipStyle } from "@/constants/chart-tooltip";
+import { useLiveReload } from "@/hooks/use-live-reload";
 import { getEmployeeTargetPerformance } from "@/services/targets.service";
 import { useTranslation } from "@/hooks/use-translation";
+import { TARGETS_UPDATED_EVENT, WORK_UPDATED_EVENT } from "@/lib/events";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
 import type {
@@ -41,6 +43,7 @@ interface EmployeePerformancePanelProps {
   employees: Map<string, Employee>;
   categoryId?: string;
   onEdit?: (target: PerformanceTarget) => void;
+  onView?: (target: PerformanceTarget) => void;
   className?: string;
 }
 
@@ -51,6 +54,7 @@ export function EmployeePerformancePanel({
   employees,
   categoryId,
   onEdit,
+  onView,
   className,
 }: EmployeePerformancePanelProps) {
   const { t } = useTranslation();
@@ -58,18 +62,18 @@ export function EmployeePerformancePanel({
   const [performance, setPerformance] = useState<EmployeeTargetPerformance | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    void (async () => {
-      const res = await getEmployeeTargetPerformance(employeeId);
-      if (mounted && res.success) setPerformance(res.data);
-      if (mounted) setLoading(false);
-    })();
-    return () => {
-      mounted = false;
-    };
+  const reload = useCallback(async () => {
+    if (!employeeId) {
+      setPerformance(null);
+      setLoading(false);
+      return;
+    }
+    const res = await getEmployeeTargetPerformance(employeeId);
+    if (res.success) setPerformance(res.data);
+    setLoading(false);
   }, [employeeId]);
+
+  useLiveReload(reload, [TARGETS_UPDATED_EVENT, WORK_UPDATED_EVENT]);
 
   const scopedTargets = useMemo(() => {
     if (!performance) return [] as PerformanceTarget[];
@@ -185,14 +189,20 @@ export function EmployeePerformancePanel({
       </section>
 
       <div className="space-y-3">
-        <h3 className="text-[0.95rem] font-semibold tracking-tight">
-          {t("targets.employeePerf.targetsList")}
-        </h3>
+        <div>
+          <h3 className="text-[0.95rem] font-semibold tracking-tight">
+            {t("targets.employeePerf.targetsList")}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {t("targets.employeePerf.targetsListHint")}
+          </p>
+        </div>
         <TargetList
           targets={scopedTargets}
           categories={categories}
           employees={employees}
           onEdit={onEdit}
+          onView={onView}
         />
       </div>
     </div>

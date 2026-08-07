@@ -1,24 +1,24 @@
 # Target User Agent — Test Report
 
-Generated: **2026-08-07T15:30:08.124Z**
+Generated: **2026-08-07T16:00:15.574Z**
 
 Result: **10/10 passed**
 
-Agent target id: `pt_dc3243c3c0fd44d3`
+Agent target id: `pt_c5e25c562f7b4027`
 
 ## Scenarios (real user flows)
 
 | # | Actor | Scenario | Result | Detail |
 |---|-------|----------|--------|--------|
 | 1 | admin | Open Target Catalog | ✅ PASS | 4 categories, 6 types |
-| 2 | admin | Create category + type (Operations / Site Visits) | ✅ PASS | category=tcat_85fa4fdbf0f84cca type=ttype_f06a03afc5a34696 |
-| 3 | admin | Assign target + auto-create 5 tasks | ✅ PASS | target=pt_dc3243c3c0fd44d3, linkedTasks=5, progress=0% |
+| 2 | admin | Create category + type (Operations / Site Visits) | ✅ PASS | category=tcat_9a2b821e8fb54519 type=ttype_7037c16163a2453c |
+| 3 | admin | Assign target + auto-create 5 tasks | ✅ PASS | target=pt_c5e25c562f7b4027, linkedTasks=5, progress=0% |
 | 4 | employee | Complete 2 tasks → target progress auto-updates to 40% | ✅ PASS | completedQuantity=2, percentage=40% |
 | 5 | employee | Employee cannot edit target (permission gate) | ✅ PASS | correctly forbidden |
-| 6 | admin | Send performance warning | ✅ PASS | warning=tw_321917481c674781 |
-| 7 | employee | Employee acknowledges warning | ✅ PASS | acknowledgedAt=2026-08-07T15:30:02.662Z |
-| 8 | admin | Dashboard + delayed center load with agent target visible | ✅ PASS | total=7, completed=1, delayedTargets=4, avgScore=41.9 |
-| 9 | employee | Employee performance page shows target + warning | ✅ PASS | score=58, targets=3, warnings=1 |
+| 6 | admin | Send performance warning | ✅ PASS | warning=tw_c4e6b88c622142c7 |
+| 7 | employee | Employee acknowledges warning | ✅ PASS | acknowledgedAt=2026-08-07T16:00:09.867Z |
+| 8 | admin | Dashboard + delayed center load with agent target visible | ✅ PASS | total=7, completed=1, delayedTargets=4, avgScore=41.8 |
+| 9 | employee | Employee performance page shows target + warning | ✅ PASS | score=57.9, targets=3, warnings=1 |
 | 10 | employee | Complete remaining tasks → target reaches 100% / completed | ✅ PASS | status=completed, percentage=100% |
 
 ## How to view in the app
@@ -38,7 +38,7 @@ Agent target id: `pt_dc3243c3c0fd44d3`
   "delayed": 1,
   "critical": 4,
   "completionRate": 14.3,
-  "averagePerformance": 41.9,
+  "averagePerformance": 41.8,
   "employeesAtRisk": 3,
   "upcomingDeadlines": 5,
   "byCategory": [
@@ -61,7 +61,7 @@ Agent target id: `pt_dc3243c3c0fd44d3`
       "count": 3
     },
     {
-      "id": "tcat_85fa4fdbf0f84cca",
+      "id": "tcat_9a2b821e8fb54519",
       "name": "Agent Demo — Operations",
       "color": "#0F766E",
       "count": 1
@@ -93,17 +93,17 @@ Agent target id: `pt_dc3243c3c0fd44d3`
     {
       "department": "Design",
       "count": 3,
-      "avgScore": 62.9
+      "avgScore": 62.8
     },
     {
       "department": "Engineering",
       "count": 2,
-      "avgScore": 7
+      "avgScore": 6.9
     },
     {
       "department": "Sales",
       "count": 2,
-      "avgScore": 45.3
+      "avgScore": 45.2
     }
   ],
   "topPerformers": [
@@ -115,19 +115,19 @@ Agent target id: `pt_dc3243c3c0fd44d3`
     },
     {
       "employeeId": "emp-003",
-      "score": 58,
+      "score": 57.9,
       "completed": 0,
       "total": 3
     },
     {
       "employeeId": "emp-014",
-      "score": 45.3,
+      "score": 45.2,
       "completed": 0,
       "total": 2
     },
     {
       "employeeId": "emp-002",
-      "score": 13.9,
+      "score": 13.8,
       "completed": 0,
       "total": 1
     },
@@ -147,19 +147,19 @@ Agent target id: `pt_dc3243c3c0fd44d3`
     },
     {
       "employeeId": "emp-002",
-      "score": 13.9,
+      "score": 13.8,
       "completed": 0,
       "total": 1
     },
     {
       "employeeId": "emp-014",
-      "score": 45.3,
+      "score": 45.2,
       "completed": 0,
       "total": 2
     },
     {
       "employeeId": "emp-003",
-      "score": 58,
+      "score": 57.9,
       "completed": 0,
       "total": 3
     },

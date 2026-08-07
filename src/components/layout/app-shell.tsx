@@ -1,7 +1,5 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Navbar } from "@/components/layout/navbar";
 import {
@@ -13,17 +11,17 @@ import { RoleRedirect } from "@/components/layout/role-redirect";
 import { RouteProgress } from "@/components/layout/route-progress";
 import { PreferenceSync } from "@/components/shared/preference-sync";
 import { useUiStore } from "@/stores/ui-store";
-import { useSessionStore } from "@/stores/session-store";
-import { pageTransitionSoft } from "@/lib/animations";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 
+/**
+ * App chrome (sidebar + navbar). Page enter polish lives in PageTransition /
+ * `.page-cascade` — do NOT wrap route children in Framer AnimatePresence+opacity
+ * here: interrupted client navigations leave the main pane stuck at opacity 0
+ * (white screen while chrome still works).
+ */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { sidebarCollapsed } = useUiStore();
-  const pathname = usePathname();
-  const role = useSessionStore((s) => s.role);
-  const userId = useSessionStore((s) => s.user.id);
-  const reduceMotion = useReducedMotion();
   const { t } = useTranslation();
 
   return (
@@ -50,26 +48,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             aria-label={t("a11y.mainContent")}
             className="min-w-0 overflow-x-clip px-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-4 sm:px-4 sm:pt-5 md:px-6 md:pt-6 lg:px-8 lg:pb-12 lg:pt-7"
           >
-            <div className="content-frame min-w-0">
-              {reduceMotion ? (
-                <div key={`${role}-${userId}-${pathname}`} className="min-w-0">
-                  {children}
-                </div>
-              ) : (
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={`${role}-${userId}-${pathname}`}
-                    variants={pageTransitionSoft}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    className="min-w-0"
-                  >
-                    {children}
-                  </motion.div>
-                </AnimatePresence>
-              )}
-            </div>
+            <div className="content-frame min-w-0">{children}</div>
           </main>
         </div>
         <MobileBottomNav />

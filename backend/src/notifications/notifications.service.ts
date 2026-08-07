@@ -64,17 +64,27 @@ export class NotificationsService {
     role: string,
     filters: { category?: string; unreadOnly?: string } = {}
   ) {
-    const audience =
+    const roleAudiences =
       role === "admin"
-        ? { in: [NotificationAudience.all, NotificationAudience.admin] as NotificationAudience[] }
-        : { in: [NotificationAudience.all, NotificationAudience.employee] as NotificationAudience[] };
+        ? ([NotificationAudience.all, NotificationAudience.admin] as NotificationAudience[])
+        : ([NotificationAudience.all, NotificationAudience.employee] as NotificationAudience[]);
 
+    /**
+     * Visibility:
+     * - directed: recipientIds includes this user (any audience)
+     * - broadcast: audience matches role AND recipientIds is empty
+     */
     const where: Prisma.AppNotificationWhereInput = {
       companyId,
       deletedAt: null,
       OR: [
-        { audience },
         { recipientIds: { has: userId } },
+        {
+          AND: [
+            { audience: { in: roleAudiences } },
+            { recipientIds: { isEmpty: true } },
+          ],
+        },
       ],
     };
     if (filters.category) {

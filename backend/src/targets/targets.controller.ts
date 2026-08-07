@@ -17,6 +17,7 @@ import { CurrentUser, type JwtPayload } from "../common/decorators/current-user"
 import { Roles } from "../common/roles.decorator";
 import { RolesGuard } from "../common/roles.guard";
 import { AppRole } from "../common/roles";
+import { toDomainActor } from "../common/scoped-employee";
 
 @Controller("targets")
 @UseGuards(AuthGuard("jwt"), RolesGuard)
@@ -24,11 +25,7 @@ export class TargetsController {
   constructor(private readonly service: TargetsService) {}
 
   private actor(user: JwtPayload, actorId: string) {
-    return {
-      userId: actorId,
-      role: user.role as "admin" | "employee",
-      employeeId: user.employeeId ?? "",
-    };
+    return toDomainActor(user, actorId);
   }
 
   @Get("categories")

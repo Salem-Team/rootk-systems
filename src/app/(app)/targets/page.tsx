@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
@@ -31,8 +30,9 @@ import {
   getTargets,
   removeTarget,
 } from "@/services/targets.service";
+import { useLiveReload } from "@/hooks/use-live-reload";
 import { useTranslation } from "@/hooks/use-translation";
-import { TARGETS_UPDATED_EVENT } from "@/lib/events";
+import { TARGETS_UPDATED_EVENT, WORK_UPDATED_EVENT } from "@/lib/events";
 import { canTarget } from "@/lib/target-policies";
 import { getWorkEmployeeIdFromUser, useSessionStore } from "@/stores/session-store";
 import type { Employee } from "@/types";
@@ -142,15 +142,15 @@ export default function TargetsPage() {
     void loadTargets();
   }, [loadTargets]);
 
-  useEffect(() => {
-    const onUpdate = () => {
+  useLiveReload(
+    () => {
       void loadStatic();
       void loadDashboard();
       void loadTargets();
-    };
-    window.addEventListener(TARGETS_UPDATED_EVENT, onUpdate);
-    return () => window.removeEventListener(TARGETS_UPDATED_EVENT, onUpdate);
-  }, [loadStatic, loadDashboard, loadTargets]);
+    },
+    [TARGETS_UPDATED_EVENT, WORK_UPDATED_EVENT],
+    { intervalMs: 40_000 }
+  );
 
   // Drop stale category filter if the category was deleted from catalog.
   useEffect(() => {
@@ -242,16 +242,7 @@ export default function TargetsPage() {
           />
         </aside>
 
-        <div className="min-w-0">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={tab}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="space-y-4 sm:space-y-5"
-            >
+        <div className="min-w-0 space-y-4 sm:space-y-5">
               {tab === "dashboard" && stats ? (
                 <>
                   <TargetKpiCards stats={stats} />
@@ -298,6 +289,7 @@ export default function TargetsPage() {
                     categories={categoryMap}
                     employees={employeeMap}
                     categoryId={filters.categoryId}
+                    onView={openView}
                   />
                 )
               ) : null}
@@ -330,8 +322,6 @@ export default function TargetsPage() {
                   onEdit={isAdmin ? openEdit : undefined}
                 />
               ) : null}
-            </motion.div>
-          </AnimatePresence>
         </div>
       </div>
 

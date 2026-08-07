@@ -17,14 +17,11 @@ import {
   type JwtPayload,
 } from "../common/decorators/current-user";
 import { RolesGuard } from "../common/roles.guard";
+import { toDomainActor } from "../common/scoped-employee";
 
 function toActor(user: JwtPayload | undefined) {
   const u = requireUser(user);
-  return {
-    userId: u.sub,
-    role: u.role,
-    employeeId: u.employeeId ?? u.sub,
-  };
+  return toDomainActor(u, u.sub);
 }
 
 @Controller("work")

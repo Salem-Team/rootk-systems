@@ -25,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { EmployeeMultiPicker } from "@/components/work/employee-multi-picker";
 import { assignTarget, updateTarget } from "@/services/targets.service";
 import { useTranslation } from "@/hooks/use-translation";
-import { emitTargetsUpdated } from "@/lib/events";
+import { emitTargetsUpdated, emitWorkUpdated } from "@/lib/events";
 import {
   defaultTargetWindow,
   isValidDateTimeRange,
@@ -261,6 +261,7 @@ export function TargetAssignSheet({
     );
     onSaved(res.data);
     emitTargetsUpdated();
+    emitWorkUpdated();
     onOpenChange(false);
   }
 

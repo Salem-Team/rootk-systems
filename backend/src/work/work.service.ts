@@ -584,6 +584,38 @@ export class WorkService {
         updatedBy: actor.userId,
       },
     });
+
+    if (origin === WorkOrigin.assigned && participantIds.length > 0) {
+      const users = await this.prisma.user.findMany({
+        where: {
+          companyId,
+          employeeId: { in: participantIds },
+          deletedAt: null,
+          isActive: true,
+        },
+        select: { id: true },
+      });
+      const recipients = users
+        .map((u) => u.id)
+        .filter((id) => id !== actor.userId);
+      if (recipients.length > 0) {
+        await this.notifications.notifyDomain({
+          companyId,
+          actorId: actor.userId,
+          category: "work",
+          priority: "normal",
+          audience: "employee",
+          titleKey: "notifications.meetingInviteTitle",
+          bodyKey: "notifications.meetingInviteBody",
+          vars: { title: row.title },
+          href: "/tasks?tab=meetings",
+          entityType: "work_meeting",
+          entityId: row.id,
+          recipientIds: recipients,
+        });
+      }
+    }
+
     return mapMeeting(row);
   }
 
