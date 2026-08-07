@@ -2169,6 +2169,15 @@ export const ar: TranslationKeys = {
     noPayslipYet: "مفيش قسيمة راتب لسه",
     noPayslipYetDesc:
       "قسيمة راتبك هتظهر هنا بعد ما الموارد البشرية تشغّل جرد الرواتب للفترة دي.",
+    noSalaryConfigured: "مفيش ملف راتب لسه",
+    noSalaryConfiguredDesc:
+      "لما الموارد البشرية تضيف ملف راتبك، هتشوف تفاصيل العقد والصافي المتوقع هنا.",
+    profileReadyTitle: "ملف راتبك جاهز",
+    profileReadyDesc:
+      "الأرقام دي من ملفك التعاقدي. قسيمة الشهر هتتولد بعد ما HR يشغّل جرد الفترة {period}.",
+    contractNet: "صافي متوقع (عقد)",
+    awaitingPayslipBadge: "في انتظار جرد الفترة",
+    mobileTabContract: "عقد الراتب",
     runsHistory: "سجل دورات الرواتب",
     attendanceLinked: "الربط بالحضور",
     attendanceLinkedValue: "مباشر من الحضور/الانصراف",

@@ -199,7 +199,8 @@ export function PayrollWorkspace() {
         />
       );
     }
-    if (!myPayslip || !myProfile) {
+
+    if (!myProfile) {
       return (
         <div className="space-y-4 sm:space-y-6">
           <PageHeader
@@ -209,12 +210,15 @@ export function PayrollWorkspace() {
             description={t("payroll.myDesc")}
           />
           <EmptyState
-            title={t("payroll.noPayslipYet")}
-            description={t("payroll.noPayslipYetDesc")}
+            title={t("payroll.noSalaryConfigured")}
+            description={t("payroll.noSalaryConfiguredDesc")}
           />
         </div>
       );
     }
+
+    const hasPayslip = Boolean(myPayslip);
+
     return (
       <div className="space-y-4 sm:space-y-6">
         <PageHeader
@@ -223,10 +227,24 @@ export function PayrollWorkspace() {
           title={t("payroll.myTitle")}
           description={t("payroll.myDesc")}
         />
-        <EmployeePayslipHero payslip={myPayslip} periodLabel={summary.period.label} />
+
+        {hasPayslip && myPayslip ? (
+          <EmployeePayslipHero
+            payslip={myPayslip}
+            periodLabel={summary.period.label}
+          />
+        ) : (
+          <EmployeeContractHero
+            profile={myProfile}
+            periodLabel={summary.period.label}
+          />
+        )}
 
         <div className="lg:hidden">
-          <Tabs defaultValue="slip" className="space-y-4">
+          <Tabs
+            defaultValue={hasPayslip ? "slip" : "profile"}
+            className="space-y-4"
+          >
             <div className="sticky top-14 z-20 -mx-3 bg-background/90 px-3 py-2 backdrop-blur-xl sm:-mx-4 sm:px-4">
               <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-xl border border-border/60 bg-card p-1 shadow-sm sm:rounded-2xl">
                 <TabsTrigger
@@ -239,7 +257,9 @@ export function PayrollWorkspace() {
                   value="profile"
                   className="min-h-10 truncate rounded-lg px-1 text-[11px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md sm:min-h-11 sm:rounded-xl sm:text-[12px]"
                 >
-                  {t("payroll.mobileTabProfile")}
+                  {hasPayslip
+                    ? t("payroll.mobileTabProfile")
+                    : t("payroll.mobileTabContract")}
                 </TabsTrigger>
                 <TabsTrigger
                   value="history"
@@ -250,13 +270,24 @@ export function PayrollWorkspace() {
               </TabsList>
             </div>
             <TabsContent value="slip" className="mt-0 space-y-4">
-              <PayslipStatementView
-                payslip={myPayslip}
-                profile={myProfile}
-                employee={myEmployee}
-                periodLabel={summary.period.label}
-              />
-              <ImpactLists payslip={myPayslip} />
+              {hasPayslip && myPayslip ? (
+                <>
+                  <PayslipStatementView
+                    payslip={myPayslip}
+                    profile={myProfile}
+                    employee={myEmployee}
+                    periodLabel={summary.period.label}
+                  />
+                  <ImpactLists payslip={myPayslip} />
+                </>
+              ) : (
+                <EmptyState
+                  title={t("payroll.noPayslipYet")}
+                  description={t("payroll.profileReadyDesc", {
+                    period: summary.period.label,
+                  })}
+                />
+              )}
             </TabsContent>
             <TabsContent value="profile" className="mt-0 space-y-4">
               <SalaryProfilePanel profile={myProfile} payslip={myPayslip} />
@@ -268,15 +299,24 @@ export function PayrollWorkspace() {
         </div>
 
         <div className="hidden space-y-6 lg:block">
-          <PayslipStatementView
-            payslip={myPayslip}
-            profile={myProfile}
-            employee={myEmployee}
-            periodLabel={summary.period.label}
-          />
-          <SalaryProfilePanel profile={myProfile} payslip={myPayslip} />
-          <PayslipHistoryPanel items={myHistory} />
-          <ImpactLists payslip={myPayslip} />
+          {hasPayslip && myPayslip ? (
+            <>
+              <PayslipStatementView
+                payslip={myPayslip}
+                profile={myProfile}
+                employee={myEmployee}
+                periodLabel={summary.period.label}
+              />
+              <SalaryProfilePanel profile={myProfile} payslip={myPayslip} />
+              <PayslipHistoryPanel items={myHistory} />
+              <ImpactLists payslip={myPayslip} />
+            </>
+          ) : (
+            <>
+              <SalaryProfilePanel profile={myProfile} payslip={null} />
+              <PayslipHistoryPanel items={myHistory} />
+            </>
+          )}
         </div>
       </div>
     );
@@ -554,6 +594,90 @@ function EmployeePayslipHero({
         </li>
       ))}
     </ul>
+  );
+}
+
+function contractPreview(profile: EmployeeSalaryProfile) {
+  const a = profile.allowances;
+  const d = profile.deductions;
+  const allowancesTotal =
+    a.housing + a.transportation + a.meal + a.phone + a.shift + a.other;
+  const gross =
+    profile.basicSalary +
+    allowancesTotal +
+    profile.bonuses +
+    profile.commission +
+    profile.incentives +
+    profile.manualAdjustments;
+  const deductionsTotal =
+    d.insurance + d.tax + d.loan + d.advances + d.recurring + d.penalties;
+  return { gross, deductionsTotal, net: gross - deductionsTotal };
+}
+
+/** Shown when HR saved a salary profile but the period payslip is not generated yet. */
+function EmployeeContractHero({
+  profile,
+  periodLabel,
+}: {
+  profile: EmployeeSalaryProfile;
+  periodLabel: string;
+}) {
+  const { t, locale } = useTranslation();
+  const loc = locale === "ar" ? "ar" : "en";
+  const totals = contractPreview(profile);
+  const cards = [
+    { label: t("payroll.currentPeriod"), value: periodLabel, mono: false },
+    {
+      label: t("payroll.contractNet"),
+      value: formatEgp(totals.net, loc, profile.currency),
+      mono: true,
+    },
+    {
+      label: t("payroll.gross"),
+      value: formatEgp(totals.gross, loc, profile.currency),
+      mono: true,
+    },
+    {
+      label: t("payroll.basicSalary"),
+      value: formatEgp(profile.basicSalary, loc, profile.currency),
+      mono: true,
+    },
+  ];
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-start justify-between gap-2 rounded-2xl border border-amber-500/25 bg-amber-500/[0.06] px-4 py-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold tracking-tight text-foreground">
+            {t("payroll.profileReadyTitle")}
+          </p>
+          <p className="mt-0.5 text-[13px] leading-snug text-muted-foreground">
+            {t("payroll.profileReadyDesc", { period: periodLabel })}
+          </p>
+        </div>
+        <Badge
+          variant="secondary"
+          className="shrink-0 border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-200"
+        >
+          {t("payroll.awaitingPayslipBadge")}
+        </Badge>
+      </div>
+      <ul className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+        {cards.map((card) => (
+          <li key={card.label}>
+            <StatChip
+              label={card.label}
+              value={card.value}
+              className={
+                card.mono
+                  ? "[&_.stat-value]:font-mono [&_.stat-value]:text-[1.05rem] sm:[&_.stat-value]:text-[1.15rem]"
+                  : "[&_.stat-value]:text-[0.95rem] sm:[&_.stat-value]:text-base"
+              }
+            />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

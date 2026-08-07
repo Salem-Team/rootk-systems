@@ -2175,6 +2175,15 @@ export const en = {
     noPayslipYet: "No payslip yet",
     noPayslipYetDesc:
       "Your payslip will appear here after HR runs payroll for this period.",
+    noSalaryConfigured: "No salary profile yet",
+    noSalaryConfiguredDesc:
+      "Once HR saves your salary profile, your contract details and estimated net will show here.",
+    profileReadyTitle: "Your salary profile is ready",
+    profileReadyDesc:
+      "These figures come from your contract profile. The monthly payslip is created after HR runs payroll for {period}.",
+    contractNet: "Estimated net (contract)",
+    awaitingPayslipBadge: "Awaiting period run",
+    mobileTabContract: "Contract",
     runsHistory: "Payroll run history",
     attendanceLinked: "Attendance link",
     attendanceLinkedValue: "Live from check-in/out",
