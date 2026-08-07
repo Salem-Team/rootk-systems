@@ -192,67 +192,7 @@ async function main() {
       },
     });
 
-    await prisma.employeeSalaryProfile.upsert({
-      where: {
-        companyId_employeeId: { companyId: COMPANY_ID, employeeId: e.id },
-      },
-      create: {
-        companyId: COMPANY_ID,
-        employeeId: e.id,
-        payload: {
-          basicSalary: e.salary,
-          allowances: {
-            housing: Math.round(e.salary * 0.1),
-            transportation: 500,
-            meal: 300,
-            phone: 200,
-            other: 0,
-            shift: 0,
-          },
-          bonuses: 0,
-          commission: 0,
-          currency: "EGP",
-          salaryType: "monthly",
-          salaryGrade: "G3",
-          payrollGroup: "default",
-          paymentMethod: "bank",
-          insuranceStatus: "insured",
-          taxStatus: "taxable",
-          contractType: "full_time",
-          joiningDate: "2024-01-15",
-          effectiveFrom: "2024-01-15",
-          history: [],
-          incrementHistory: [],
-        },
-      },
-      update: {
-        payload: {
-          basicSalary: e.salary,
-          allowances: {
-            housing: Math.round(e.salary * 0.1),
-            transportation: 500,
-            meal: 300,
-            phone: 200,
-            other: 0,
-            shift: 0,
-          },
-          bonuses: 0,
-          commission: 0,
-          currency: "EGP",
-          salaryType: "monthly",
-          salaryGrade: "G3",
-          payrollGroup: "default",
-          paymentMethod: "bank",
-          insuranceStatus: "insured",
-          taxStatus: "taxable",
-          contractType: "full_time",
-          joiningDate: "2024-01-15",
-          effectiveFrom: "2024-01-15",
-          history: [],
-          incrementHistory: [],
-        },
-      },
-    });
+    // Salary profiles are created by admins via Payroll — do not seed mock pay.
   }
 
   const passwordHash = hashDemoPassword();

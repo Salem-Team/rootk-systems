@@ -491,6 +491,47 @@ export class PayrollService {
     return this.rules(companyId);
   }
 
+  private buildDefaultSalaryPayload(
+    employeeId: string,
+    basicSalary: number
+  ): SalaryPayload {
+    return {
+      basicSalary,
+      allowances: {
+        housing: Math.round(basicSalary * 0.1),
+        transportation: 500,
+        meal: 300,
+        phone: 200,
+        other: 0,
+        shift: 0,
+      },
+      bonuses: 0,
+      commission: 0,
+      incentives: 0,
+      manualAdjustments: 0,
+      deductions: {
+        insurance: Math.round(basicSalary * 0.11),
+        tax: Math.round(basicSalary * 0.08),
+        loan: 0,
+        advances: 0,
+        recurring: 150,
+        penalties: 0,
+      },
+      currency: "EGP",
+      salaryType: "monthly",
+      salaryGrade: "G3",
+      payrollGroup: "standard",
+      paymentMethod: "bank_transfer",
+      insuranceStatus: "insured",
+      taxStatus: "resident",
+      contractType: "full_time",
+      bankAccount: `1002${employeeId.replace(/\D/g, "").padStart(8, "0").slice(-8)}`,
+      iban: `EG380002${employeeId.replace(/\D/g, "").padStart(18, "0").slice(-18)}`,
+      history: [],
+      incrementHistory: [],
+    };
+  }
+
   private async ensureSalary(
     companyId: string,
     employeeId: string,
@@ -500,41 +541,7 @@ export class PayrollService {
       where: { companyId_employeeId: { companyId, employeeId } },
     });
     if (!row) {
-      const payload: SalaryPayload = {
-        basicSalary,
-        allowances: {
-          housing: Math.round(basicSalary * 0.1),
-          transportation: 500,
-          meal: 300,
-          phone: 200,
-          other: 0,
-          shift: 0,
-        },
-        bonuses: 0,
-        commission: 0,
-        incentives: 0,
-        manualAdjustments: 0,
-        deductions: {
-          insurance: Math.round(basicSalary * 0.11),
-          tax: Math.round(basicSalary * 0.08),
-          loan: 0,
-          advances: 0,
-          recurring: 150,
-          penalties: 0,
-        },
-        currency: "EGP",
-        salaryType: "monthly",
-        salaryGrade: "G3",
-        payrollGroup: "standard",
-        paymentMethod: "bank_transfer",
-        insuranceStatus: "insured",
-        taxStatus: "resident",
-        contractType: "full_time",
-        bankAccount: `1002${employeeId.replace(/\D/g, "").padStart(8, "0").slice(-8)}`,
-        iban: `EG380002${employeeId.replace(/\D/g, "").padStart(18, "0").slice(-18)}`,
-        history: [],
-        incrementHistory: [],
-      };
+      const payload = this.buildDefaultSalaryPayload(employeeId, basicSalary);
       row = await this.prisma.employeeSalaryProfile.create({
         data: {
           companyId,
@@ -561,6 +568,19 @@ export class PayrollService {
       });
     }
 
+    return { id: row.id, ...payload };
+  }
+
+  /** Read-only salary payload — never invents DB rows on GET. */
+  private async findSalary(
+    companyId: string,
+    employeeId: string
+  ): Promise<(SalaryPayload & { id: string }) | null> {
+    const row = await this.prisma.employeeSalaryProfile.findUnique({
+      where: { companyId_employeeId: { companyId, employeeId } },
+    });
+    if (!row) return null;
+    const payload = row.payload as SalaryPayload;
     return { id: row.id, ...payload };
   }
 
@@ -928,11 +948,12 @@ export class PayrollService {
     if (shouldRecalculate) {
       for (let i = 0; i < employees.length; i++) {
         const emp = employees[i];
-        const profile = await this.ensureSalary(
-          companyId,
-          emp.id,
-          defaultBasicSalary(emp.id, i)
-        );
+        const existing = await this.findSalary(companyId, emp.id);
+        if (!existing) {
+          // Do not invent seed salaries — admin must set a profile first.
+          continue;
+        }
+        const profile = existing;
         const slip = await this.computePayslip(
           companyId,
           emp.id,
@@ -1358,61 +1379,25 @@ export class PayrollService {
   }
 
   async payslips(companyId: string, employeeId?: string) {
-    if (employeeId) {
-      return [await this.ensureCurrentPayslip(companyId, employeeId)];
-    }
-    const employees = await this.prisma.employee.findMany({
+    const period = periodBounds();
+    const rows = await this.prisma.employeePayslip.findMany({
       where: {
         companyId,
-        deletedAt: null,
-        status: { in: ["active", "on_leave"] },
+        periodId: period.periodId,
+        ...(employeeId ? { employeeId } : {}),
       },
-      orderBy: { employeeCode: "asc" },
+      orderBy: { createdAt: "asc" },
     });
-    const slips = [];
-    for (const emp of employees) {
-      slips.push(await this.ensureCurrentPayslip(companyId, emp.id));
-    }
-    return slips;
+    return rows.map((row) => this.toClientPayslip(row));
   }
 
   /**
-   * Latest payslip for an employee. Computes + persists the current period
-   * when no row exists yet (demo / first open before payroll advance).
+   * Current-period payslip only if a payroll run already persisted one.
+   * Never invents/seeds payslips on GET.
    */
   async payslip(companyId: string, employeeId: string) {
-    // Always recompute the current period so profile/policy/attendance stay accurate.
-    return this.ensureCurrentPayslip(companyId, employeeId);
-  }
-
-  async history(companyId: string, employeeId: string) {
-    let rows = await this.prisma.employeePayslip.findMany({
-      where: { companyId, employeeId },
-      orderBy: { createdAt: "desc" },
-    });
-    if (!rows.length) {
-      await this.ensureCurrentPayslip(companyId, employeeId);
-      rows = await this.prisma.employeePayslip.findMany({
-        where: { companyId, employeeId },
-        orderBy: { createdAt: "desc" },
-      });
-    }
-    return rows.map((r) => this.toHistoryItem(r));
-  }
-
-  private async ensureCurrentPayslip(companyId: string, employeeId: string) {
     const period = periodBounds();
-    const policyDoc = await this.policyDoc(companyId);
-    const policy = mergePolicy(policyDoc.payload as Record<string, unknown>);
-    const profile = await this.ensureSalary(companyId, employeeId, 18000);
-    const slip = await this.computePayslip(
-      companyId,
-      employeeId,
-      period,
-      policy,
-      profile
-    );
-    const row = await this.prisma.employeePayslip.upsert({
+    const row = await this.prisma.employeePayslip.findUnique({
       where: {
         companyId_employeeId_periodId: {
           companyId,
@@ -1420,15 +1405,17 @@ export class PayrollService {
           periodId: period.periodId,
         },
       },
-      create: {
-        companyId,
-        employeeId,
-        periodId: period.periodId,
-        payload: slip as unknown as Prisma.InputJsonValue,
-      },
-      update: { payload: slip as unknown as Prisma.InputJsonValue, version: { increment: 1 } },
     });
+    if (!row) return null;
     return this.toClientPayslip(row);
+  }
+
+  async history(companyId: string, employeeId: string) {
+    const rows = await this.prisma.employeePayslip.findMany({
+      where: { companyId, employeeId },
+      orderBy: { createdAt: "desc" },
+    });
+    return rows.map((r) => this.toHistoryItem(r));
   }
 
   async salaryProfile(companyId: string, employeeId: string) {
@@ -1436,17 +1423,20 @@ export class PayrollService {
       where: { companyId, deletedAt: null },
       orderBy: { employeeCode: "asc" },
     });
+    const emp = employees.find((e) => e.id === employeeId);
+    const existing = await this.findSalary(companyId, employeeId);
     const idx = Math.max(
       0,
       employees.findIndex((e) => e.id === employeeId)
     );
-    const profile = await this.ensureSalary(
-      companyId,
-      employeeId,
-      defaultBasicSalary(employeeId, idx)
-    );
-    const emp = employees.find((e) => e.id === employeeId);
-    const basic = profile.basicSalary ?? defaultBasicSalary(employeeId, idx);
+    const fallbackBasic = defaultBasicSalary(employeeId, idx);
+    const profile =
+      existing ??
+      ({
+        id: `sal_draft_${employeeId}`,
+        ...this.buildDefaultSalaryPayload(employeeId, fallbackBasic),
+      } as SalaryPayload & { id: string });
+    const basic = profile.basicSalary ?? fallbackBasic;
     const allowances = {
       housing: profile.allowances?.housing ?? Math.round(basic * 0.1),
       transportation: profile.allowances?.transportation ?? 500,
@@ -1456,10 +1446,11 @@ export class PayrollService {
       shift: profile.allowances?.shift ?? 0,
     };
     const deductionsRaw = (profile.deductions ?? {}) as Record<string, number>;
-    const joiningDate = emp ? dateOnly(emp.joinDate) : new Date().toISOString().slice(0, 10);
-    const { id: profileId } = profile;
+    const joiningDate = emp
+      ? dateOnly(emp.joinDate)
+      : new Date().toISOString().slice(0, 10);
     return {
-      id: profileId,
+      id: profile.id,
       employeeId,
       companyId,
       basicSalary: basic,
@@ -1478,7 +1469,10 @@ export class PayrollService {
       },
       salaryGrade: profile.salaryGrade ?? "G3",
       salaryType: profile.salaryType ?? "monthly",
-      payrollGroup: profile.payrollGroup === "default" ? "standard" : (profile.payrollGroup ?? "standard"),
+      payrollGroup:
+        profile.payrollGroup === "default"
+          ? "standard"
+          : (profile.payrollGroup ?? "standard"),
       currency: profile.currency ?? "EGP",
       bankAccount:
         (profile.bankAccount as string | undefined) ??
@@ -1509,7 +1503,7 @@ export class PayrollService {
       deletedAt: null,
       isArchived: false,
       version: 1,
-      metadata: {},
+      metadata: { persisted: Boolean(existing) },
     };
   }
 }

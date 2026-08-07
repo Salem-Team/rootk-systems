@@ -2142,6 +2142,9 @@ export const en = {
     ledgerPayslipsDesc:
       "Each line is tied to the employee record and attendance deductions for this month.",
     ledgerEmpty: "No payslips yet — advance the workflow to calculate from attendance.",
+    noPayslipYet: "No payslip yet",
+    noPayslipYetDesc:
+      "Your payslip will appear here after HR runs payroll for this period.",
     runsHistory: "Payroll run history",
     attendanceLinked: "Attendance link",
     attendanceLinkedValue: "Live from check-in/out",

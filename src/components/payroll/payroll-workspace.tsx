@@ -118,14 +118,18 @@ export function PayrollWorkspace() {
           if (ruleRes.success) setRules(ruleRes.data);
           if (slips.success) {
             setPayslips(slips.data);
-            setSelectedEmployeeId((prev) =>
-              prev && slips.data.some((p) => p.employeeId === prev)
-                ? prev
-                : (slips.data[0]?.employeeId ?? "")
-            );
+          }
+          if (emp.success) {
+            setEmployees(emp.data);
+            setSelectedEmployeeId((prev) => {
+              if (prev && emp.data.some((e) => e.id === prev)) return prev;
+              if (slips.success && slips.data[0]?.employeeId) {
+                return slips.data[0].employeeId;
+              }
+              return emp.data[0]?.id ?? "";
+            });
           }
           if (rep.success) setReports(rep.data);
-          if (emp.success) setEmployees(emp.data);
         }
       } finally {
         if (mounted) setLoading(false);
@@ -185,12 +189,28 @@ export function PayrollWorkspace() {
   if (loading) return <PageSkeleton />;
 
   if (role === "employee") {
-    if (!myPayslip || !myProfile || !summary) {
+    if (!summary) {
       return (
         <EmptyState
           title={t("common.error")}
           description={t("payroll.loadFailed")}
         />
+      );
+    }
+    if (!myPayslip || !myProfile) {
+      return (
+        <div className="space-y-4 sm:space-y-6">
+          <PageHeader
+            className="mb-4 sm:mb-7"
+            eyebrow={t("payroll.eyebrow")}
+            title={t("payroll.myTitle")}
+            description={t("payroll.myDesc")}
+          />
+          <EmptyState
+            title={t("payroll.noPayslipYet")}
+            description={t("payroll.noPayslipYetDesc")}
+          />
+        </div>
       );
     }
     return (

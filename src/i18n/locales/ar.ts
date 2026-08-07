@@ -2137,6 +2137,9 @@ export const ar: TranslationKeys = {
     ledgerPayslipsDesc:
       "كل سطر مربوط بملف الموظف وخصومات الحضور لهذا الشهر.",
     ledgerEmpty: "مفيش قسائم لسه — تقدّم خطوة الجرد عشان يتحسب من الحضور.",
+    noPayslipYet: "مفيش قسيمة راتب لسه",
+    noPayslipYetDesc:
+      "قسيمة راتبك هتظهر هنا بعد ما الموارد البشرية تشغّل جرد الرواتب للفترة دي.",
     runsHistory: "سجل دورات الرواتب",
     attendanceLinked: "الربط بالحضور",
     attendanceLinkedValue: "مباشر من الحضور/الانصراف",
