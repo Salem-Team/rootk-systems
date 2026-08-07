@@ -123,7 +123,19 @@ export function EmployeeWorkHub() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [evidenceTask, setEvidenceTask] = useState<WorkTask | null>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const sync = () => {
+      setIsMobile(mq.matches);
+      if (!mq.matches) setMobileDetailOpen(false);
+    };
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   const employeeMap = useMemo(
     () => new Map(employees.map((e) => [e.id, e])),
@@ -168,14 +180,14 @@ export function EmployeeWorkHub() {
     if (taskId) {
       setTab("tasks");
       setSelectedTaskId(taskId);
-      setMobileDetailOpen(true);
+      if (isMobile) setMobileDetailOpen(true);
     }
     if (meetingId) {
       setTab("meetings");
       setSelectedMeetingId(meetingId);
-      setMobileDetailOpen(true);
+      if (isMobile) setMobileDetailOpen(true);
     }
-  }, [searchParams]);
+  }, [searchParams, isMobile]);
 
   const openTasks = tasks.filter(
     (x) => x.status === "todo" || x.status === "in_progress"
@@ -265,12 +277,12 @@ export function EmployeeWorkHub() {
 
   function selectTask(id: string) {
     setSelectedTaskId(id);
-    setMobileDetailOpen(true);
+    if (isMobile) setMobileDetailOpen(true);
   }
 
   function selectMeeting(id: string) {
     setSelectedMeetingId(id);
-    setMobileDetailOpen(true);
+    if (isMobile) setMobileDetailOpen(true);
   }
 
   function nameOf(id: string) {
@@ -785,7 +797,11 @@ export function EmployeeWorkHub() {
         </TabsContent>
       </Tabs>
 
-      <Sheet open={mobileDetailOpen} onOpenChange={setMobileDetailOpen}>
+      {/* Mobile-only detail sheet — Dialog overlay on desktop blocks all clicks. */}
+      <Sheet
+        open={mobileDetailOpen && isMobile}
+        onOpenChange={setMobileDetailOpen}
+      >
         <SheetContent className="gap-0 p-0 sm:max-w-md lg:hidden">
           <SheetHeader className="border-b border-border/60 px-4 py-4 text-start">
             <SheetTitle>
