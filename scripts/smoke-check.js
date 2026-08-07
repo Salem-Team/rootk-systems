@@ -144,6 +144,20 @@ function main() {
     "payroll advance notifies"
   );
   assert(
+    fileContains("src/api/routes.ts", "runCancel") &&
+      fileContains("backend/src/payroll/payroll.controller.ts", "runs/cancel") &&
+      fileContains("backend/src/payroll/payroll.service.ts", "async cancel(") &&
+      fileContains("src/services/payroll.service.ts", "cancelPayrollRun"),
+    "payroll cancel run wiring"
+  );
+  assert(
+    fileContains("src/i18n/locales/en.ts", "cancelRunConfirm") &&
+      fileContains("src/i18n/locales/ar.ts", "cancelRunConfirm") &&
+      fileContains("src/i18n/locales/en.ts", "finalNetSalary") &&
+      fileContains("src/i18n/locales/ar.ts", "finalNetSalary"),
+    "payroll cancel + final net i18n"
+  );
+  assert(
     fileContains("src/services/work.service.ts", "notifyTaskCompleted"),
     "task complete notifies"
   );
