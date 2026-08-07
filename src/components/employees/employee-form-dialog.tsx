@@ -292,7 +292,7 @@ export function EmployeeFormDialog({
 
   useEffect(() => {
     if (!open) {
-      setConfirmDelete(false);
+      setConfirmDeleteOpen(false);
       return;
     }
     if (employee) {
