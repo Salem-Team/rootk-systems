@@ -57,6 +57,9 @@ async function main() {
       user: {
         id: "emp-001",
         employeeId: "RK-1001",
+        displayName: "Salem Ayman",
+        firstName: "Salem",
+        lastName: "Ayman",
         nameKey: "user.adminFullName",
         firstNameKey: "user.adminFirstName",
         email: "salem@rootk.systems",
@@ -80,6 +83,9 @@ async function main() {
             : employeeEntityId === "emp-002"
               ? "RK-1002"
               : "RK-1004",
+        displayName: "Yousef Mansour",
+        firstName: "Yousef",
+        lastName: "Mansour",
         nameKey: "user.employeeFullName",
         firstNameKey: "user.employeeFirstName",
         email: `${employeeEntityId}@rootk.systems`,
