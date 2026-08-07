@@ -2053,6 +2053,15 @@ export const ar: TranslationKeys = {
     advances: "سلف",
     recurringDeductions: "خصومات متكررة",
     netPreview: "صافي المحرك وتكلفة صاحب العمل",
+    finalSalaryTitle: "الراتب النهائي المستحق",
+    finalNetSalary: "صافي الراتب بعد كل الخصومات",
+    finalSalaryFromContract:
+      "الإجمالي من مكوّنات العقد ناقص الخصومات التعاقدية (سلف، تأمين، ضريبة، …).",
+    finalSalaryFromRun:
+      "صافي الفترة من محرك الرواتب — شامل أثر الحضور والإجازات.",
+    contractPreview: "معاينة من العقد",
+    periodCalculated: "من جرد الرواتب",
+    includesAttendanceImpacts: "يشمل خصومات الحضور/الإجازات",
     salaryHistory: "سجل الراتب",
     incrementHistory: "سجل الزيادات",
     payrollGroup: "مجموعة الرواتب",

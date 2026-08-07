@@ -2058,6 +2058,15 @@ export const en = {
     advances: "Advances",
     recurringDeductions: "Recurring deductions",
     netPreview: "Engine net & employer cost",
+    finalSalaryTitle: "Final take-home salary",
+    finalNetSalary: "Net salary after all deductions",
+    finalSalaryFromContract:
+      "Gross from contract pay components minus contractual deductions (advances, insurance, tax, …).",
+    finalSalaryFromRun:
+      "Period net from the payroll engine — includes attendance and leave impacts.",
+    contractPreview: "Contract preview",
+    periodCalculated: "From payroll run",
+    includesAttendanceImpacts: "Includes attendance/leave deductions",
     salaryHistory: "Salary history",
     incrementHistory: "Increment history",
     payrollGroup: "Payroll group",
