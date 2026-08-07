@@ -491,10 +491,50 @@ export class PayrollService {
     return this.rules(companyId);
   }
 
+  private buildBlankSalaryPayload(employeeId: string): SalaryPayload {
+    void employeeId;
+    return {
+      basicSalary: 0,
+      allowances: {
+        housing: 0,
+        transportation: 0,
+        meal: 0,
+        phone: 0,
+        other: 0,
+        shift: 0,
+      },
+      bonuses: 0,
+      commission: 0,
+      incentives: 0,
+      manualAdjustments: 0,
+      deductions: {
+        insurance: 0,
+        tax: 0,
+        loan: 0,
+        advances: 0,
+        recurring: 0,
+        penalties: 0,
+      },
+      currency: "EGP",
+      salaryType: "monthly",
+      salaryGrade: "G3",
+      payrollGroup: "standard",
+      paymentMethod: "bank_transfer",
+      insuranceStatus: "insured",
+      taxStatus: "resident",
+      contractType: "full_time",
+      bankAccount: "",
+      iban: "",
+      history: [],
+      incrementHistory: [],
+    };
+  }
+
   private buildDefaultSalaryPayload(
     employeeId: string,
     basicSalary: number
   ): SalaryPayload {
+    if (basicSalary <= 0) return this.buildBlankSalaryPayload(employeeId);
     return {
       basicSalary,
       allowances: {
@@ -1105,6 +1145,7 @@ export class PayrollService {
     const out = [];
     for (const emp of employees) {
       const profile = await this.salaryProfile(companyId, emp.id);
+      if (!profile) continue;
       out.push({
         ...profile,
         employeeName: emp.name,
@@ -1129,16 +1170,43 @@ export class PayrollService {
     if (!emp) throw new NotFoundException("Employee not found");
 
     const current = await this.salaryProfile(companyId, employeeId);
+    const blank = this.buildBlankSalaryPayload(employeeId);
+    const base = current ?? {
+      ...blank,
+      id: `sal_draft_${employeeId}`,
+      allowances: blank.allowances!,
+      deductions: blank.deductions!,
+      history: [],
+      incrementHistory: [],
+      joiningDate: dateOnly(emp.joinDate),
+      effectiveFrom: dateOnly(emp.joinDate),
+      salaryGrade: "G3",
+      salaryType: "monthly",
+      payrollGroup: "standard",
+      currency: "EGP",
+      bankAccount: "",
+      iban: "",
+      paymentMethod: "bank_transfer",
+      insuranceStatus: "insured",
+      taxStatus: "resident",
+      contractType: "full_time",
+      bonuses: 0,
+      commission: 0,
+      incentives: 0,
+      manualAdjustments: 0,
+      basicSalary: 0,
+    };
+
     const nextBasic =
       body.basicSalary !== undefined
         ? Math.max(0, Number(body.basicSalary))
-        : current.basicSalary;
+        : Number(base.basicSalary ?? 0);
 
     const allowancesIn = (body.allowances ?? {}) as Record<string, number>;
     const deductionsIn = (body.deductions ?? {}) as Record<string, number>;
 
-    const history = Array.isArray(current.history) ? [...current.history] : [];
-    if (nextBasic !== current.basicSalary) {
+    const history = Array.isArray(base.history) ? [...base.history] : [];
+    if (current && nextBasic !== current.basicSalary) {
       history.unshift({
         id: `salh_${Date.now()}`,
         effectiveFrom: new Date().toISOString().slice(0, 10),
@@ -1150,61 +1218,63 @@ export class PayrollService {
     const payload: SalaryPayload = {
       basicSalary: nextBasic,
       allowances: {
-        housing: Number(allowancesIn.housing ?? current.allowances.housing ?? 0),
+        housing: Number(allowancesIn.housing ?? base.allowances.housing ?? 0),
         transportation: Number(
-          allowancesIn.transportation ?? current.allowances.transportation ?? 0
+          allowancesIn.transportation ?? base.allowances.transportation ?? 0
         ),
-        meal: Number(allowancesIn.meal ?? current.allowances.meal ?? 0),
-        phone: Number(allowancesIn.phone ?? current.allowances.phone ?? 0),
-        other: Number(allowancesIn.other ?? current.allowances.other ?? 0),
-        shift: Number(allowancesIn.shift ?? current.allowances.shift ?? 0),
+        meal: Number(allowancesIn.meal ?? base.allowances.meal ?? 0),
+        phone: Number(allowancesIn.phone ?? base.allowances.phone ?? 0),
+        other: Number(allowancesIn.other ?? base.allowances.other ?? 0),
+        shift: Number(allowancesIn.shift ?? base.allowances.shift ?? 0),
       },
-      bonuses: Number(body.bonuses ?? current.bonuses ?? 0),
-      commission: Number(body.commission ?? current.commission ?? 0),
-      incentives: Number(body.incentives ?? current.incentives ?? 0),
+      bonuses: Number(body.bonuses ?? base.bonuses ?? 0),
+      commission: Number(body.commission ?? base.commission ?? 0),
+      incentives: Number(body.incentives ?? base.incentives ?? 0),
       manualAdjustments: Number(
-        body.manualAdjustments ?? current.manualAdjustments ?? 0
+        body.manualAdjustments ?? base.manualAdjustments ?? 0
       ),
       deductions: {
         insurance: Number(
-          deductionsIn.insurance ?? current.deductions.insurance ?? 0
+          deductionsIn.insurance ?? base.deductions.insurance ?? 0
         ),
-        tax: Number(deductionsIn.tax ?? current.deductions.tax ?? 0),
-        loan: Number(deductionsIn.loan ?? current.deductions.loan ?? 0),
+        tax: Number(deductionsIn.tax ?? base.deductions.tax ?? 0),
+        loan: Number(deductionsIn.loan ?? base.deductions.loan ?? 0),
         advances: Number(
-          deductionsIn.advances ?? current.deductions.advances ?? 0
+          deductionsIn.advances ?? base.deductions.advances ?? 0
         ),
         recurring: Number(
-          deductionsIn.recurring ?? current.deductions.recurring ?? 0
+          deductionsIn.recurring ?? base.deductions.recurring ?? 0
         ),
         penalties: Number(
-          deductionsIn.penalties ?? current.deductions.penalties ?? 0
+          deductionsIn.penalties ?? base.deductions.penalties ?? 0
         ),
       },
-      currency: String(body.currency ?? current.currency ?? "EGP"),
-      salaryType: String(body.salaryType ?? current.salaryType ?? "monthly"),
-      salaryGrade: String(body.salaryGrade ?? current.salaryGrade ?? "G3"),
+      currency: String(body.currency ?? base.currency ?? "EGP"),
+      salaryType: String(body.salaryType ?? base.salaryType ?? "monthly"),
+      salaryGrade: String(body.salaryGrade ?? base.salaryGrade ?? "G3"),
       payrollGroup: String(
-        body.payrollGroup ?? current.payrollGroup ?? "standard"
+        body.payrollGroup ?? base.payrollGroup ?? "standard"
       ),
       paymentMethod: String(
-        body.paymentMethod ?? current.paymentMethod ?? "bank_transfer"
+        body.paymentMethod ?? base.paymentMethod ?? "bank_transfer"
       ),
       insuranceStatus: String(
-        body.insuranceStatus ?? current.insuranceStatus ?? "insured"
+        body.insuranceStatus ?? base.insuranceStatus ?? "insured"
       ),
-      taxStatus: String(body.taxStatus ?? current.taxStatus ?? "resident"),
+      taxStatus: String(body.taxStatus ?? base.taxStatus ?? "resident"),
       contractType: String(
-        body.contractType ?? current.contractType ?? "full_time"
+        body.contractType ?? base.contractType ?? "full_time"
       ),
-      bankAccount: String(body.bankAccount ?? current.bankAccount ?? ""),
-      iban: String(body.iban ?? current.iban ?? ""),
-      joiningDate: String(body.joiningDate ?? current.joiningDate),
+      bankAccount: String(body.bankAccount ?? base.bankAccount ?? ""),
+      iban: String(body.iban ?? base.iban ?? ""),
+      joiningDate: String(body.joiningDate ?? base.joiningDate),
       effectiveFrom: String(
         body.effectiveFrom ?? new Date().toISOString().slice(0, 10)
       ),
       history,
-      incrementHistory: current.incrementHistory ?? [],
+      incrementHistory: Array.isArray(base.incrementHistory)
+        ? base.incrementHistory
+        : [],
     };
 
     await this.prisma.employeeSalaryProfile.upsert({
@@ -1419,82 +1489,67 @@ export class PayrollService {
   }
 
   async salaryProfile(companyId: string, employeeId: string) {
-    const employees = await this.prisma.employee.findMany({
-      where: { companyId, deletedAt: null },
-      orderBy: { employeeCode: "asc" },
-    });
-    const emp = employees.find((e) => e.id === employeeId);
     const existing = await this.findSalary(companyId, employeeId);
-    const idx = Math.max(
-      0,
-      employees.findIndex((e) => e.id === employeeId)
-    );
-    const fallbackBasic = defaultBasicSalary(employeeId, idx);
-    const profile =
-      existing ??
-      ({
-        id: `sal_draft_${employeeId}`,
-        ...this.buildDefaultSalaryPayload(employeeId, fallbackBasic),
-      } as SalaryPayload & { id: string });
-    const basic = profile.basicSalary ?? fallbackBasic;
+    if (!existing) return null;
+
+    const emp = await this.prisma.employee.findFirst({
+      where: { id: employeeId, companyId, deletedAt: null },
+    });
+    const basic = existing.basicSalary ?? 0;
     const allowances = {
-      housing: profile.allowances?.housing ?? Math.round(basic * 0.1),
-      transportation: profile.allowances?.transportation ?? 500,
-      meal: profile.allowances?.meal ?? 300,
-      phone: profile.allowances?.phone ?? 200,
-      other: profile.allowances?.other ?? 0,
-      shift: profile.allowances?.shift ?? 0,
+      housing: existing.allowances?.housing ?? 0,
+      transportation: existing.allowances?.transportation ?? 0,
+      meal: existing.allowances?.meal ?? 0,
+      phone: existing.allowances?.phone ?? 0,
+      other: existing.allowances?.other ?? 0,
+      shift: existing.allowances?.shift ?? 0,
     };
-    const deductionsRaw = (profile.deductions ?? {}) as Record<string, number>;
+    const deductionsRaw = (existing.deductions ?? {}) as Record<string, number>;
     const joiningDate = emp
       ? dateOnly(emp.joinDate)
       : new Date().toISOString().slice(0, 10);
     return {
-      id: profile.id,
+      id: existing.id,
       employeeId,
       companyId,
       basicSalary: basic,
       allowances,
-      bonuses: profile.bonuses ?? 0,
-      commission: profile.commission ?? 0,
-      incentives: Number(profile.incentives ?? 0),
-      manualAdjustments: Number(profile.manualAdjustments ?? 0),
+      bonuses: existing.bonuses ?? 0,
+      commission: existing.commission ?? 0,
+      incentives: Number(existing.incentives ?? 0),
+      manualAdjustments: Number(existing.manualAdjustments ?? 0),
       deductions: {
-        insurance: deductionsRaw.insurance ?? Math.round(basic * 0.11),
-        tax: deductionsRaw.tax ?? Math.round(basic * 0.08),
+        insurance: deductionsRaw.insurance ?? 0,
+        tax: deductionsRaw.tax ?? 0,
         loan: deductionsRaw.loan ?? 0,
         advances: deductionsRaw.advances ?? 0,
-        recurring: deductionsRaw.recurring ?? 150,
+        recurring: deductionsRaw.recurring ?? 0,
         penalties: deductionsRaw.penalties ?? 0,
       },
-      salaryGrade: profile.salaryGrade ?? "G3",
-      salaryType: profile.salaryType ?? "monthly",
+      salaryGrade: existing.salaryGrade ?? "G3",
+      salaryType: existing.salaryType ?? "monthly",
       payrollGroup:
-        profile.payrollGroup === "default"
+        existing.payrollGroup === "default"
           ? "standard"
-          : (profile.payrollGroup ?? "standard"),
-      currency: profile.currency ?? "EGP",
-      bankAccount:
-        (profile.bankAccount as string | undefined) ??
-        `1002${employeeId.replace(/\D/g, "").padStart(8, "0").slice(-8)}`,
-      iban:
-        (profile.iban as string | undefined) ??
-        `EG380002${employeeId.replace(/\D/g, "").padStart(18, "0").slice(-18)}`,
+          : (existing.payrollGroup ?? "standard"),
+      currency: existing.currency ?? "EGP",
+      bankAccount: String(existing.bankAccount ?? ""),
+      iban: String(existing.iban ?? ""),
       paymentMethod:
-        profile.paymentMethod === "bank"
+        existing.paymentMethod === "bank"
           ? "bank_transfer"
-          : (profile.paymentMethod ?? "bank_transfer"),
-      insuranceStatus: profile.insuranceStatus ?? "insured",
+          : (existing.paymentMethod ?? "bank_transfer"),
+      insuranceStatus: existing.insuranceStatus ?? "insured",
       taxStatus:
-        profile.taxStatus === "taxable"
+        existing.taxStatus === "taxable"
           ? "resident"
-          : (profile.taxStatus ?? "resident"),
-      contractType: profile.contractType ?? "full_time",
+          : (existing.taxStatus ?? "resident"),
+      contractType: existing.contractType ?? "full_time",
       joiningDate,
-      effectiveFrom: joiningDate,
-      history: Array.isArray(profile.history) ? profile.history : [],
-      incrementHistory: Array.isArray(profile.incrementHistory)
-        ? profile.incrementHistory
+      effectiveFrom: String(existing.effectiveFrom ?? joiningDate),
+      history: Array.isArray(existing.history) ? existing.history : [],
+      incrementHistory: Array.isArray(existing.incrementHistory)
+        ? existing.incrementHistory
         : [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -1503,7 +1558,7 @@ export class PayrollService {
       deletedAt: null,
       isArchived: false,
       version: 1,
-      metadata: { persisted: Boolean(existing) },
+      metadata: { persisted: true },
     };
   }
 }

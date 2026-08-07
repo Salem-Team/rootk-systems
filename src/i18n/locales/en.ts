@@ -2126,6 +2126,12 @@ export const en = {
     tabWorkflow: "Workflow",
     tabReports: "Reports",
     selectEmployee: "Select employee",
+    selectEmployeePlaceholder: "— Select an employee —",
+    selectEmployeeToViewSalary: "Pick an employee to view or create their salary profile.",
+    noSalaryProfile: "No salary profile yet",
+    noSalaryProfileDesc:
+      "This employee has no saved salary profile. Create one before running payroll.",
+    createSalaryProfile: "Create salary profile",
     editSalaryProfile: "Edit salary profile",
     editSalaryProfileDesc:
       "Update contract pay components. Next payroll advance recalculates from attendance.",

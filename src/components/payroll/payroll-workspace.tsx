@@ -123,10 +123,7 @@ export function PayrollWorkspace() {
             setEmployees(emp.data);
             setSelectedEmployeeId((prev) => {
               if (prev && emp.data.some((e) => e.id === prev)) return prev;
-              if (slips.success && slips.data[0]?.employeeId) {
-                return slips.data[0].employeeId;
-              }
-              return emp.data[0]?.id ?? "";
+              return "";
             });
           }
           if (rep.success) setReports(rep.data);
@@ -176,10 +173,15 @@ export function PayrollWorkspace() {
   );
 
   useEffect(() => {
-    if (!selectedEmployeeId || role === "employee") return;
+    if (!selectedEmployeeId || role === "employee") {
+      setSelectedProfileState(null);
+      return;
+    }
     let mounted = true;
     void getSalaryProfile(selectedEmployeeId).then((res) => {
-      if (mounted && res.success) setSelectedProfileState(res.data);
+      if (!mounted) return;
+      if (res.success) setSelectedProfileState(res.data);
+      else setSelectedProfileState(null);
     });
     return () => {
       mounted = false;
@@ -413,7 +415,12 @@ export function PayrollWorkspace() {
             value={selectedEmployeeId}
             onChange={setSelectedEmployeeId}
           />
-          {selectedProfileState ? (
+          {!selectedEmployeeId ? (
+            <EmptyState
+              title={t("payroll.selectEmployee")}
+              description={t("payroll.selectEmployeeToViewSalary")}
+            />
+          ) : selectedProfileState ? (
             <SalaryProfilePanel
               profile={selectedProfileState}
               payslip={selectedPayslip}
@@ -423,7 +430,22 @@ export function PayrollWorkspace() {
                   : undefined
               }
             />
-          ) : null}
+          ) : (
+            <EmptyState
+              title={t("payroll.noSalaryProfile")}
+              description={t("payroll.noSalaryProfileDesc")}
+              actionLabel={
+                persona === "admin" || persona === "hr" || persona === "finance"
+                  ? t("payroll.createSalaryProfile")
+                  : undefined
+              }
+              onAction={
+                persona === "admin" || persona === "hr" || persona === "finance"
+                  ? () => setEditProfileOpen(true)
+                  : undefined
+              }
+            />
+          )}
           {selectedPayslip ? (
             <PayslipStatementView
               payslip={selectedPayslip}
@@ -479,6 +501,7 @@ export function PayrollWorkspace() {
         open={editProfileOpen}
         onOpenChange={setEditProfileOpen}
         profile={selectedProfileState}
+        employeeId={selectedEmployeeId}
         employeeLabel={
           employees.find((e) => e.id === selectedEmployeeId)?.name
         }
@@ -546,6 +569,7 @@ function EmployeePicker({
   onChange: (id: string) => void;
 }) {
   const { t, locale } = useTranslation();
+  const loc = locale === "ar" ? "ar" : "en";
   return (
     <label className="flex flex-col gap-1.5 text-sm sm:max-w-sm">
       <span className="font-medium">{t("payroll.selectEmployee")}</span>
@@ -554,12 +578,14 @@ function EmployeePicker({
         value={value}
         onChange={(e) => onChange(e.target.value)}
       >
-        {payslips.map((p) => {
-          const emp = employees.find((e) => e.id === p.employeeId);
+        <option value="">{t("payroll.selectEmployeePlaceholder")}</option>
+        {employees.map((emp) => {
+          const slip = payslips.find((p) => p.employeeId === emp.id);
           return (
-            <option key={p.employeeId} value={p.employeeId}>
-              {emp?.name ?? p.employeeId} ·{" "}
-              {formatEgp(p.net, locale === "ar" ? "ar" : "en")}
+            <option key={emp.id} value={emp.id}>
+              {emp.name}
+              {emp.employeeId ? ` · ${emp.employeeId}` : ""}
+              {slip ? ` · ${formatEgp(slip.net, loc)}` : ""}
             </option>
           );
         })}

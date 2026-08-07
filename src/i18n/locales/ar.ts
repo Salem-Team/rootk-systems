@@ -2121,6 +2121,12 @@ export const ar: TranslationKeys = {
     tabWorkflow: "الموافقات",
     tabReports: "التقارير",
     selectEmployee: "اختر موظفًا",
+    selectEmployeePlaceholder: "— اختر موظفًا —",
+    selectEmployeeToViewSalary: "اختَر موظفًا عشان تشوف أو تنشئ ملف الراتب بتاعه.",
+    noSalaryProfile: "مفيش ملف راتب لسه",
+    noSalaryProfileDesc:
+      "الموظف ده مالهوش ملف راتب محفوظ. أنشئ ملف قبل ما تشغّل الجرد الشهري.",
+    createSalaryProfile: "إنشاء ملف راتب",
     editSalaryProfile: "تعديل ملف الراتب",
     editSalaryProfileDesc:
       "حدّث مكوّنات الراتب التعاقدية. التقدّم التالي للجرد هيعيد الحساب من الحضور.",

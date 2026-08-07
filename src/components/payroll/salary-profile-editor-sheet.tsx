@@ -86,16 +86,50 @@ function fromProfile(p: EmployeeSalaryProfile): Draft {
   };
 }
 
+function blankDraft(): Draft {
+  return {
+    basicSalary: 0,
+    housing: 0,
+    transportation: 0,
+    meal: 0,
+    phone: 0,
+    other: 0,
+    shift: 0,
+    bonuses: 0,
+    commission: 0,
+    incentives: 0,
+    manualAdjustments: 0,
+    insurance: 0,
+    tax: 0,
+    loan: 0,
+    advances: 0,
+    recurring: 0,
+    penalties: 0,
+    salaryGrade: "G3",
+    salaryType: "monthly",
+    payrollGroup: "standard",
+    currency: "EGP",
+    bankAccount: "",
+    iban: "",
+    paymentMethod: "bank_transfer",
+    insuranceStatus: "insured",
+    taxStatus: "resident",
+    contractType: "full_time",
+  };
+}
+
 export function SalaryProfileEditorSheet({
   open,
   onOpenChange,
   profile,
+  employeeId,
   employeeLabel,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   profile: EmployeeSalaryProfile | null;
+  employeeId: string;
   employeeLabel?: string;
   onSaved: (profile: EmployeeSalaryProfile) => void;
 }) {
@@ -104,8 +138,11 @@ export function SalaryProfileEditorSheet({
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (open && profile) setDraft(fromProfile(profile));
-    if (!open) setDraft(null);
+    if (!open) {
+      setDraft(null);
+      return;
+    }
+    setDraft(profile ? fromProfile(profile) : blankDraft());
   }, [open, profile]);
 
   function setNum<K extends keyof Draft>(key: K, raw: string) {
@@ -114,9 +151,9 @@ export function SalaryProfileEditorSheet({
   }
 
   async function save() {
-    if (!profile || !draft) return;
+    if (!employeeId || !draft) return;
     setBusy(true);
-    const res = await updateSalaryProfile(profile.employeeId, {
+    const res = await updateSalaryProfile(employeeId, {
       basicSalary: draft.basicSalary,
       allowances: {
         housing: draft.housing,
