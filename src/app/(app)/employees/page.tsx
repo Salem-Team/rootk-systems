@@ -234,6 +234,9 @@ export default function EmployeesPage() {
             setEditing(employee);
             setFormOpen(true);
           }}
+          onDeleted={(id) => {
+            void handleDeleted(id);
+          }}
         />
 
         <EmployeeFormDialog

@@ -757,7 +757,12 @@ export const en = {
     emailTaken: "This work email is already in the directory.",
     codeTaken: "This employee ID is already in use.",
     confirmDelete: "Confirm delete",
+    confirmDeleteTitle: "Delete employee permanently?",
+    confirmDeleteBody:
+      "“{name}” and their login account will be removed permanently. This cannot be undone.",
+    confirmDeleteCta: "Yes, delete permanently",
     adminDeleteBlocked: "The primary admin account is protected and cannot be deleted.",
+    selfDeleteBlocked: "You cannot delete your own account while signed in.",
     actCheckIn: "Checked in",
     actCheckInDetail: "Arrived at the Cairo office",
     actCheckOut: "Checked out",

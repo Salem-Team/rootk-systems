@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, MapPin, MessageSquare, Pencil, Phone } from "lucide-react";
+import { CalendarDays, MapPin, MessageSquare, Pencil, Phone, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DepartmentBadge } from "@/components/employees/department-badge";
@@ -19,11 +19,13 @@ export function EmployeeProfileHeader({
   employmentType,
   workMode,
   onEdit,
+  onDelete,
 }: {
   employee: Employee;
   employmentType: EmploymentType;
   workMode: WorkMode;
   onEdit?: () => void;
+  onDelete?: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -98,6 +100,18 @@ export function EmployeeProfileHeader({
           <Pencil className="h-3.5 w-3.5" />
           {t("employees.actionEdit")}
         </Button>
+        {onDelete ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={onDelete}
+            className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            {t("employees.actionDelete")}
+          </Button>
+        ) : null}
       </div>
     </div>
   );

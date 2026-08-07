@@ -381,7 +381,7 @@ export class EmployeesService {
     return mapEmployee(row);
   }
 
-  async remove(companyId: string, _actorId: string, id: string) {
+  async remove(companyId: string, actorId: string, id: string) {
     const current = await this.prisma.employee.findFirst({
       where: { id, companyId },
     });
@@ -389,19 +389,39 @@ export class EmployeesService {
 
     const linkedUsers = await this.prisma.user.findMany({
       where: { companyId, employeeId: id },
-      select: { id: true, role: true },
+      select: { id: true, role: true, email: true },
     });
-    const adminLinked = linkedUsers.some((u) => u.role === AppRole.admin);
+
+    const linkedProtected = linkedUsers.some((u) =>
+      isProtectedAdminAccount({
+        employeeId: id,
+        userId: u.id,
+        email: u.email,
+      })
+    );
     if (
+      linkedProtected ||
       isProtectedAdminAccount({
         employeeId: current.id,
         email: current.email,
-        userRole: adminLinked ? AppRole.admin : null,
       })
     ) {
       throw new ForbiddenException(
         "The system admin account cannot be deleted"
       );
+    }
+
+    const actor = await this.prisma.user.findFirst({
+      where: { id: actorId, companyId },
+      select: { employeeId: true, email: true },
+    });
+    if (
+      actor?.employeeId === id ||
+      (actor?.email &&
+        actor.email.trim().toLowerCase() ===
+          current.email.trim().toLowerCase())
+    ) {
+      throw new ForbiddenException("You cannot delete your own account");
     }
 
     await this.prisma.$transaction(async (tx) => {

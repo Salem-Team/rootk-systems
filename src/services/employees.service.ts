@@ -25,7 +25,11 @@ import {
   updateEmployeeStatusSchema,
 } from "@/schemas";
 import { fail, fromError, ok } from "@/services/api-result";
-import { getSessionUserId } from "@/stores/session-store";
+import {
+  getSessionUserId,
+  getWorkEmployeeId,
+  useSessionStore,
+} from "@/stores/session-store";
 import type { ApiResponse, Department, Employee, EmployeeStatus } from "@/types";
 import type { EmployeeProfileExtras } from "@/types/employee-profile";
 
@@ -332,11 +336,19 @@ export async function deleteEmployee(
     if (
       isProtectedAdminAccount({
         employeeId: employee.id,
+        userId: account?.id,
         email: employee.email,
-        userRole: account?.role,
       })
     ) {
       throw new ForbiddenError("The system admin account cannot be deleted");
+    }
+    const sessionEmployeeId = getWorkEmployeeId();
+    if (
+      employee.id === sessionEmployeeId ||
+      employee.email.trim().toLowerCase() ===
+        (useSessionStore.getState().user.email ?? "").trim().toLowerCase()
+    ) {
+      throw new ForbiddenError("You cannot delete your own account");
     }
     if (account) {
       await userRepository.delete(account.id, false);

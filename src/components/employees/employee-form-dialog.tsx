@@ -9,7 +9,6 @@ import {
   Briefcase,
   Building2,
   CalendarDays,
-  Check,
   IdCard,
   KeyRound,
   Loader2,
@@ -43,6 +42,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { EmployeeDeleteConfirmDialog } from "@/components/employees/employee-delete-confirm";
 import {
   createEmployee,
   deleteEmployee,
@@ -55,10 +55,14 @@ import {
 import { demoTodayKey } from "@/lib/mock-date";
 import { isProtectedAdminAccount } from "@/lib/protected-accounts";
 import { softSpring } from "@/lib/animations";
-import { cn, getInitials } from "@/lib/utils";
+import { getInitials } from "@/lib/utils";
 import { useDepartments } from "@/hooks/use-departments";
 import { useTranslation } from "@/hooks/use-translation";
 import { departmentLabel } from "@/lib/department-label";
+import {
+  getWorkEmployeeIdFromUser,
+  useSessionStore,
+} from "@/stores/session-store";
 import type { Employee, EmployeeStatus } from "@/types";
 
 const LOCATIONS = [
@@ -214,13 +218,21 @@ export function EmployeeFormDialog({
   const { t } = useTranslation();
   const { activeNames } = useDepartments();
   const reduceMotion = useReducedMotion();
+  const sessionUser = useSessionStore((s) => s.user);
   const editing = Boolean(employee);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const sessionEmployeeId = getWorkEmployeeIdFromUser(sessionUser);
+  const isSelf =
+    Boolean(employee) &&
+    (employee!.id === sessionEmployeeId ||
+      employee!.email.trim().toLowerCase() ===
+        (sessionUser.email ?? "").trim().toLowerCase());
   const canDelete =
     Boolean(onDeleted) &&
     editing &&
+    !isSelf &&
     !isProtectedAdminAccount({
       employeeId: employee?.id,
       email: employee?.email,
@@ -407,8 +419,8 @@ export function EmployeeFormDialog({
       toast.error(t("employees.adminDeleteBlocked"));
       return;
     }
-    if (!confirmDelete) {
-      setConfirmDelete(true);
+    if (isSelf) {
+      toast.error(t("employees.selfDeleteBlocked"));
       return;
     }
     setDeleting(true);
@@ -419,16 +431,23 @@ export function EmployeeFormDialog({
         return;
       }
       toast.success(t("employees.deleted"));
+      setConfirmDeleteOpen(false);
       onDeleted(employee.id);
       onOpenChange(false);
     } finally {
       setDeleting(false);
-      setConfirmDelete(false);
     }
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <>
+    <Sheet
+      open={open}
+      onOpenChange={(next) => {
+        onOpenChange(next);
+        if (!next) setConfirmDeleteOpen(false);
+      }}
+    >
       <SheetContent className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <SheetHeader className="border-b border-border/60 bg-[radial-gradient(ellipse_at_top,_rgba(8,40,104,0.08),_transparent_55%)] px-5 pb-4 pt-5 pe-12 text-start">
           <div className="flex items-center gap-2 text-primary">
@@ -815,42 +834,23 @@ export function EmployeeFormDialog({
 
           <div className="flex flex-col gap-2 border-t border-border/60 bg-card/95 px-5 py-4 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
             {canDelete ? (
-              <div className="flex flex-col gap-1.5">
-                <Button
-                  type="button"
-                  variant={confirmDelete ? "destructive" : "outline"}
-                  disabled={saving || deleting}
-                  onClick={() => void handleDelete()}
-                  className={cn(
-                    confirmDelete && "border-destructive"
-                  )}
-                >
-                  {deleting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : confirmDelete ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )}
-                  {confirmDelete
-                    ? t("employees.confirmDelete")
-                    : t("employees.actionDelete")}
-                </Button>
-                {confirmDelete ? (
-                  <button
-                    type="button"
-                    className="text-start text-[11px] text-muted-foreground underline-offset-2 hover:underline"
-                    onClick={() => setConfirmDelete(false)}
-                  >
-                    {t("common.cancel")}
-                  </button>
-                ) : null}
-              </div>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={saving || deleting}
+                onClick={() => setConfirmDeleteOpen(true)}
+                className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+                {t("employees.actionDelete")}
+              </Button>
             ) : (
               <p className="max-w-[220px] text-[11px] leading-relaxed text-muted-foreground">
-                {editing && onDeleted
-                  ? t("employees.adminDeleteBlocked")
-                  : t("employees.formSecureNote")}
+                {editing && onDeleted && isSelf
+                  ? t("employees.selfDeleteBlocked")
+                  : editing && onDeleted
+                    ? t("employees.adminDeleteBlocked")
+                    : t("employees.formSecureNote")}
               </p>
             )}
             <div className="flex gap-2 sm:ms-auto">
@@ -879,5 +879,16 @@ export function EmployeeFormDialog({
         </form>
       </SheetContent>
     </Sheet>
+
+    {employee ? (
+      <EmployeeDeleteConfirmDialog
+        open={confirmDeleteOpen}
+        employeeName={employee.name}
+        deleting={deleting}
+        onOpenChange={setConfirmDeleteOpen}
+        onConfirm={() => void handleDelete()}
+      />
+    ) : null}
+    </>
   );
 }

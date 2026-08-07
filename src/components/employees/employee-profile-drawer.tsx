@@ -3,6 +3,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Mail, Phone, Shield } from "lucide-react";
+import { toast } from "sonner";
 import {
   Sheet,
   SheetContent,
@@ -13,6 +14,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmployeeProfileHeader } from "@/components/employees/employee-profile-header";
+import { EmployeeDeleteConfirmDialog } from "@/components/employees/employee-delete-confirm";
 import { EmployeeAttendanceSummaryCards } from "@/components/employees/employee-attendance-summary";
 import { EmployeeLeaveSummaryPanel } from "@/components/employees/employee-leave-summary";
 import { EmployeeActivityTimeline } from "@/components/employees/employee-activity-timeline";
@@ -25,6 +27,12 @@ import {
 import { useEmployeeProfileExtras } from "@/hooks/use-employee-profile-extras";
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp } from "@/lib/animations";
+import { isProtectedAdminAccount } from "@/lib/protected-accounts";
+import { deleteEmployee } from "@/services/employees.service";
+import {
+  getWorkEmployeeIdFromUser,
+  useSessionStore,
+} from "@/stores/session-store";
 import type { Employee } from "@/types";
 import type { TranslationPath } from "@/i18n";
 
@@ -35,6 +43,7 @@ interface EmployeeProfileDrawerProps {
   onOpenChange: (open: boolean) => void;
   onSelectEmployee: (employee: Employee) => void;
   onEditEmployee?: (employee: Employee) => void;
+  onDeleted?: (id: string) => void;
 }
 
 function Section({
@@ -68,10 +77,14 @@ export function EmployeeProfileDrawer({
   onOpenChange,
   onSelectEmployee,
   onEditEmployee,
+  onDeleted,
 }: EmployeeProfileDrawerProps) {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
+  const sessionUser = useSessionStore((s) => s.user);
   const [tab, setTab] = useState("overview");
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const extras = useEmployeeProfileExtras(employee);
 
@@ -88,12 +101,62 @@ export function EmployeeProfileDrawer({
     [employee, roster]
   );
 
+  const sessionEmployeeId = getWorkEmployeeIdFromUser(sessionUser);
+  const isSelf =
+    Boolean(employee) &&
+    (employee!.id === sessionEmployeeId ||
+      employee!.email.trim().toLowerCase() ===
+        (sessionUser.email ?? "").trim().toLowerCase());
+  const canDelete =
+    Boolean(onDeleted) &&
+    Boolean(employee) &&
+    !isSelf &&
+    !isProtectedAdminAccount({
+      employeeId: employee?.id,
+      email: employee?.email,
+    });
+
+  async function handleDelete() {
+    if (!employee || !onDeleted) return;
+    if (
+      isProtectedAdminAccount({
+        employeeId: employee.id,
+        email: employee.email,
+      })
+    ) {
+      toast.error(t("employees.adminDeleteBlocked"));
+      return;
+    }
+    if (isSelf) {
+      toast.error(t("employees.selfDeleteBlocked"));
+      return;
+    }
+    setDeleting(true);
+    try {
+      const res = await deleteEmployee(employee.id);
+      if (!res.success) {
+        toast.error(res.message ?? t("common.error"));
+        return;
+      }
+      toast.success(t("employees.deleted"));
+      setConfirmDeleteOpen(false);
+      onDeleted(employee.id);
+      onOpenChange(false);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
+    <>
     <Sheet
       open={open}
       onOpenChange={(next) => {
         onOpenChange(next);
-        if (!next) setTab("overview");
+        if (!next) {
+          setTab("overview");
+          setConfirmDeleteOpen(false);
+        }
       }}
     >
       <SheetContent className="gap-0 p-0 sm:max-w-xl">
@@ -126,6 +189,11 @@ export function EmployeeProfileDrawer({
                       onEdit={
                         onEditEmployee
                           ? () => onEditEmployee(employee)
+                          : undefined
+                      }
+                      onDelete={
+                        canDelete
+                          ? () => setConfirmDeleteOpen(true)
                           : undefined
                       }
                     />
@@ -318,5 +386,16 @@ export function EmployeeProfileDrawer({
         ) : null}
       </SheetContent>
     </Sheet>
+
+    {employee ? (
+      <EmployeeDeleteConfirmDialog
+        open={confirmDeleteOpen}
+        employeeName={employee.name}
+        deleting={deleting}
+        onOpenChange={setConfirmDeleteOpen}
+        onConfirm={() => void handleDelete()}
+      />
+    ) : null}
+    </>
   );
 }
