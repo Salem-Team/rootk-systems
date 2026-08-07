@@ -364,7 +364,7 @@ model WorkTask {
   description           String       @default("")
   status                TaskStatus   @default(todo)
   priority              TaskPriority @default(medium)
-  dueDate               DateTime?    @db.Date
+  dueDate               DateTime?
   tag                   String       @default("")
   estimateMin           Int          @default(0)
   assigneeIds           String[]
@@ -825,8 +825,8 @@ model PerformanceTarget {
   quantity             Int
   unit                 String              @default("unit")
   completedQuantity    Int                 @default(0)
-  startDate            DateTime            @db.Date
-  endDate              DateTime            @db.Date
+  startDate            DateTime
+  endDate              DateTime
   priority             TargetPriority      @default(medium)
   weight               Float               @default(1)
   assigneeScope        TargetAssigneeScope @default(employee)
@@ -840,7 +840,7 @@ model PerformanceTarget {
   health               TargetHealth        @default(average)
   riskLevel            TargetRiskLevel     @default(low)
   notes                String              @default("")
-  expectedCompletion   DateTime?           @db.Date
+  expectedCompletion   DateTime?
   performanceScore     Float               @default(0)
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt

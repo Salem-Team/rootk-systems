@@ -93,6 +93,8 @@ export const API_ROUTES = {
       `/payroll/payslips/${employeeId}/history`,
     salaryProfile: (employeeId: string) =>
       `/payroll/salary-profiles/${employeeId}`,
+    salaryProfiles: "/payroll/salary-profiles",
+    runs: "/payroll/runs",
   },
   dashboard: {
     stats: "/dashboard/stats",

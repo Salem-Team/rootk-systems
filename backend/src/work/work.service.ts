@@ -15,7 +15,7 @@ import {
   type WorkTask,
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { auditFields, dateOnly, parseDate } from "../common/mappers";
+import { auditFields, dateOnly, iso, parseDate } from "../common/mappers";
 import { NotificationsService } from "../notifications/notifications.service";
 import { writeActivity } from "../common/activity-writer";
 import { TargetsService } from "../targets/targets.service";
@@ -90,7 +90,7 @@ function mapTask(row: WorkTask) {
     description: row.description,
     status: row.status,
     priority: row.priority,
-    dueDate: row.dueDate ? dateOnly(row.dueDate) : "",
+    dueDate: row.dueDate ? iso(row.dueDate) : "",
     tag: row.tag,
     estimateMin: row.estimateMin,
     assigneeIds: row.assigneeIds,

@@ -161,13 +161,13 @@ export function TargetViewSheet({
                 />
                 <Meta
                   label={t("targets.assign.fieldStartDate")}
-                  value={format(parseISO(target.startDate), "d MMM yyyy", {
+                  value={format(parseISO(target.startDate), "d MMM yyyy · h:mm a", {
                     locale: dateLocale,
                   })}
                 />
                 <Meta
                   label={t("targets.assign.fieldEndDate")}
-                  value={format(parseISO(target.endDate), "d MMM yyyy", {
+                  value={format(parseISO(target.endDate), "d MMM yyyy · h:mm a", {
                     locale: dateLocale,
                   })}
                 />

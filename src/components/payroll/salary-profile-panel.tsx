@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatEgp } from "@/lib/payroll";
 import { useTranslation } from "@/hooks/use-translation";
 import type { EmployeePayslip, EmployeeSalaryProfile } from "@/types/payroll";
@@ -8,10 +9,12 @@ import type { EmployeePayslip, EmployeeSalaryProfile } from "@/types/payroll";
 export function SalaryProfilePanel({
   profile,
   payslip,
+  onEdit,
 }: {
   profile: EmployeeSalaryProfile;
   /** Engine result — UI must not invent net/gross. */
   payslip?: EmployeePayslip | null;
+  onEdit?: () => void;
 }) {
   const { t, locale } = useTranslation();
   const loc = locale === "ar" ? "ar" : "en";
@@ -63,12 +66,17 @@ export function SalaryProfilePanel({
               {t("payroll.salaryProfileDesc")}
             </p>
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant="info">{profile.salaryGrade}</Badge>
             <Badge variant="outline">
               {t(`payroll.salaryType.${profile.salaryType}`)}
             </Badge>
             <Badge variant="secondary">{profile.currency}</Badge>
+            {onEdit ? (
+              <Button type="button" size="sm" variant="outline" onClick={onEdit}>
+                {t("payroll.editSalaryProfile")}
+              </Button>
+            ) : null}
           </div>
         </div>
         <div className="panel-body space-y-4">

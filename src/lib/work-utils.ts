@@ -1,5 +1,6 @@
-import { isBefore, parseISO, startOfDay } from "date-fns";
+import { isBefore, isSameDay, parseISO, startOfDay } from "date-fns";
 import { demoNow, demoTodayKey } from "@/lib/mock-date";
+import { tryParseFlexibleDateTime } from "@/lib/flexible-datetime";
 import type {
   MeetingWhen,
   TaskDueBucket,
@@ -20,11 +21,13 @@ export function taskDueBucket(
 ): TaskDueBucket {
   if (!dueDate) return "none";
   if (status === "completed") return "upcoming";
-  const today = startOfDay(now);
-  const due = startOfDay(parseISO(dueDate));
-  const todayStr = todayIsoDate(now);
-  if (dueDate === todayStr) return "today";
-  if (isBefore(due, today)) return "overdue";
+  const due =
+    tryParseFlexibleDateTime(
+      dueDate,
+      dueDate.length === 10 ? "end" : "exact"
+    ) ?? startOfDay(parseISO(dueDate.slice(0, 10)));
+  if (isBefore(due, now)) return "overdue";
+  if (isSameDay(due, now)) return "today";
   return "upcoming";
 }
 

@@ -176,7 +176,7 @@ export function TargetList({
                         {t("targets.list.performance")}: {target.performanceScore}
                       </span>
                       <span className="text-[12px] text-muted-foreground">
-                        {format(parseISO(target.endDate), "d MMM yyyy", {
+                        {format(parseISO(target.endDate), "d MMM yyyy · h:mm a", {
                           locale: dateLocale,
                         })}
                       </span>

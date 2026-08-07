@@ -28,6 +28,10 @@ import {
 } from "@/services/work.service";
 import { useTranslation } from "@/hooks/use-translation";
 import { todayIsoDate } from "@/lib/work-utils";
+import {
+  toDateTimeLocalValue,
+  toStorageIso,
+} from "@/lib/flexible-datetime";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
 import type {
@@ -91,7 +95,7 @@ function taskToDraft(task: WorkTask): TaskDraft {
     title: task.title,
     description: task.description,
     priority: task.priority,
-    dueDate: task.dueDate,
+    dueDate: toDateTimeLocalValue(task.dueDate),
     tag: task.tag,
     estimateMin: task.estimateMin,
     subItemsText: task.subItems.map((s) => s.label).join("\n"),
@@ -204,7 +208,9 @@ export function EmployeeWorkComposer({
       title: taskDraft.title.trim(),
       description: taskDraft.description.trim(),
       priority: taskDraft.priority,
-      dueDate: taskDraft.dueDate,
+      dueDate: taskDraft.dueDate
+        ? toStorageIso(taskDraft.dueDate, "exact")
+        : "",
       tag: taskDraft.tag.trim() || "Personal",
       estimateMin: taskDraft.estimateMin || 0,
       assigneeIds: [selfId],
@@ -355,7 +361,8 @@ export function EmployeeWorkComposer({
               <Field label={t("workAdmin.fieldDue")} htmlFor="emp-task-due">
                 <Input
                   id="emp-task-due"
-                  type="date"
+                  type="datetime-local"
+                  step={60}
                   value={taskDraft.dueDate}
                   onChange={(e) =>
                     setTaskDraft((p) => ({ ...p, dueDate: e.target.value }))

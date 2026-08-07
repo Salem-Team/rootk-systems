@@ -109,7 +109,8 @@ class DepartmentsRepository extends CollectionRepository<OrgDepartment> {
     return this.create(created);
   }
 
-  async softDelete(id: string, actorId = "system"): Promise<boolean> {
+  async softDelete(id: string, _actorId = "system"): Promise<boolean> {
+    void _actorId;
     return this.delete(id, false);
   }
 }

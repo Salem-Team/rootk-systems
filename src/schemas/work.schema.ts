@@ -7,8 +7,12 @@ export const workOriginSchema = z.enum(["assigned", "personal"]);
 const optionalDueDateSchema = z
   .string()
   .refine(
-    (v) => v === "" || /^\d{4}-\d{2}-\d{2}$/.test(v),
-    "Invalid ISO date"
+    (v) =>
+      v === "" ||
+      /^\d{4}-\d{2}-\d{2}$/.test(v) ||
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v) ||
+      !Number.isNaN(Date.parse(v)),
+    "Invalid date/time"
   )
   .optional()
   .default("");

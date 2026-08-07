@@ -26,7 +26,12 @@ import { EmployeeMultiPicker } from "@/components/work/employee-multi-picker";
 import { assignTarget, updateTarget } from "@/services/targets.service";
 import { useTranslation } from "@/hooks/use-translation";
 import { emitTargetsUpdated } from "@/lib/events";
-import { todayIsoDate } from "@/lib/work-utils";
+import {
+  defaultTargetWindow,
+  isValidDateTimeRange,
+  toDateTimeLocalValue,
+  toStorageIso,
+} from "@/lib/flexible-datetime";
 import type { Employee } from "@/types";
 import type {
   PerformanceTarget,
@@ -53,9 +58,7 @@ interface FormState {
 }
 
 function defaultForm(): FormState {
-  const start = todayIsoDate();
-  const end = new Date();
-  end.setDate(end.getDate() + 14);
+  const window = defaultTargetWindow();
   return {
     title: "",
     description: "",
@@ -63,8 +66,8 @@ function defaultForm(): FormState {
     typeId: "",
     quantity: 10,
     unit: "unit",
-    startDate: start,
-    endDate: end.toISOString().slice(0, 10),
+    startDate: window.start,
+    endDate: window.end,
     priority: "medium",
     weight: 1,
     assigneeIds: [],
@@ -82,8 +85,8 @@ function formFromTarget(target: PerformanceTarget): FormState {
     typeId: target.typeId,
     quantity: target.quantity,
     unit: target.unit,
-    startDate: target.startDate.slice(0, 10),
-    endDate: target.endDate.slice(0, 10),
+    startDate: toDateTimeLocalValue(target.startDate),
+    endDate: toDateTimeLocalValue(target.endDate),
     priority: target.priority,
     weight: target.weight,
     assigneeIds: [...target.assigneeIds],
@@ -186,21 +189,31 @@ export function TargetAssignSheet({
     patch({ typeId, unit: type?.unit ?? form.unit });
   }
 
+  function validateForm(): string | null {
+    if (!form.title.trim()) return t("targets.assign.errorTitle");
+    if (!isEditing && !form.categoryId) return t("targets.assign.errorCategory");
+    if (!isEditing && !form.typeId) return t("targets.assign.errorType");
+    if (form.assigneeIds.length === 0) return t("targets.assign.errorAssignees");
+    if (!form.startDate || !form.endDate) return t("targets.assign.errorDates");
+    if (!isValidDateTimeRange(form.startDate, form.endDate)) {
+      return t("targets.assign.errorDateRange");
+    }
+    return null;
+  }
+
   async function onSubmit() {
-    if (
-      !form.title.trim() ||
-      (!isEditing && (!form.categoryId || !form.typeId)) ||
-      form.assigneeIds.length === 0 ||
-      !form.startDate ||
-      !form.endDate
-    ) {
-      toast.error(t("targets.assign.validationError"));
+    const validationError = validateForm();
+    if (validationError) {
+      toast.error(validationError);
       return;
     }
-    if (form.endDate < form.startDate) {
-      toast.error(t("targets.assign.validationError"));
-      return;
-    }
+
+    const startIso = toStorageIso(form.startDate, "start");
+    const endIso = toStorageIso(form.endDate, "end");
+    const unit =
+      form.unit.trim() ||
+      types.find((ty) => ty.id === form.typeId)?.unit ||
+      "unit";
 
     setBusy(true);
     const res =
@@ -211,8 +224,8 @@ export function TargetAssignSheet({
             priority: form.priority,
             weight: form.weight,
             notes: form.notes.trim(),
-            startDate: form.startDate,
-            endDate: form.endDate,
+            startDate: startIso,
+            endDate: endIso,
             assigneeIds: form.assigneeIds,
             department: form.department.trim(),
           })
@@ -222,9 +235,9 @@ export function TargetAssignSheet({
             categoryId: form.categoryId,
             typeId: form.typeId,
             quantity: form.quantity,
-            unit: form.unit.trim() || "unit",
-            startDate: form.startDate,
-            endDate: form.endDate,
+            unit,
+            startDate: startIso,
+            endDate: endIso,
             priority: form.priority,
             weight: form.weight,
             assigneeScope: form.assigneeIds.length > 1 ? "multi" : "employee",
@@ -344,7 +357,8 @@ export function TargetAssignSheet({
             <Field label={t("targets.assign.fieldStartDate")} htmlFor="tgt-start">
               <Input
                 id="tgt-start"
-                type="date"
+                type="datetime-local"
+                step={60}
                 value={form.startDate}
                 onChange={(e) => patch({ startDate: e.target.value })}
               />
@@ -352,12 +366,17 @@ export function TargetAssignSheet({
             <Field label={t("targets.assign.fieldEndDate")} htmlFor="tgt-end">
               <Input
                 id="tgt-end"
-                type="date"
+                type="datetime-local"
+                step={60}
                 value={form.endDate}
+                min={form.startDate || undefined}
                 onChange={(e) => patch({ endDate: e.target.value })}
               />
             </Field>
           </div>
+          <p className="-mt-3 text-[12px] leading-relaxed text-muted-foreground">
+            {t("targets.assign.dateTimeHint")}
+          </p>
 
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label={t("targets.assign.fieldPriority")} htmlFor="tgt-priority">

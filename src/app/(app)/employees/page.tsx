@@ -152,7 +152,7 @@ export default function EmployeesPage() {
     setDrawerOpen(true);
   };
 
-  async function handleSaved(_employee: Employee) {
+  async function handleSaved() {
     await reloadEmployees();
     setEditing(null);
   }
@@ -244,8 +244,8 @@ export default function EmployeesPage() {
           onOpenChange={setFormOpen}
           employee={editing}
           roster={roster.filter((e) => !e.deletedAt)}
-          onSaved={(employee) => {
-            void handleSaved(employee);
+          onSaved={() => {
+            void handleSaved();
           }}
           onDeleted={(id) => {
             void handleDeleted(id);

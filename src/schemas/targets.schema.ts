@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  isFlexibleDateTimeString,
+  isValidDateTimeRange,
+} from "@/lib/flexible-datetime";
 
 export const targetStatusSchema = z.enum([
   "draft",
@@ -36,6 +40,12 @@ export const targetPenaltyTypeSchema = z.enum([
   "manager_review",
   "custom",
 ]);
+
+const flexibleDateTimeSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .refine(isFlexibleDateTimeString, { message: "Invalid date/time" });
 
 export const targetCategorySchema = z.object({
   name: z.string().trim().min(1).max(80),
@@ -85,8 +95,8 @@ export const assignTargetSchema = z
     templateId: z.string().nullable().optional(),
     quantity: z.number().int().min(1).max(1000),
     unit: z.string().trim().min(1).max(40).default("unit"),
-    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    startDate: flexibleDateTimeSchema,
+    endDate: flexibleDateTimeSchema,
     priority: targetPrioritySchema.default("medium"),
     weight: z.number().min(0).max(100).default(1),
     assigneeScope: targetAssigneeScopeSchema.default("employee"),
@@ -96,16 +106,12 @@ export const assignTargetSchema = z
     roleKey: z.string().max(40).default(""),
     ownerId: z.string().max(80).default(""),
     notes: z.string().max(2000).default(""),
-    expectedCompletion: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .nullable()
-      .optional(),
+    expectedCompletion: flexibleDateTimeSchema.nullable().optional(),
     status: targetStatusSchema.default("assigned"),
     generateTasks: z.boolean().default(true),
     id: z.string().optional(),
   })
-  .refine((v) => v.endDate >= v.startDate, {
+  .refine((v) => isValidDateTimeRange(v.startDate, v.endDate), {
     message: "endDate must be on or after startDate",
     path: ["endDate"],
   });

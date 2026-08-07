@@ -174,7 +174,7 @@ export function TaskViewSheet({
                   </dt>
                   <dd className="mt-0.5 font-medium tabular-nums">
                     {task.dueDate
-                      ? format(parseISO(task.dueDate), "d MMM yyyy", {
+                      ? format(parseISO(task.dueDate), "d MMM yyyy · h:mm a", {
                           locale: dateLocale,
                         })
                       : t("ops.due.none")}

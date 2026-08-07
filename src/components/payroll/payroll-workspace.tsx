@@ -16,6 +16,8 @@ import { PayrollApprovalWorkflow } from "@/components/payroll/payroll-approval-w
 import { PayrollReportsPanel } from "@/components/payroll/payroll-reports-panel";
 import { PayslipHistoryPanel } from "@/components/payroll/payslip-history-panel";
 import { PayslipStatementView } from "@/components/payroll/payslip-statement";
+import { PayrollLedgerPanel } from "@/components/payroll/payroll-ledger-panel";
+import { SalaryProfileEditorSheet } from "@/components/payroll/salary-profile-editor-sheet";
 import { formatEgp } from "@/lib/payroll";
 import { formatHmDuration } from "@/lib/duration-format";
 import {
@@ -74,6 +76,9 @@ export function PayrollWorkspace() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
   const [tab, setTab] = useState("overview");
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [selectedProfileState, setSelectedProfileState] =
+    useState<EmployeeSalaryProfile | null>(null);
 
   useEffect(() => {
     setPersona(personaForRole(role));
@@ -165,9 +170,6 @@ export function PayrollWorkspace() {
       } satisfies Pick<Employee, "name" | "employeeId" | "department" | "email">),
     [employees, workEmployeeId, sessionUser, t]
   );
-
-  const [selectedProfileState, setSelectedProfileState] =
-    useState<EmployeeSalaryProfile | null>(null);
 
   useEffect(() => {
     if (!selectedEmployeeId || role === "employee") return;
@@ -302,6 +304,9 @@ export function PayrollWorkspace() {
           <TabsTrigger value="overview" className="shrink-0">
             {t("payroll.tabOverview")}
           </TabsTrigger>
+          <TabsTrigger value="ledger" className="shrink-0">
+            {t("payroll.tabLedger")}
+          </TabsTrigger>
           <TabsTrigger value="salary" className="shrink-0">
             {t("payroll.tabSalary")}
           </TabsTrigger>
@@ -357,6 +362,30 @@ export function PayrollWorkspace() {
           ) : null}
         </TabsContent>
 
+        <TabsContent value="ledger" className="mt-4 space-y-4">
+          <PayrollLedgerPanel
+            summary={summary}
+            payslips={payslips}
+            employees={employees}
+            canAdvance={
+              canApproveFinance(persona) ||
+              persona === "hr" ||
+              persona === "admin"
+            }
+            onRunUpdated={(run) =>
+              setSummary((s) => (s ? { ...s, run } : s))
+            }
+            onRefreshPayslips={() => {
+              void getAllPayslips().then((res) => {
+                if (res.success) setPayslips(res.data);
+              });
+              void getPayrollDashboard().then((res) => {
+                if (res.success) setSummary(res.data);
+              });
+            }}
+          />
+        </TabsContent>
+
         <TabsContent value="salary" className="mt-4 space-y-4">
           <EmployeePicker
             employees={employees}
@@ -368,6 +397,11 @@ export function PayrollWorkspace() {
             <SalaryProfilePanel
               profile={selectedProfileState}
               payslip={selectedPayslip}
+              onEdit={
+                persona === "admin" || persona === "hr" || persona === "finance"
+                  ? () => setEditProfileOpen(true)
+                  : undefined
+              }
             />
           ) : null}
           {selectedPayslip ? (
@@ -420,6 +454,25 @@ export function PayrollWorkspace() {
           <PayrollReportsPanel reports={reports} />
         </TabsContent>
       </Tabs>
+
+      <SalaryProfileEditorSheet
+        open={editProfileOpen}
+        onOpenChange={setEditProfileOpen}
+        profile={selectedProfileState}
+        employeeLabel={
+          employees.find((e) => e.id === selectedEmployeeId)?.name
+        }
+        onSaved={(profile) => {
+          setSelectedProfileState(profile);
+          void getAllPayslips().then((res) => {
+            if (res.success) setPayslips(res.data);
+          });
+          void getPayrollDashboard().then((res) => {
+            if (res.success) setSummary(res.data);
+          });
+        }}
+      />
+
       <p className="sr-only">
         {locale} {formatEgp(summary.netPayroll, locale === "ar" ? "ar" : "en")}
       </p>

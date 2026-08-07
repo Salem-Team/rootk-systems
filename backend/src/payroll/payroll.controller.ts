@@ -70,6 +70,12 @@ export class PayrollController {
     return this.service.advance(companyId, actorId);
   }
 
+  @Get("runs")
+  @Roles(AppRole.admin)
+  runs(@CompanyId() companyId: string) {
+    return this.service.listRuns(companyId);
+  }
+
   @Get("reports")
   @Roles(AppRole.admin)
   reports(@CompanyId() companyId: string) {
@@ -104,6 +110,12 @@ export class PayrollController {
     return this.service.payslip(companyId, employeeId);
   }
 
+  @Get("salary-profiles")
+  @Roles(AppRole.admin)
+  salaryProfiles(@CompanyId() companyId: string) {
+    return this.service.listSalaryProfiles(companyId);
+  }
+
   @Get("salary-profiles/:employeeId")
   @Roles(AppRole.admin, AppRole.employee)
   salary(
@@ -113,5 +125,16 @@ export class PayrollController {
   ) {
     assertOwnPayroll(user, employeeId);
     return this.service.salaryProfile(companyId, employeeId);
+  }
+
+  @Patch("salary-profiles/:employeeId")
+  @Roles(AppRole.admin)
+  patchSalary(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @Param("employeeId") employeeId: string,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.service.patchSalaryProfile(companyId, employeeId, body, actorId);
   }
 }

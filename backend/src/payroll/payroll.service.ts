@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { dateOnly, parseDate } from "../common/mappers";
@@ -58,7 +58,29 @@ type SalaryPayload = {
   [key: string]: unknown;
 };
 
-const DEFAULT_POLICY = DEFAULT_PAYROLL_POLICY as PolicyPayload;
+const RUN_STEPS = [
+  "draft",
+  "hr_review",
+  "finance_review",
+  "approved",
+  "paid",
+] as const;
+
+type RunStep = (typeof RUN_STEPS)[number];
+
+function normalizeRunStatus(raw: string | null | undefined): RunStep {
+  const v = (raw ?? "draft").toLowerCase();
+  if (v === "calculated") return "hr_review";
+  if ((RUN_STEPS as readonly string[]).includes(v)) return v as RunStep;
+  return "draft";
+}
+
+function nextRunStatus(current: RunStep): RunStep {
+  const idx = RUN_STEPS.indexOf(current);
+  if (idx < 0) return "hr_review";
+  if (idx >= RUN_STEPS.length - 1) return "paid";
+  return RUN_STEPS[idx + 1];
+}
 
 function roundMoney(value: number, mode?: string): number {
   switch (mode) {
@@ -71,6 +93,39 @@ function roundMoney(value: number, mode?: string): number {
     default:
       return Math.round(value);
   }
+}
+
+/** Full employee deductions (statutory + attendance + leave), with legacy fallbacks. */
+function slipDeductionsTotal(
+  p: Record<string, number | undefined | null>
+): number {
+  if (typeof p.deductionsTotal === "number" && Number.isFinite(p.deductionsTotal)) {
+    return p.deductionsTotal;
+  }
+  return (
+    Number(p.attendanceDeductions ?? p.attendanceDeduction ?? 0) +
+    Number(p.leaveDeductions ?? 0) +
+    Number(p.insurance ?? 0) +
+    Number(p.tax ?? 0) +
+    Number(p.loans ?? p.loan ?? 0) +
+    Number(p.advances ?? 0) +
+    Number(p.penalties ?? 0) +
+    Number(p.recurring ?? 0)
+  );
+}
+
+const DEFAULT_BASIC_SALARIES = [28000, 22000, 18000, 20000] as const;
+
+/** Stable seeded basic so employee order changes don't reshuffle defaults. */
+function defaultBasicSalary(employeeId: string, fallbackIndex = 0): number {
+  let h = 0;
+  for (let i = 0; i < employeeId.length; i++) {
+    h = (h * 31 + employeeId.charCodeAt(i)) >>> 0;
+  }
+  return (
+    DEFAULT_BASIC_SALARIES[h % DEFAULT_BASIC_SALARIES.length] ??
+    DEFAULT_BASIC_SALARIES[fallbackIndex % DEFAULT_BASIC_SALARIES.length]
+  );
 }
 
 
@@ -374,8 +429,8 @@ export class PayrollService {
         graceMinutes:
           nextLate.graceMinutes ??
           prevLate.graceMinutes ??
-          DEFAULT_POLICY.late.graceMinutes,
-        tiers: nextLate.tiers ?? prevLate.tiers ?? DEFAULT_POLICY.late.tiers,
+          DEFAULT_PAYROLL_POLICY.late.graceMinutes,
+        tiers: nextLate.tiers ?? prevLate.tiers ?? DEFAULT_PAYROLL_POLICY.late.tiers,
       };
     }
     const doc = await this.prisma.payrollPoliciesDoc.update({
@@ -785,7 +840,10 @@ export class PayrollService {
       manualAdjustments: Number(p.manualAdjustments ?? 0),
       overtimePay: Number(p.overtimePay ?? 0),
       shiftAllowance: Number(p.shiftAllowance ?? 0),
-      deductionsTotal: Number(p.deductionsTotal ?? attendanceDeductions),
+      deductionsTotal: Number(
+        p.deductionsTotal ??
+          slipDeductionsTotal(p as Record<string, number | undefined>)
+      ),
       insurance: Number(p.insurance ?? 0),
       tax: Number(p.tax ?? 0),
       loans: Number(p.loans ?? 0),
@@ -794,7 +852,11 @@ export class PayrollService {
       attendanceDeductions,
       leaveDeductions: Number(p.leaveDeductions ?? 0),
       net,
-      employeeCost: Number(p.employeeCost ?? attendanceDeductions),
+      employeeCost: Number(
+        p.employeeCost ??
+          p.deductionsTotal ??
+          slipDeductionsTotal(p as Record<string, number | undefined>)
+      ),
       employerCost: Number(p.employerCost ?? Math.round(net * 1.12)),
       lines,
       attendanceImpacts: Array.isArray(p.attendanceImpacts)
@@ -833,96 +895,142 @@ export class PayrollService {
     const policyDoc = await this.policyDoc(companyId);
     const policy = mergePolicy(policyDoc.payload as Record<string, unknown>);
 
+    const latest = await this.prisma.payrollRun.findFirst({
+      where: { companyId, periodId: period.periodId },
+      orderBy: { createdAt: "desc" },
+    });
+    const currentStatus = normalizeRunStatus(latest?.status);
+    if (currentStatus === "paid") {
+      throw new BadRequestException(
+        "Payroll for this period is already paid and locked"
+      );
+    }
+    const nextStatus = nextRunStatus(currentStatus);
+    const shouldRecalculate =
+      !latest ||
+      currentStatus === "draft" ||
+      currentStatus === "hr_review";
+
     const employees = await this.prisma.employee.findMany({
-      where: { companyId, deletedAt: null, status: { in: ["active", "on_leave"] } },
+      where: {
+        companyId,
+        deletedAt: null,
+        status: { in: ["active", "on_leave"] },
+      },
+      orderBy: { employeeCode: "asc" },
     });
 
-    const payslips = [];
     let totalDeductions = 0;
     let totalOvertime = 0;
     let netPayroll = 0;
     let estimatedCost = 0;
 
-    const baseSalaries = [28000, 22000, 18000, 20000];
+    if (shouldRecalculate) {
+      for (let i = 0; i < employees.length; i++) {
+        const emp = employees[i];
+        const profile = await this.ensureSalary(
+          companyId,
+          emp.id,
+          defaultBasicSalary(emp.id, i)
+        );
+        const slip = await this.computePayslip(
+          companyId,
+          emp.id,
+          period,
+          policy,
+          profile
+        );
+        totalDeductions += slip.deductionsTotal;
+        totalOvertime += slip.overtimePay;
+        netPayroll += slip.net;
+        estimatedCost += slip.employerCost;
 
-    for (let i = 0; i < employees.length; i++) {
-      const emp = employees[i];
-      const profile = await this.ensureSalary(
-        companyId,
-        emp.id,
-        baseSalaries[i % baseSalaries.length]
-      );
-      const slip = await this.computePayslip(
-        companyId,
-        emp.id,
-        period,
-        policy,
-        profile
-      );
-      payslips.push(slip);
-      totalDeductions += slip.deductionsTotal;
-      totalOvertime += slip.overtimePay;
-      netPayroll += slip.net;
-      estimatedCost += slip.employerCost;
-
-      await this.prisma.employeePayslip.upsert({
-        where: {
-          companyId_employeeId_periodId: {
+        await this.prisma.employeePayslip.upsert({
+          where: {
+            companyId_employeeId_periodId: {
+              companyId,
+              employeeId: emp.id,
+              periodId: period.periodId,
+            },
+          },
+          create: {
             companyId,
             employeeId: emp.id,
             periodId: period.periodId,
+            payload: slip as unknown as Prisma.InputJsonValue,
           },
-        },
-        create: {
-          companyId,
-          employeeId: emp.id,
-          periodId: period.periodId,
-          payload: slip as unknown as Prisma.InputJsonValue,
-        },
-        update: { payload: slip as unknown as Prisma.InputJsonValue, version: { increment: 1 } },
+          update: {
+            payload: slip as unknown as Prisma.InputJsonValue,
+            version: { increment: 1 },
+          },
+        });
+      }
+    } else {
+      const slips = await this.prisma.employeePayslip.findMany({
+        where: { companyId, periodId: period.periodId },
       });
+      for (const row of slips) {
+        const p = (row.payload ?? {}) as Record<string, number | undefined>;
+        totalDeductions += slipDeductionsTotal(p);
+        totalOvertime += Number(p.overtimePay ?? 0);
+        netPayroll += Number(p.net ?? p.netPay ?? 0);
+        estimatedCost += Number(p.employerCost ?? 0);
+      }
     }
 
+    const prevPayload = (latest?.payload ?? {}) as Record<string, unknown>;
     const runPayload = {
-      id: `run_${period.periodId}`,
+      id: (prevPayload.id as string) ?? `run_${period.periodId}`,
       companyId,
       periodId: period.periodId,
-      status: "calculated",
+      status: nextStatus,
       employeeCount: employees.length,
       estimatedCost: roundMoney(estimatedCost),
       totalDeductions: roundMoney(totalDeductions),
       totalOvertime: roundMoney(totalOvertime),
       netPayroll: roundMoney(netPayroll),
       averageSalary:
-        employees.length > 0
-          ? roundMoney(netPayroll / employees.length)
-          : 0,
+        employees.length > 0 ? roundMoney(netPayroll / employees.length) : 0,
       employerCostTotal: roundMoney(estimatedCost),
-      pendingCount: 0,
-      createdAt: new Date().toISOString(),
+      pendingCount: nextStatus === "paid" || nextStatus === "approved" ? 0 : employees.length,
+      createdAt: (prevPayload.createdAt as string) ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      createdBy: actorId,
+      createdBy: (prevPayload.createdBy as string) ?? actorId,
       updatedBy: actorId,
       deletedAt: null,
       isArchived: false,
-      version: 1,
-      metadata: {},
+      version: Number(prevPayload.version ?? 1) + 1,
+      metadata: {
+        linkedToAttendance: true,
+        recalculated: shouldRecalculate,
+        previousStatus: currentStatus,
+      },
     };
 
-    await this.prisma.payrollRun.create({
-      data: {
-        companyId,
-        periodId: period.periodId,
-        status: "calculated",
-        payload: runPayload,
-      },
-    });
+    if (latest) {
+      await this.prisma.payrollRun.update({
+        where: { id: latest.id },
+        data: {
+          status: nextStatus,
+          payload: runPayload as unknown as Prisma.InputJsonValue,
+        },
+      });
+    } else {
+      await this.prisma.payrollRun.create({
+        data: {
+          companyId,
+          periodId: period.periodId,
+          status: nextStatus,
+          payload: runPayload as unknown as Prisma.InputJsonValue,
+        },
+      });
+    }
 
     await this.notifications.notifyDomain({
       companyId,
       actorId,
       category: "payroll",
-      priority: "high",
+      priority: nextStatus === "paid" ? "urgent" : "high",
       audience: "admin",
       titleKey: "notifications.payrollRunTitle",
       bodyKey: "notifications.payrollRunBody",
@@ -935,11 +1043,167 @@ export class PayrollService {
     return runPayload;
   }
 
+  async listRuns(companyId: string) {
+    const rows = await this.prisma.payrollRun.findMany({
+      where: { companyId },
+      orderBy: { createdAt: "desc" },
+      take: 24,
+    });
+    return rows.map((row) => {
+      const p = (row.payload ?? {}) as Record<string, unknown>;
+      return {
+        id: (p.id as string) ?? row.id,
+        companyId,
+        periodId: row.periodId,
+        status: normalizeRunStatus(row.status),
+        employeeCount: Number(p.employeeCount ?? 0),
+        estimatedCost: Number(p.estimatedCost ?? 0),
+        totalDeductions: Number(p.totalDeductions ?? 0),
+        totalOvertime: Number(p.totalOvertime ?? 0),
+        netPayroll: Number(p.netPayroll ?? 0),
+        averageSalary: Number(p.averageSalary ?? 0),
+        employerCostTotal: Number(p.employerCostTotal ?? 0),
+        pendingCount: Number(p.pendingCount ?? 0),
+        createdAt: (p.createdAt as string) ?? row.createdAt.toISOString(),
+        updatedAt: (p.updatedAt as string) ?? row.updatedAt.toISOString(),
+        createdBy: (p.createdBy as string) ?? "system",
+        updatedBy: (p.updatedBy as string) ?? "system",
+        deletedAt: null,
+        isArchived: false,
+        version: Number(p.version ?? 1),
+        metadata: (p.metadata as Record<string, unknown>) ?? {},
+      };
+    });
+  }
+
+  async listSalaryProfiles(companyId: string) {
+    const employees = await this.prisma.employee.findMany({
+      where: { companyId, deletedAt: null },
+      orderBy: { name: "asc" },
+    });
+    const out = [];
+    for (const emp of employees) {
+      const profile = await this.salaryProfile(companyId, emp.id);
+      out.push({
+        ...profile,
+        employeeName: emp.name,
+        department: emp.department,
+        position: emp.position,
+        employeeCode: emp.employeeCode,
+        status: emp.status,
+      });
+    }
+    return out;
+  }
+
+  async patchSalaryProfile(
+    companyId: string,
+    employeeId: string,
+    body: Record<string, unknown>,
+    actorId: string
+  ) {
+    const emp = await this.prisma.employee.findFirst({
+      where: { id: employeeId, companyId, deletedAt: null },
+    });
+    if (!emp) throw new NotFoundException("Employee not found");
+
+    const current = await this.salaryProfile(companyId, employeeId);
+    const nextBasic =
+      body.basicSalary !== undefined
+        ? Math.max(0, Number(body.basicSalary))
+        : current.basicSalary;
+
+    const allowancesIn = (body.allowances ?? {}) as Record<string, number>;
+    const deductionsIn = (body.deductions ?? {}) as Record<string, number>;
+
+    const history = Array.isArray(current.history) ? [...current.history] : [];
+    if (nextBasic !== current.basicSalary) {
+      history.unshift({
+        id: `salh_${Date.now()}`,
+        effectiveFrom: new Date().toISOString().slice(0, 10),
+        basicSalary: nextBasic,
+        note: String(body.historyNote ?? `Admin salary update by ${actorId}`),
+      });
+    }
+
+    const payload: SalaryPayload = {
+      basicSalary: nextBasic,
+      allowances: {
+        housing: Number(allowancesIn.housing ?? current.allowances.housing ?? 0),
+        transportation: Number(
+          allowancesIn.transportation ?? current.allowances.transportation ?? 0
+        ),
+        meal: Number(allowancesIn.meal ?? current.allowances.meal ?? 0),
+        phone: Number(allowancesIn.phone ?? current.allowances.phone ?? 0),
+        other: Number(allowancesIn.other ?? current.allowances.other ?? 0),
+        shift: Number(allowancesIn.shift ?? current.allowances.shift ?? 0),
+      },
+      bonuses: Number(body.bonuses ?? current.bonuses ?? 0),
+      commission: Number(body.commission ?? current.commission ?? 0),
+      incentives: Number(body.incentives ?? current.incentives ?? 0),
+      manualAdjustments: Number(
+        body.manualAdjustments ?? current.manualAdjustments ?? 0
+      ),
+      deductions: {
+        insurance: Number(
+          deductionsIn.insurance ?? current.deductions.insurance ?? 0
+        ),
+        tax: Number(deductionsIn.tax ?? current.deductions.tax ?? 0),
+        loan: Number(deductionsIn.loan ?? current.deductions.loan ?? 0),
+        advances: Number(
+          deductionsIn.advances ?? current.deductions.advances ?? 0
+        ),
+        recurring: Number(
+          deductionsIn.recurring ?? current.deductions.recurring ?? 0
+        ),
+        penalties: Number(
+          deductionsIn.penalties ?? current.deductions.penalties ?? 0
+        ),
+      },
+      currency: String(body.currency ?? current.currency ?? "EGP"),
+      salaryType: String(body.salaryType ?? current.salaryType ?? "monthly"),
+      salaryGrade: String(body.salaryGrade ?? current.salaryGrade ?? "G3"),
+      payrollGroup: String(
+        body.payrollGroup ?? current.payrollGroup ?? "standard"
+      ),
+      paymentMethod: String(
+        body.paymentMethod ?? current.paymentMethod ?? "bank_transfer"
+      ),
+      insuranceStatus: String(
+        body.insuranceStatus ?? current.insuranceStatus ?? "insured"
+      ),
+      taxStatus: String(body.taxStatus ?? current.taxStatus ?? "resident"),
+      contractType: String(
+        body.contractType ?? current.contractType ?? "full_time"
+      ),
+      bankAccount: String(body.bankAccount ?? current.bankAccount ?? ""),
+      iban: String(body.iban ?? current.iban ?? ""),
+      joiningDate: String(body.joiningDate ?? current.joiningDate),
+      effectiveFrom: String(
+        body.effectiveFrom ?? new Date().toISOString().slice(0, 10)
+      ),
+      history,
+      incrementHistory: current.incrementHistory ?? [],
+    };
+
+    await this.prisma.employeeSalaryProfile.upsert({
+      where: { companyId_employeeId: { companyId, employeeId } },
+      create: {
+        companyId,
+        employeeId,
+        payload: payload as unknown as Prisma.InputJsonValue,
+      },
+      update: {
+        payload: payload as unknown as Prisma.InputJsonValue,
+        version: { increment: 1 },
+      },
+    });
+
+    return this.salaryProfile(companyId, employeeId);
+  }
+
   async dashboard(companyId: string) {
     const period = periodBounds();
-    const headcount = await this.prisma.employee.count({
-      where: { companyId, deletedAt: null, status: "active" },
-    });
     const latestRun = await this.prisma.payrollRun.findFirst({
       where: { companyId, periodId: period.periodId },
       orderBy: { createdAt: "desc" },
@@ -953,35 +1217,36 @@ export class PayrollService {
     let netPayroll = 0;
     let estimatedCost = 0;
     for (const s of slips) {
-      const p = s.payload as {
-        attendanceDeduction?: number;
-        attendanceDeductions?: number;
-        overtimePay?: number;
-        netPay?: number;
-        net?: number;
-        employerCost?: number;
-      };
-      totalDeductions += p.attendanceDeductions ?? p.attendanceDeduction ?? 0;
-      totalOvertime += p.overtimePay ?? 0;
-      netPayroll += p.net ?? p.netPay ?? 0;
-      estimatedCost += p.employerCost ?? 0;
+      const p = (s.payload ?? {}) as Record<string, number | undefined>;
+      totalDeductions += slipDeductionsTotal(p);
+      totalOvertime += Number(p.overtimePay ?? 0);
+      netPayroll += Number(p.net ?? p.netPay ?? 0);
+      estimatedCost += Number(p.employerCost ?? 0);
     }
 
-    const run =
+    const headcountAll = await this.prisma.employee.count({
+      where: {
+        companyId,
+        deletedAt: null,
+        status: { in: ["active", "on_leave"] },
+      },
+    });
+
+    const runRaw =
       (latestRun?.payload as Record<string, unknown>) ??
       ({
         id: `run_${period.periodId}`,
         companyId,
         periodId: period.periodId,
-        status: slips.length ? "calculated" : "draft",
-        employeeCount: headcount,
+        status: slips.length ? "hr_review" : "draft",
+        employeeCount: headcountAll,
         estimatedCost,
         totalDeductions,
         totalOvertime,
         netPayroll,
-        averageSalary: headcount ? Math.round(netPayroll / headcount) : 0,
+        averageSalary: headcountAll ? Math.round(netPayroll / headcountAll) : 0,
         employerCostTotal: estimatedCost,
-        pendingCount: Math.max(0, headcount - slips.length),
+        pendingCount: Math.max(0, headcountAll - slips.length),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         createdBy: "system",
@@ -991,6 +1256,23 @@ export class PayrollService {
         version: 1,
         metadata: {},
       } as Record<string, unknown>);
+
+    const run = {
+      ...runRaw,
+      status: normalizeRunStatus(
+        String(latestRun?.status ?? runRaw.status ?? "draft")
+      ),
+      // Live slip aggregates so KPI matches per-employee payslips.
+      estimatedCost: roundMoney(estimatedCost),
+      totalDeductions: roundMoney(totalDeductions),
+      totalOvertime: roundMoney(totalOvertime),
+      netPayroll: roundMoney(netPayroll),
+      employeeCount: Number(runRaw.employeeCount ?? headcountAll),
+      averageSalary:
+        slips.length > 0
+          ? roundMoney(netPayroll / slips.length)
+          : Number(runRaw.averageSalary ?? 0),
+    };
 
     return {
       period: {
@@ -1007,13 +1289,13 @@ export class PayrollService {
       },
       run,
       upcomingPayDate: period.payDate,
-      employeesIncluded: headcount,
-      pendingPayroll: Math.max(0, headcount - slips.length),
-      estimatedCost,
-      totalDeductions,
-      totalOvertime,
-      netPayroll,
-      averageSalary: headcount ? Math.round(netPayroll / headcount) : 0,
+      employeesIncluded: headcountAll,
+      pendingPayroll: Math.max(0, headcountAll - slips.length),
+      estimatedCost: run.estimatedCost,
+      totalDeductions: run.totalDeductions,
+      totalOvertime: run.totalOvertime,
+      netPayroll: run.netPayroll,
+      averageSalary: run.averageSalary,
       employeesProcessed: slips.length,
       timeline: [],
       calendar: [],
@@ -1158,14 +1440,13 @@ export class PayrollService {
       0,
       employees.findIndex((e) => e.id === employeeId)
     );
-    const bases = [28000, 22000, 18000, 20000];
     const profile = await this.ensureSalary(
       companyId,
       employeeId,
-      bases[idx % bases.length]
+      defaultBasicSalary(employeeId, idx)
     );
     const emp = employees.find((e) => e.id === employeeId);
-    const basic = profile.basicSalary ?? bases[idx % bases.length];
+    const basic = profile.basicSalary ?? defaultBasicSalary(employeeId, idx);
     const allowances = {
       housing: profile.allowances?.housing ?? Math.round(basic * 0.1),
       transportation: profile.allowances?.transportation ?? 500,

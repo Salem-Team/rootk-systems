@@ -925,12 +925,14 @@ export async function getDelayedCenter(): Promise<
         t.health === "delayed"
     );
     const tasks = await workTaskRepository.findAll();
-    const today = new Date().toISOString().slice(0, 10);
+    const now = Date.now();
     const role = getSessionRole();
     const empId = getWorkEmployeeId();
     let delayedTasks = tasks.filter(
       (t) =>
-        (t.dueDate && t.dueDate < today && t.status !== "completed") ||
+        (t.dueDate &&
+          new Date(t.dueDate).getTime() < now &&
+          t.status !== "completed") ||
         (t.targetId && delayedTargets.some((dt) => dt.id === t.targetId))
     );
     if (role === "employee") {
@@ -1115,13 +1117,13 @@ export async function getEmployeeTargetPerformance(
         : Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) /
           10;
     const tasks = await workTaskRepository.findAll();
-    const today = new Date().toISOString().slice(0, 10);
+    const now = Date.now();
     const delayedTasks = tasks.filter(
       (t) =>
         t.assigneeIds.includes(employeeId) &&
         t.status !== "completed" &&
         t.dueDate &&
-        t.dueDate < today
+        new Date(t.dueDate).getTime() < now
     ).length;
 
     const monthMap = new Map<string, { sum: number; n: number }>();

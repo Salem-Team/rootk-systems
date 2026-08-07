@@ -18,7 +18,8 @@ import {
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
-import { auditFields, dateOnly, isoOrNull, parseDate } from "../common/mappers";
+import { auditFields, dateOnly, iso, isoOrNull, parseDate, parseDateEnd } from "../common/mappers";
+import { isValidDateTimeRange } from "../common/flexible-datetime";
 import { writeActivity } from "../common/activity-writer";
 import { AppRole } from "../common/roles";
 import { canTarget } from "../lib/target-policies";
@@ -157,8 +158,8 @@ function mapTarget(row: {
   const metrics = computeTargetProgress({
     quantity: row.quantity,
     completedQuantity: row.completedQuantity,
-    startDate: dateOnly(row.startDate),
-    endDate: dateOnly(row.endDate),
+    startDate: iso(row.startDate),
+    endDate: iso(row.endDate),
     status: row.status,
   });
   return {
@@ -171,8 +172,8 @@ function mapTarget(row: {
     quantity: row.quantity,
     unit: row.unit,
     completedQuantity: row.completedQuantity,
-    startDate: dateOnly(row.startDate),
-    endDate: dateOnly(row.endDate),
+    startDate: iso(row.startDate),
+    endDate: iso(row.endDate),
     priority: row.priority,
     weight: row.weight,
     assigneeScope: row.assigneeScope,
@@ -186,7 +187,7 @@ function mapTarget(row: {
     riskLevel: row.riskLevel,
     notes: row.notes,
     expectedCompletion: row.expectedCompletion
-      ? dateOnly(row.expectedCompletion)
+      ? iso(row.expectedCompletion)
       : null,
     performanceScore: row.performanceScore,
     metrics,
@@ -625,7 +626,7 @@ export class TargetsService {
       throw new BadRequestException("categoryId and typeId are required");
     if (!startDate || !endDate)
       throw new BadRequestException("startDate and endDate are required");
-    if (endDate < startDate)
+    if (!isValidDateTimeRange(startDate, endDate))
       throw new BadRequestException("endDate must be on or after startDate");
     if (assigneeIds.length === 0)
       throw new BadRequestException("assigneeIds required");
@@ -682,7 +683,7 @@ export class TargetsService {
         unit: String(body.unit ?? type.unit ?? "unit"),
         completedQuantity: 0,
         startDate: parseDate(startDate),
-        endDate: parseDate(endDate),
+        endDate: parseDateEnd(endDate),
         priority,
         weight: Number(body.weight ?? 1),
         assigneeScope:
@@ -698,7 +699,7 @@ export class TargetsService {
         riskLevel: metrics.riskLevel as TargetRiskLevel,
         notes: String(body.notes ?? ""),
         expectedCompletion: body.expectedCompletion
-          ? parseDate(String(body.expectedCompletion))
+          ? parseDateEnd(String(body.expectedCompletion))
           : null,
         performanceScore: metrics.performanceScore,
         createdBy: actor.userId,
@@ -767,7 +768,7 @@ export class TargetsService {
         notes: body.notes !== undefined ? String(body.notes) : undefined,
         endDate:
           body.endDate !== undefined
-            ? parseDate(String(body.endDate))
+            ? parseDateEnd(String(body.endDate))
             : undefined,
         startDate:
           body.startDate !== undefined
@@ -854,8 +855,8 @@ export class TargetsService {
     const metrics = computeTargetProgress({
       quantity: target.quantity,
       completedQuantity: completedCount,
-      startDate: dateOnly(target.startDate),
-      endDate: dateOnly(target.endDate),
+      startDate: iso(target.startDate),
+      endDate: iso(target.endDate),
       status: target.status,
     });
 
@@ -936,8 +937,8 @@ export class TargetsService {
     const metrics = computeTargetProgress({
       quantity: target.quantity,
       completedQuantity: target.completedQuantity,
-      startDate: dateOnly(target.startDate),
-      endDate: dateOnly(target.endDate),
+      startDate: iso(target.startDate),
+      endDate: iso(target.endDate),
       status: target.status,
     });
 
@@ -1059,7 +1060,7 @@ export class TargetsService {
         title: t.title,
         status: t.status,
         priority: t.priority,
-        dueDate: t.dueDate ? dateOnly(t.dueDate) : "",
+        dueDate: t.dueDate ? iso(t.dueDate) : "",
         assigneeIds: t.assigneeIds,
         targetId: t.targetId,
         ...auditFields(t),
@@ -1265,7 +1266,7 @@ export class TargetsService {
       description: opts.description || `Auto task for target: ${opts.title}`,
       status: TaskStatus.todo,
       priority: mapTaskPriority(opts.priority),
-      dueDate: parseDate(opts.endDate),
+      dueDate: parseDateEnd(opts.endDate),
       tag: type.name,
       estimateMin: 0,
       assigneeIds: opts.assigneeIds,

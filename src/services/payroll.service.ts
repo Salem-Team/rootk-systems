@@ -17,12 +17,17 @@ import {
   fetchPayrollPolicies,
   fetchPayrollReports,
   fetchPayrollRules,
+  fetchPayrollRuns,
   fetchPayslipHistory,
   fetchSalaryProfile,
+  fetchSalaryProfiles,
   patchPayrollPolicies,
   patchPayrollRuleToggle,
+  patchSalaryProfileRemote,
   postPayrollRunAdvance,
 } from "@/api/payroll.api";
+import type { UpdateSalaryProfileInput } from "@/schemas/payroll.schema";
+import { updateSalaryProfileSchema } from "@/schemas/payroll.schema";
 import {
   PAYROLL_PERIOD,
   mockPayslipHistory,
@@ -40,7 +45,7 @@ import {
   scheduleRepository,
   settingsRepository,
 } from "@/repositories";
-import { ForbiddenError } from "@/lib/errors";
+import { ForbiddenError, NotFoundError } from "@/lib/errors";
 import { fromError, ok } from "@/services/api-result";
 import { simulateDelay } from "@/services/fake-api";
 import {
@@ -524,14 +529,14 @@ function aggregateRun(payslips: EmployeePayslip[]): PayrollRun {
     periodId: PAYROLL_PERIOD.id,
     status: runStatus,
     employeeCount: payslips.length,
-    estimatedCost: payslips.reduce((s, p) => s + p.gross, 0),
+    estimatedCost: payslips.reduce((s, p) => s + p.employerCost, 0),
     totalDeductions: payslips.reduce((s, p) => s + p.deductionsTotal, 0),
     totalOvertime: payslips.reduce((s, p) => s + p.overtimePay, 0),
     netPayroll,
     averageSalary:
       payslips.length > 0 ? Math.round(netPayroll / payslips.length) : 0,
     employerCostTotal: payslips.reduce((s, p) => s + p.employerCost, 0),
-    pendingCount: runStatus === "paid" ? 0 : 3,
+    pendingCount: runStatus === "paid" || runStatus === "approved" ? 0 : payslips.length,
     generatedAt: payrollRunSeed.generatedAt,
     approvedAt:
       runStatus === "approved" || runStatus === "paid" ? now : undefined,
@@ -612,6 +617,123 @@ export async function getSalaryProfile(
     return ok(hydrateProfiles().find((p) => p.employeeId === scopedId) ?? null);
   } catch (error) {
     return fromError(error, null);
+  }
+}
+
+/** GET /payroll/salary-profiles */
+export async function listSalaryProfiles(): Promise<
+  ApiResponse<
+    (EmployeeSalaryProfile & {
+      employeeName?: string;
+      department?: string;
+      position?: string;
+      employeeCode?: string;
+      status?: string;
+    })[]
+  >
+> {
+  if (isApiMode()) return fetchSalaryProfiles();
+  try {
+    if (getSessionRole() !== "admin") {
+      throw new ForbiddenError("Only admins can list salary profiles");
+    }
+    await simulateDelay();
+    await ensurePayrollStateLoaded();
+    const [profiles, employees] = await Promise.all([
+      Promise.resolve(hydrateProfiles()),
+      employeeRepository.list(),
+    ]);
+    return ok(
+      profiles.map((p) => {
+        const emp = employees.find((e) => e.id === p.employeeId);
+        return {
+          ...p,
+          employeeName: emp?.name,
+          department: emp?.department,
+          position: emp?.position,
+          employeeCode: emp?.employeeId,
+          status: emp?.status,
+        };
+      })
+    );
+  } catch (error) {
+    return fromError(error, []);
+  }
+}
+
+/** PATCH /payroll/salary-profiles/:employeeId */
+export async function updateSalaryProfile(
+  employeeId: string,
+  input: UpdateSalaryProfileInput
+): Promise<ApiResponse<EmployeeSalaryProfile | null>> {
+  const parsed = updateSalaryProfileSchema.parse(input);
+  if (isApiMode()) {
+    return patchSalaryProfileRemote(employeeId, parsed);
+  }
+  try {
+    if (getSessionRole() !== "admin") {
+      throw new ForbiddenError("Only admins can edit salary profiles");
+    }
+    await simulateDelay();
+    await ensurePayrollStateLoaded();
+    const profiles = hydrateProfiles();
+    const idx = profiles.findIndex((p) => p.employeeId === employeeId);
+    if (idx < 0) throw new NotFoundError("Salary profile not found");
+    const current = profiles[idx];
+    const history = [...current.history];
+    if (parsed.basicSalary !== current.basicSalary) {
+      history.unshift({
+        id: `salh_${Date.now()}`,
+        effectiveFrom: todayKey(),
+        basicSalary: parsed.basicSalary,
+        note: parsed.historyNote ?? "Admin salary update",
+      });
+    }
+    const next: EmployeeSalaryProfile = {
+      ...current,
+      basicSalary: parsed.basicSalary,
+      allowances: parsed.allowances,
+      bonuses: parsed.bonuses,
+      commission: parsed.commission,
+      incentives: parsed.incentives,
+      manualAdjustments: parsed.manualAdjustments,
+      deductions: parsed.deductions,
+      salaryGrade: parsed.salaryGrade,
+      salaryType: parsed.salaryType,
+      payrollGroup: parsed.payrollGroup,
+      currency: parsed.currency,
+      bankAccount: parsed.bankAccount,
+      iban: parsed.iban,
+      paymentMethod: parsed.paymentMethod,
+      insuranceStatus: parsed.insuranceStatus,
+      taxStatus: parsed.taxStatus,
+      contractType: parsed.contractType,
+      history,
+      updatedAt: new Date().toISOString(),
+      updatedBy: getSessionUserId(),
+      version: current.version + 1,
+    };
+    profilesState[idx] = next;
+    await persistPayrollState();
+    return ok(next, "Salary profile updated");
+  } catch (error) {
+    return fromError(error, null);
+  }
+}
+
+/** GET /payroll/runs */
+export async function listPayrollRuns(): Promise<ApiResponse<PayrollRun[]>> {
+  if (isApiMode()) return fetchPayrollRuns();
+  try {
+    if (getSessionRole() !== "admin") {
+      throw new ForbiddenError("Only admins can list payroll runs");
+    }
+    await simulateDelay();
+    await ensurePayrollStateLoaded();
+    const payslips = await buildPayslips();
+    return ok([aggregateRun(payslips)]);
+  } catch (error) {
+    return fromError(error, []);
   }
 }
 

@@ -19,11 +19,22 @@ export function dateOnly(value: Date | string): string {
 }
 
 export function parseDate(value: string): Date {
-  // Accept YYYY-MM-DD or full ISO
+  // Accept YYYY-MM-DD, datetime-local, or full ISO (local date-only → start of day).
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return new Date(`${value}T00:00:00.000Z`);
+    return new Date(`${value}T00:00:00.000`);
+  }
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
+    return new Date(`${value}:00`);
   }
   return new Date(value);
+}
+
+/** Parse end-bound date-only as end of local day so same-day ranges work. */
+export function parseDateEnd(value: string): Date {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return new Date(`${value}T23:59:59.999`);
+  }
+  return parseDate(value);
 }
 
 export function auditFields(entity: {

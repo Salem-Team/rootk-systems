@@ -593,7 +593,7 @@ function EmployeeFullReport({
                           {target.performanceScore}
                         </span>
                         {" · "}
-                        {format(parseISO(target.endDate), "d MMM yyyy", {
+                        {format(parseISO(target.endDate), "d MMM yyyy · h:mm a", {
                           locale: dateLocale,
                         })}
                       </p>

@@ -81,6 +81,10 @@ import {
   taskDueBucket,
   todayIsoDate,
 } from "@/lib/work-utils";
+import {
+  toDateTimeLocalValue,
+  toStorageIso,
+} from "@/lib/flexible-datetime";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
@@ -167,7 +171,7 @@ function taskToForm(task: WorkTask): TaskFormState {
     description: task.description,
     status: task.status,
     priority: task.priority,
-    dueDate: task.dueDate,
+    dueDate: toDateTimeLocalValue(task.dueDate),
     tag: task.tag,
     estimateMin: task.estimateMin,
     assigneeIds: [...task.assigneeIds],
@@ -376,7 +380,9 @@ export function AdminWorkAssignPanel() {
       description: taskForm.description.trim(),
       status: taskForm.status,
       priority: taskForm.priority,
-      dueDate: taskForm.dueDate,
+      dueDate: taskForm.dueDate
+        ? toStorageIso(taskForm.dueDate, "exact")
+        : "",
       tag: taskForm.tag.trim(),
       estimateMin: taskForm.estimateMin || 0,
       assigneeIds: taskForm.assigneeIds,
@@ -753,7 +759,7 @@ export function AdminWorkAssignPanel() {
                           <span className="inline-flex items-center gap-1 text-[12px] text-muted-foreground">
                             <Clock3 className="h-3.5 w-3.5" />
                             {task.dueDate
-                              ? format(parseISO(task.dueDate), "d MMM yyyy", {
+                              ? format(parseISO(task.dueDate), "d MMM yyyy · h:mm a", {
                                   locale: dateLocale,
                                 })
                               : t("ops.due.none")}
@@ -962,7 +968,8 @@ export function AdminWorkAssignPanel() {
               <Field label={t("workAdmin.fieldDue")} htmlFor="task-due">
                 <Input
                   id="task-due"
-                  type="date"
+                  type="datetime-local"
+                  step={60}
                   value={taskForm.dueDate}
                   onChange={(e) =>
                     setTaskForm((p) => ({ ...p, dueDate: e.target.value }))

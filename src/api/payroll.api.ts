@@ -118,6 +118,36 @@ export function patchPayrollRuleToggle(
   return api.patch(API_ROUTES.payroll.ruleToggle(id), { enabled }, []);
 }
 
+/** GET /payroll/salary-profiles */
+export function fetchSalaryProfiles(): Promise<
+  ApiResponse<(EmployeeSalaryProfile & {
+    employeeName?: string;
+    department?: string;
+    position?: string;
+    employeeCode?: string;
+    status?: string;
+  })[]>
+> {
+  return api.getList(API_ROUTES.payroll.salaryProfiles);
+}
+
+/** PATCH /payroll/salary-profiles/:employeeId */
+export function patchSalaryProfileRemote(
+  employeeId: string,
+  body: Record<string, unknown>
+): Promise<ApiResponse<EmployeeSalaryProfile | null>> {
+  return api.patch(
+    API_ROUTES.payroll.salaryProfile(employeeId),
+    body,
+    null
+  );
+}
+
+/** GET /payroll/runs */
+export function fetchPayrollRuns(): Promise<ApiResponse<PayrollRun[]>> {
+  return api.getList(API_ROUTES.payroll.runs);
+}
+
 /** POST /payroll/runs/advance */
 export function postPayrollRunAdvance(): Promise<ApiResponse<PayrollRun>> {
   return api.post(API_ROUTES.payroll.runAdvance, {}, {} as PayrollRun);
