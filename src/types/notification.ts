@@ -10,7 +10,8 @@ export type NotificationCategory =
   | "schedule"
   | "announcement"
   | "system"
-  | "mention";
+  | "mention"
+  | "target";
 
 export type NotificationPriority = "low" | "normal" | "high" | "urgent";
 

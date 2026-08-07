@@ -1,0 +1,1446 @@
+{
+  "generatedAt": "2026-08-06T11:21:48.928Z",
+  "mode": "local",
+  "failed": 0,
+  "passed": 10,
+  "total": 10,
+  "steps": [
+    {
+      "id": "catalog-load",
+      "actor": "admin",
+      "title": "Open Target Catalog",
+      "ok": true,
+      "detail": "4 categories, 6 types",
+      "data": {
+        "categories": [
+          "Sales",
+          "Development",
+          "Marketing",
+          "Customer Support"
+        ],
+        "types": [
+          "Bug Fixes",
+          "Calls",
+          "Published Posts",
+          "Meetings",
+          "Pull Requests",
+          "Follow Ups"
+        ]
+      }
+    },
+    {
+      "id": "catalog-create",
+      "actor": "admin",
+      "title": "Create category + type (Operations / Site Visits)",
+      "ok": true,
+      "detail": "category=tcat_85a6ca609550418a type=ttype_46409238723246fb"
+    },
+    {
+      "id": "assign-target",
+      "actor": "admin",
+      "title": "Assign target + auto-create 5 tasks",
+      "ok": true,
+      "detail": "target=pt_feb7b006f0884086, linkedTasks=5, progress=0%",
+      "data": {
+        "targetId": "pt_feb7b006f0884086",
+        "linkedTaskIds": [
+          "task_e8e43afcd41c41dd",
+          "task_b96e5f764e0a4a74",
+          "task_c134dcb9b9de4b70",
+          "task_ff4f5899f6b048b9",
+          "task_24a976d0e4f44051"
+        ],
+        "title": "Agent Demo — 5 Site Visits"
+      }
+    },
+    {
+      "id": "employee-progress",
+      "actor": "employee",
+      "title": "Complete 2 tasks → target progress auto-updates to 40%",
+      "ok": true,
+      "detail": "completedQuantity=2, percentage=40%",
+      "data": {
+        "id": "pt_feb7b006f0884086",
+        "title": "Agent Demo — 5 Site Visits",
+        "description": "Live agent scenario: auto-generate 5 visit tasks; progress must come from task completion only.",
+        "categoryId": "tcat_85a6ca609550418a",
+        "typeId": "ttype_46409238723246fb",
+        "templateId": null,
+        "quantity": 5,
+        "unit": "visits",
+        "completedQuantity": 2,
+        "startDate": "2026-08-06",
+        "endDate": "2026-08-13",
+        "priority": "high",
+        "weight": 1,
+        "assigneeScope": "employee",
+        "assigneeIds": [
+          "emp-003"
+        ],
+        "department": "Design",
+        "branch": "Cairo",
+        "roleKey": "",
+        "ownerId": "emp-001",
+        "status": "on_track",
+        "health": "excellent",
+        "riskLevel": "medium",
+        "notes": "Created by Target User Agent",
+        "expectedCompletion": null,
+        "performanceScore": 63.9,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:36.671Z",
+        "updatedAt": "2026-08-06T11:21:41.724Z",
+        "createdBy": "emp-001",
+        "updatedBy": "emp-003",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 2,
+        "metadata": {},
+        "metrics": {
+          "completed": 2,
+          "remaining": 3,
+          "percentage": 40,
+          "expectedProgress": 12.5,
+          "actualProgress": 40,
+          "variance": 27.5,
+          "performanceScore": 63.9,
+          "remainingDays": 7,
+          "totalDays": 8,
+          "elapsedDays": 1,
+          "requiredDailyRate": 0.4,
+          "completionForecast": "2026-08-08",
+          "trend": "ahead",
+          "riskLevel": "medium",
+          "health": "excellent",
+          "derivedStatus": "on_track"
+        }
+      }
+    },
+    {
+      "id": "employee-cannot-edit",
+      "actor": "employee",
+      "title": "Employee cannot edit target (permission gate)",
+      "ok": true,
+      "detail": "correctly forbidden"
+    },
+    {
+      "id": "send-warning",
+      "actor": "admin",
+      "title": "Send performance warning",
+      "ok": true,
+      "detail": "warning=tw_4ad6648c26314d0a"
+    },
+    {
+      "id": "ack-warning",
+      "actor": "employee",
+      "title": "Employee acknowledges warning",
+      "ok": true,
+      "detail": "acknowledgedAt=2026-08-06T11:21:43.489Z"
+    },
+    {
+      "id": "dashboard",
+      "actor": "admin",
+      "title": "Dashboard + delayed center load with agent target visible",
+      "ok": true,
+      "detail": "total=7, completed=1, delayedTargets=4, avgScore=43.2",
+      "data": {
+        "kpis": {
+          "total": 7,
+          "completed": 1,
+          "inProgress": 5,
+          "delayed": 1,
+          "critical": 3,
+          "completionRate": 14.3,
+          "averagePerformance": 43.2,
+          "employeesAtRisk": 3,
+          "upcomingDeadlines": 6,
+          "byCategory": [
+            {
+              "id": "tcat-mkt",
+              "name": "Marketing",
+              "color": "#B45309",
+              "count": 1
+            },
+            {
+              "id": "tcat-dev",
+              "name": "Development",
+              "color": "#082868",
+              "count": 2
+            },
+            {
+              "id": "tcat-sales",
+              "name": "Sales",
+              "color": "#0F766E",
+              "count": 3
+            },
+            {
+              "id": "tcat_85a6ca609550418a",
+              "name": "Agent Demo — Operations",
+              "color": "#0F766E",
+              "count": 1
+            }
+          ],
+          "byStatus": [
+            {
+              "status": "completed",
+              "count": 1
+            },
+            {
+              "status": "delayed",
+              "count": 1
+            },
+            {
+              "status": "behind_schedule",
+              "count": 1
+            },
+            {
+              "status": "in_progress",
+              "count": 1
+            },
+            {
+              "status": "on_track",
+              "count": 3
+            }
+          ],
+          "byDepartment": [
+            {
+              "department": "Design",
+              "count": 3,
+              "avgScore": 63.5
+            },
+            {
+              "department": "Engineering",
+              "count": 2,
+              "avgScore": 8.2
+            },
+            {
+              "department": "Sales",
+              "count": 2,
+              "avgScore": 47.8
+            }
+          ],
+          "topPerformers": [
+            {
+              "employeeId": "emp-004",
+              "score": 90,
+              "completed": 1,
+              "total": 1
+            },
+            {
+              "employeeId": "emp-003",
+              "score": 59.1,
+              "completed": 0,
+              "total": 3
+            },
+            {
+              "employeeId": "emp-014",
+              "score": 47.8,
+              "completed": 0,
+              "total": 2
+            },
+            {
+              "employeeId": "emp-002",
+              "score": 16.3,
+              "completed": 0,
+              "total": 1
+            },
+            {
+              "employeeId": "emp-001",
+              "score": 0,
+              "completed": 0,
+              "total": 1
+            }
+          ],
+          "bottomPerformers": [
+            {
+              "employeeId": "emp-001",
+              "score": 0,
+              "completed": 0,
+              "total": 1
+            },
+            {
+              "employeeId": "emp-002",
+              "score": 16.3,
+              "completed": 0,
+              "total": 1
+            },
+            {
+              "employeeId": "emp-014",
+              "score": 47.8,
+              "completed": 0,
+              "total": 2
+            },
+            {
+              "employeeId": "emp-003",
+              "score": 59.1,
+              "completed": 0,
+              "total": 3
+            },
+            {
+              "employeeId": "emp-004",
+              "score": 90,
+              "completed": 1,
+              "total": 1
+            }
+          ],
+          "completionTrend": [
+            {
+              "date": "2026-07-24",
+              "created": 0,
+              "completed": 0
+            },
+            {
+              "date": "2026-07-25",
+              "created": 0,
+              "completed": 0
+            },
+            {
+              "date": "2026-07-26",
+              "created": 0,
+              "completed": 0
+            },
+            {
+              "date": "2026-07-27",
+              "created": 0,
+              "completed": 0
+            },
+            {
+              "date": "2026-07-28",
+              "created": 0,
+              "completed": 0
+            },
+            {
+              "date": "2026-07-29",
+              "created": 0,
+              "completed": 0
+            },
+            {
+              "date": "2026-07-30",
+              "created": 0,
+              "completed": 0
+            },
+            {
+              "date": "2026-07-31",
+              "created": 0,
+              "completed": 0
+            },
+            {
+              "date": "2026-08-01",
+              "created": 0,
+              "completed": 0
+            },
+            {
+              "date": "2026-08-02",
+              "created": 0,
+              "completed": 0
+            },
+            {
+              "date": "2026-08-03",
+              "created": 0,
+              "completed": 0
+            },
+            {
+              "date": "2026-08-04",
+              "created": 0,
+              "completed": 0
+            },
+            {
+              "date": "2026-08-05",
+              "created": 0,
+              "completed": 0
+            },
+            {
+              "date": "2026-08-06",
+              "created": 7,
+              "completed": 1
+            }
+          ]
+        },
+        "delayedCount": 4,
+        "criticalCount": 3
+      }
+    },
+    {
+      "id": "employee-perf",
+      "actor": "employee",
+      "title": "Employee performance page shows target + warning",
+      "ok": true,
+      "detail": "score=59.1, targets=3, warnings=1",
+      "data": {
+        "employeeId": "emp-003",
+        "overallScore": 59.1,
+        "currentTargets": 3,
+        "completed": 0,
+        "remaining": 11,
+        "warnings": 1,
+        "delayedTasks": 10,
+        "monthlyTrend": [
+          {
+            "month": "2026-08",
+            "score": 59.1
+          }
+        ],
+        "targets": [
+          {
+            "id": "pt-001",
+            "title": "Weekly Sales Calls",
+            "description": "Complete 10 outbound calls this week",
+            "categoryId": "tcat-sales",
+            "typeId": "ttype-calls",
+            "templateId": "ttpl-sales-daily",
+            "quantity": 10,
+            "unit": "calls",
+            "completedQuantity": 3,
+            "startDate": "2026-08-03",
+            "endDate": "2026-08-10",
+            "priority": "high",
+            "weight": 1,
+            "assigneeScope": "employee",
+            "assigneeIds": [
+              "emp-003"
+            ],
+            "department": "Design",
+            "branch": "Alexandria",
+            "roleKey": "",
+            "ownerId": "user-admin",
+            "status": "on_track",
+            "notes": "Focus on enterprise leads",
+            "expectedCompletion": "2026-08-10",
+            "health": "critical",
+            "riskLevel": "high",
+            "performanceScore": 36.5,
+            "companyId": "cmp_rootk_001",
+            "createdAt": "2026-08-06T11:21:34.513Z",
+            "updatedAt": "2026-08-06T11:21:34.513Z",
+            "createdBy": "user-admin",
+            "updatedBy": "user-admin",
+            "deletedAt": null,
+            "isArchived": false,
+            "version": 1,
+            "metadata": {},
+            "metrics": {
+              "completed": 3,
+              "remaining": 7,
+              "percentage": 30,
+              "expectedProgress": 50,
+              "actualProgress": 30,
+              "variance": -20,
+              "performanceScore": 36.5,
+              "remainingDays": 4,
+              "totalDays": 8,
+              "elapsedDays": 4,
+              "requiredDailyRate": 1.8,
+              "completionForecast": "2026-08-16",
+              "trend": "behind",
+              "riskLevel": "high",
+              "health": "critical",
+              "derivedStatus": "behind_schedule"
+            }
+          },
+          {
+            "id": "pt-agent-meetings",
+            "title": "Agent Demo — Client Meetings",
+            "description": "Multi-assignee demo target",
+            "categoryId": "tcat-sales",
+            "typeId": "ttype-meetings",
+            "templateId": null,
+            "quantity": 3,
+            "unit": "meetings",
+            "completedQuantity": 2,
+            "startDate": "2026-08-02",
+            "endDate": "2026-08-12",
+            "priority": "high",
+            "weight": 1.5,
+            "assigneeScope": "multi",
+            "assigneeIds": [
+              "emp-003",
+              "emp-014"
+            ],
+            "department": "Sales",
+            "branch": "Alexandria",
+            "roleKey": "",
+            "ownerId": "user-admin",
+            "status": "on_track",
+            "notes": "Shared sales meetings pack",
+            "expectedCompletion": "2026-08-12",
+            "health": "excellent",
+            "riskLevel": "medium",
+            "performanceScore": 77,
+            "companyId": "cmp_rootk_001",
+            "createdAt": "2026-08-06T11:21:34.514Z",
+            "updatedAt": "2026-08-06T11:21:34.514Z",
+            "createdBy": "user-admin",
+            "updatedBy": "user-admin",
+            "deletedAt": null,
+            "isArchived": false,
+            "version": 1,
+            "metadata": {},
+            "metrics": {
+              "completed": 2,
+              "remaining": 1,
+              "percentage": 66.7,
+              "expectedProgress": 45.5,
+              "actualProgress": 66.7,
+              "variance": 21.2,
+              "performanceScore": 77,
+              "remainingDays": 6,
+              "totalDays": 11,
+              "elapsedDays": 5,
+              "requiredDailyRate": 0.2,
+              "completionForecast": "2026-08-09",
+              "trend": "ahead",
+              "riskLevel": "medium",
+              "health": "excellent",
+              "derivedStatus": "on_track"
+            }
+          },
+          {
+            "id": "pt_feb7b006f0884086",
+            "title": "Agent Demo — 5 Site Visits",
+            "description": "Live agent scenario: auto-generate 5 visit tasks; progress must come from task completion only.",
+            "categoryId": "tcat_85a6ca609550418a",
+            "typeId": "ttype_46409238723246fb",
+            "templateId": null,
+            "quantity": 5,
+            "unit": "visits",
+            "completedQuantity": 2,
+            "startDate": "2026-08-06",
+            "endDate": "2026-08-13",
+            "priority": "high",
+            "weight": 1,
+            "assigneeScope": "employee",
+            "assigneeIds": [
+              "emp-003"
+            ],
+            "department": "Design",
+            "branch": "Cairo",
+            "roleKey": "",
+            "ownerId": "emp-001",
+            "status": "on_track",
+            "health": "excellent",
+            "riskLevel": "medium",
+            "notes": "Created by Target User Agent",
+            "expectedCompletion": null,
+            "performanceScore": 63.9,
+            "companyId": "cmp_rootk_001",
+            "createdAt": "2026-08-06T11:21:36.671Z",
+            "updatedAt": "2026-08-06T11:21:41.724Z",
+            "createdBy": "emp-001",
+            "updatedBy": "emp-003",
+            "deletedAt": null,
+            "isArchived": false,
+            "version": 2,
+            "metadata": {},
+            "metrics": {
+              "completed": 2,
+              "remaining": 3,
+              "percentage": 40,
+              "expectedProgress": 12.5,
+              "actualProgress": 40,
+              "variance": 27.5,
+              "performanceScore": 63.9,
+              "remainingDays": 7,
+              "totalDays": 8,
+              "elapsedDays": 1,
+              "requiredDailyRate": 0.4,
+              "completionForecast": "2026-08-08",
+              "trend": "ahead",
+              "riskLevel": "medium",
+              "health": "excellent",
+              "derivedStatus": "on_track"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "full-completion",
+      "actor": "employee",
+      "title": "Complete remaining tasks → target reaches 100% / completed",
+      "ok": true,
+      "detail": "status=completed, percentage=100%",
+      "data": {
+        "id": "pt_feb7b006f0884086",
+        "title": "Agent Demo — 5 Site Visits",
+        "description": "Live agent scenario: auto-generate 5 visit tasks; progress must come from task completion only.",
+        "categoryId": "tcat_85a6ca609550418a",
+        "typeId": "ttype_46409238723246fb",
+        "templateId": null,
+        "quantity": 5,
+        "unit": "visits",
+        "completedQuantity": 5,
+        "startDate": "2026-08-06",
+        "endDate": "2026-08-13",
+        "priority": "high",
+        "weight": 1,
+        "assigneeScope": "employee",
+        "assigneeIds": [
+          "emp-003"
+        ],
+        "department": "Design",
+        "branch": "Cairo",
+        "roleKey": "",
+        "ownerId": "emp-001",
+        "status": "completed",
+        "health": "excellent",
+        "riskLevel": "medium",
+        "notes": "Created by Target User Agent",
+        "expectedCompletion": null,
+        "performanceScore": 100,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:36.671Z",
+        "updatedAt": "2026-08-06T11:21:48.144Z",
+        "createdBy": "emp-001",
+        "updatedBy": "emp-003",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 4,
+        "metadata": {},
+        "metrics": {
+          "completed": 5,
+          "remaining": 0,
+          "percentage": 100,
+          "expectedProgress": 12.5,
+          "actualProgress": 100,
+          "variance": 87.5,
+          "performanceScore": 100,
+          "remainingDays": 7,
+          "totalDays": 8,
+          "elapsedDays": 1,
+          "requiredDailyRate": 0,
+          "completionForecast": "2026-08-06",
+          "trend": "ahead",
+          "riskLevel": "medium",
+          "health": "excellent",
+          "derivedStatus": "completed"
+        }
+      }
+    }
+  ],
+  "storage": {
+    "categories": [
+      {
+        "id": "tcat_85a6ca609550418a",
+        "name": "Agent Demo — Operations",
+        "color": "#0F766E",
+        "icon": "Building2",
+        "description": "Created by Target User Agent for live demo",
+        "active": true,
+        "sortOrder": 90,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:35.549Z",
+        "updatedAt": "2026-08-06T11:21:35.549Z",
+        "createdBy": "emp-001",
+        "updatedBy": "emp-001",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      },
+      {
+        "id": "tcat-sales",
+        "name": "Sales",
+        "color": "#0F766E",
+        "icon": "Handshake",
+        "description": "Revenue and pipeline activity",
+        "active": true,
+        "sortOrder": 1,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.513Z",
+        "updatedAt": "2026-08-06T11:21:34.513Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      },
+      {
+        "id": "tcat-dev",
+        "name": "Development",
+        "color": "#082868",
+        "icon": "Code2",
+        "description": "Engineering delivery targets",
+        "active": true,
+        "sortOrder": 2,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.513Z",
+        "updatedAt": "2026-08-06T11:21:34.513Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      },
+      {
+        "id": "tcat-mkt",
+        "name": "Marketing",
+        "color": "#B45309",
+        "icon": "Megaphone",
+        "description": "Campaigns and content",
+        "active": true,
+        "sortOrder": 3,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.513Z",
+        "updatedAt": "2026-08-06T11:21:34.513Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      },
+      {
+        "id": "tcat-support",
+        "name": "Customer Support",
+        "color": "#0369A1",
+        "icon": "Headphones",
+        "description": "Service quality and response",
+        "active": true,
+        "sortOrder": 4,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.513Z",
+        "updatedAt": "2026-08-06T11:21:34.513Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      }
+    ],
+    "types": [
+      {
+        "id": "ttype_46409238723246fb",
+        "categoryId": "tcat_85a6ca609550418a",
+        "name": "Site Visits",
+        "description": "On-site customer visits",
+        "unit": "visits",
+        "taskTitleTemplate": "Site Visit #{n}",
+        "active": true,
+        "sortOrder": 1,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:35.736Z",
+        "updatedAt": "2026-08-06T11:21:35.736Z",
+        "createdBy": "emp-001",
+        "updatedBy": "emp-001",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      },
+      {
+        "id": "ttype-calls",
+        "categoryId": "tcat-sales",
+        "name": "Calls",
+        "description": "Outbound sales calls",
+        "unit": "calls",
+        "taskTitleTemplate": "Call #{n}",
+        "active": true,
+        "sortOrder": 1,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.513Z",
+        "updatedAt": "2026-08-06T11:21:34.513Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      },
+      {
+        "id": "ttype-meetings",
+        "categoryId": "tcat-sales",
+        "name": "Meetings",
+        "description": "Client meetings",
+        "unit": "meetings",
+        "taskTitleTemplate": "Meeting #{n}",
+        "active": true,
+        "sortOrder": 2,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.513Z",
+        "updatedAt": "2026-08-06T11:21:34.513Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      },
+      {
+        "id": "ttype-followups",
+        "categoryId": "tcat-sales",
+        "name": "Follow Ups",
+        "description": "Follow-up actions",
+        "unit": "follow-ups",
+        "taskTitleTemplate": "Follow Up #{n}",
+        "active": true,
+        "sortOrder": 3,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.513Z",
+        "updatedAt": "2026-08-06T11:21:34.513Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      },
+      {
+        "id": "ttype-bugs",
+        "categoryId": "tcat-dev",
+        "name": "Bug Fixes",
+        "description": "Resolved bugs",
+        "unit": "bugs",
+        "taskTitleTemplate": "Bug Fix #{n}",
+        "active": true,
+        "sortOrder": 1,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.513Z",
+        "updatedAt": "2026-08-06T11:21:34.513Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      },
+      {
+        "id": "ttype-prs",
+        "categoryId": "tcat-dev",
+        "name": "Pull Requests",
+        "description": "Merged pull requests",
+        "unit": "PRs",
+        "taskTitleTemplate": "Pull Request #{n}",
+        "active": true,
+        "sortOrder": 2,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.513Z",
+        "updatedAt": "2026-08-06T11:21:34.513Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      },
+      {
+        "id": "ttype-posts",
+        "categoryId": "tcat-mkt",
+        "name": "Published Posts",
+        "description": "Published content pieces",
+        "unit": "posts",
+        "taskTitleTemplate": "Publish Post #{n}",
+        "active": true,
+        "sortOrder": 1,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.513Z",
+        "updatedAt": "2026-08-06T11:21:34.513Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      }
+    ],
+    "templates": [
+      {
+        "id": "ttpl-sales-daily",
+        "categoryId": "tcat-sales",
+        "name": "Sales Daily Target",
+        "description": "Standard daily sales activity pack",
+        "active": true,
+        "items": [
+          {
+            "id": "tti-1",
+            "companyId": "",
+            "templateId": "ttpl-sales-daily",
+            "typeId": "ttype-calls",
+            "quantity": 10,
+            "unit": "calls",
+            "weight": 1,
+            "sortOrder": 0
+          },
+          {
+            "id": "tti-2",
+            "companyId": "",
+            "templateId": "ttpl-sales-daily",
+            "typeId": "ttype-followups",
+            "quantity": 5,
+            "unit": "follow-ups",
+            "weight": 1,
+            "sortOrder": 1
+          },
+          {
+            "id": "tti-3",
+            "companyId": "",
+            "templateId": "ttpl-sales-daily",
+            "typeId": "ttype-meetings",
+            "quantity": 2,
+            "unit": "meetings",
+            "weight": 2,
+            "sortOrder": 2
+          }
+        ],
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.513Z",
+        "updatedAt": "2026-08-06T11:21:34.513Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      }
+    ],
+    "targets": [
+      {
+        "id": "pt_feb7b006f0884086",
+        "title": "Agent Demo — 5 Site Visits",
+        "description": "Live agent scenario: auto-generate 5 visit tasks; progress must come from task completion only.",
+        "categoryId": "tcat_85a6ca609550418a",
+        "typeId": "ttype_46409238723246fb",
+        "templateId": null,
+        "quantity": 5,
+        "unit": "visits",
+        "completedQuantity": 5,
+        "startDate": "2026-08-06",
+        "endDate": "2026-08-13",
+        "priority": "high",
+        "weight": 1,
+        "assigneeScope": "employee",
+        "assigneeIds": [
+          "emp-003"
+        ],
+        "department": "Design",
+        "branch": "Cairo",
+        "roleKey": "",
+        "ownerId": "emp-001",
+        "status": "completed",
+        "health": "excellent",
+        "riskLevel": "medium",
+        "notes": "Created by Target User Agent",
+        "expectedCompletion": null,
+        "performanceScore": 100,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:36.671Z",
+        "updatedAt": "2026-08-06T11:21:48.144Z",
+        "createdBy": "emp-001",
+        "updatedBy": "emp-003",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 4,
+        "metadata": {}
+      },
+      {
+        "id": "pt-001",
+        "title": "Weekly Sales Calls",
+        "description": "Complete 10 outbound calls this week",
+        "categoryId": "tcat-sales",
+        "typeId": "ttype-calls",
+        "templateId": "ttpl-sales-daily",
+        "quantity": 10,
+        "unit": "calls",
+        "completedQuantity": 3,
+        "startDate": "2026-08-03",
+        "endDate": "2026-08-10",
+        "priority": "high",
+        "weight": 1,
+        "assigneeScope": "employee",
+        "assigneeIds": [
+          "emp-003"
+        ],
+        "department": "Design",
+        "branch": "Alexandria",
+        "roleKey": "",
+        "ownerId": "user-admin",
+        "status": "on_track",
+        "notes": "Focus on enterprise leads",
+        "expectedCompletion": "2026-08-10",
+        "health": "critical",
+        "riskLevel": "high",
+        "performanceScore": 36.5,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.513Z",
+        "updatedAt": "2026-08-06T11:21:34.513Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      },
+      {
+        "id": "pt-002",
+        "title": "Bug Fix Sprint",
+        "description": "Close 8 high-priority bugs",
+        "categoryId": "tcat-dev",
+        "typeId": "ttype-bugs",
+        "templateId": null,
+        "quantity": 8,
+        "unit": "bugs",
+        "completedQuantity": 2,
+        "startDate": "2026-08-01",
+        "endDate": "2026-08-08",
+        "priority": "critical",
+        "weight": 2,
+        "assigneeScope": "employee",
+        "assigneeIds": [
+          "emp-002"
+        ],
+        "department": "Engineering",
+        "branch": "Cairo",
+        "roleKey": "",
+        "ownerId": "user-admin",
+        "status": "behind_schedule",
+        "notes": "",
+        "expectedCompletion": "2026-08-08",
+        "health": "critical",
+        "riskLevel": "critical",
+        "performanceScore": 16.3,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.513Z",
+        "updatedAt": "2026-08-06T11:21:34.513Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      },
+      {
+        "id": "pt-003",
+        "title": "Content Publishing",
+        "description": "Publish 6 marketing posts",
+        "categoryId": "tcat-mkt",
+        "typeId": "ttype-posts",
+        "templateId": null,
+        "quantity": 6,
+        "unit": "posts",
+        "completedQuantity": 6,
+        "startDate": "2026-07-20",
+        "endDate": "2026-08-05",
+        "priority": "medium",
+        "weight": 1,
+        "assigneeScope": "employee",
+        "assigneeIds": [
+          "emp-004"
+        ],
+        "department": "Design",
+        "branch": "Cairo",
+        "roleKey": "",
+        "ownerId": "user-admin",
+        "status": "completed",
+        "notes": "",
+        "expectedCompletion": "2026-08-05",
+        "health": "excellent",
+        "riskLevel": "medium",
+        "performanceScore": 90,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.514Z",
+        "updatedAt": "2026-08-06T11:21:34.514Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      },
+      {
+        "id": "pt-agent-sales",
+        "title": "Agent Demo — Daily Follow Ups",
+        "description": "Mock data from Target User Agent theater pack",
+        "categoryId": "tcat-sales",
+        "typeId": "ttype-followups",
+        "templateId": "ttpl-sales-daily",
+        "quantity": 5,
+        "unit": "follow-ups",
+        "completedQuantity": 1,
+        "startDate": "2026-08-04",
+        "endDate": "2026-08-09",
+        "priority": "medium",
+        "weight": 1,
+        "assigneeScope": "employee",
+        "assigneeIds": [
+          "emp-014"
+        ],
+        "department": "Sales",
+        "branch": "Cairo",
+        "roleKey": "",
+        "ownerId": "user-admin",
+        "status": "in_progress",
+        "notes": "Seeded for UI demo — complete linked tasks to raise progress",
+        "expectedCompletion": "2026-08-09",
+        "health": "critical",
+        "riskLevel": "critical",
+        "performanceScore": 18.5,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.514Z",
+        "updatedAt": "2026-08-06T11:21:34.514Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      },
+      {
+        "id": "pt-agent-prs",
+        "title": "Agent Demo — Pull Requests",
+        "description": "Engineering delivery mock for dashboard charts",
+        "categoryId": "tcat-dev",
+        "typeId": "ttype-prs",
+        "templateId": null,
+        "quantity": 4,
+        "unit": "PRs",
+        "completedQuantity": 0,
+        "startDate": "2026-08-05",
+        "endDate": "2026-08-07",
+        "priority": "critical",
+        "weight": 2,
+        "assigneeScope": "employee",
+        "assigneeIds": [
+          "emp-001"
+        ],
+        "department": "Engineering",
+        "branch": "Cairo",
+        "roleKey": "",
+        "ownerId": "user-admin",
+        "status": "delayed",
+        "notes": "Intentionally behind for Delayed Center demo",
+        "expectedCompletion": "2026-08-07",
+        "health": "critical",
+        "riskLevel": "critical",
+        "performanceScore": 0,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.514Z",
+        "updatedAt": "2026-08-06T11:21:34.514Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      },
+      {
+        "id": "pt-agent-meetings",
+        "title": "Agent Demo — Client Meetings",
+        "description": "Multi-assignee demo target",
+        "categoryId": "tcat-sales",
+        "typeId": "ttype-meetings",
+        "templateId": null,
+        "quantity": 3,
+        "unit": "meetings",
+        "completedQuantity": 2,
+        "startDate": "2026-08-02",
+        "endDate": "2026-08-12",
+        "priority": "high",
+        "weight": 1.5,
+        "assigneeScope": "multi",
+        "assigneeIds": [
+          "emp-003",
+          "emp-014"
+        ],
+        "department": "Sales",
+        "branch": "Alexandria",
+        "roleKey": "",
+        "ownerId": "user-admin",
+        "status": "on_track",
+        "notes": "Shared sales meetings pack",
+        "expectedCompletion": "2026-08-12",
+        "health": "excellent",
+        "riskLevel": "medium",
+        "performanceScore": 77,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.514Z",
+        "updatedAt": "2026-08-06T11:21:34.514Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      }
+    ],
+    "warnings": [
+      {
+        "id": "tw_4ad6648c26314d0a",
+        "targetId": "pt_feb7b006f0884086",
+        "employeeId": "emp-003",
+        "reason": "Agent Demo: pace behind after first day of visits",
+        "managerNotes": "Please complete at least one visit daily",
+        "requiredAction": "Finish 2 more visits within 48 hours",
+        "penaltyType": "performance_note",
+        "penaltyNote": "Logged by Target User Agent",
+        "acknowledgedAt": "2026-08-06T11:21:43.489Z",
+        "acknowledgedBy": "emp-003",
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:42.365Z",
+        "updatedAt": "2026-08-06T11:21:43.489Z",
+        "createdBy": "emp-001",
+        "updatedBy": "emp-003",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 2,
+        "metadata": {}
+      },
+      {
+        "id": "tw-001",
+        "targetId": "pt-002",
+        "employeeId": "emp-002",
+        "reason": "Progress behind expected pace with 2 days left",
+        "managerNotes": "Please prioritize critical bugs before new features",
+        "requiredAction": "Complete at least 3 bug fixes within 48 hours",
+        "penaltyType": "performance_note",
+        "penaltyNote": "Logged on performance file",
+        "acknowledgedAt": null,
+        "acknowledgedBy": null,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.514Z",
+        "updatedAt": "2026-08-06T11:21:34.514Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      },
+      {
+        "id": "tw-agent-001",
+        "targetId": "pt-agent-prs",
+        "employeeId": "emp-001",
+        "reason": "Agent Demo: critical PR target overdue with 0 completions",
+        "managerNotes": "Unblock reviews and ship at least 2 PRs today",
+        "requiredAction": "Merge 2 pull requests before EOD",
+        "penaltyType": "written_warning",
+        "penaltyNote": "Demo warning for Warning Center UI",
+        "acknowledgedAt": null,
+        "acknowledgedBy": null,
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-06T11:21:34.514Z",
+        "updatedAt": "2026-08-06T11:21:34.514Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      }
+    ]
+  },
+  "dashboard": {
+    "total": 7,
+    "completed": 1,
+    "inProgress": 5,
+    "delayed": 1,
+    "critical": 3,
+    "completionRate": 14.3,
+    "averagePerformance": 43.2,
+    "employeesAtRisk": 3,
+    "upcomingDeadlines": 6,
+    "byCategory": [
+      {
+        "id": "tcat-mkt",
+        "name": "Marketing",
+        "color": "#B45309",
+        "count": 1
+      },
+      {
+        "id": "tcat-dev",
+        "name": "Development",
+        "color": "#082868",
+        "count": 2
+      },
+      {
+        "id": "tcat-sales",
+        "name": "Sales",
+        "color": "#0F766E",
+        "count": 3
+      },
+      {
+        "id": "tcat_85a6ca609550418a",
+        "name": "Agent Demo — Operations",
+        "color": "#0F766E",
+        "count": 1
+      }
+    ],
+    "byStatus": [
+      {
+        "status": "completed",
+        "count": 1
+      },
+      {
+        "status": "delayed",
+        "count": 1
+      },
+      {
+        "status": "behind_schedule",
+        "count": 1
+      },
+      {
+        "status": "in_progress",
+        "count": 1
+      },
+      {
+        "status": "on_track",
+        "count": 3
+      }
+    ],
+    "byDepartment": [
+      {
+        "department": "Design",
+        "count": 3,
+        "avgScore": 63.5
+      },
+      {
+        "department": "Engineering",
+        "count": 2,
+        "avgScore": 8.2
+      },
+      {
+        "department": "Sales",
+        "count": 2,
+        "avgScore": 47.8
+      }
+    ],
+    "topPerformers": [
+      {
+        "employeeId": "emp-004",
+        "score": 90,
+        "completed": 1,
+        "total": 1
+      },
+      {
+        "employeeId": "emp-003",
+        "score": 59.1,
+        "completed": 0,
+        "total": 3
+      },
+      {
+        "employeeId": "emp-014",
+        "score": 47.8,
+        "completed": 0,
+        "total": 2
+      },
+      {
+        "employeeId": "emp-002",
+        "score": 16.3,
+        "completed": 0,
+        "total": 1
+      },
+      {
+        "employeeId": "emp-001",
+        "score": 0,
+        "completed": 0,
+        "total": 1
+      }
+    ],
+    "bottomPerformers": [
+      {
+        "employeeId": "emp-001",
+        "score": 0,
+        "completed": 0,
+        "total": 1
+      },
+      {
+        "employeeId": "emp-002",
+        "score": 16.3,
+        "completed": 0,
+        "total": 1
+      },
+      {
+        "employeeId": "emp-014",
+        "score": 47.8,
+        "completed": 0,
+        "total": 2
+      },
+      {
+        "employeeId": "emp-003",
+        "score": 59.1,
+        "completed": 0,
+        "total": 3
+      },
+      {
+        "employeeId": "emp-004",
+        "score": 90,
+        "completed": 1,
+        "total": 1
+      }
+    ],
+    "completionTrend": [
+      {
+        "date": "2026-07-24",
+        "created": 0,
+        "completed": 0
+      },
+      {
+        "date": "2026-07-25",
+        "created": 0,
+        "completed": 0
+      },
+      {
+        "date": "2026-07-26",
+        "created": 0,
+        "completed": 0
+      },
+      {
+        "date": "2026-07-27",
+        "created": 0,
+        "completed": 0
+      },
+      {
+        "date": "2026-07-28",
+        "created": 0,
+        "completed": 0
+      },
+      {
+        "date": "2026-07-29",
+        "created": 0,
+        "completed": 0
+      },
+      {
+        "date": "2026-07-30",
+        "created": 0,
+        "completed": 0
+      },
+      {
+        "date": "2026-07-31",
+        "created": 0,
+        "completed": 0
+      },
+      {
+        "date": "2026-08-01",
+        "created": 0,
+        "completed": 0
+      },
+      {
+        "date": "2026-08-02",
+        "created": 0,
+        "completed": 0
+      },
+      {
+        "date": "2026-08-03",
+        "created": 0,
+        "completed": 0
+      },
+      {
+        "date": "2026-08-04",
+        "created": 0,
+        "completed": 0
+      },
+      {
+        "date": "2026-08-05",
+        "created": 0,
+        "completed": 0
+      },
+      {
+        "date": "2026-08-06",
+        "created": 7,
+        "completed": 1
+      }
+    ]
+  },
+  "agentTargetId": "pt_feb7b006f0884086"
+}

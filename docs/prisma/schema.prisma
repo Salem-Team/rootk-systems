@@ -63,6 +63,60 @@ enum NotificationCategory {
   announcement
   system
   mention
+  target
+}
+
+enum TargetStatus {
+  draft
+  assigned
+  in_progress
+  on_track
+  behind_schedule
+  delayed
+  completed
+  cancelled
+  archived
+}
+
+enum TargetPriority {
+  critical
+  high
+  medium
+  low
+}
+
+enum TargetAssigneeScope {
+  employee
+  department
+  role
+  team
+  branch
+  multi
+}
+
+enum TargetPenaltyType {
+  written_warning
+  salary_deduction
+  performance_note
+  bonus_reduction
+  manager_review
+  custom
+}
+
+enum TargetHealth {
+  excellent
+  good
+  average
+  warning
+  critical
+  delayed
+}
+
+enum TargetRiskLevel {
+  low
+  medium
+  high
+  critical
 }
 
 enum NotificationPriority {
@@ -86,9 +140,15 @@ model Company {
   settings      CompanySettings?
   leaveRequests LeaveRequest[]
   attendance    AttendanceRecord[]
-  workTasks     WorkTask[]
-  workMeetings  WorkMeeting[]
-  notifications AppNotification[]
+  workTasks         WorkTask[]
+  workMeetings      WorkMeeting[]
+  notifications     AppNotification[]
+  targetCategories  TargetCategory[]
+  targetTypes       TargetType[]
+  targetTemplates   TargetTemplate[]
+  performanceTargets PerformanceTarget[]
+  targetWarnings    TargetWarning[]
+  targetHistory     TargetHistoryEvent[]
 }
 
 model User {
@@ -309,6 +369,8 @@ model WorkTask {
   estimateMin           Int          @default(0)
   assigneeIds           String[]
   relatedMeetingId      String?
+  /** When set, completing this task advances linked PerformanceTarget progress. */
+  targetId              String?
   subItems              Json         @default("[]")
   origin                WorkOrigin   @default(assigned)
   /** Admin requires proof links before the assignee can mark complete. */
@@ -326,10 +388,12 @@ model WorkTask {
   version               Int          @default(1)
   metadata              Json         @default("{}")
 
-  company Company @relation(fields: [companyId], references: [id])
+  company Company            @relation(fields: [companyId], references: [id])
+  target  PerformanceTarget? @relation(fields: [targetId], references: [id])
 
   @@index([companyId, status])
   @@index([companyId, dueDate])
+  @@index([companyId, targetId])
 }
 
 model WorkMeeting {
@@ -646,4 +710,210 @@ model RefreshToken {
 
   @@index([userId])
   @@index([tokenHash])
+}
+
+// ─── Enterprise Target Management ───────────────────────────────────────────
+
+model TargetCategory {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  color       String   @default("#082868")
+  icon        String   @default("Target")
+  description String   @default("")
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+  isArchived  Boolean  @default(false)
+  version     Int      @default(1)
+  metadata    Json     @default("{}")
+
+  company   Company              @relation(fields: [companyId], references: [id])
+  types     TargetType[]
+  templates TargetTemplate[]
+  targets   PerformanceTarget[]
+
+  @@unique([companyId, name])
+  @@index([companyId, active, sortOrder])
+}
+
+model TargetType {
+  id                 String   @id @default(cuid())
+  companyId          String
+  categoryId         String
+  name               String
+  description        String   @default("")
+  unit               String   @default("unit")
+  /// Template for auto-generated WorkTask titles, e.g. "Call #{n}"
+  taskTitleTemplate  String   @default("{name} #{n}")
+  active             Boolean  @default(true)
+  sortOrder          Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  createdBy          String?
+  updatedBy          String?
+  deletedAt          DateTime?
+  isArchived         Boolean  @default(false)
+  version            Int      @default(1)
+  metadata           Json     @default("{}")
+
+  company         Company              @relation(fields: [companyId], references: [id])
+  category        TargetCategory       @relation(fields: [categoryId], references: [id])
+  templateItems   TargetTemplateItem[]
+  targets         PerformanceTarget[]
+
+  @@unique([companyId, categoryId, name])
+  @@index([companyId, categoryId, active])
+}
+
+model TargetTemplate {
+  id          String   @id @default(cuid())
+  companyId   String
+  categoryId  String?
+  name        String
+  description String   @default("")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+  isArchived  Boolean  @default(false)
+  version     Int      @default(1)
+  metadata    Json     @default("{}")
+
+  company  Company              @relation(fields: [companyId], references: [id])
+  category TargetCategory?      @relation(fields: [categoryId], references: [id])
+  items    TargetTemplateItem[]
+  targets  PerformanceTarget[]
+
+  @@index([companyId, active])
+}
+
+model TargetTemplateItem {
+  id         String   @id @default(cuid())
+  companyId  String
+  templateId String
+  typeId     String
+  quantity   Int
+  unit       String   @default("unit")
+  weight     Float    @default(1)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  template TargetTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  type     TargetType     @relation(fields: [typeId], references: [id])
+
+  @@index([templateId, sortOrder])
+  @@index([companyId])
+}
+
+/// Assigned performance target — progress is derived from linked WorkTasks only.
+model PerformanceTarget {
+  id                   String              @id @default(cuid())
+  companyId            String
+  title                String
+  description          String              @default("")
+  categoryId           String
+  typeId               String
+  templateId           String?
+  quantity             Int
+  unit                 String              @default("unit")
+  completedQuantity    Int                 @default(0)
+  startDate            DateTime            @db.Date
+  endDate              DateTime            @db.Date
+  priority             TargetPriority      @default(medium)
+  weight               Float               @default(1)
+  assigneeScope        TargetAssigneeScope @default(employee)
+  /// Employee entity ids and/or department/role/branch keys depending on scope.
+  assigneeIds          String[]
+  department           String              @default("")
+  branch               String              @default("")
+  roleKey              String              @default("")
+  ownerId              String              @default("")
+  status               TargetStatus        @default(draft)
+  health               TargetHealth        @default(average)
+  riskLevel            TargetRiskLevel     @default(low)
+  notes                String              @default("")
+  expectedCompletion   DateTime?           @db.Date
+  performanceScore     Float               @default(0)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  createdBy            String?
+  updatedBy            String?
+  deletedAt            DateTime?
+  isArchived           Boolean             @default(false)
+  version              Int                 @default(1)
+  metadata             Json                @default("{}")
+
+  company   Company              @relation(fields: [companyId], references: [id])
+  category  TargetCategory       @relation(fields: [categoryId], references: [id])
+  type      TargetType           @relation(fields: [typeId], references: [id])
+  template  TargetTemplate?      @relation(fields: [templateId], references: [id])
+  tasks     WorkTask[]
+  warnings  TargetWarning[]
+  history   TargetHistoryEvent[]
+
+  @@index([companyId, status])
+  @@index([companyId, endDate])
+  @@index([companyId, priority])
+  @@index([companyId, categoryId])
+  @@index([companyId, typeId])
+  @@index([companyId, riskLevel])
+}
+
+model TargetWarning {
+  id             String            @id @default(cuid())
+  companyId      String
+  targetId       String
+  employeeId     String
+  reason         String
+  managerNotes   String            @default("")
+  requiredAction String            @default("")
+  penaltyType    TargetPenaltyType @default(written_warning)
+  penaltyNote    String            @default("")
+  acknowledgedAt DateTime?
+  acknowledgedBy String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  createdBy      String?
+  updatedBy      String?
+  deletedAt      DateTime?
+  isArchived     Boolean           @default(false)
+  version        Int               @default(1)
+  metadata       Json              @default("{}")
+
+  company Company           @relation(fields: [companyId], references: [id])
+  target  PerformanceTarget @relation(fields: [targetId], references: [id])
+
+  @@index([companyId, targetId])
+  @@index([companyId, employeeId])
+}
+
+model TargetHistoryEvent {
+  id          String   @id @default(cuid())
+  companyId   String
+  targetId    String
+  action      String
+  actorId     String   @default("")
+  note        String   @default("")
+  snapshot    Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+  isArchived  Boolean  @default(false)
+  version     Int      @default(1)
+  metadata    Json     @default("{}")
+
+  company Company           @relation(fields: [companyId], references: [id])
+  target  PerformanceTarget @relation(fields: [targetId], references: [id])
+
+  @@index([companyId, targetId, createdAt])
 }

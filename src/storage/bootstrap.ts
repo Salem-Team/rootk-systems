@@ -35,6 +35,12 @@ async function writeSeed(): Promise<void> {
     storage.setItem(StorageKeys.userPreferences, seed.userPreferences),
     storage.setItem(StorageKeys.workTasks, seed.workTasks),
     storage.setItem(StorageKeys.workMeetings, seed.workMeetings),
+    storage.setItem(StorageKeys.targetCategories, seed.targetCategories),
+    storage.setItem(StorageKeys.targetTypes, seed.targetTypes),
+    storage.setItem(StorageKeys.targetTemplates, seed.targetTemplates),
+    storage.setItem(StorageKeys.performanceTargets, seed.performanceTargets),
+    storage.setItem(StorageKeys.targetWarnings, seed.targetWarnings),
+    storage.setItem(StorageKeys.targetHistory, []),
     storage.setItem(StorageKeys.meta, {
       seedVersion: SEED_VERSION,
       seededAt: new Date().toISOString(),

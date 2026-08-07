@@ -33,3 +33,11 @@ export {
   WorkTaskRepository,
   WorkMeetingRepository,
 } from "./work.repository";
+export {
+  targetCategoryRepository,
+  targetTypeRepository,
+  targetTemplateRepository,
+  performanceTargetRepository,
+  targetWarningRepository,
+  targetHistoryRepository,
+} from "./targets.repository";

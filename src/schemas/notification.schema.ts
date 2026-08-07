@@ -10,6 +10,7 @@ export const notificationCategorySchema = z.enum([
   "announcement",
   "system",
   "mention",
+  "target",
 ]);
 export const notificationPrioritySchema = z.enum([
   "low",

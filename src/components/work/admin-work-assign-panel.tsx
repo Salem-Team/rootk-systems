@@ -23,11 +23,16 @@ import { toast } from "sonner";
 import {
   EmployeeAvatarStack,
   EmployeeMultiPicker,
+  TaskAssignees,
 } from "@/components/work/employee-multi-picker";
 import {
   TaskEvidenceBadge,
   TaskEvidenceDisplay,
 } from "@/components/work/task-completion-evidence-dialog";
+import {
+  TaskViewButton,
+  TaskViewSheet,
+} from "@/components/work/task-view-sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +45,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Time12Input } from "@/components/ui/time-12-input";
@@ -198,6 +210,7 @@ export function AdminWorkAssignPanel() {
 
   const [query, setQuery] = useState("");
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
+  const [assigneeFilter, setAssigneeFilter] = useState("");
   const [meetingFilter, setMeetingFilter] = useState<MeetingFilter>("all");
 
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
@@ -208,6 +221,7 @@ export function AdminWorkAssignPanel() {
     | null
   >(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [viewingTask, setViewingTask] = useState<WorkTask | null>(null);
   const [editingMeetingId, setEditingMeetingId] = useState<string | null>(null);
   const [taskForm, setTaskForm] = useState<TaskFormState>(emptyTaskForm);
   const [meetingForm, setMeetingForm] = useState<MeetingFormState>(() =>
@@ -262,6 +276,9 @@ export function AdminWorkAssignPanel() {
   const filteredTasks = useMemo(() => {
     const q = query.trim().toLowerCase();
     return tasks.filter((task) => {
+      if (assigneeFilter && !task.assigneeIds.includes(assigneeFilter)) {
+        return false;
+      }
       if (taskFilter === "overdue") {
         if (taskDueBucket(task.dueDate, task.status) !== "overdue") return false;
       } else if (taskFilter !== "all" && task.status !== taskFilter) {
@@ -279,7 +296,27 @@ export function AdminWorkAssignPanel() {
         names.includes(q)
       );
     });
-  }, [tasks, taskFilter, query, employeeMap]);
+  }, [tasks, taskFilter, assigneeFilter, query, employeeMap]);
+
+  const assigneeOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const task of tasks) {
+      for (const id of task.assigneeIds) {
+        counts.set(id, (counts.get(id) ?? 0) + 1);
+      }
+    }
+    return [...counts.entries()]
+      .map(([id, count]) => ({
+        id,
+        count,
+        name: employeeMap.get(id)?.name ?? id,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [tasks, employeeMap]);
+
+  const assigneeFilterName = assigneeFilter
+    ? employeeMap.get(assigneeFilter)?.name ?? assigneeFilter
+    : "";
 
   const filteredMeetings = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -310,6 +347,10 @@ export function AdminWorkAssignPanel() {
     setEditingTaskId(task.id);
     setTaskForm(taskToForm(task));
     setTaskDialogOpen(true);
+  }
+
+  function openViewTask(task: WorkTask) {
+    setViewingTask(task);
   }
 
   function openCreateMeeting() {
@@ -543,62 +584,99 @@ export function AdminWorkAssignPanel() {
           )}
         </div>
 
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={
-                tab === "tasks"
-                  ? t("workAdmin.searchTasks")
-                  : t("workAdmin.searchMeetings")
-              }
-              className="h-10 rounded-xl ps-9"
-            />
+        <div className="mt-4 flex flex-col gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={
+                  tab === "tasks"
+                    ? t("workAdmin.searchTasks")
+                    : t("workAdmin.searchMeetings")
+                }
+                className="h-10 rounded-xl ps-9"
+              />
+            </div>
+            {tab === "tasks" ? (
+              <Select
+                value={assigneeFilter || "all"}
+                onValueChange={(v) => setAssigneeFilter(v === "all" ? "" : v)}
+              >
+                <SelectTrigger className="h-10 w-full rounded-xl sm:w-[220px]">
+                  <SelectValue placeholder={t("workAdmin.filterAssignee")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t("workAdmin.allAssignees")}
+                  </SelectItem>
+                  {assigneeOptions.map((opt) => (
+                    <SelectItem key={opt.id} value={opt.id}>
+                      {`${opt.name} (${opt.count})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
+            <div className="flex flex-wrap gap-1.5">
+              {tab === "tasks"
+                ? (
+                    [
+                      ["all", t("common.all")],
+                      ["todo", t("ops.statusTodo")],
+                      ["in_progress", t("ops.statusInProgress")],
+                      ["completed", t("ops.statusCompleted")],
+                      ["overdue", t("ops.due.overdue")],
+                    ] as const
+                  ).map(([id, label]) => (
+                    <Button
+                      key={id}
+                      type="button"
+                      size="sm"
+                      variant={taskFilter === id ? "default" : "outline"}
+                      className="h-8 rounded-full px-3 text-[12px]"
+                      onClick={() => setTaskFilter(id)}
+                    >
+                      {label}
+                    </Button>
+                  ))
+                : (
+                    [
+                      ["all", t("common.all")],
+                      ["today", t("workAdmin.when.today")],
+                      ["upcoming", t("workAdmin.when.upcoming")],
+                      ["past", t("workAdmin.when.past")],
+                    ] as const
+                  ).map(([id, label]) => (
+                    <Button
+                      key={id}
+                      type="button"
+                      size="sm"
+                      variant={meetingFilter === id ? "default" : "outline"}
+                      className="h-8 rounded-full px-3 text-[12px]"
+                      onClick={() => setMeetingFilter(id)}
+                    >
+                      {label}
+                    </Button>
+                  ))}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {tab === "tasks"
-              ? (
-                  [
-                    ["all", t("common.all")],
-                    ["todo", t("ops.statusTodo")],
-                    ["in_progress", t("ops.statusInProgress")],
-                    ["completed", t("ops.statusCompleted")],
-                    ["overdue", t("ops.due.overdue")],
-                  ] as const
-                ).map(([id, label]) => (
-                  <Button
-                    key={id}
-                    type="button"
-                    size="sm"
-                    variant={taskFilter === id ? "default" : "outline"}
-                    className="h-8 rounded-full px-3 text-[12px]"
-                    onClick={() => setTaskFilter(id)}
-                  >
-                    {label}
-                  </Button>
-                ))
-              : (
-                  [
-                    ["all", t("common.all")],
-                    ["today", t("workAdmin.when.today")],
-                    ["upcoming", t("workAdmin.when.upcoming")],
-                    ["past", t("workAdmin.when.past")],
-                  ] as const
-                ).map(([id, label]) => (
-                  <Button
-                    key={id}
-                    type="button"
-                    size="sm"
-                    variant={meetingFilter === id ? "default" : "outline"}
-                    className="h-8 rounded-full px-3 text-[12px]"
-                    onClick={() => setMeetingFilter(id)}
-                  >
-                    {label}
-                  </Button>
-                ))}
-          </div>
+          {tab === "tasks" && assigneeFilter ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[12px] text-muted-foreground">
+                {t("workAdmin.filteringByAssignee")}
+              </span>
+              <button
+                type="button"
+                onClick={() => setAssigneeFilter("")}
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/[0.08] px-2.5 py-1 text-[12px] font-medium text-primary transition-colors hover:bg-primary/[0.14]"
+              >
+                {assigneeFilterName}
+                <span className="text-[11px] opacity-70">×</span>
+              </button>
+            </div>
+          ) : null}
         </div>
 
         <TabsContent value="tasks" className="mt-4 outline-none">
@@ -663,10 +741,14 @@ export function AdminWorkAssignPanel() {
                         {taskHasSubmittedEvidence(task) ? (
                           <TaskEvidenceDisplay task={task} className="mt-3" />
                         ) : null}
-                        <div className="mt-3 flex flex-wrap items-center gap-3">
-                          <EmployeeAvatarStack
+                        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-2">
+                          <TaskAssignees
                             employees={employeeMap}
                             ids={task.assigneeIds}
+                            selectedId={assigneeFilter}
+                            onSelect={setAssigneeFilter}
+                            label={t("workAdmin.assignedTo")}
+                            pickLabel={t("workAdmin.pickAssignee")}
                           />
                           <span className="inline-flex items-center gap-1 text-[12px] text-muted-foreground">
                             <Clock3 className="h-3.5 w-3.5" />
@@ -685,6 +767,7 @@ export function AdminWorkAssignPanel() {
                         </div>
                       </div>
                       <div className="flex shrink-0 gap-2">
+                        <TaskViewButton onClick={() => openViewTask(task)} />
                         <Button
                           type="button"
                           size="sm"
@@ -1366,6 +1449,16 @@ export function AdminWorkAssignPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <TaskViewSheet
+        task={viewingTask}
+        open={Boolean(viewingTask)}
+        onOpenChange={(open) => {
+          if (!open) setViewingTask(null);
+        }}
+        employees={employeeMap}
+        onEdit={openEditTask}
+      />
     </div>
   );
 }

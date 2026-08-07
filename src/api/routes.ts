@@ -98,6 +98,23 @@ export const API_ROUTES = {
     stats: "/dashboard/stats",
     summary: "/dashboard/summary",
   },
+  targets: {
+    root: "/targets",
+    byId: (id: string) => `/targets/${id}`,
+    recalculate: (id: string) => `/targets/${id}/recalculate`,
+    categories: "/targets/categories",
+    categoryById: (id: string) => `/targets/categories/${id}`,
+    types: "/targets/types",
+    typeById: (id: string) => `/targets/types/${id}`,
+    templates: "/targets/templates",
+    templateById: (id: string) => `/targets/templates/${id}`,
+    dashboard: "/targets/dashboard",
+    delayed: "/targets/delayed",
+    warnings: "/targets/warnings",
+    warningAcknowledge: (id: string) => `/targets/warnings/${id}/acknowledge`,
+    employeePerformance: (employeeId: string) =>
+      `/targets/employees/${employeeId}/performance`,
+  },
   reports: {
     weekly: "/reports/weekly",
     monthly: "/reports/monthly",

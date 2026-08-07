@@ -6,3 +6,4 @@ export * from "./settings.schema";
 export * from "./work.schema";
 export * from "./notification.schema";
 export * from "./auth.schema";
+export * from "./targets.schema";

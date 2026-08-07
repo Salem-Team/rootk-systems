@@ -13,6 +13,7 @@ import {
   Timer,
   Wallet,
   AtSign,
+  Target,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -72,6 +73,7 @@ const CATEGORY_ICON: Record<
   announcement: Megaphone,
   system: Settings2,
   mention: AtSign,
+  target: Target,
 };
 
 const CATEGORY_TONE: Record<NotificationCategory, string> = {
@@ -83,6 +85,7 @@ const CATEGORY_TONE: Record<NotificationCategory, string> = {
   announcement: "bg-rose-500/12 text-rose-800 dark:text-rose-300",
   system: "bg-muted text-muted-foreground",
   mention: "bg-primary/12 text-primary",
+  target: "bg-primary/12 text-primary",
 };
 
 export function NotificationCategoryIcon({

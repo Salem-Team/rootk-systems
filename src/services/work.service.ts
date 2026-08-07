@@ -370,6 +370,12 @@ export async function updateWorkTask(
         actorId: actor,
       });
     }
+    if (saved.targetId && parsed.data.status && parsed.data.status !== current.status) {
+      const { recalculateTargetProgress } = await import(
+        "@/services/targets.service"
+      );
+      void recalculateTargetProgress(saved.targetId);
+    }
     return ok(saved, "Task updated");
   } catch (error) {
     return fromError(error, emptyTask(id));
@@ -451,6 +457,12 @@ export async function updateWorkTaskStatus(
         title: saved.title,
         actorId: actor,
       });
+    }
+    if (saved.targetId && parsed.data.status !== current.status) {
+      const { recalculateTargetProgress } = await import(
+        "@/services/targets.service"
+      );
+      void recalculateTargetProgress(saved.targetId);
     }
     return ok(saved, "Task updated");
   } catch (error) {

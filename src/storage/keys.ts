@@ -29,6 +29,12 @@ export const StorageKeys = {
   workTasks: key("work-tasks"),
   workMeetings: key("work-meetings"),
   payrollState: key("payroll-state"),
+  targetCategories: key("target-categories"),
+  targetTypes: key("target-types"),
+  targetTemplates: key("target-templates"),
+  performanceTargets: key("performance-targets"),
+  targetWarnings: key("target-warnings"),
+  targetHistory: key("target-history"),
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];

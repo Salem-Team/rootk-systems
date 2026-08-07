@@ -16,6 +16,7 @@ import { PayrollModule } from "./payroll/payroll.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
 import { DemoModule } from "./demo/demo.module";
 import { PreferencesModule } from "./preferences/preferences.module";
+import { TargetsModule } from "./targets/targets.module";
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { PreferencesModule } from "./preferences/preferences.module";
     PayrollModule,
     DashboardModule,
     DemoModule,
+    TargetsModule,
   ],
 })
 export class AppModule {}

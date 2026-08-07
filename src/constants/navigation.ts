@@ -7,6 +7,7 @@ import {
   FileText,
   BarChart3,
   Settings,
+  Target,
   Wallet,
   ListTodo,
   type LucideIcon,
@@ -24,7 +25,8 @@ export type NavKey =
   | "home"
   | "people"
   | "more"
-  | "tasks";
+  | "tasks"
+  | "targets";
 
 export interface AppNavItem {
   key: NavKey;
@@ -54,6 +56,12 @@ export const APP_NAV: AppNavItem[] = [
     icon: ListTodo,
     roles: ["admin", "employee"],
     badge: true,
+  },
+  {
+    key: "targets",
+    href: "/targets",
+    icon: Target,
+    roles: ["admin", "employee"],
   },
   {
     key: "employees",

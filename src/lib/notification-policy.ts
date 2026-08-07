@@ -58,6 +58,7 @@ const CATEGORY_TO_POLICY: Record<
   payroll: "payroll",
   schedule: "schedule",
   mention: "mention",
+  target: "work",
 };
 
 export function normalizeCompanyNotifications(

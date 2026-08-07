@@ -541,3 +541,70 @@ export async function notifyTaskCompleted(opts: {
     });
   }
 }
+
+export async function notifyTargetAssigned(target: {
+  id: string;
+  title: string;
+  assigneeIds: string[];
+  endDate: string;
+}): Promise<void> {
+  await notifyQuietly({
+    titleKey: "notifications.targetAssignedTitle",
+    bodyKey: "notifications.targetAssignedBody",
+    vars: { title: target.title, deadline: target.endDate },
+    category: "target",
+    priority: "normal",
+    audience: "employee",
+    recipientIds: target.assigneeIds,
+    href: "/targets",
+    entityType: "performance_target",
+    entityId: target.id,
+    actorId: getSessionUserId(),
+  });
+}
+
+export async function notifyTargetProgress(
+  target: { id: string; title: string; assigneeIds: string[]; endDate: string },
+  percentage: number
+): Promise<void> {
+  await notifyQuietly({
+    titleKey: "notifications.targetProgressTitle",
+    bodyKey: "notifications.targetProgressBody",
+    vars: {
+      title: target.title,
+      progress: `${percentage}%`,
+      deadline: target.endDate,
+    },
+    category: "target",
+    priority: percentage >= 100 ? "high" : "normal",
+    audience: "employee",
+    recipientIds: target.assigneeIds,
+    href: "/targets",
+    entityType: "performance_target",
+    entityId: target.id,
+    actorId: getSessionUserId(),
+  });
+}
+
+export async function notifyTargetWarning(
+  target: { id: string; title: string; endDate: string },
+  warning: { id: string; employeeId: string; reason: string }
+): Promise<void> {
+  await notifyQuietly({
+    titleKey: "notifications.targetWarningTitle",
+    bodyKey: "notifications.targetWarningBody",
+    vars: {
+      title: target.title,
+      deadline: target.endDate,
+      reason: warning.reason,
+    },
+    category: "target",
+    priority: "urgent",
+    audience: "employee",
+    recipientIds: [warning.employeeId],
+    href: "/targets/warnings",
+    entityType: "target_warning",
+    entityId: warning.id,
+    actorId: getSessionUserId(),
+  });
+}

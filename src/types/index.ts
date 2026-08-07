@@ -228,3 +228,4 @@ export interface AppUser extends BaseEntity {
 export type * from "@/types/notification";
 export type * from "@/types/payroll";
 export type * from "@/types/work";
+export type * from "@/types/targets";

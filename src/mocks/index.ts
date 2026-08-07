@@ -22,3 +22,10 @@ export {
   approvalRulesSeed,
 } from "./org";
 export { workTasksSeed, workMeetingsSeed } from "./work";
+export {
+  targetCategoriesSeed,
+  targetTypesSeed,
+  targetTemplatesSeed,
+  performanceTargetsSeed,
+  targetWarningsSeed,
+} from "./targets";

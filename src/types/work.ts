@@ -27,6 +27,8 @@ export interface WorkTask extends BaseEntity {
   /** Employee entity ids (e.g. emp-003) */
   assigneeIds: string[];
   relatedMeetingId?: string;
+  /** When set, completing this task advances linked PerformanceTarget progress. */
+  targetId?: string;
   subItems: WorkTaskSubItem[];
   /** Defaults to assigned when omitted (legacy seeds). */
   origin?: WorkOrigin;

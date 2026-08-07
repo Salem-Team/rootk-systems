@@ -1,8 +1,10 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from "@nestjs/common";
 import {
   TaskPriority,
@@ -16,6 +18,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { auditFields, dateOnly, parseDate } from "../common/mappers";
 import { NotificationsService } from "../notifications/notifications.service";
 import { writeActivity } from "../common/activity-writer";
+import { TargetsService } from "../targets/targets.service";
 
 type Actor = {
   userId: string;
@@ -92,6 +95,7 @@ function mapTask(row: WorkTask) {
     estimateMin: row.estimateMin,
     assigneeIds: row.assigneeIds,
     relatedMeetingId: row.relatedMeetingId ?? undefined,
+    targetId: row.targetId ?? undefined,
     subItems: row.subItems ?? [],
     origin: row.origin,
     requireEvidenceLinks: row.requireEvidenceLinks,
@@ -149,7 +153,9 @@ function ownsPersonalMeeting(meeting: WorkMeeting, actor: Actor) {
 export class WorkService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly notifications: NotificationsService
+    private readonly notifications: NotificationsService,
+    @Inject(forwardRef(() => TargetsService))
+    private readonly targets: TargetsService
   ) {}
 
   async listTasks(
@@ -227,6 +233,7 @@ export class WorkService {
         estimateMin: Number(body.estimateMin ?? 0),
         assigneeIds,
         relatedMeetingId: (body.relatedMeetingId as string) ?? undefined,
+        targetId: (body.targetId as string) ?? undefined,
         subItems: (body.subItems as object) ?? [],
         origin,
         requireEvidenceLinks,
@@ -352,6 +359,15 @@ export class WorkService {
         version: { increment: 1 },
       },
     });
+
+    if (row.targetId && nextStatus && nextStatus !== current.status) {
+      await this.targets.onLinkedTaskStatusChanged(
+        companyId,
+        row.id,
+        actor.userId
+      );
+    }
+
     return mapTask(row);
   }
 
@@ -431,6 +447,14 @@ export class WorkService {
         employeeId: actor.employeeId,
         actorId: actor.userId,
       });
+    }
+
+    if (row.targetId && current.status !== row.status) {
+      await this.targets.onLinkedTaskStatusChanged(
+        companyId,
+        row.id,
+        actor.userId
+      );
     }
 
     return mapTask(row);

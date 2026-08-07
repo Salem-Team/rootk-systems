@@ -20,7 +20,14 @@ import {
   workMeetingsSeed,
   workScheduleSeed,
   workTasksSeed,
+  targetCategoriesSeed,
+  targetTypesSeed,
+  targetTemplatesSeed,
+  performanceTargetsSeed,
+  targetWarningsSeed,
 } from "@/mocks";
+import { buildTaskTitle } from "@/lib/target-progress";
+import { createId } from "@/lib/id";
 import type {
   Activity,
   Announcement,
@@ -32,6 +39,11 @@ import type {
   Holiday,
   LeaveRequest,
   MonthlyStat,
+  PerformanceTarget,
+  TargetCategory,
+  TargetTemplate,
+  TargetType,
+  TargetWarning,
   WeeklyStat,
   WorkMeeting,
   WorkSchedule,
@@ -66,6 +78,11 @@ export interface SeedPayload {
   userPreferences: UserPreferences[];
   workTasks: WorkTask[];
   workMeetings: WorkMeeting[];
+  targetCategories: TargetCategory[];
+  targetTypes: TargetType[];
+  targetTemplates: TargetTemplate[];
+  performanceTargets: PerformanceTarget[];
+  targetWarnings: TargetWarning[];
 }
 
 export function buildSeedPayload(): SeedPayload {
@@ -169,7 +186,52 @@ export function buildSeedPayload(): SeedPayload {
     shifts: shiftsSeed.map((s) => enrichWithAudit(s, "system")),
     approvalRules: approvalRulesSeed.map((r) => enrichWithAudit(r, "system")),
     userPreferences: userPreferencesSeed.map((p) => enrichWithAudit(p, "system")),
-    workTasks: workTasksSeed.map((t) => enrichWithAudit(t, "system")),
+    workTasks: [
+      ...workTasksSeed.map((t) => enrichWithAudit(t, "system")),
+      ...buildTargetLinkedTasks(),
+    ],
     workMeetings: workMeetingsSeed.map((m) => enrichWithAudit(m, "system")),
+    targetCategories: targetCategoriesSeed,
+    targetTypes: targetTypesSeed,
+    targetTemplates: targetTemplatesSeed,
+    performanceTargets: performanceTargetsSeed,
+    targetWarnings: targetWarningsSeed,
   };
+}
+
+function buildTargetLinkedTasks(): WorkTask[] {
+  const typeMap = new Map(targetTypesSeed.map((t) => [t.id, t]));
+  const tasks: WorkTask[] = [];
+  for (const target of performanceTargetsSeed) {
+    const type = typeMap.get(target.typeId);
+    if (!type) continue;
+    for (let i = 1; i <= target.quantity; i++) {
+      const done = i <= target.completedQuantity;
+      tasks.push(
+        enrichWithAudit(
+          {
+            id: createId("task"),
+            title: buildTaskTitle(type.taskTitleTemplate, type.name, i),
+            description: `Linked to target: ${target.title}`,
+            status: done ? "completed" : "todo",
+            priority:
+              target.priority === "critical" || target.priority === "high"
+                ? "high"
+                : target.priority === "low"
+                  ? "low"
+                  : "medium",
+            dueDate: target.endDate,
+            tag: type.name,
+            estimateMin: 0,
+            assigneeIds: target.assigneeIds,
+            targetId: target.id,
+            subItems: [],
+            origin: "assigned",
+          },
+          "system"
+        )
+      );
+    }
+  }
+  return tasks;
 }
