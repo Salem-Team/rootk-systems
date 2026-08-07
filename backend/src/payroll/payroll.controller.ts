@@ -70,6 +70,12 @@ export class PayrollController {
     return this.service.advance(companyId, actorId);
   }
 
+  @Post("runs/cancel")
+  @Roles(AppRole.admin)
+  cancel(@CompanyId() companyId: string, @ActorId() actorId: string) {
+    return this.service.cancel(companyId, actorId);
+  }
+
   @Get("runs")
   @Roles(AppRole.admin)
   runs(@CompanyId() companyId: string) {

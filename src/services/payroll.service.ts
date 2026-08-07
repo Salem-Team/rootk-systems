@@ -25,6 +25,7 @@ import {
   patchPayrollRuleToggle,
   patchSalaryProfileRemote,
   postPayrollRunAdvance,
+  postPayrollRunCancel,
 } from "@/api/payroll.api";
 import type { UpdateSalaryProfileInput } from "@/schemas/payroll.schema";
 import { updateSalaryProfileSchema } from "@/schemas/payroll.schema";
@@ -961,6 +962,38 @@ export async function advancePayrollStatus(): Promise<ApiResponse<PayrollRun>> {
       runId: run.id,
     });
     return ok(run, `Payroll moved to ${runStatus}`);
+  } catch (error) {
+    return fromError(error, aggregateRun([]));
+  }
+}
+
+/** POST /payroll/runs/cancel — reset current period to draft and clear slips. */
+export async function cancelPayrollRun(): Promise<ApiResponse<PayrollRun>> {
+  if (isApiMode()) return postPayrollRunCancel();
+  try {
+    if (getSessionRole() !== "admin") {
+      throw new ForbiddenError("Only admins can cancel payroll");
+    }
+    await simulateDelay();
+    await ensurePayrollStateLoaded();
+    runStatus = "draft";
+    await persistPayrollState();
+    const run = aggregateRun([]);
+    return ok(
+      {
+        ...run,
+        status: "draft",
+        netPayroll: 0,
+        totalDeductions: 0,
+        totalOvertime: 0,
+        estimatedCost: 0,
+        employerCostTotal: 0,
+        averageSalary: 0,
+        pendingCount: 0,
+        employeeCount: 0,
+      },
+      "Payroll run cancelled"
+    );
   } catch (error) {
     return fromError(error, aggregateRun([]));
   }

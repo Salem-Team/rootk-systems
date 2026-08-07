@@ -153,6 +153,11 @@ export function postPayrollRunAdvance(): Promise<ApiResponse<PayrollRun>> {
   return api.post(API_ROUTES.payroll.runAdvance, {}, {} as PayrollRun);
 }
 
+/** POST /payroll/runs/cancel */
+export function postPayrollRunCancel(): Promise<ApiResponse<PayrollRun>> {
+  return api.post(API_ROUTES.payroll.runCancel, {}, {} as PayrollRun);
+}
+
 /** GET /payroll/reports */
 export function fetchPayrollReports(
   params: { periodId?: string } = {}

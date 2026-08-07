@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Clock3,
   RefreshCw,
+  RotateCcw,
   Users,
   Wallet,
 } from "lucide-react";
@@ -15,7 +16,16 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   advancePayrollStatus,
+  cancelPayrollRun,
   listPayrollRuns,
 } from "@/services/payroll.service";
 import { formatEgp } from "@/lib/payroll";
@@ -47,6 +57,7 @@ export function PayrollLedgerPanel({
   const loc = locale === "ar" ? "ar" : "en";
   const [runs, setRuns] = useState<PayrollRun[]>([]);
   const [busy, setBusy] = useState(false);
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -68,6 +79,10 @@ export function PayrollLedgerPanel({
     });
   }, [payslips, employees]);
 
+  const canCancel =
+    canAdvance &&
+    (summary.run.status !== "draft" || payslips.length > 0);
+
   async function advance() {
     setBusy(true);
     const res = await advancePayrollStatus();
@@ -83,6 +98,24 @@ export function PayrollLedgerPanel({
       return [res.data, ...others];
     });
     toast.success(t("payroll.workflowAdvanced"));
+  }
+
+  async function cancelRun() {
+    setBusy(true);
+    const res = await cancelPayrollRun();
+    setBusy(false);
+    setConfirmCancelOpen(false);
+    if (!res.success) {
+      toast.error(res.message ?? t("common.error"));
+      return;
+    }
+    onRunUpdated(res.data);
+    onRefreshPayslips();
+    setRuns((prev) => {
+      const others = prev.filter((r) => r.periodId !== res.data.periodId);
+      return [res.data, ...others];
+    });
+    toast.success(t("payroll.workflowCancelled"));
   }
 
   return (
@@ -114,6 +147,17 @@ export function PayrollLedgerPanel({
                   <Calculator className="h-3.5 w-3.5" />
                 )}
                 {t("payroll.advanceStep")}
+              </Button>
+            ) : null}
+            {canCancel ? (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy}
+                onClick={() => setConfirmCancelOpen(true)}
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                {t("payroll.cancelRun")}
               </Button>
             ) : null}
           </div>
@@ -251,6 +295,40 @@ export function PayrollLedgerPanel({
           </ul>
         </section>
       ) : null}
+
+      <Dialog open={confirmCancelOpen} onOpenChange={setConfirmCancelOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("payroll.cancelRunTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("payroll.cancelRunBody", { period: summary.period.label })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={busy}
+              onClick={() => setConfirmCancelOpen(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={busy}
+              onClick={() => void cancelRun()}
+            >
+              {busy ? (
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RotateCcw className="h-3.5 w-3.5" />
+              )}
+              {t("payroll.cancelRunConfirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -265,8 +343,8 @@ function Kpi({
   value: string;
 }) {
   return (
-    <div className="rounded-xl border border-border/70 bg-muted/15 px-3 py-3">
-      <div className="mb-2 flex items-center gap-2 text-muted-foreground">
+    <div className="rounded-xl border border-border/70 bg-card/50 px-3 py-3">
+      <div className="mb-1.5 flex items-center gap-1.5 text-muted-foreground">
         {icon}
         <span className="text-[11px] font-medium">{label}</span>
       </div>

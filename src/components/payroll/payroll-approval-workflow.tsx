@@ -1,10 +1,13 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { Check, ChevronRight } from "lucide-react";
+import { Check, ChevronRight, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { advancePayrollStatus } from "@/services/payroll.service";
+import {
+  advancePayrollStatus,
+  cancelPayrollRun,
+} from "@/services/payroll.service";
 import { fadeInUp } from "@/lib/animations";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
@@ -41,6 +44,19 @@ export function PayrollApprovalWorkflow({
     toast.success(t("payroll.workflowAdvanced"));
   }
 
+  async function cancel() {
+    if (!window.confirm(t("payroll.cancelRunBody", { period: run.periodId }))) {
+      return;
+    }
+    const res = await cancelPayrollRun();
+    if (!res.success) {
+      toast.error(res.message ?? t("common.error"));
+      return;
+    }
+    onAdvanced(res.data);
+    toast.success(t("payroll.workflowCancelled"));
+  }
+
   return (
     <motion.section
       variants={fadeInUp}
@@ -57,12 +73,24 @@ export function PayrollApprovalWorkflow({
             {t("payroll.workflowDesc")}
           </p>
         </div>
-        {canAdvance && run.status !== "paid" ? (
-          <Button size="sm" onClick={() => void advance()}>
-            {t("payroll.advanceStep")}
-            <ChevronRight className="h-3.5 w-3.5" />
-          </Button>
-        ) : null}
+        <div className="flex flex-wrap gap-2">
+          {canAdvance && run.status !== "paid" ? (
+            <Button size="sm" onClick={() => void advance()}>
+              {t("payroll.advanceStep")}
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          ) : null}
+          {canAdvance && run.status !== "draft" ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => void cancel()}
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              {t("payroll.cancelRun")}
+            </Button>
+          ) : null}
+        </div>
       </div>
       <div className="panel-body">
         <ol className="grid gap-2 sm:grid-cols-5">

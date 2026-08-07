@@ -85,6 +85,7 @@ export const API_ROUTES = {
     rules: "/payroll/rules",
     ruleToggle: (id: string) => `/payroll/rules/${id}/toggle`,
     runAdvance: "/payroll/runs/advance",
+    runCancel: "/payroll/runs/cancel",
     reports: "/payroll/reports",
     payslips: "/payroll/payslips",
     payslipByEmployee: (employeeId: string) =>

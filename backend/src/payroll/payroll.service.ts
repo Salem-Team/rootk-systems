@@ -1104,6 +1104,86 @@ export class PayrollService {
     return runPayload;
   }
 
+  /**
+   * Admin cancel: unlock period (even if paid), delete calculated payslips,
+   * and reset the current run back to draft so payroll can be redone.
+   */
+  async cancel(companyId: string, actorId = "system") {
+    const period = periodBounds();
+    const latest = await this.prisma.payrollRun.findFirst({
+      where: { companyId, periodId: period.periodId },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!latest) {
+      throw new BadRequestException("No payroll run exists for this period");
+    }
+
+    const previousStatus = normalizeRunStatus(latest.status);
+    await this.prisma.employeePayslip.deleteMany({
+      where: { companyId, periodId: period.periodId },
+    });
+
+    const headcount = await this.prisma.employee.count({
+      where: {
+        companyId,
+        deletedAt: null,
+        status: { in: ["active", "on_leave"] },
+      },
+    });
+    const prevPayload = (latest.payload ?? {}) as Record<string, unknown>;
+    const runPayload = {
+      id: (prevPayload.id as string) ?? `run_${period.periodId}`,
+      companyId,
+      periodId: period.periodId,
+      status: "draft" as const,
+      employeeCount: headcount,
+      estimatedCost: 0,
+      totalDeductions: 0,
+      totalOvertime: 0,
+      netPayroll: 0,
+      averageSalary: 0,
+      employerCostTotal: 0,
+      pendingCount: headcount,
+      createdAt: (prevPayload.createdAt as string) ?? latest.createdAt.toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: (prevPayload.createdBy as string) ?? actorId,
+      updatedBy: actorId,
+      deletedAt: null,
+      isArchived: false,
+      version: Number(prevPayload.version ?? 1) + 1,
+      metadata: {
+        cancelled: true,
+        cancelledAt: new Date().toISOString(),
+        cancelledBy: actorId,
+        previousStatus,
+      },
+    };
+
+    await this.prisma.payrollRun.update({
+      where: { id: latest.id },
+      data: {
+        status: "draft",
+        payload: runPayload as unknown as Prisma.InputJsonValue,
+      },
+    });
+
+    await this.notifications.notifyDomain({
+      companyId,
+      actorId,
+      category: "payroll",
+      priority: "high",
+      audience: "admin",
+      titleKey: "notifications.payrollCancelledTitle",
+      bodyKey: "notifications.payrollCancelledBody",
+      vars: { period: period.periodId },
+      href: "/payroll",
+      entityType: "payroll_run",
+      entityId: runPayload.id,
+    });
+
+    return runPayload;
+  }
+
   async listRuns(companyId: string) {
     const rows = await this.prisma.payrollRun.findMany({
       where: { companyId },
