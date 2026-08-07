@@ -220,6 +220,11 @@ export interface AppUser extends BaseEntity {
   email: string;
   role: UserRole;
   initials: string;
+  /** Real account name from DB (preferred in UI). */
+  displayName?: string;
+  firstName?: string;
+  lastName?: string;
+  /** Legacy i18n keys — demo/local fallback only. */
   nameKey: string;
   firstNameKey: string;
   isActive: boolean;

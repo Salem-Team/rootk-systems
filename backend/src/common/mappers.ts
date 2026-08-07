@@ -134,12 +134,21 @@ export function mapUser(row: UserRow) {
     row.metadata && typeof row.metadata === "object"
       ? (row.metadata as Record<string, unknown>)
       : {};
+  const fromParts = [row.firstName, row.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  const displayName =
+    fromParts || row.displayName?.trim() || undefined;
   return {
     id: row.id,
     employeeId: row.employeeId ?? undefined,
     email: row.email,
     role: row.role,
     initials: row.initials,
+    displayName,
+    firstName: row.firstName ?? undefined,
+    lastName: row.lastName ?? undefined,
     nameKey: (meta.nameKey as string) ?? "user.adminFullName",
     firstNameKey: (meta.firstNameKey as string) ?? "user.adminFirstName",
     isActive: row.isActive,

@@ -363,7 +363,7 @@ export function EmployeeWorkHub() {
               {format(demoNow(), "EEEE · d MMM", { locale: dateLocale })}
             </p>
             <h1 className="font-display mt-2 text-[1.45rem] font-bold leading-tight tracking-tight text-white sm:text-[2rem]">
-              {t("workHub.heroTitle", { name: t(user.firstNameKey) })}
+              {t("workHub.heroTitle", { name: user.firstName || user.displayName })}
             </h1>
             <p className="mt-2 hidden max-w-xl text-[14px] leading-relaxed text-white/72 sm:block">
               {t("workHub.heroDesc")}

@@ -3,17 +3,26 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { isApiMode } from "@/lib/env";
+import {
+  resolveAccountFirstName,
+  resolveAccountFullName,
+} from "@/lib/user-display-name";
 import { usersSeed } from "@/mocks/users";
 import type { AppUser, UserRole } from "@/types";
 
 export interface SessionUser {
   id: string;
   employeeId: string;
-  nameKey: "user.adminFullName" | "user.employeeFullName";
-  firstNameKey: "user.adminFirstName" | "user.employeeFirstName";
+  /** Real account owner name from auth payload / DB. */
+  displayName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role: UserRole;
   initials: string;
+  /** Legacy demo keys — unused when displayName is set. */
+  nameKey: string;
+  firstNameKey: string;
 }
 
 export interface AuthTokens {
@@ -23,26 +32,49 @@ export interface AuthTokens {
 
 function toSessionUser(role: UserRole): SessionUser {
   const seed = usersSeed.find((u) => u.role === role) ?? usersSeed[0];
+  const displayName =
+    seed.displayName?.trim() ||
+    resolveAccountFullName(seed) ||
+    seed.email.split("@")[0];
+  const firstName =
+    seed.firstName?.trim() ||
+    resolveAccountFirstName({ ...seed, displayName }) ||
+    displayName;
   return {
     id: seed.id,
     employeeId: seed.employeeId,
-    nameKey: seed.nameKey as SessionUser["nameKey"],
-    firstNameKey: seed.firstNameKey as SessionUser["firstNameKey"],
+    displayName,
+    firstName,
+    lastName: seed.lastName?.trim() || "",
     email: seed.email,
     role: seed.role,
     initials: seed.initials,
+    nameKey: seed.nameKey,
+    firstNameKey: seed.firstNameKey,
   };
 }
 
 function fromAppUser(user: AppUser): SessionUser {
+  const displayName =
+    user.displayName?.trim() ||
+    resolveAccountFullName(user) ||
+    user.email.split("@")[0] ||
+    user.email;
+  const firstName =
+    user.firstName?.trim() ||
+    resolveAccountFirstName({ ...user, displayName }) ||
+    displayName;
   return {
     id: user.id,
     employeeId: user.employeeId,
-    nameKey: user.nameKey as SessionUser["nameKey"],
-    firstNameKey: user.firstNameKey as SessionUser["firstNameKey"],
+    displayName,
+    firstName,
+    lastName: user.lastName?.trim() || "",
     email: user.email,
     role: user.role,
     initials: user.initials,
+    nameKey: user.nameKey,
+    firstNameKey: user.firstNameKey,
   };
 }
 
@@ -83,10 +115,7 @@ export const useSessionStore = create<SessionState>()(
         set({
           authenticated: true,
           role,
-          user:
-            "email" in user && "nameKey" in user
-              ? fromAppUser(user as AppUser)
-              : (user as SessionUser),
+          user: fromAppUser(user as AppUser),
           accessToken,
           refreshToken: refreshToken ?? null,
         }),
@@ -125,10 +154,15 @@ export const useSessionStore = create<SessionState>()(
               >
             >
           | undefined;
+        const rawUser = p?.user;
+        const user =
+          rawUser && typeof rawUser === "object"
+            ? fromAppUser(rawUser as AppUser)
+            : current.user;
         return {
           ...current,
           role: p?.role ?? current.role,
-          user: p?.user ?? current.user,
+          user,
           authenticated: p?.authenticated ?? false,
           accessToken: p?.accessToken ?? null,
           refreshToken: p?.refreshToken ?? null,

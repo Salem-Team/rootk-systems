@@ -69,7 +69,7 @@ export function EmployeeOverviewHero({
               {format(demoNow(), "EEEE · d MMM", { locale: dateLocale })}
             </p>
             <h2 className="font-display mt-1.5 text-[1.45rem] font-bold leading-tight tracking-tight text-white">
-              {t("portal.welcome", { name: t(user.firstNameKey) })}
+              {t("portal.welcome", { name: user.firstName || user.displayName })}
             </h2>
             <p className="mt-1.5 text-[13px] leading-snug text-white/72">
               {done

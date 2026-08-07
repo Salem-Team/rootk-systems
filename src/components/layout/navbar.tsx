@@ -135,7 +135,7 @@ export function Navbar() {
                 </Avatar>
                 <div className="hidden text-start md:block">
                   <p className="text-[13px] font-semibold leading-none">
-                    {t(user.firstNameKey)}
+                    {user.firstName || user.displayName}
                   </p>
                   <p className="mt-1 text-[10px] text-muted-foreground">
                     {role === "admin" ? t("roles.admin") : t("roles.employee")}
@@ -146,7 +146,7 @@ export function Navbar() {
             <DropdownMenuContent align={isRtl ? "start" : "end"} className="w-56">
               <DropdownMenuLabel>
                 <div className="flex flex-col gap-1">
-                  <span>{t(user.nameKey)}</span>
+                  <span>{user.displayName || user.firstName || user.email}</span>
                   <span className="text-xs font-normal text-muted-foreground">
                     {user.email}
                   </span>

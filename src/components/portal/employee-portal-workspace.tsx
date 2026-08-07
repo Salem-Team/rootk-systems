@@ -134,7 +134,7 @@ export function EmployeePortalWorkspace() {
     return {
       id: workEmployeeId,
       employeeId: user.employeeId,
-      name: t(user.nameKey),
+      name: user.displayName || user.firstName || user.email,
       email: user.email,
       phone: "+20 100 000 0000",
       department: "Engineering",
@@ -152,7 +152,7 @@ export function EmployeePortalWorkspace() {
       version: 1,
       metadata: {},
     };
-  }, [roster, workEmployeeId, user, t]);
+  }, [roster, workEmployeeId, user]);
 
   const manager = useMemo(() => {
     if (!me.manager) return null;
@@ -198,7 +198,7 @@ export function EmployeePortalWorkspace() {
         <PageHeader
           className="mb-4 sm:mb-7"
           eyebrow={t("portal.eyebrow")}
-          title={t("portal.welcome", { name: t(user.firstNameKey) })}
+          title={t("portal.welcome", { name: user.firstName || user.displayName })}
           description={t("portal.description")}
         />
       </div>

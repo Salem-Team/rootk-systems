@@ -164,12 +164,12 @@ export function PayrollWorkspace() {
     () =>
       employees.find((e) => e.id === workEmployeeId) ??
       ({
-        name: t(sessionUser.nameKey),
+        name: sessionUser.displayName || sessionUser.firstName || sessionUser.email,
         employeeId: workEmployeeId,
         department: "Operations" as Employee["department"],
         email: sessionUser.email,
       } satisfies Pick<Employee, "name" | "employeeId" | "department" | "email">),
-    [employees, workEmployeeId, sessionUser, t]
+    [employees, workEmployeeId, sessionUser]
   );
 
   useEffect(() => {
