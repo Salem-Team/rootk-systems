@@ -41,7 +41,7 @@ export async function createCrmLead(
     if (!stages.some((s) => s.id === parsed.stageId)) {
       throw new ValidationError("Please select a valid stage");
     }
-    let subStageId = parsed.subStageId ?? null;
+    const subStageId = parsed.subStageId ?? null;
     if (subStageId) {
       const sub = subStages.find((s) => s.id === subStageId);
       if (!sub || sub.stageId !== parsed.stageId) {
