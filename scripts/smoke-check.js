@@ -47,15 +47,23 @@ function main() {
   }
 
   assert(
-    fileContains("src/services/employees.service.ts", "isApiMode()"),
+    fileContains("src/services/employees.service.ts", "isApiMode()") ||
+      fileContains("src/services/employees-mutations.ts", "isApiMode()"),
     "employees service dual-mode"
   );
   assert(
-    fileContains("src/services/work.service.ts", "isApiMode()"),
+    fileContains("src/services/work.service.ts", "isApiMode()") ||
+      fileContains("src/services/work/work-tasks.service.ts", "isApiMode()") ||
+      fileContains(
+        "src/services/work/work-task-mutations.service.ts",
+        "isApiMode()"
+      ),
     "work service dual-mode"
   );
   assert(
-    fileContains("src/services/payroll.service.ts", "isApiMode()"),
+    fileContains("src/services/payroll.service.ts", "isApiMode()") ||
+      fileContains("src/services/payroll/queries.ts", "isApiMode()") ||
+      fileContains("src/services/payroll/mutations.ts", "isApiMode()"),
     "payroll service dual-mode"
   );
   assert(
@@ -102,11 +110,19 @@ function main() {
     "app mounts notification audio"
   );
   assert(
-    fileContains("src/services/notification.service.ts", "companyAllowsCategory"),
+    fileContains("src/services/notification.service.ts", "companyAllowsCategory") ||
+      fileContains(
+        "src/services/notification-core.service.ts",
+        "companyAllowsCategory"
+      ),
     "notifications gated by company policy"
   );
   assert(
     fileContains("src/services/notification.service.ts", "companyAllowsSound") ||
+      fileContains(
+        "src/services/notification-core.service.ts",
+        "companyAllowsSound"
+      ) ||
       fileContains("src/lib/events.ts", "playSound"),
     "notification update can request sound"
   );
@@ -124,7 +140,8 @@ function main() {
     "attendance work-time columns"
   );
   assert(
-    fileContains("src/services/attendance.service.ts", "settleWorkDay"),
+    fileContains("src/services/attendance.service.ts", "settleWorkDay") ||
+      fileContains("src/services/attendance-check-out.ts", "settleWorkDay"),
     "attendance uses settleWorkDay"
   );
   assert(
@@ -132,22 +149,30 @@ function main() {
     "leave cancel notifies"
   );
   assert(
-    fileContains("src/services/attendance.service.ts", "notifyEarlyLeave"),
+    fileContains("src/services/attendance.service.ts", "notifyEarlyLeave") ||
+      fileContains("src/services/attendance-check-out.ts", "notifyEarlyLeave"),
     "early leave notifies"
   );
   assert(
-    fileContains("src/services/employees.service.ts", "notifyEmployeeCreated"),
+    fileContains("src/services/employees.service.ts", "notifyEmployeeCreated") ||
+      fileContains("src/services/employees-mutations.ts", "notifyEmployeeCreated"),
     "employee create notifies"
   );
   assert(
-    fileContains("src/services/payroll.service.ts", "notifyPayrollAdvanced"),
+    fileContains("src/services/payroll.service.ts", "notifyPayrollAdvanced") ||
+      fileContains("src/services/payroll/mutations.ts", "notifyPayrollAdvanced"),
     "payroll advance notifies"
   );
   assert(
     fileContains("src/api/routes.ts", "runCancel") &&
       fileContains("backend/src/payroll/payroll.controller.ts", "runs/cancel") &&
-      fileContains("backend/src/payroll/payroll.service.ts", "async cancel(") &&
-      fileContains("src/services/payroll.service.ts", "cancelPayrollRun"),
+      (fileContains("backend/src/payroll/payroll.service.ts", "async cancel(") ||
+        fileContains(
+          "backend/src/payroll/services/payroll-runs.service.ts",
+          "async cancel("
+        )) &&
+      (fileContains("src/services/payroll.service.ts", "cancelPayrollRun") ||
+        fileContains("src/services/payroll/mutations.ts", "cancelPayrollRun")),
     "payroll cancel run wiring"
   );
   assert(
@@ -158,7 +183,15 @@ function main() {
     "payroll cancel + final net i18n"
   );
   assert(
-    fileContains("src/services/work.service.ts", "notifyTaskCompleted"),
+    fileContains("src/services/work.service.ts", "notifyTaskCompleted") ||
+      fileContains(
+        "src/services/work/work-task-status.service.ts",
+        "notifyTaskCompleted"
+      ) ||
+      fileContains(
+        "src/services/work/work-task-mutations.service.ts",
+        "notifyTaskCompleted"
+      ),
     "task complete notifies"
   );
   assert(
@@ -195,7 +228,15 @@ function main() {
   }
 
   assert(
-    fileContains("backend/src/employees/employees.service.ts", "prisma.employee"),
+    fileContains("backend/src/employees/employees.service.ts", "prisma.employee") ||
+      fileContains(
+        "backend/src/employees/employees-query.service.ts",
+        "prisma.employee"
+      ) ||
+      fileContains(
+        "backend/src/employees/employees-create.service.ts",
+        "prisma.employee"
+      ),
     "employees Prisma queries"
   );
   assert(
@@ -223,7 +264,15 @@ function main() {
   );
   assert(
     fileContains("src/services/attendance.service.ts", "assertOfficeGeofence") ||
-      fileContains("src/services/attendance.service.ts", "Outside office geofence"),
+      fileContains("src/services/attendance.service.ts", "Outside office geofence") ||
+      fileContains(
+        "src/services/attendance-service-helpers.ts",
+        "assertOfficeGeofence"
+      ) ||
+      fileContains(
+        "src/services/attendance-service-helpers.ts",
+        "Outside office geofence"
+      ),
     "attendance enforces office geofence"
   );
   assert(
@@ -256,15 +305,33 @@ function main() {
     "docs prisma evidence columns"
   );
   assert(
-    fileContains("src/services/work.service.ts", "taskRequiresEvidence") &&
-      fileContains("src/services/work.service.ts", "validateTaskEvidence"),
+    (fileContains("src/services/work.service.ts", "taskRequiresEvidence") &&
+      fileContains("src/services/work.service.ts", "validateTaskEvidence")) ||
+      (fileContains("src/lib/task-evidence.ts", "taskRequiresEvidence") &&
+        fileContains("src/lib/task-evidence.ts", "validateTaskEvidence") &&
+        (fileContains(
+          "src/services/work/work-task-status.service.ts",
+          "validateTaskEvidence"
+        ) ||
+          fileContains(
+            "src/components/work/use-task-completion-evidence.ts",
+            "validateTaskEvidence"
+          ))),
     "work service enforces completion evidence"
   );
   assert(
     fileContains(
       "backend/src/work/work.service.ts",
       "assertCompletionEvidence"
-    ),
+    ) ||
+      fileContains(
+        "backend/src/work/work-mappers.ts",
+        "assertCompletionEvidence"
+      ) ||
+      fileContains(
+        "backend/src/work/work-tasks-status.service.ts",
+        "assertCompletionEvidence"
+      ),
     "backend enforces completion evidence"
   );
   assert(
@@ -278,7 +345,11 @@ function main() {
     fileContains(
       "src/components/work/admin-work-assign-panel.tsx",
       "requireEvidenceLinks"
-    ),
+    ) ||
+      fileContains(
+        "src/components/work/admin-work-task-evidence-fields.tsx",
+        "requireEvidenceLinks"
+      ),
     "admin opt-in evidence toggles"
   );
   assert(

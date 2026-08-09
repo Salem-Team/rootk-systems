@@ -7,13 +7,11 @@ import { z } from "zod";
 import { format } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
-import { CalendarDays, Loader2, Send } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -26,12 +24,11 @@ import { createLeaveSchema } from "@/schemas";
 import { createLeaveRequest } from "@/services/leave.service";
 import { getWorkSchedule } from "@/services/schedule.service";
 import { emitLeaveUpdated } from "@/lib/events";
-import { countWorkingDaysInRange } from "@/lib/working-days";
 import { getWorkEmployeeId } from "@/stores/session-store";
 import { useTranslation } from "@/hooks/use-translation";
-import { demoNow } from "@/lib/mock-date";
-import { cn } from "@/lib/utils";
-import type { DayOfWeek, LeaveRequest, LeaveType, WorkSchedule } from "@/types";
+import type { LeaveRequest, LeaveType, WorkSchedule } from "@/types";
+import { LeaveFormDateRangeField } from "./leave-form-date-range-field";
+import { DEFAULT_WORKING_DAYS, workingDaysBetween } from "./leave-form-schedule";
 
 type LeaveFormValues = {
   type: LeaveType;
@@ -39,35 +36,9 @@ type LeaveFormValues = {
   range: { from: Date; to?: Date };
 };
 
-const DEFAULT_WORKING_DAYS: DayOfWeek[] = [
-  "sunday",
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-];
-
 interface LeaveFormProps {
   onSuccess?: (request: LeaveRequest) => void;
   onCancel?: () => void;
-}
-
-function workingDaysBetween(
-  from: Date,
-  to: Date,
-  schedule: Pick<WorkSchedule, "workingDays" | "holidays">
-): number {
-  const start = format(from, "yyyy-MM-dd");
-  const end = format(to, "yyyy-MM-dd");
-  const holidayDates = new Set(
-    schedule.holidays
-      .filter((h) => h.type === "holiday")
-      .map((h) => h.date)
-  );
-  return Math.max(
-    countWorkingDaysInRange(start, end, schedule.workingDays, holidayDates),
-    1
-  );
 }
 
 export function LeaveForm({ onSuccess, onCancel }: LeaveFormProps) {
@@ -210,49 +181,12 @@ export function LeaveForm({ onSuccess, onCancel }: LeaveFormProps) {
           control={form.control}
           name="range"
           render={({ field }) => (
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start font-normal",
-                    !field.value?.from && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarDays />
-                  {field.value?.from ? (
-                    field.value.to ? (
-                      <>
-                        {format(field.value.from, "LLL d, y", {
-                          locale: dateLocale,
-                        })}{" "}
-                        –{" "}
-                        {format(field.value.to, "LLL d, y", {
-                          locale: dateLocale,
-                        })}
-                      </>
-                    ) : (
-                      format(field.value.from, "LLL d, y", {
-                        locale: dateLocale,
-                      })
-                    )
-                  ) : (
-                    t("reports.pickDates")
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="range"
-                  numberOfMonths={2}
-                  selected={field.value as DateRange | undefined}
-                  onSelect={(value) => field.onChange(value)}
-                  defaultMonth={field.value?.from ?? demoNow()}
-                  locale={dateLocale}
-                />
-              </PopoverContent>
-            </Popover>
+            <LeaveFormDateRangeField
+              value={field.value as DateRange | undefined}
+              onChange={field.onChange}
+              dateLocale={dateLocale}
+              t={t}
+            />
           )}
         />
         {form.formState.errors.range ? (

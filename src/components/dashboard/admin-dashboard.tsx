@@ -92,7 +92,7 @@ export function AdminDashboard() {
           setStats(dash.data.stats);
           setWeekly(dash.data.weekly);
           setMonthly(dash.data.monthly);
-          setActivities(dash.data.activities);
+          setActivities(dash.data.activities ?? []);
           setAnnouncements(dash.data.announcements);
         }
         if (emp.success) setEmployees(emp.data);

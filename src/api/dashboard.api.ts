@@ -1,5 +1,6 @@
 import { api } from "@/api/http";
 import { API_ROUTES, toQuery } from "@/api/routes";
+import { ensureActivities } from "@/lib/activity-normalize";
 import type {
   Activity,
   Announcement,
@@ -34,10 +35,10 @@ export function fetchDashboardStats(): Promise<ApiResponse<DashboardStats>> {
 }
 
 /** GET /dashboard/summary */
-export function fetchDashboardSummary(): Promise<
+export async function fetchDashboardSummary(): Promise<
   ApiResponse<DashboardSummary>
 > {
-  return api.get(API_ROUTES.dashboard.summary, {
+  const res = await api.get(API_ROUTES.dashboard.summary, {
     stats: EMPTY_STATS,
     weekly: [],
     monthly: [],
@@ -45,6 +46,20 @@ export function fetchDashboardSummary(): Promise<
     announcements: [],
     pendingLeaveCount: 0,
   });
+  return {
+    ...res,
+    data: {
+      ...res.data,
+      activities: ensureActivities(res.data?.activities),
+      weekly: Array.isArray(res.data?.weekly) ? res.data.weekly : [],
+      monthly: Array.isArray(res.data?.monthly) ? res.data.monthly : [],
+      announcements: Array.isArray(res.data?.announcements)
+        ? res.data.announcements
+        : [],
+      stats: res.data?.stats ?? EMPTY_STATS,
+      pendingLeaveCount: res.data?.pendingLeaveCount ?? 0,
+    },
+  };
 }
 
 /** GET /reports/weekly */
@@ -58,10 +73,13 @@ export function fetchMonthlyStats(): Promise<ApiResponse<MonthlyStat[]>> {
 }
 
 /** GET /activities */
-export function fetchActivities(
+export async function fetchActivities(
   limit = 20
 ): Promise<ApiResponse<Activity[]>> {
-  return api.getList(`${API_ROUTES.activities.root}${toQuery({ limit })}`);
+  const res = await api.getList(
+    `${API_ROUTES.activities.root}${toQuery({ limit })}`
+  );
+  return { ...res, data: ensureActivities(res.data) };
 }
 
 /** GET /announcements */

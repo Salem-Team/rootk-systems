@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { AppRole } from "@/constants/roles";
 import { isApiMode } from "@/lib/env";
 import {
   resolveAccountFirstName,
@@ -78,7 +79,7 @@ function fromAppUser(user: AppUser): SessionUser {
   };
 }
 
-const EMPTY_USER: SessionUser = toSessionUser("admin");
+const EMPTY_USER: SessionUser = toSessionUser(AppRole.admin);
 
 interface SessionState {
   role: UserRole;
@@ -106,7 +107,7 @@ interface SessionState {
 export const useSessionStore = create<SessionState>()(
   persist(
     (set, get) => ({
-      role: "admin",
+      role: AppRole.admin,
       user: EMPTY_USER,
       authenticated: false,
       accessToken: null,
@@ -124,13 +125,13 @@ export const useSessionStore = create<SessionState>()(
       signOut: () =>
         set({
           authenticated: false,
-          role: "admin",
+          role: AppRole.admin,
           user: EMPTY_USER,
           accessToken: null,
           refreshToken: null,
         }),
-      isAdmin: () => get().role === "admin",
-      isEmployee: () => get().role === "employee",
+      isAdmin: () => get().role === AppRole.admin,
+      isEmployee: () => get().role === AppRole.employee,
     }),
     {
       name: "rootk-session",

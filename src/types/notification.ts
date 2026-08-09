@@ -11,7 +11,8 @@ export type NotificationCategory =
   | "announcement"
   | "system"
   | "mention"
-  | "target";
+  | "target"
+  | "organic_ad";
 
 export type NotificationPriority = "low" | "normal" | "high" | "urgent";
 

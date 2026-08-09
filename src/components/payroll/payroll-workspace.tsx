@@ -1,29 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { PageHeader } from "@/components/shared/page-header";
 import { PageSkeleton } from "@/components/shared/loading-state";
 import { EmptyState } from "@/components/shared/empty-state";
-import { StatChip } from "@/components/shared/stat-chip";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { PayrollKpiRow } from "@/components/payroll/payroll-kpi-row";
-import { PayrollTimeline } from "@/components/payroll/payroll-timeline";
-import { SalaryProfilePanel } from "@/components/payroll/salary-profile-panel";
-import { PayrollPoliciesPanel } from "@/components/payroll/payroll-policies-panel";
-import { PayrollRulesEngine } from "@/components/payroll/payroll-rules-engine";
-import { PayrollApprovalWorkflow } from "@/components/payroll/payroll-approval-workflow";
-import { PayrollReportsPanel } from "@/components/payroll/payroll-reports-panel";
-import { PayslipHistoryPanel } from "@/components/payroll/payslip-history-panel";
-import { PayslipStatementView } from "@/components/payroll/payslip-statement";
-import { PayrollLedgerPanel } from "@/components/payroll/payroll-ledger-panel";
-import { SalaryProfileEditorSheet } from "@/components/payroll/salary-profile-editor-sheet";
-import { formatEgp } from "@/lib/payroll";
-import { formatHmDuration } from "@/lib/duration-format";
+import { PayrollAdminView } from "@/components/payroll/payroll-admin-view";
+import { PayrollEmployeeView } from "@/components/payroll/payroll-employee-view";
 import {
-  canApproveFinance,
-  canEditPolicies,
-  canViewAllPayroll,
   getAllPayslips,
   getEmployeePayslip,
   getPayrollDashboard,
@@ -40,7 +22,6 @@ import {
   useSessionStore,
 } from "@/stores/session-store";
 import { useTranslation } from "@/hooks/use-translation";
-import type { TranslationPath } from "@/i18n";
 import type { Employee } from "@/types";
 import type {
   EmployeePayslip,
@@ -50,7 +31,6 @@ import type {
   PayrollPolicies,
   PayrollReportBundle,
   PayrollRule,
-  PayrollRun,
   PayslipHistoryItem,
 } from "@/types/payroll";
 
@@ -200,125 +180,14 @@ export function PayrollWorkspace() {
       );
     }
 
-    if (!myProfile) {
-      return (
-        <div className="space-y-4 sm:space-y-6">
-          <PageHeader
-            className="mb-4 sm:mb-7"
-            eyebrow={t("payroll.eyebrow")}
-            title={t("payroll.myTitle")}
-            description={t("payroll.myDesc")}
-          />
-          <EmptyState
-            title={t("payroll.noSalaryConfigured")}
-            description={t("payroll.noSalaryConfiguredDesc")}
-          />
-        </div>
-      );
-    }
-
-    const hasPayslip = Boolean(myPayslip);
-
     return (
-      <div className="space-y-4 sm:space-y-6">
-        <PageHeader
-          className="mb-4 sm:mb-7"
-          eyebrow={t("payroll.eyebrow")}
-          title={t("payroll.myTitle")}
-          description={t("payroll.myDesc")}
-        />
-
-        {hasPayslip && myPayslip ? (
-          <EmployeePayslipHero
-            payslip={myPayslip}
-            periodLabel={summary.period.label}
-          />
-        ) : (
-          <EmployeeContractHero
-            profile={myProfile}
-            periodLabel={summary.period.label}
-          />
-        )}
-
-        <div className="lg:hidden">
-          <Tabs
-            defaultValue={hasPayslip ? "slip" : "profile"}
-            className="space-y-4"
-          >
-            <div className="sticky top-14 z-20 -mx-3 bg-background/90 px-3 py-2 backdrop-blur-xl sm:-mx-4 sm:px-4">
-              <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-xl border border-border/60 bg-card p-1 shadow-sm sm:rounded-2xl">
-                <TabsTrigger
-                  value="slip"
-                  className="min-h-10 truncate rounded-lg px-1 text-[11px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md sm:min-h-11 sm:rounded-xl sm:text-[12px]"
-                >
-                  {t("payroll.mobileTabSlip")}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="profile"
-                  className="min-h-10 truncate rounded-lg px-1 text-[11px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md sm:min-h-11 sm:rounded-xl sm:text-[12px]"
-                >
-                  {hasPayslip
-                    ? t("payroll.mobileTabProfile")
-                    : t("payroll.mobileTabContract")}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="history"
-                  className="min-h-10 truncate rounded-lg px-1 text-[11px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md sm:min-h-11 sm:rounded-xl sm:text-[12px]"
-                >
-                  {t("payroll.mobileTabHistory")}
-                </TabsTrigger>
-              </TabsList>
-            </div>
-            <TabsContent value="slip" className="mt-0 space-y-4">
-              {hasPayslip && myPayslip ? (
-                <>
-                  <PayslipStatementView
-                    payslip={myPayslip}
-                    profile={myProfile}
-                    employee={myEmployee}
-                    periodLabel={summary.period.label}
-                  />
-                  <ImpactLists payslip={myPayslip} />
-                </>
-              ) : (
-                <EmptyState
-                  title={t("payroll.noPayslipYet")}
-                  description={t("payroll.profileReadyDesc", {
-                    period: summary.period.label,
-                  })}
-                />
-              )}
-            </TabsContent>
-            <TabsContent value="profile" className="mt-0 space-y-4">
-              <SalaryProfilePanel profile={myProfile} payslip={myPayslip} />
-            </TabsContent>
-            <TabsContent value="history" className="mt-0 space-y-4">
-              <PayslipHistoryPanel items={myHistory} />
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        <div className="hidden space-y-6 lg:block">
-          {hasPayslip && myPayslip ? (
-            <>
-              <PayslipStatementView
-                payslip={myPayslip}
-                profile={myProfile}
-                employee={myEmployee}
-                periodLabel={summary.period.label}
-              />
-              <SalaryProfilePanel profile={myProfile} payslip={myPayslip} />
-              <PayslipHistoryPanel items={myHistory} />
-              <ImpactLists payslip={myPayslip} />
-            </>
-          ) : (
-            <>
-              <SalaryProfilePanel profile={myProfile} payslip={null} />
-              <PayslipHistoryPanel items={myHistory} />
-            </>
-          )}
-        </div>
-      </div>
+      <PayrollEmployeeView
+        summary={summary}
+        myProfile={myProfile}
+        myPayslip={myPayslip}
+        myHistory={myHistory}
+        myEmployee={myEmployee}
+      />
     );
   }
 
@@ -331,501 +200,32 @@ export function PayrollWorkspace() {
     );
   }
 
-  const viewAll = canViewAllPayroll(persona);
-
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow={t("payroll.eyebrow")}
-        title={t("payroll.title")}
-        description={t("payroll.description")}
-        actions={
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("payroll.personaLabel")}>
-            {(["admin", "hr", "finance", "manager"] as PayrollPersona[]).map(
-              (p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPersona(p)}
-                  className="focus-ring rounded-md"
-                >
-                  <Badge variant={persona === p ? "default" : "outline"}>
-                    {t(`payroll.persona.${p}`)}
-                  </Badge>
-                </button>
-              )
-            )}
-          </div>
-        }
-      />
-
-      <PayrollKpiRow summary={summary} />
-
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="flex h-auto w-full flex-nowrap justify-start gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap">
-          <TabsTrigger value="overview" className="shrink-0">
-            {t("payroll.tabOverview")}
-          </TabsTrigger>
-          <TabsTrigger value="ledger" className="shrink-0">
-            {t("payroll.tabLedger")}
-          </TabsTrigger>
-          <TabsTrigger value="salary" className="shrink-0">
-            {t("payroll.tabSalary")}
-          </TabsTrigger>
-          <TabsTrigger value="policies" className="shrink-0">
-            {t("payroll.tabPolicies")}
-          </TabsTrigger>
-          <TabsTrigger value="rules" className="shrink-0">
-            {t("payroll.tabRules")}
-          </TabsTrigger>
-          <TabsTrigger value="workflow" className="shrink-0">
-            {t("payroll.tabWorkflow")}
-          </TabsTrigger>
-          <TabsTrigger value="reports" className="shrink-0">
-            {t("payroll.tabReports")}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="mt-4 space-y-4">
-          <div className="grid gap-4 xl:grid-cols-5">
-            <div className="xl:col-span-3">
-              <PayrollApprovalWorkflow
-                run={summary.run}
-                canAdvance={
-                  canApproveFinance(persona) ||
-                  persona === "hr" ||
-                  persona === "admin"
-                }
-                onAdvanced={(run: PayrollRun) =>
-                  setSummary((s) => (s ? { ...s, run } : s))
-                }
-              />
-            </div>
-            <div className="xl:col-span-2">
-              <PayrollTimeline events={summary.timeline} />
-            </div>
-          </div>
-          {viewAll && selectedPayslip ? (
-            <div className="space-y-3">
-              <EmployeePicker
-                employees={employees}
-                payslips={payslips}
-                value={selectedEmployeeId}
-                onChange={setSelectedEmployeeId}
-              />
-              <PayslipStatementView
-                payslip={selectedPayslip}
-                profile={selectedProfileState}
-                employee={selectedEmployee}
-                periodLabel={summary.period.label}
-              />
-              <ImpactLists payslip={selectedPayslip} />
-            </div>
-          ) : null}
-        </TabsContent>
-
-        <TabsContent value="ledger" className="mt-4 space-y-4">
-          <PayrollLedgerPanel
-            summary={summary}
-            payslips={payslips}
-            employees={employees}
-            canAdvance={
-              canApproveFinance(persona) ||
-              persona === "hr" ||
-              persona === "admin"
-            }
-            onRunUpdated={(run) =>
-              setSummary((s) => (s ? { ...s, run } : s))
-            }
-            onRefreshPayslips={() => {
-              void getAllPayslips().then((res) => {
-                if (res.success) setPayslips(res.data);
-              });
-              void getPayrollDashboard().then((res) => {
-                if (res.success) setSummary(res.data);
-              });
-            }}
-          />
-        </TabsContent>
-
-        <TabsContent value="salary" className="mt-4 space-y-4">
-          <EmployeePicker
-            employees={employees}
-            payslips={payslips}
-            value={selectedEmployeeId}
-            onChange={setSelectedEmployeeId}
-          />
-          {!selectedEmployeeId ? (
-            <EmptyState
-              title={t("payroll.selectEmployee")}
-              description={t("payroll.selectEmployeeToViewSalary")}
-            />
-          ) : selectedProfileState ? (
-            <SalaryProfilePanel
-              profile={selectedProfileState}
-              payslip={selectedPayslip}
-              onEdit={
-                persona === "admin" || persona === "hr" || persona === "finance"
-                  ? () => setEditProfileOpen(true)
-                  : undefined
-              }
-            />
-          ) : (
-            <EmptyState
-              title={t("payroll.noSalaryProfile")}
-              description={t("payroll.noSalaryProfileDesc")}
-              actionLabel={
-                persona === "admin" || persona === "hr" || persona === "finance"
-                  ? t("payroll.createSalaryProfile")
-                  : undefined
-              }
-              onAction={
-                persona === "admin" || persona === "hr" || persona === "finance"
-                  ? () => setEditProfileOpen(true)
-                  : undefined
-              }
-            />
-          )}
-          {selectedPayslip ? (
-            <PayslipStatementView
-              payslip={selectedPayslip}
-              profile={selectedProfileState}
-              employee={selectedEmployee}
-              periodLabel={summary.period.label}
-            />
-          ) : null}
-          {selectedPayslip ? <ImpactLists payslip={selectedPayslip} /> : null}
-        </TabsContent>
-
-        <TabsContent value="policies" className="mt-4">
-          <PayrollPoliciesPanel
-            policies={policies}
-            editable={canEditPolicies(persona)}
-            onChange={(next) => {
-              setPolicies(next);
-              void refreshPayrollCalculations();
-            }}
-          />
-        </TabsContent>
-
-        <TabsContent value="rules" className="mt-4">
-          <PayrollRulesEngine
-            rules={rules}
-            editable={canEditPolicies(persona)}
-            onChange={(next) => {
-              setRules(next);
-              void refreshPayrollCalculations();
-            }}
-          />
-        </TabsContent>
-
-        <TabsContent value="workflow" className="mt-4 space-y-4">
-          <PayrollApprovalWorkflow
-            run={summary.run}
-            canAdvance={
-              canApproveFinance(persona) ||
-              persona === "hr" ||
-              persona === "admin"
-            }
-            onAdvanced={(run) => setSummary((s) => (s ? { ...s, run } : s))}
-          />
-          <PayrollTimeline events={summary.timeline} />
-        </TabsContent>
-
-        <TabsContent value="reports" className="mt-4">
-          <PayrollReportsPanel reports={reports} />
-        </TabsContent>
-      </Tabs>
-
-      <SalaryProfileEditorSheet
-        open={editProfileOpen}
-        onOpenChange={setEditProfileOpen}
-        profile={selectedProfileState}
-        employeeId={selectedEmployeeId}
-        employeeLabel={
-          employees.find((e) => e.id === selectedEmployeeId)?.name
-        }
-        onSaved={(profile) => {
-          setSelectedProfileState(profile);
-          void getAllPayslips().then((res) => {
-            if (res.success) setPayslips(res.data);
-          });
-          void getPayrollDashboard().then((res) => {
-            if (res.success) setSummary(res.data);
-          });
-        }}
-      />
-
-      <p className="sr-only">
-        {locale} {formatEgp(summary.netPayroll, locale === "ar" ? "ar" : "en")}
-      </p>
-    </div>
-  );
-}
-
-function EmployeePayslipHero({
-  payslip,
-  periodLabel,
-}: {
-  payslip: EmployeePayslip;
-  periodLabel: string;
-}) {
-  const { t, locale } = useTranslation();
-  const loc = locale === "ar" ? "ar" : "en";
-  const cards = [
-    { label: t("payroll.currentPeriod"), value: periodLabel, mono: false },
-    { label: t("payroll.netSalary"), value: formatEgp(payslip.net, loc), mono: true },
-    { label: t("payroll.gross"), value: formatEgp(payslip.gross, loc), mono: true },
-    { label: t("payroll.deductions"), value: formatEgp(payslip.deductionsTotal, loc), mono: true },
-  ];
-  return (
-    <ul className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
-      {cards.map((card) => (
-        <li key={card.label}>
-          <StatChip
-            label={card.label}
-            value={card.value}
-            className={
-              card.mono
-                ? "[&_.stat-value]:font-mono [&_.stat-value]:text-[1.05rem] sm:[&_.stat-value]:text-[1.15rem]"
-                : "[&_.stat-value]:text-[0.95rem] sm:[&_.stat-value]:text-base"
-            }
-          />
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function contractPreview(profile: EmployeeSalaryProfile) {
-  const a = profile.allowances;
-  const d = profile.deductions;
-  const allowancesTotal =
-    a.housing + a.transportation + a.meal + a.phone + a.shift + a.other;
-  const gross =
-    profile.basicSalary +
-    allowancesTotal +
-    profile.bonuses +
-    profile.commission +
-    profile.incentives +
-    profile.manualAdjustments;
-  const deductionsTotal =
-    d.insurance + d.tax + d.loan + d.advances + d.recurring + d.penalties;
-  return { gross, deductionsTotal, net: gross - deductionsTotal };
-}
-
-/** Shown when HR saved a salary profile but the period payslip is not generated yet. */
-function EmployeeContractHero({
-  profile,
-  periodLabel,
-}: {
-  profile: EmployeeSalaryProfile;
-  periodLabel: string;
-}) {
-  const { t, locale } = useTranslation();
-  const loc = locale === "ar" ? "ar" : "en";
-  const totals = contractPreview(profile);
-  const cards = [
-    { label: t("payroll.currentPeriod"), value: periodLabel, mono: false },
-    {
-      label: t("payroll.contractNet"),
-      value: formatEgp(totals.net, loc, profile.currency),
-      mono: true,
-    },
-    {
-      label: t("payroll.gross"),
-      value: formatEgp(totals.gross, loc, profile.currency),
-      mono: true,
-    },
-    {
-      label: t("payroll.basicSalary"),
-      value: formatEgp(profile.basicSalary, loc, profile.currency),
-      mono: true,
-    },
-  ];
-
-  return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-start justify-between gap-2 rounded-2xl border border-amber-500/25 bg-amber-500/[0.06] px-4 py-3">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold tracking-tight text-foreground">
-            {t("payroll.profileReadyTitle")}
-          </p>
-          <p className="mt-0.5 text-[13px] leading-snug text-muted-foreground">
-            {t("payroll.profileReadyDesc", { period: periodLabel })}
-          </p>
-        </div>
-        <Badge
-          variant="secondary"
-          className="shrink-0 border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-200"
-        >
-          {t("payroll.awaitingPayslipBadge")}
-        </Badge>
-      </div>
-      <ul className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
-        {cards.map((card) => (
-          <li key={card.label}>
-            <StatChip
-              label={card.label}
-              value={card.value}
-              className={
-                card.mono
-                  ? "[&_.stat-value]:font-mono [&_.stat-value]:text-[1.05rem] sm:[&_.stat-value]:text-[1.15rem]"
-                  : "[&_.stat-value]:text-[0.95rem] sm:[&_.stat-value]:text-base"
-              }
-            />
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function EmployeePicker({
-  employees,
-  payslips,
-  value,
-  onChange,
-}: {
-  employees: Employee[];
-  payslips: EmployeePayslip[];
-  value: string;
-  onChange: (id: string) => void;
-}) {
-  const { t, locale } = useTranslation();
-  const loc = locale === "ar" ? "ar" : "en";
-  return (
-    <label className="flex flex-col gap-1.5 text-sm sm:max-w-sm">
-      <span className="font-medium">{t("payroll.selectEmployee")}</span>
-      <select
-        className="h-9 rounded-lg border border-border/85 bg-card px-3 text-sm shadow-[0_1px_2px_rgba(11,20,36,0.035)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        <option value="">{t("payroll.selectEmployeePlaceholder")}</option>
-        {employees.map((emp) => {
-          const slip = payslips.find((p) => p.employeeId === emp.id);
-          return (
-            <option key={emp.id} value={emp.id}>
-              {emp.name}
-              {emp.employeeId ? ` · ${emp.employeeId}` : ""}
-              {slip ? ` · ${formatEgp(slip.net, loc)}` : ""}
-            </option>
-          );
-        })}
-      </select>
-    </label>
-  );
-}
-
-function ImpactLists({ payslip }: { payslip: EmployeePayslip }) {
-  const { t, locale } = useTranslation();
-  const loc = locale === "ar" ? "ar" : "en";
-
-  function impactLabel(line: (typeof payslip.attendanceImpacts)[number]) {
-    const kindKey = `payroll.impactKind.${line.kind}` as TranslationPath;
-    const kindLabel = t(kindKey);
-    if (
-      line.label.startsWith("late_tier_") ||
-      line.label === "late_minutes" ||
-      line.label === "missing_check_in" ||
-      line.label === "missing_check_out" ||
-      line.label === "absence" ||
-      line.label === "half_day" ||
-      line.label === "early_leave" ||
-      !line.label
-    ) {
-      if (kindLabel && kindLabel !== kindKey) return kindLabel;
-    }
-    if (kindLabel && kindLabel !== kindKey) {
-      return `${kindLabel} · ${line.label}`;
-    }
-    return line.label || line.kind;
-  }
-
-  function impactFormula(line: (typeof payslip.attendanceImpacts)[number]) {
-    const parts: string[] = [line.date];
-    if (line.minutes) {
-      parts.push(formatHmDuration(line.minutes, t));
-    }
-    if (line.dayFraction > 0) {
-      parts.push(
-        t("payroll.impactFormulaDay", {
-          pct: Math.round(line.dayFraction * 100),
-          rate: formatEgp(payslip.dailyRate, loc),
-        })
-      );
-    }
-    return parts.join(" · ");
-  }
-
-  return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <section className="surface-panel overflow-hidden">
-        <div className="panel-header">
-          <h3 className="text-[0.95rem] font-semibold">
-            {t("payroll.attendanceImpact")}
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            {t("payroll.attendanceImpactDesc")}
-          </p>
-        </div>
-        <ul className="max-h-72 divide-y divide-border/60 overflow-auto">
-          {payslip.attendanceImpacts?.length ? (
-            payslip.attendanceImpacts.map((line) => (
-              <li
-                key={line.id}
-                className="flex items-center justify-between gap-3 px-5 py-2.5 text-sm"
-              >
-                <div>
-                  <p className="font-medium">{impactLabel(line)}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {impactFormula(line)}
-                  </p>
-                </div>
-                <span className="tabular-nums font-semibold text-rose-700 dark:text-rose-300">
-                  −{formatEgp(line.amount, loc)}
-                </span>
-              </li>
-            ))
-          ) : (
-            <li className="px-5 py-4 text-sm text-muted-foreground">
-              {t("common.noResults")}
-            </li>
-          )}
-        </ul>
-      </section>
-      <section className="surface-panel overflow-hidden">
-        <div className="panel-header">
-          <h3 className="text-[0.95rem] font-semibold">
-            {t("payroll.leaveImpact")}
-          </h3>
-        </div>
-        <ul className="max-h-72 divide-y divide-border/60 overflow-auto">
-          {payslip.leaveImpacts?.length ? (
-            payslip.leaveImpacts.map((line) => (
-              <li
-                key={line.id}
-                className="flex items-center justify-between gap-3 px-5 py-2.5 text-sm"
-              >
-                <div>
-                  <p className="font-medium">{line.label}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {line.startDate} → {line.endDate} · {line.behavior}
-                  </p>
-                </div>
-                <span className="tabular-nums font-semibold text-rose-700 dark:text-rose-300">
-                  −{formatEgp(line.amount, loc)}
-                </span>
-              </li>
-            ))
-          ) : (
-            <li className="px-5 py-4 text-sm text-muted-foreground">
-              {t("common.noResults")}
-            </li>
-          )}
-        </ul>
-      </section>
-    </div>
+    <PayrollAdminView
+      persona={persona}
+      onPersonaChange={setPersona}
+      summary={summary}
+      onSummaryChange={setSummary}
+      policies={policies}
+      onPoliciesChange={setPolicies}
+      rules={rules}
+      onRulesChange={setRules}
+      reports={reports}
+      employees={employees}
+      payslips={payslips}
+      onPayslipsChange={setPayslips}
+      selectedEmployeeId={selectedEmployeeId}
+      onSelectedEmployeeIdChange={setSelectedEmployeeId}
+      selectedPayslip={selectedPayslip}
+      selectedEmployee={selectedEmployee}
+      selectedProfileState={selectedProfileState}
+      onSelectedProfileStateChange={setSelectedProfileState}
+      tab={tab}
+      onTabChange={setTab}
+      editProfileOpen={editProfileOpen}
+      onEditProfileOpenChange={setEditProfileOpen}
+      onRefreshPayrollCalculations={refreshPayrollCalculations}
+      locale={locale}
+    />
   );
 }

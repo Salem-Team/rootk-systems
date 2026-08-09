@@ -2,6 +2,8 @@ export const LEAVE_UPDATED_EVENT = "rootk:leave-updated";
 export const WORK_UPDATED_EVENT = "rootk:work-updated";
 export const NOTIFICATION_UPDATED_EVENT = "rootk:notification-updated";
 export const TARGETS_UPDATED_EVENT = "rootk:targets-updated";
+export const ORGANIC_ADS_UPDATED_EVENT = "rootk:organic-ads-updated";
+export const CRM_UPDATED_EVENT = "rootk:crm-updated";
 
 export type NotificationUpdatedDetail = {
   /** Play in-app chime when a new notification is created. */
@@ -25,6 +27,16 @@ export function emitWorkUpdated() {
 export function emitTargetsUpdated() {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(TARGETS_UPDATED_EVENT));
+}
+
+export function emitOrganicAdsUpdated() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(ORGANIC_ADS_UPDATED_EVENT));
+}
+
+export function emitCrmUpdated() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(CRM_UPDATED_EVENT));
 }
 
 export function emitNotificationsUpdated(detail?: NotificationUpdatedDetail) {

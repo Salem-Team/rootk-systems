@@ -6,6 +6,8 @@ import {
   refreshSession,
   type AuthSessionPayload,
 } from "@/api/auth.api";
+import { DEFAULT_COMPANY_ID } from "@/constants/company";
+import { AppRole } from "@/constants/roles";
 import { isApiMode } from "@/lib/env";
 import { DEMO_PASSWORD } from "@/lib/demo-auth";
 import {
@@ -29,7 +31,7 @@ function seedUserToAppUser(
 ): AppUser {
   return {
     ...seed,
-    companyId: "cmp_rootk_001",
+    companyId: DEFAULT_COMPANY_ID,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     createdBy: "system",
@@ -44,7 +46,7 @@ function seedUserToAppUser(
 function emptyAuthPayload(): AuthSessionPayload {
   return {
     user: seedUserToAppUser(usersSeed[1] ?? usersSeed[0]),
-    role: "employee",
+    role: AppRole.employee,
     tokens: { accessToken: "" },
   };
 }

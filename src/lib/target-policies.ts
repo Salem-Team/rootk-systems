@@ -1,3 +1,4 @@
+import { AppRole } from "@/constants/roles";
 import type { TargetCapability } from "@/types/targets";
 import type { UserRole } from "@/types";
 
@@ -26,7 +27,7 @@ const EMPLOYEE: TargetCapability[] = [
 
 /** Role → capability map (extensible to fine-grained RBAC later). */
 export function targetCapabilitiesForRole(role: UserRole): TargetCapability[] {
-  return role === "admin" ? ALL : EMPLOYEE;
+  return role === AppRole.admin ? ALL : EMPLOYEE;
 }
 
 export function canTarget(

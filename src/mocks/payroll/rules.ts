@@ -1,0 +1,88 @@
+import type { PayrollRule } from "@/types/payroll";
+import type { SeedOf } from "@/types/seed";
+
+export const payrollRulesSeed: SeedOf<PayrollRule>[] = [
+  {
+    id: "rule-late-grace",
+    name: "Late > Grace → deduct minutes",
+    enabled: false,
+    priority: 5,
+    when: { field: "late_over_grace", operator: "gt", value: 0 },
+    then: { action: "deduct_minutes", amount: 15 },
+    description:
+      "Disabled by default — late deductions now follow Policies → late tiers.",
+  },
+  {
+    id: "rule-late-30",
+    name: "Late > 30 min → half day",
+    enabled: false,
+    priority: 10,
+    when: { field: "late_minutes", operator: "gt", value: 30 },
+    then: { action: "deduct_day_fraction", amount: 0.5 },
+    description:
+      "Disabled by default — late tiers in Policies are the source of truth.",
+  },
+  {
+    id: "rule-absent",
+    name: "Absent → full day",
+    enabled: false,
+    priority: 20,
+    when: { field: "absent", operator: "eq", value: 1 },
+    then: { action: "deduct_day_fraction", amount: 1 },
+    description: "Disabled by default — uses Policies → absence fraction.",
+  },
+  {
+    id: "rule-half",
+    name: "Half day → 0.5 day",
+    enabled: false,
+    priority: 25,
+    when: { field: "half_day", operator: "eq", value: 1 },
+    then: { action: "deduct_day_fraction", amount: 0.5 },
+    description: "Disabled by default — uses Policies → half-day fraction.",
+  },
+  {
+    id: "rule-early",
+    name: "Early leave → 0.25 day",
+    enabled: false,
+    priority: 30,
+    when: { field: "early_leave", operator: "eq", value: 1 },
+    then: { action: "deduct_day_fraction", amount: 0.25 },
+    description: "Disabled by default — uses Policies → early-leave fraction.",
+  },
+  {
+    id: "rule-night",
+    name: "Night shift → shift allowance",
+    enabled: true,
+    priority: 35,
+    when: { field: "night_shift", operator: "eq", value: 1 },
+    then: { action: "add_shift_allowance", amount: 350 },
+    description: "IF Night Shift THEN Add Shift Allowance",
+  },
+  {
+    id: "rule-ot-2",
+    name: "Overtime > 2h → 150%",
+    enabled: true,
+    priority: 40,
+    when: { field: "overtime_hours", operator: "gt", value: 2 },
+    then: { action: "pay_overtime_rate", amount: 1.5 },
+    description: "IF Overtime > 2 Hours THEN Pay 150%",
+  },
+  {
+    id: "rule-weekend-ot",
+    name: "Weekend OT → 200%",
+    enabled: true,
+    priority: 50,
+    when: { field: "weekend_overtime", operator: "gt", value: 0 },
+    then: { action: "pay_overtime_rate", amount: 2 },
+    description: "IF Weekend Overtime THEN Pay 200%",
+  },
+  {
+    id: "rule-holiday-ot",
+    name: "Holiday OT → 250%",
+    enabled: true,
+    priority: 55,
+    when: { field: "holiday_overtime", operator: "gt", value: 0 },
+    then: { action: "pay_overtime_rate", amount: 2.5 },
+    description: "IF Holiday Overtime THEN Pay 250%",
+  },
+];

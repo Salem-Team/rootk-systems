@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,11 +9,8 @@ import { Switch } from "@/components/ui/switch";
 import { updatePayrollPolicies } from "@/services/payroll.service";
 import { useTranslation } from "@/hooks/use-translation";
 import type { PayrollPolicies } from "@/types/payroll";
-
-function parseNum(raw: string, fallback: number): number {
-  const n = Number(raw);
-  return Number.isFinite(n) ? n : fallback;
-}
+import { LateTiersEditor } from "./payroll-late-tiers-editor";
+import { parseNum, PolicyNumberField } from "./payroll-policy-fields";
 
 export function PayrollPoliciesPanel({
   policies,
@@ -73,77 +69,20 @@ export function PayrollPoliciesPanel({
     toast.success(t("payroll.policiesSaved"));
   }
 
-  function num(
-    key: keyof PayrollPolicies,
-    label: string,
-    step = 0.25,
-    min = 0
-  ) {
+  function num(key: keyof PayrollPolicies, label: string, step = 0.25, min = 0) {
     const value = draft[key];
     if (typeof value !== "number") return null;
     return (
-      <div className="space-y-1.5">
-        <Label htmlFor={String(key)}>{label}</Label>
-        <Input
-          id={String(key)}
-          type="number"
-          step={step}
-          min={min}
-          disabled={!editable}
-          value={Number.isFinite(value) ? value : 0}
-          onChange={(e) =>
-            setDraft((d) => ({
-              ...d,
-              [key]: parseNum(e.target.value, 0),
-            }))
-          }
-        />
-      </div>
+      <PolicyNumberField
+        id={String(key)}
+        label={label}
+        step={step}
+        min={min}
+        disabled={!editable}
+        value={value}
+        onChange={(next) => setDraft((d) => ({ ...d, [key]: next }))}
+      />
     );
-  }
-
-  function updateTier(
-    index: number,
-    patch: Partial<{ afterMinutes: number; dayFraction: number }>
-  ) {
-    setDraft((d) => ({
-      ...d,
-      late: {
-        ...d.late,
-        tiers: d.late.tiers.map((tier, i) =>
-          i === index ? { ...tier, ...patch } : tier
-        ),
-      },
-    }));
-  }
-
-  function addTier() {
-    setDraft((d) => {
-      const last = d.late.tiers[d.late.tiers.length - 1];
-      return {
-        ...d,
-        late: {
-          ...d.late,
-          tiers: [
-            ...d.late.tiers,
-            {
-              afterMinutes: (last?.afterMinutes ?? 0) + 15,
-              dayFraction: Math.min(1, (last?.dayFraction ?? 0.25) + 0.25),
-            },
-          ],
-        },
-      };
-    });
-  }
-
-  function removeTier(index: number) {
-    setDraft((d) => ({
-      ...d,
-      late: {
-        ...d.late,
-        tiers: d.late.tiers.filter((_, i) => i !== index),
-      },
-    }));
   }
 
   return (
@@ -250,91 +189,13 @@ export function PayrollPoliciesPanel({
           />
         </div>
 
-        <div className="space-y-3 rounded-xl border border-border/70 p-3 sm:col-span-2 lg:col-span-3">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold">{t("payroll.lateTiersTitle")}</p>
-              <p className="text-xs text-muted-foreground">
-                {t("payroll.lateTiersDesc")}
-              </p>
-            </div>
-            {editable ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={addTier}
-              >
-                <Plus className="h-3.5 w-3.5" aria-hidden />
-                {t("payroll.lateTierAdd")}
-              </Button>
-            ) : null}
-          </div>
-          {draft.late.tiers.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {t("payroll.lateTiersEmpty")}
-            </p>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {draft.late.tiers.map((tier, index) => (
-                <div
-                  key={`tier-${index}`}
-                  className="grid grid-cols-[1fr_1fr_auto] items-end gap-2 rounded-lg border border-border/50 p-2.5"
-                >
-                  <div className="space-y-1">
-                    <Label htmlFor={`late-after-${index}`}>
-                      {t("payroll.lateTierAfter")}
-                    </Label>
-                    <Input
-                      id={`late-after-${index}`}
-                      type="number"
-                      min={0}
-                      disabled={!editable}
-                      value={tier.afterMinutes}
-                      onChange={(e) =>
-                        updateTier(index, {
-                          afterMinutes: parseNum(e.target.value, 0),
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor={`late-frac-${index}`}>
-                      {t("payroll.lateTierFraction")}
-                    </Label>
-                    <Input
-                      id={`late-frac-${index}`}
-                      type="number"
-                      step={0.25}
-                      min={0}
-                      max={1}
-                      disabled={!editable}
-                      value={tier.dayFraction}
-                      onChange={(e) =>
-                        updateTier(index, {
-                          dayFraction: parseNum(e.target.value, 0),
-                        })
-                      }
-                    />
-                  </div>
-                  {editable ? (
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-9 w-9 text-muted-foreground hover:text-destructive"
-                      disabled={draft.late.tiers.length <= 1}
-                      onClick={() => removeTier(index)}
-                      aria-label={t("common.delete")}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <LateTiersEditor
+          tiers={draft.late.tiers}
+          editable={editable}
+          onChange={(tiers) =>
+            setDraft((d) => ({ ...d, late: { ...d.late, tiers } }))
+          }
+        />
 
         <div className="sm:col-span-2 lg:col-span-3">
           <p className="mb-2 text-sm font-semibold">

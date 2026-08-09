@@ -137,16 +137,21 @@ export type * from "@/types/org";
 export type * from "@/types/preferences";
 export type * from "@/types/employee-profile";
 
+/** Known dashboard feed types — DB/API may also emit module-specific strings. */
+export type ActivityType =
+  | "check_in"
+  | "check_out"
+  | "leave_request"
+  | "leave_approved"
+  | "leave_rejected"
+  | "announcement"
+  | "late"
+  | (string & {});
+
 export interface Activity extends BaseEntity {
   id: string;
-  type:
-    | "check_in"
-    | "check_out"
-    | "leave_request"
-    | "leave_approved"
-    | "leave_rejected"
-    | "announcement"
-    | "late";
+  /** Free-form; attendance/leave use fixed slugs, CRM/ads may use `crm_*` / `organic_ad`. */
+  type: ActivityType;
   employeeId?: string;
   title: string;
   description: string;
@@ -234,3 +239,5 @@ export type * from "@/types/notification";
 export type * from "@/types/payroll";
 export type * from "@/types/work";
 export type * from "@/types/targets";
+export type * from "@/types/organic-ads";
+export type * from "@/types/crm";

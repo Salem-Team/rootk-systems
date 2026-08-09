@@ -35,6 +35,16 @@ export const StorageKeys = {
   performanceTargets: key("performance-targets"),
   targetWarnings: key("target-warnings"),
   targetHistory: key("target-history"),
+  organicAds: key("organic-ads"),
+  organicAdHistory: key("organic-ad-history"),
+  organicAdsSettings: key("organic-ads-settings"),
+  crmStages: key("crm-stages"),
+  crmFeedbackTypes: key("crm-feedback-types"),
+  crmBusinessTypes: key("crm-business-types"),
+  crmLeads: key("crm-leads"),
+  crmLeadActivities: key("crm-lead-activities"),
+  crmLeadFeedback: key("crm-lead-feedback"),
+  crmLeadHistory: key("crm-lead-history"),
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];

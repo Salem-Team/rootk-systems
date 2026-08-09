@@ -64,6 +64,41 @@ enum NotificationCategory {
   system
   mention
   target
+  organic_ad
+}
+
+enum AdPlatform {
+  facebook
+  instagram
+  tiktok
+  linkedin
+  other
+  unknown
+}
+
+enum AdType {
+  post
+  reel
+  video
+  story
+  profile_post
+  other
+  unknown
+}
+
+enum AdStatus {
+  active
+  inactive
+  needs_review
+  duplicate
+}
+
+enum AdValidationStatus {
+  valid
+  invalid
+  broken
+  unsupported
+  pending
 }
 
 enum TargetStatus {
@@ -126,6 +161,56 @@ enum NotificationPriority {
   urgent
 }
 
+enum CrmLeadStatus {
+  active
+  inactive
+  archived
+}
+
+enum CrmLeadSource {
+  facebook
+  instagram
+  tiktok
+  website
+  whatsapp
+  referral
+  organic
+  advertisement
+  other
+}
+
+enum CrmNextAction {
+  call
+  whatsapp
+  email
+  meeting
+  follow_up
+  send_proposal
+  none
+}
+
+enum CrmStageCategory {
+  open
+  won
+  lost
+  other
+}
+
+enum CrmActivityType {
+  call
+  whatsapp
+  email
+  meeting
+  note
+  stage_change
+  assignment
+  feedback
+  follow_up
+  status_change
+  created
+  other
+}
+
 /// Shared audit / soft-delete / multi-tenant columns (map to BaseEntity).
 /// Apply as mixins conceptually on every tenant-owned model.
 
@@ -149,6 +234,16 @@ model Company {
   performanceTargets PerformanceTarget[]
   targetWarnings    TargetWarning[]
   targetHistory     TargetHistoryEvent[]
+  organicAds            OrganicAdvertisement[]
+  organicAdHistory      OrganicAdHistoryEvent[]
+  organicAdsSettings    OrganicAdsSettings[]
+  crmStages             CrmStage[]
+  crmBusinessTypes      CrmBusinessType[]
+  crmFeedbackTypes      CrmFeedbackType[]
+  crmLeads              CrmLead[]
+  crmLeadActivities     CrmLeadActivity[]
+  crmLeadFeedback       CrmLeadFeedback[]
+  crmLeadHistory        CrmLeadHistoryEvent[]
 }
 
 model User {
@@ -388,8 +483,9 @@ model WorkTask {
   version               Int          @default(1)
   metadata              Json         @default("{}")
 
-  company Company            @relation(fields: [companyId], references: [id])
-  target  PerformanceTarget? @relation(fields: [targetId], references: [id])
+  company              Company               @relation(fields: [companyId], references: [id])
+  target               PerformanceTarget?    @relation(fields: [targetId], references: [id])
+  organicAdvertisement OrganicAdvertisement?
 
   @@index([companyId, status])
   @@index([companyId, dueDate])
@@ -855,9 +951,10 @@ model PerformanceTarget {
   category  TargetCategory       @relation(fields: [categoryId], references: [id])
   type      TargetType           @relation(fields: [typeId], references: [id])
   template  TargetTemplate?      @relation(fields: [templateId], references: [id])
-  tasks     WorkTask[]
-  warnings  TargetWarning[]
-  history   TargetHistoryEvent[]
+  tasks                 WorkTask[]
+  warnings              TargetWarning[]
+  history               TargetHistoryEvent[]
+  organicAdvertisements OrganicAdvertisement[]
 
   @@index([companyId, status])
   @@index([companyId, endDate])
@@ -916,4 +1013,300 @@ model TargetHistoryEvent {
   target  PerformanceTarget @relation(fields: [targetId], references: [id])
 
   @@index([companyId, targetId, createdAt])
+}
+
+/// Sales-team organic advertisement registry.
+/// Progress on linked PerformanceTargets flows only through WorkTask completion.
+model OrganicAdvertisement {
+  id                   String             @id @default(cuid())
+  companyId            String
+  ownerEmployeeId      String
+  platform             AdPlatform         @default(unknown)
+  adType               AdType             @default(unknown)
+  url                  String
+  canonicalUrl         String
+  externalId           String?
+  project              String             @default("")
+  campaign             String             @default("")
+  notes                String             @default("")
+  status               AdStatus           @default(needs_review)
+  validationStatus     AdValidationStatus @default(pending)
+  validationMessage    String             @default("")
+  duplicateOfId        String?
+  similarityScore      Float?
+  addedAt              DateTime           @default(now())
+  lastVerifiedAt       DateTime?
+  /// Optional attribution — null until a trustworthy CRM source exists.
+  leadsCount           Int?
+  qualifiedLeadsCount  Int?
+  dealsCount           Int?
+  /// Completing/reopening this task drives PerformanceTarget progress.
+  workTaskId           String?            @unique
+  targetId             String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  createdBy            String?
+  updatedBy            String?
+  deletedAt            DateTime?
+  isArchived           Boolean            @default(false)
+  version              Int                @default(1)
+  metadata             Json               @default("{}")
+
+  company  Company             @relation(fields: [companyId], references: [id])
+  workTask WorkTask?           @relation(fields: [workTaskId], references: [id])
+  target   PerformanceTarget?  @relation(fields: [targetId], references: [id])
+
+  @@index([companyId, ownerEmployeeId])
+  @@index([companyId, status])
+  @@index([companyId, platform])
+  @@index([companyId, canonicalUrl])
+  @@index([companyId, targetId])
+  @@index([companyId, addedAt])
+  @@index([companyId, externalId, platform])
+}
+
+model OrganicAdHistoryEvent {
+  id              String   @id @default(cuid())
+  companyId       String
+  advertisementId String?
+  action          String
+  actorId         String   @default("")
+  actorName       String   @default("")
+  note            String   @default("")
+  previousValue   String?
+  newValue        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdBy       String?
+  updatedBy       String?
+  deletedAt       DateTime?
+  isArchived      Boolean  @default(false)
+  version         Int      @default(1)
+  metadata        Json     @default("{}")
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, createdAt])
+  @@index([companyId, advertisementId])
+}
+
+model OrganicAdsSettings {
+  id                      String   @id @default(cuid())
+  companyId               String   @unique
+  weeklyTarget            Int      @default(3)
+  allowDuplicateOverride  Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  createdBy               String?
+  updatedBy               String?
+  deletedAt               DateTime?
+  isArchived              Boolean  @default(false)
+  version                 Int      @default(1)
+  metadata                Json     @default("{}")
+
+  company Company @relation(fields: [companyId], references: [id])
+}
+
+/// CRM pipeline stage (per company).
+model CrmStage {
+  id                     String           @id @default(cuid())
+  companyId              String
+  name                   String
+  description            String           @default("")
+  color                  String           @default("#64748b")
+  sortOrder              Int              @default(0)
+  active                 Boolean          @default(true)
+  conversionProbability  Int?
+  category               CrmStageCategory @default(open)
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  createdBy              String?
+  updatedBy              String?
+  deletedAt              DateTime?
+  isArchived             Boolean          @default(false)
+  version                Int              @default(1)
+  metadata               Json             @default("{}")
+
+  company Company   @relation(fields: [companyId], references: [id])
+  leads   CrmLead[]
+
+  @@unique([companyId, name])
+  @@index([companyId, sortOrder])
+  @@index([companyId, active])
+}
+
+/// CRM feedback / loss-reason catalog.
+model CrmFeedbackType {
+  id            String   @id @default(cuid())
+  companyId     String
+  name          String
+  description   String   @default("")
+  sortOrder     Int      @default(0)
+  active        Boolean  @default(true)
+  isLossReason  Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdBy     String?
+  updatedBy     String?
+  deletedAt     DateTime?
+  isArchived    Boolean  @default(false)
+  version       Int      @default(1)
+  metadata      Json     @default("{}")
+
+  company  Company           @relation(fields: [companyId], references: [id])
+  feedback CrmLeadFeedback[]
+
+  @@unique([companyId, name])
+  @@index([companyId, sortOrder])
+  @@index([companyId, active])
+}
+
+/// CRM company / industry type catalog (مجال عمل العميل).
+model CrmBusinessType {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  description String   @default("")
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+  isArchived  Boolean  @default(false)
+  version     Int      @default(1)
+  metadata    Json     @default("{}")
+
+  company Company   @relation(fields: [companyId], references: [id])
+  leads   CrmLead[]
+
+  @@unique([companyId, name])
+  @@index([companyId, sortOrder])
+  @@index([companyId, active])
+}
+
+/// CRM lead / opportunity.
+model CrmLead {
+  id               String         @id @default(cuid())
+  companyId        String
+  name             String
+  phone            String
+  email            String         @default("")
+  companyName      String         @default("")
+  businessTypeId   String?
+  source           CrmLeadSource  @default(other)
+  ownerEmployeeId  String?
+  stageId          String
+  status           CrmLeadStatus  @default(active)
+  tags             String[]       @default([])
+  nextAction       CrmNextAction  @default(none)
+  nextFollowUpAt   DateTime?
+  lastActivityAt   DateTime?
+  lossReasonTypeId String?
+  notes            String         @default("")
+  convertedAt      DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  createdBy        String?
+  updatedBy        String?
+  deletedAt        DateTime?
+  isArchived       Boolean        @default(false)
+  version          Int            @default(1)
+  metadata         Json           @default("{}")
+
+  company      Company               @relation(fields: [companyId], references: [id])
+  stage        CrmStage              @relation(fields: [stageId], references: [id])
+  businessType CrmBusinessType?      @relation(fields: [businessTypeId], references: [id])
+  activities   CrmLeadActivity[]
+  feedback     CrmLeadFeedback[]
+  history      CrmLeadHistoryEvent[]
+
+  @@index([companyId, ownerEmployeeId])
+  @@index([companyId, stageId])
+  @@index([companyId, businessTypeId])
+  @@index([companyId, status])
+  @@index([companyId, createdAt])
+  @@index([companyId, nextFollowUpAt])
+  @@index([companyId, source])
+  @@index([companyId, lastActivityAt])
+}
+
+model CrmLeadActivity {
+  id               String          @id @default(cuid())
+  companyId        String
+  leadId           String
+  type             CrmActivityType
+  title            String
+  description      String          @default("")
+  actorEmployeeId  String?
+  occurredAt       DateTime        @default(now())
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  createdBy        String?
+  updatedBy        String?
+  deletedAt        DateTime?
+  isArchived       Boolean         @default(false)
+  version          Int             @default(1)
+  metadata         Json            @default("{}")
+
+  company Company @relation(fields: [companyId], references: [id])
+  lead    CrmLead @relation(fields: [leadId], references: [id])
+
+  @@index([companyId, leadId])
+  @@index([companyId, occurredAt])
+}
+
+model CrmLeadFeedback {
+  id                    String        @id @default(cuid())
+  companyId             String
+  leadId                String
+  feedbackTypeId        String
+  customerFeedback      String        @default("")
+  nextAction            CrmNextAction @default(none)
+  nextFollowUpAt        DateTime?
+  notes                 String        @default("")
+  recordedByEmployeeId  String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  createdBy             String?
+  updatedBy             String?
+  deletedAt             DateTime?
+  isArchived            Boolean       @default(false)
+  version               Int           @default(1)
+  metadata              Json          @default("{}")
+
+  company      Company         @relation(fields: [companyId], references: [id])
+  lead         CrmLead         @relation(fields: [leadId], references: [id])
+  feedbackType CrmFeedbackType @relation(fields: [feedbackTypeId], references: [id])
+
+  @@index([companyId, leadId])
+  @@index([companyId, feedbackTypeId])
+  @@index([companyId, createdAt])
+}
+
+model CrmLeadHistoryEvent {
+  id            String   @id @default(cuid())
+  companyId     String
+  leadId        String?
+  action        String
+  actorId       String   @default("")
+  actorName     String   @default("")
+  note          String   @default("")
+  previousValue String?
+  newValue      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdBy     String?
+  updatedBy     String?
+  deletedAt     DateTime?
+  isArchived    Boolean  @default(false)
+  version       Int      @default(1)
+  metadata      Json     @default("{}")
+
+  company Company  @relation(fields: [companyId], references: [id])
+  lead    CrmLead? @relation(fields: [leadId], references: [id])
+
+  @@index([companyId, leadId])
+  @@index([companyId, createdAt])
 }

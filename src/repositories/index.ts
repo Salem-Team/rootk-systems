@@ -41,3 +41,16 @@ export {
   targetWarningRepository,
   targetHistoryRepository,
 } from "./targets.repository";
+export {
+  organicAdvertisementRepository,
+  organicAdHistoryRepository,
+  organicAdsSettingsRepository,
+} from "./organic-ads.repository";
+export {
+  crmStageRepository,
+  crmFeedbackTypeRepository,
+  crmLeadRepository,
+  crmLeadActivityRepository,
+  crmLeadFeedbackRepository,
+  crmLeadHistoryRepository,
+} from "./crm.repository";

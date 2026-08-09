@@ -118,6 +118,43 @@ export const API_ROUTES = {
     employeePerformance: (employeeId: string) =>
       `/targets/employees/${employeeId}/performance`,
   },
+  crm: {
+    stages: "/crm/stages",
+    stageById: (id: string) => `/crm/stages/${id}`,
+    stagesReorder: "/crm/stages/reorder",
+    feedbackTypes: "/crm/feedback-types",
+    feedbackTypeById: (id: string) => `/crm/feedback-types/${id}`,
+    businessTypes: "/crm/business-types",
+    businessTypeById: (id: string) => `/crm/business-types/${id}`,
+    leads: "/crm/leads",
+    leadById: (id: string) => `/crm/leads/${id}`,
+    leadsBulk: "/crm/leads/bulk",
+    leadsImport: "/crm/leads/import",
+    leadsExport: "/crm/leads/export",
+    leadActivities: (id: string) => `/crm/leads/${id}/activities`,
+    leadTimeline: (id: string) => `/crm/leads/${id}/timeline`,
+    leadFeedback: (id: string) => `/crm/leads/${id}/feedback`,
+    dashboard: "/crm/dashboard",
+    performance: "/crm/performance",
+    performanceByEmployee: (employeeId: string) =>
+      `/crm/performance/${employeeId}`,
+    activities: "/crm/activities",
+    feedback: "/crm/feedback",
+    reports: "/crm/reports",
+  },
+  /** Wired when Organic Ads Nest module ships. */
+  organicAds: {
+    root: "/organic-ads",
+    byId: (id: string) => `/organic-ads/${id}`,
+    overview: "/organic-ads/overview",
+    inspect: "/organic-ads/inspect",
+    performance: "/organic-ads/performance",
+    profile: (employeeId: string) =>
+      `/organic-ads/employees/${employeeId}/profile`,
+    settings: "/organic-ads/settings",
+    history: "/organic-ads/history",
+    linkableTasks: "/organic-ads/linkable-tasks",
+  },
   reports: {
     weekly: "/reports/weekly",
     monthly: "/reports/monthly",

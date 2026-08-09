@@ -1,3 +1,4 @@
+import { AppRole } from "@/constants/roles";
 import type { UserRole } from "@/types";
 import {
   LayoutDashboard,
@@ -10,6 +11,8 @@ import {
   Target,
   Wallet,
   ListTodo,
+  Megaphone,
+  ContactRound,
   type LucideIcon,
 } from "lucide-react";
 
@@ -26,7 +29,9 @@ export type NavKey =
   | "people"
   | "more"
   | "tasks"
-  | "targets";
+  | "targets"
+  | "organicAds"
+  | "crm";
 
 export interface AppNavItem {
   key: NavKey;
@@ -42,63 +47,75 @@ export const APP_NAV: AppNavItem[] = [
     key: "dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
-    roles: ["admin", "employee"],
+    roles: [AppRole.admin, AppRole.employee],
   },
   {
     key: "attendance",
     href: "/attendance",
     icon: Clock,
-    roles: ["admin", "employee"],
+    roles: [AppRole.admin, AppRole.employee],
   },
   {
     key: "tasks",
     href: "/tasks",
     icon: ListTodo,
-    roles: ["admin", "employee"],
+    roles: [AppRole.admin, AppRole.employee],
     badge: true,
   },
   {
     key: "targets",
     href: "/targets",
     icon: Target,
-    roles: ["admin", "employee"],
+    roles: [AppRole.admin, AppRole.employee],
+  },
+  {
+    key: "organicAds",
+    href: "/organic-ads",
+    icon: Megaphone,
+    roles: [AppRole.admin, AppRole.employee],
+  },
+  {
+    key: "crm",
+    href: "/crm",
+    icon: ContactRound,
+    roles: [AppRole.admin, AppRole.employee],
   },
   {
     key: "employees",
     href: "/employees",
     icon: Users,
-    roles: ["admin"],
+    roles: [AppRole.admin],
   },
   {
     key: "schedule",
     href: "/schedule",
     icon: CalendarDays,
-    roles: ["admin", "employee"],
+    roles: [AppRole.admin, AppRole.employee],
   },
   {
     key: "leave",
     href: "/leave",
     icon: FileText,
-    roles: ["admin", "employee"],
+    roles: [AppRole.admin, AppRole.employee],
     badge: true,
   },
   {
     key: "reports",
     href: "/reports",
     icon: BarChart3,
-    roles: ["admin"],
+    roles: [AppRole.admin],
   },
   {
     key: "payroll",
     href: "/payroll",
     icon: Wallet,
-    roles: ["admin", "employee"],
+    roles: [AppRole.admin, AppRole.employee],
   },
   {
     key: "settings",
     href: "/settings",
     icon: Settings,
-    roles: ["admin", "employee"],
+    roles: [AppRole.admin, AppRole.employee],
   },
 ];
 
@@ -107,31 +124,31 @@ export const MOBILE_NAV: AppNavItem[] = [
     key: "home",
     href: "/dashboard",
     icon: LayoutDashboard,
-    roles: ["admin", "employee"],
+    roles: [AppRole.admin, AppRole.employee],
   },
   {
     key: "attendance",
     href: "/attendance",
     icon: Clock,
-    roles: ["admin", "employee"],
+    roles: [AppRole.admin, AppRole.employee],
   },
   {
     key: "tasks",
     href: "/tasks",
     icon: ListTodo,
-    roles: ["admin", "employee"],
+    roles: [AppRole.admin, AppRole.employee],
   },
   {
     key: "schedule",
     href: "/schedule",
     icon: CalendarDays,
-    roles: ["admin"],
+    roles: [AppRole.admin],
   },
   {
     key: "more",
     href: "/settings",
     icon: Settings,
-    roles: ["admin", "employee"],
+    roles: [AppRole.admin, AppRole.employee],
   },
 ];
 
@@ -153,12 +170,12 @@ export function navForRole(role: UserRole, items: AppNavItem[] = APP_NAV) {
 
 export function canAccessRoute(role: UserRole, pathname: string): boolean {
   if (ADMIN_ONLY_ROUTES.some((route) => pathname.startsWith(route))) {
-    return role === "admin";
+    return role === AppRole.admin;
   }
   return true;
 }
 
 /** True when the signed-in admin should see every company control surface. */
 export function isAdminFullAccess(role: UserRole): boolean {
-  return role === "admin";
+  return role === AppRole.admin;
 }

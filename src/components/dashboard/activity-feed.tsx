@@ -3,44 +3,16 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { format, formatDistanceToNow, isToday, isYesterday, parseISO } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
-import {
-  CheckCircle2,
-  LogIn,
-  LogOut,
-  Megaphone,
-  Clock,
-  FileCheck,
-  FileX,
-} from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SoftListRow } from "@/components/shared/meta-chip";
 import { groupActivitiesByDay } from "@/components/dashboard/dashboard-mock-data";
 import { useTranslation } from "@/hooks/use-translation";
 import type { TranslationPath } from "@/i18n";
+import { resolveActivityVisual } from "@/lib/activity-ui";
 import { localizedActivity } from "@/lib/i18n-content";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 import type { Activity } from "@/types";
-
-const ICONS = {
-  check_in: LogIn,
-  check_out: LogOut,
-  leave_request: FileCheck,
-  leave_approved: CheckCircle2,
-  leave_rejected: FileX,
-  announcement: Megaphone,
-  late: Clock,
-};
-
-const COLORS = {
-  check_in: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-  check_out: "bg-secondary text-secondary-foreground",
-  leave_request: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
-  leave_approved: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-  leave_rejected: "bg-rose-500/10 text-rose-700 dark:text-rose-400",
-  announcement: "bg-sky-500/10 text-sky-700 dark:text-sky-400",
-  late: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
-};
 
 function dayLabel(
   dayKey: string,
@@ -65,7 +37,7 @@ export function ActivityFeed({
   const { t, locale } = useTranslation();
   const reduceMotion = useReducedMotion();
   const dateLocale = locale === "ar" ? arLocale : enUS;
-  const groups = groupActivitiesByDay(activities);
+  const groups = groupActivitiesByDay(activities ?? []);
 
   return (
     <section
@@ -98,14 +70,16 @@ export function ActivityFeed({
                 </p>
                 <ul className="space-y-1.5">
                   {group.items.map((activity) => {
-                    const Icon = ICONS[activity.type];
+                    const { icon: Icon, tone } = resolveActivityVisual(
+                      activity.type
+                    );
                     const copy = localizedActivity(activity, t);
                     const row = (
                       <SoftListRow className="flex gap-2.5 !py-2.5">
                         <div
                           className={cn(
                             "flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
-                            COLORS[activity.type]
+                            tone
                           )}
                         >
                           <Icon className="h-3.5 w-3.5" aria-hidden />

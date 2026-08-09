@@ -59,6 +59,7 @@ const CATEGORY_TO_POLICY: Record<
   schedule: "schedule",
   mention: "mention",
   target: "work",
+  organic_ad: "work",
 };
 
 export function normalizeCompanyNotifications(

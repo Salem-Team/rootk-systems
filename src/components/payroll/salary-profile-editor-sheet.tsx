@@ -13,110 +13,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { updateSalaryProfile } from "@/services/payroll.service";
 import { useTranslation } from "@/hooks/use-translation";
 import type { EmployeeSalaryProfile } from "@/types/payroll";
-
-type Draft = {
-  basicSalary: number;
-  housing: number;
-  transportation: number;
-  meal: number;
-  phone: number;
-  other: number;
-  shift: number;
-  bonuses: number;
-  commission: number;
-  incentives: number;
-  manualAdjustments: number;
-  insurance: number;
-  tax: number;
-  loan: number;
-  advances: number;
-  recurring: number;
-  penalties: number;
-  salaryGrade: EmployeeSalaryProfile["salaryGrade"];
-  salaryType: EmployeeSalaryProfile["salaryType"];
-  payrollGroup: EmployeeSalaryProfile["payrollGroup"];
-  currency: string;
-  bankAccount: string;
-  iban: string;
-  paymentMethod: EmployeeSalaryProfile["paymentMethod"];
-  insuranceStatus: EmployeeSalaryProfile["insuranceStatus"];
-  taxStatus: EmployeeSalaryProfile["taxStatus"];
-  contractType: EmployeeSalaryProfile["contractType"];
-};
-
-function fromProfile(p: EmployeeSalaryProfile): Draft {
-  return {
-    basicSalary: p.basicSalary,
-    housing: p.allowances.housing,
-    transportation: p.allowances.transportation,
-    meal: p.allowances.meal,
-    phone: p.allowances.phone,
-    other: p.allowances.other,
-    shift: p.allowances.shift,
-    bonuses: p.bonuses,
-    commission: p.commission,
-    incentives: p.incentives,
-    manualAdjustments: p.manualAdjustments,
-    insurance: p.deductions.insurance,
-    tax: p.deductions.tax,
-    loan: p.deductions.loan,
-    advances: p.deductions.advances,
-    recurring: p.deductions.recurring,
-    penalties: p.deductions.penalties,
-    salaryGrade: p.salaryGrade,
-    salaryType: p.salaryType,
-    payrollGroup: p.payrollGroup,
-    currency: p.currency,
-    bankAccount: p.bankAccount,
-    iban: p.iban,
-    paymentMethod: p.paymentMethod,
-    insuranceStatus: p.insuranceStatus,
-    taxStatus: p.taxStatus,
-    contractType: p.contractType,
-  };
-}
-
-function blankDraft(): Draft {
-  return {
-    basicSalary: 0,
-    housing: 0,
-    transportation: 0,
-    meal: 0,
-    phone: 0,
-    other: 0,
-    shift: 0,
-    bonuses: 0,
-    commission: 0,
-    incentives: 0,
-    manualAdjustments: 0,
-    insurance: 0,
-    tax: 0,
-    loan: 0,
-    advances: 0,
-    recurring: 0,
-    penalties: 0,
-    salaryGrade: "G3",
-    salaryType: "monthly",
-    payrollGroup: "standard",
-    currency: "EGP",
-    bankAccount: "",
-    iban: "",
-    paymentMethod: "bank_transfer",
-    insuranceStatus: "insured",
-    taxStatus: "resident",
-    contractType: "full_time",
-  };
-}
+import {
+  blankSalaryProfileDraft,
+  salaryProfileFromDraftSource,
+  type SalaryProfileDraft,
+} from "./salary-profile-editor-draft";
+import { MoneyField, Section, SelectField } from "./salary-profile-editor-fields";
 
 export function SalaryProfileEditorSheet({
   open,
@@ -134,7 +39,7 @@ export function SalaryProfileEditorSheet({
   onSaved: (profile: EmployeeSalaryProfile) => void;
 }) {
   const { t } = useTranslation();
-  const [draft, setDraft] = useState<Draft | null>(null);
+  const [draft, setDraft] = useState<SalaryProfileDraft | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -142,10 +47,12 @@ export function SalaryProfileEditorSheet({
       setDraft(null);
       return;
     }
-    setDraft(profile ? fromProfile(profile) : blankDraft());
+    setDraft(
+      profile ? salaryProfileFromDraftSource(profile) : blankSalaryProfileDraft()
+    );
   }, [open, profile]);
 
-  function setNum<K extends keyof Draft>(key: K, raw: string) {
+  function setNum<K extends keyof SalaryProfileDraft>(key: K, raw: string) {
     const n = Number(raw);
     setDraft((d) => (d ? { ...d, [key]: Number.isFinite(n) ? n : 0 } : d));
   }
@@ -387,78 +294,5 @@ export function SalaryProfileEditorSheet({
         ) : null}
       </SheetContent>
     </Sheet>
-  );
-}
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-3 rounded-xl border border-border/70 bg-muted/10 p-4">
-      <h4 className="text-sm font-semibold">{title}</h4>
-      {children}
-    </section>
-  );
-}
-
-function MoneyField({
-  id,
-  label,
-  value,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  value: number;
-  onChange: (raw: string) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        type="number"
-        min={0}
-        step={50}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      />
-    </div>
-  );
-}
-
-function SelectField({
-  label,
-  value,
-  onChange,
-  options,
-  labelFn,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: string[];
-  labelFn?: (v: string) => string;
-}) {
-  return (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((opt) => (
-            <SelectItem key={opt} value={opt}>
-              {labelFn ? labelFn(opt) : opt}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
   );
 }

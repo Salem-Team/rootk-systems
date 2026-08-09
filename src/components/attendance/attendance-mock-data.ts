@@ -1,182 +1,24 @@
-import {
-  addDays,
-  eachDayOfInterval,
-  endOfMonth,
-  format,
-  parseISO,
-  startOfMonth,
-  subDays,
-} from "date-fns";
+import { parseISO, subDays } from "date-fns";
 import type { AttendanceRecord, AttendanceStatus } from "@/types";
-import { demoNow, demoTodayKey, MOCK_TZ_OFFSET } from "@/lib/mock-date";
+import { demoNow } from "@/lib/mock-date";
+import type { MonthlyChartPoint, WeeklyAttendanceSummary } from "./attendance-mock-types";
 
-export type WorkMode = "office" | "hybrid" | "remote";
-
-export type CalendarDayKind =
-  | "present"
-  | "late"
-  | "absent"
-  | "leave"
-  | "wfh"
-  | "holiday"
-  | "empty"
-  | "today";
-
-export type HeatmapLevel = 0 | 1 | 2 | 3 | 4;
-
-export interface WorkdayTimelineEvent {
-  id: string;
-  type:
-    | "arrived"
-    | "started"
-    | "break_start"
-    | "break_end"
-    | "meeting"
-    | "check_out"
-    | "late"
-    | "wfh";
-  titleKey: string;
-  detailKey: string;
-  at: string;
-}
-
-export interface WeeklyAttendanceSummary {
-  hoursWorked: number;
-  presentDays: number;
-  lateDays: number;
-  absentDays: number;
-  overtimeHours: number;
-  attendanceRate: number;
-}
-
-export interface MonthlyChartPoint {
-  label: string;
-  present: number;
-  late: number;
-  absent: number;
-  hours: number;
-  rate: number;
-}
-
-export interface CalendarDay {
-  date: string;
-  kind: CalendarDayKind;
-  inMonth: boolean;
-  isToday: boolean;
-}
-
-export interface HeatmapDay {
-  date: string;
-  level: HeatmapLevel;
-  kind: CalendarDayKind;
-}
-
-export function resolveWorkMode(
-  record: AttendanceRecord | null
-): WorkMode {
-  if (!record?.checkIn) return "office";
-  if (record.status === "wfh") return "remote";
-  return "office";
-}
-
-export function expectedCheckOutIso(
-  dateKey?: string,
-  toTime = "18:00"
-): string | null {
-  if (!dateKey) return null;
-  const time = toTime.length === 5 ? `${toTime}:00` : toTime;
-  return `${dateKey}T${time}${MOCK_TZ_OFFSET}`;
-}
-
-export function buildWorkdayTimeline(
-  record: AttendanceRecord | null
-): WorkdayTimelineEvent[] {
-  if (!record?.checkIn) return [];
-
-  const checkIn = parseISO(record.checkIn);
-  const events: WorkdayTimelineEvent[] = [
-    {
-      id: "arrived",
-      type: record.status === "wfh" ? "wfh" : "arrived",
-      titleKey:
-        record.status === "wfh"
-          ? "attendance.tlWfh"
-          : "attendance.tlArrived",
-      detailKey:
-        record.status === "wfh"
-          ? "attendance.tlWfhDetail"
-          : "attendance.tlArrivedDetail",
-      at: record.checkIn,
-    },
-  ];
-
-  if (record.isLate) {
-    events.push({
-      id: "late",
-      type: "late",
-      titleKey: "attendance.tlLate",
-      detailKey: "attendance.tlLateDetail",
-      at: record.checkIn,
-    });
-  }
-
-  events.push({
-    id: "started",
-    type: "started",
-    titleKey: "attendance.tlStarted",
-    detailKey: "attendance.tlStartedDetail",
-    at: new Date(checkIn.getTime() + 8 * 60_000).toISOString(),
-  });
-
-  const breakStart = new Date(checkIn.getTime() + 3.5 * 60 * 60_000);
-  const breakEnd = new Date(breakStart.getTime() + 45 * 60_000);
-  const meeting = new Date(checkIn.getTime() + 5.25 * 60 * 60_000);
-
-  if (!record.checkOut || breakStart < parseISO(record.checkOut)) {
-    events.push({
-      id: "break-start",
-      type: "break_start",
-      titleKey: "attendance.tlBreakStart",
-      detailKey: "attendance.tlBreakStartDetail",
-      at: breakStart.toISOString(),
-    });
-    events.push({
-      id: "break-end",
-      type: "break_end",
-      titleKey: "attendance.tlBreakEnd",
-      detailKey: "attendance.tlBreakEndDetail",
-      at: breakEnd.toISOString(),
-    });
-  }
-
-  if (!record.checkOut || meeting < parseISO(record.checkOut)) {
-    events.push({
-      id: "meeting",
-      type: "meeting",
-      titleKey: "attendance.tlMeeting",
-      detailKey: "attendance.tlMeetingDetail",
-      at: meeting.toISOString(),
-    });
-  }
-
-  if (record.checkOut) {
-    events.push({
-      id: "check-out",
-      type: "check_out",
-      titleKey: record.isEarlyLeave
-        ? "attendance.earlyLeave"
-        : "attendance.tlCheckOut",
-      detailKey: record.isEarlyLeave
-        ? "attendance.tlEarlyDetail"
-        : "attendance.tlCheckOutDetail",
-      at: record.checkOut,
-    });
-  }
-
-  return events.sort(
-    (a, b) => parseISO(a.at).getTime() - parseISO(b.at).getTime()
-  );
-}
+export type {
+  CalendarDay,
+  CalendarDayKind,
+  HeatmapDay,
+  HeatmapLevel,
+  MonthlyChartPoint,
+  WeeklyAttendanceSummary,
+  WorkdayTimelineEvent,
+  WorkMode,
+} from "./attendance-mock-types";
+export { buildCalendarMonth, buildHeatmap } from "./attendance-mock-calendar";
+export {
+  buildWorkdayTimeline,
+  expectedCheckOutIso,
+  resolveWorkMode,
+} from "./attendance-mock-timeline";
 
 /** Derive weekly cards from history + deterministic fill for gaps. */
 export function buildWeeklySummary(
@@ -235,113 +77,6 @@ export function buildMonthlyAnalytics(
         ? 0
         : Math.min(99, Math.round(((present + late * 0.5) / 5) * 100));
     return { label, present, late, absent, hours, rate };
-  });
-}
-
-function kindFromRecord(record?: AttendanceRecord): CalendarDayKind {
-  if (!record) return "absent";
-  if (record.status === "on_leave") return "leave";
-  if (record.status === "wfh") return "wfh";
-  if (record.status === "late" || record.isLate) return "late";
-  if (record.status === "absent") return "absent";
-  if (["present", "early_leave", "half_day"].includes(record.status)) {
-    return "present";
-  }
-  return "absent";
-}
-
-function levelFromKind(kind: CalendarDayKind): HeatmapLevel {
-  switch (kind) {
-    case "present":
-      return 4;
-    case "wfh":
-      return 3;
-    case "late":
-      return 2;
-    case "leave":
-    case "holiday":
-      return 1;
-    default:
-      return 0;
-  }
-}
-
-export function buildCalendarMonth(
-  records: AttendanceRecord[],
-  month: Date = demoNow()
-): CalendarDay[] {
-  const start = startOfMonth(month);
-  const end = endOfMonth(month);
-  const todayStr = demoTodayKey();
-  const byDate = new Map(records.map((r) => [r.date, r]));
-
-  const days = eachDayOfInterval({ start, end });
-  const startPad = start.getDay(); // 0 Sun
-  const padStart = Array.from({ length: startPad }, (_, i) => {
-    const d = subDays(start, startPad - i);
-    return {
-      date: format(d, "yyyy-MM-dd"),
-      kind: "empty" as CalendarDayKind,
-      inMonth: false,
-      isToday: false,
-    };
-  });
-
-  const monthDays: CalendarDay[] = days.map((d) => {
-    const date = format(d, "yyyy-MM-dd");
-    const isToday = date === todayStr;
-    const isFriday = d.getDay() === 5;
-    const isSaturday = d.getDay() === 6;
-    let kind: CalendarDayKind;
-    if (isFriday || isSaturday) {
-      kind = "holiday";
-    } else if (byDate.has(date)) {
-      kind = kindFromRecord(byDate.get(date));
-    } else if (d > demoNow()) {
-      kind = "empty";
-    } else {
-      kind = "absent";
-    }
-    return { date, kind, inMonth: true, isToday };
-  });
-
-  const trailing = (7 - ((padStart.length + monthDays.length) % 7)) % 7;
-  const padEnd = Array.from({ length: trailing }, (_, i) => {
-    const d = addDays(end, i + 1);
-    return {
-      date: format(d, "yyyy-MM-dd"),
-      kind: "empty" as CalendarDayKind,
-      inMonth: false,
-      isToday: false,
-    };
-  });
-
-  return [...padStart, ...monthDays, ...padEnd];
-}
-
-export function buildHeatmap(
-  records: AttendanceRecord[],
-  weeks = 16
-): HeatmapDay[] {
-  const today = demoNow();
-  const start = subDays(today, weeks * 7 - 1);
-  const byDate = new Map(records.map((r) => [r.date, r]));
-  const days = eachDayOfInterval({ start, end: today });
-
-  return days.map((d) => {
-    const date = format(d, "yyyy-MM-dd");
-    const dow = d.getDay();
-    if (dow === 5 || dow === 6) {
-      return { date, level: 0 as HeatmapLevel, kind: "holiday" as CalendarDayKind };
-    }
-    const record = byDate.get(date);
-    let kind: CalendarDayKind;
-    if (record) {
-      kind = kindFromRecord(record);
-    } else {
-      kind = "empty";
-    }
-    return { date, level: levelFromKind(kind), kind };
   });
 }
 

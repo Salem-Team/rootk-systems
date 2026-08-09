@@ -4,6 +4,7 @@ import { OrgService } from "./org.service";
 import { ActorId, CompanyId } from "../common/tenant";
 import { Roles } from "../common/roles.decorator";
 import { RolesGuard } from "../common/roles.guard";
+import { AppRole } from "../common/roles";
 
 @Controller("org")
 @UseGuards(AuthGuard("jwt"), RolesGuard)
@@ -16,13 +17,13 @@ export class OrgController {
   }
 
   @Post("locations/resolve-maps-url")
-  @Roles("admin")
+  @Roles(AppRole.admin)
   resolveMapsUrl(@Body() body: { url?: string }) {
     return this.service.resolveMapsUrl(String(body.url ?? ""));
   }
 
   @Put("locations")
-  @Roles("admin")
+  @Roles(AppRole.admin)
   upsertLocation(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -32,7 +33,7 @@ export class OrgController {
   }
 
   @Delete("locations/:id")
-  @Roles("admin")
+  @Roles(AppRole.admin)
   deleteLocation(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -47,7 +48,7 @@ export class OrgController {
   }
 
   @Put("departments")
-  @Roles("admin")
+  @Roles(AppRole.admin)
   upsertDepartment(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -57,7 +58,7 @@ export class OrgController {
   }
 
   @Delete("departments/:id")
-  @Roles("admin")
+  @Roles(AppRole.admin)
   deleteDepartment(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -72,7 +73,7 @@ export class OrgController {
   }
 
   @Put("positions")
-  @Roles("admin")
+  @Roles(AppRole.admin)
   upsertPosition(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -82,7 +83,7 @@ export class OrgController {
   }
 
   @Delete("positions/:id")
-  @Roles("admin")
+  @Roles(AppRole.admin)
   deletePosition(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -97,7 +98,7 @@ export class OrgController {
   }
 
   @Put("shifts")
-  @Roles("admin")
+  @Roles(AppRole.admin)
   upsertShift(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -107,7 +108,7 @@ export class OrgController {
   }
 
   @Delete("shifts/:id")
-  @Roles("admin")
+  @Roles(AppRole.admin)
   deleteShift(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -122,7 +123,7 @@ export class OrgController {
   }
 
   @Patch("approvals/:id")
-  @Roles("admin")
+  @Roles(AppRole.admin)
   patchApproval(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,

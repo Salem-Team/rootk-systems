@@ -6,6 +6,7 @@ import {
   fetchMonthlyStats,
   fetchWeeklyStats,
 } from "@/api/dashboard.api";
+import { ensureActivities } from "@/lib/activity-normalize";
 import { isApiMode } from "@/lib/env";
 import { todayKey } from "@/lib/mock-date";
 import {
@@ -133,7 +134,7 @@ export async function getActivities(
 ): Promise<ApiResponse<Activity[]>> {
   if (isApiMode()) return fetchActivities(limit);
   try {
-    return ok(await activityRepository.latest(limit));
+    return ok(ensureActivities(await activityRepository.latest(limit)));
   } catch (error) {
     return fromError(error, []);
   }
@@ -179,7 +180,7 @@ export async function getDashboardSummary(): Promise<
       stats,
       weekly,
       monthly,
-      activities,
+      activities: ensureActivities(activities),
       announcements: announcements.slice(0, 5),
       pendingLeaveCount: leave.filter((r) => r.status === "pending").length,
     });

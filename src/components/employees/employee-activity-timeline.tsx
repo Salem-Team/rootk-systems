@@ -68,7 +68,12 @@ export function EmployeeActivityTimeline({
         className="absolute bottom-2 start-[15px] top-2 w-px bg-border"
       />
       {items.map((item) => {
-        const meta = META[item.type];
+        const meta =
+          META[item.type] ??
+          META.announcement ?? {
+            icon: Megaphone,
+            tone: "bg-muted text-muted-foreground",
+          };
         const Icon = meta.icon;
         return (
           <motion.li

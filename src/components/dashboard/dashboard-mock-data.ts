@@ -164,8 +164,14 @@ export function groupActivitiesByDay(
   activities: Activity[]
 ): { dayKey: string; items: Activity[] }[] {
   const groups = new Map<string, Activity[]>();
-  for (const activity of activities) {
-    const dayKey = format(parseISO(activity.timestamp), "yyyy-MM-dd");
+  for (const activity of activities ?? []) {
+    if (!activity?.timestamp) continue;
+    let dayKey: string;
+    try {
+      dayKey = format(parseISO(activity.timestamp), "yyyy-MM-dd");
+    } catch {
+      continue;
+    }
     const list = groups.get(dayKey) ?? [];
     list.push(activity);
     groups.set(dayKey, list);

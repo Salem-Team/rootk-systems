@@ -2,6 +2,7 @@ import { Controller, UseGuards, Get, Patch, Body } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import { SettingsService } from "./settings.service";
 import { ActorId, CompanyId } from "../common/tenant";
+import { AppRole } from "../common/roles";
 import { Roles } from "../common/roles.decorator";
 import { RolesGuard } from "../common/roles.guard";
 
@@ -16,7 +17,7 @@ export class SettingsController {
   }
 
   @Patch()
-  @Roles("admin")
+  @Roles(AppRole.admin)
   patch(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,

@@ -25,6 +25,15 @@ import {
   targetTemplatesSeed,
   performanceTargetsSeed,
   targetWarningsSeed,
+  organicAdsSeed,
+  organicAdsSettingsSeed,
+  organicAdHistorySeed,
+  crmStagesSeed,
+  crmFeedbackTypesSeed,
+  crmBusinessTypesSeed,
+  crmLeadsSeed,
+  crmLeadActivitiesSeed,
+  crmLeadFeedbackSeed,
 } from "@/mocks";
 import { buildTaskTitle } from "@/lib/target-progress";
 import { createId } from "@/lib/id";
@@ -49,6 +58,19 @@ import type {
   WorkSchedule,
   WorkTask,
 } from "@/types";
+import type {
+  OrganicAdHistoryEvent,
+  OrganicAdsSettings,
+  OrganicAdvertisement,
+} from "@/types/organic-ads";
+import type {
+  CrmBusinessType,
+  CrmFeedbackType,
+  CrmLead,
+  CrmLeadActivity,
+  CrmLeadFeedback,
+  CrmStage,
+} from "@/types/crm";
 import type {
   ApprovalRule,
   JobPosition,
@@ -83,6 +105,15 @@ export interface SeedPayload {
   targetTemplates: TargetTemplate[];
   performanceTargets: PerformanceTarget[];
   targetWarnings: TargetWarning[];
+  organicAds: OrganicAdvertisement[];
+  organicAdsSettings: OrganicAdsSettings;
+  organicAdHistory: OrganicAdHistoryEvent[];
+  crmStages: CrmStage[];
+  crmFeedbackTypes: CrmFeedbackType[];
+  crmBusinessTypes: CrmBusinessType[];
+  crmLeads: CrmLead[];
+  crmLeadActivities: CrmLeadActivity[];
+  crmLeadFeedback: CrmLeadFeedback[];
 }
 
 export function buildSeedPayload(): SeedPayload {
@@ -196,6 +227,37 @@ export function buildSeedPayload(): SeedPayload {
     targetTemplates: targetTemplatesSeed,
     performanceTargets: performanceTargetsSeed,
     targetWarnings: targetWarningsSeed,
+    organicAds: organicAdsSeed,
+    organicAdsSettings: organicAdsSettingsSeed,
+    organicAdHistory: organicAdHistorySeed,
+    crmStages: crmStagesSeed.map((s) => enrichWithAudit(s, "system")),
+    crmFeedbackTypes: crmFeedbackTypesSeed.map((t) =>
+      enrichWithAudit(t, "system")
+    ),
+    crmBusinessTypes: crmBusinessTypesSeed.map((t) =>
+      enrichWithAudit(t, "system")
+    ),
+    crmLeads: crmLeadsSeed.map((l) => {
+      const { _createdAt, _updatedAt, ...rest } = l;
+      return enrichWithAudit(rest, rest.ownerEmployeeId ?? "system", {
+        createdAt: _createdAt,
+        updatedAt: _updatedAt,
+      });
+    }),
+    crmLeadActivities: crmLeadActivitiesSeed.map((a) => {
+      const { _createdAt, ...rest } = a;
+      return enrichWithAudit(rest, a.actorEmployeeId ?? "system", {
+        createdAt: _createdAt,
+        updatedAt: _createdAt,
+      });
+    }),
+    crmLeadFeedback: crmLeadFeedbackSeed.map((f) => {
+      const { _createdAt, ...rest } = f;
+      return enrichWithAudit(rest, f.recordedByEmployeeId ?? "system", {
+        createdAt: _createdAt,
+        updatedAt: _createdAt,
+      });
+    }),
   };
 }
 

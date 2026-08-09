@@ -3,6 +3,8 @@
  * Production / Nest builds should use `NEXT_PUBLIC_DATA_SOURCE=api`.
  */
 
+import { DEFAULT_COMPANY_ID } from "@/constants/company";
+
 export type DataSource = "local" | "api";
 
 function readDataSource(): DataSource {
@@ -17,7 +19,7 @@ export const env = {
   /** `local` = LocalStorage repositories; `api` = HttpClient REST */
   dataSource: readDataSource(),
   /** Optional company scope header for multi-tenant backends */
-  companyId: process.env.NEXT_PUBLIC_COMPANY_ID ?? "cmp_rootk_001",
+  companyId: process.env.NEXT_PUBLIC_COMPANY_ID ?? DEFAULT_COMPANY_ID,
 } as const;
 
 export function isApiMode(): boolean {

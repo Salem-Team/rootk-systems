@@ -29,3 +29,16 @@ export {
   performanceTargetsSeed,
   targetWarningsSeed,
 } from "./targets";
+export {
+  organicAdsSeed,
+  organicAdsSettingsSeed,
+  organicAdHistorySeed,
+} from "./organic-ads";
+export {
+  crmStagesSeed,
+  crmFeedbackTypesSeed,
+  crmBusinessTypesSeed,
+  crmLeadsSeed,
+  crmLeadActivitiesSeed,
+  crmLeadFeedbackSeed,
+} from "./crm";

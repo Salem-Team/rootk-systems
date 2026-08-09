@@ -7,6 +7,7 @@ import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import { createHash, randomUUID } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
+import { DEFAULT_COMPANY_ID } from "../common/company";
 import { mapUser } from "../common/mappers";
 import type { JwtPayload } from "../common/decorators/current-user";
 import { hashPassword, verifyPassword } from "./password.util";
@@ -24,7 +25,7 @@ export class AuthService {
   ) {}
 
   private companyId() {
-    return this.config.get<string>("DEFAULT_COMPANY_ID", "cmp_rootk_001");
+    return this.config.get<string>("DEFAULT_COMPANY_ID", DEFAULT_COMPANY_ID);
   }
 
   private async issueTokens(payload: JwtPayload) {

@@ -2,6 +2,7 @@ import { Controller, UseGuards, Get, Post, Patch, Delete, Body, Param, Query } f
 import { AuthGuard } from "@nestjs/passport";
 import { ScheduleService } from "./schedule.service";
 import { ActorId, CompanyId } from "../common/tenant";
+import { AppRole } from "../common/roles";
 import { Roles } from "../common/roles.decorator";
 import { RolesGuard } from "../common/roles.guard";
 
@@ -16,7 +17,7 @@ export class ScheduleController {
   }
 
   @Patch()
-  @Roles("admin")
+  @Roles(AppRole.admin)
   patch(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -35,7 +36,7 @@ export class ScheduleController {
   }
 
   @Post("holidays")
-  @Roles("admin")
+  @Roles(AppRole.admin)
   addHoliday(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -46,7 +47,7 @@ export class ScheduleController {
   }
 
   @Delete("holidays/:id")
-  @Roles("admin")
+  @Roles(AppRole.admin)
   removeHoliday(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,

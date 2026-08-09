@@ -1,217 +1,22 @@
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-} from "@nestjs/common";
-import { Prisma } from "@prisma/client";
-import { PrismaService } from "../prisma/prisma.service";
-import { auditFields, dateOnly, isoOrNull, parseDate } from "../common/mappers";
-import {
-  computeLateMinutes,
-  dateKeyFromDate,
-  settleWorkDay,
-  utcDay,
-  type AttendanceStatus,
-  type WorkClockSchedule,
-} from "../lib/work-time";
-import { isEmployeeWfhAllowed } from "../lib/wfh-policy";
-import {
-  DEFAULT_OFFICE_RADIUS_METERS,
-  findMatchingOffice,
-  findNearestOffice,
-  isValidGeoPoint,
-  type GeoPoint,
-  type GeofencedOffice,
-} from "../lib/geo";
-import { NotificationsService } from "../notifications/notifications.service";
-import { writeActivity } from "../common/activity-writer";
+import { Injectable } from "@nestjs/common";
+import type { PunchLocation } from "./attendance-mappers";
+import { AttendanceCheckinService } from "./attendance-checkin.service";
+import { AttendanceCheckoutService } from "./attendance-checkout.service";
+import { AttendanceQueryService } from "./attendance-query.service";
 
-type ScheduleBundle = WorkClockSchedule & {
-  wfhDays: string[];
-  metadata: unknown;
-};
-
-type PunchLocation = GeoPoint & { accuracy?: number };
-
-const DEFAULT_SCHEDULE: ScheduleBundle = {
-  fromTime: "09:00",
-  toTime: "18:00",
-  gracePeriodMinutes: 15,
-  breakMinutes: 60,
-  halfDayHours: 4,
-  wfhDays: [],
-  metadata: {},
-};
-
-function mapAttendance(row: {
-  id: string;
-  companyId: string;
-  employeeId: string;
-  date: Date;
-  checkIn: Date | null;
-  checkOut: Date | null;
-  status: string;
-  workingMinutes: number;
-  grossMinutes: number;
-  breakAppliedMinutes: number;
-  earlyLeaveMinutes: number;
-  overtimeMinutes: number;
-  isLate: boolean;
-  isEarlyLeave: boolean;
-  lateMinutes: number;
-  note: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy: string | null;
-  updatedBy: string | null;
-  deletedAt: Date | null;
-  isArchived: boolean;
-  version: number;
-  metadata: unknown;
-}) {
-  return {
-    id: row.id,
-    employeeId: row.employeeId,
-    date: dateOnly(row.date),
-    checkIn: isoOrNull(row.checkIn) ?? undefined,
-    checkOut: isoOrNull(row.checkOut) ?? undefined,
-    status: row.status,
-    workingMinutes: row.workingMinutes,
-    grossMinutes: row.grossMinutes,
-    breakAppliedMinutes: row.breakAppliedMinutes,
-    earlyLeaveMinutes: row.earlyLeaveMinutes,
-    overtimeMinutes: row.overtimeMinutes,
-    isLate: row.isLate,
-    isEarlyLeave: row.isEarlyLeave,
-    lateMinutes: row.lateMinutes,
-    note: row.note ?? undefined,
-    ...auditFields(row),
-  };
-}
-
-function asMetadata(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? { ...(value as Record<string, unknown>) }
-    : {};
-}
-
+/**
+ * Thin facade preserving the original `AttendanceService` public API.
+ * All business logic lives in the domain services below.
+ */
 @Injectable()
 export class AttendanceService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly notifications: NotificationsService
+    private readonly query: AttendanceQueryService,
+    private readonly checkinService: AttendanceCheckinService,
+    private readonly checkoutService: AttendanceCheckoutService
   ) {}
 
-  private async scheduleBundle(companyId: string): Promise<ScheduleBundle> {
-    const schedule = await this.prisma.workSchedule.findUnique({
-      where: { companyId },
-    });
-    const cfg =
-      (schedule?.config as Partial<ScheduleBundle> | null) ?? undefined;
-    const meta =
-      schedule?.metadata && typeof schedule.metadata === "object"
-        ? (schedule.metadata as Record<string, unknown>)
-        : {};
-    const attendancePolicy =
-      meta.attendancePolicy && typeof meta.attendancePolicy === "object"
-        ? (meta.attendancePolicy as { halfDayHours?: number })
-        : {};
-    return {
-      fromTime: cfg?.fromTime ?? DEFAULT_SCHEDULE.fromTime,
-      toTime: cfg?.toTime ?? DEFAULT_SCHEDULE.toTime,
-      gracePeriodMinutes:
-        cfg?.gracePeriodMinutes ?? DEFAULT_SCHEDULE.gracePeriodMinutes,
-      breakMinutes: cfg?.breakMinutes ?? DEFAULT_SCHEDULE.breakMinutes,
-      halfDayHours:
-        attendancePolicy.halfDayHours ?? DEFAULT_SCHEDULE.halfDayHours,
-      wfhDays: Array.isArray(cfg?.wfhDays) ? (cfg!.wfhDays as string[]) : [],
-      metadata: schedule?.metadata ?? {},
-    };
-  }
-
-  private async loadGeofencedOffices(
-    companyId: string
-  ): Promise<GeofencedOffice[]> {
-    const rows = await this.prisma.officeLocation.findMany({
-      where: {
-        companyId,
-        active: true,
-        deletedAt: null,
-        latitude: { not: null },
-        longitude: { not: null },
-      },
-    });
-    return rows
-      .filter(
-        (row): row is typeof row & { latitude: number; longitude: number } =>
-          row.latitude != null && row.longitude != null
-      )
-      .map((row) => ({
-        id: row.id,
-        name: row.name,
-        latitude: row.latitude,
-        longitude: row.longitude,
-        radiusMeters: row.radiusMeters || DEFAULT_OFFICE_RADIUS_METERS,
-      }));
-  }
-
-  /**
-   * Office-day punches must happen inside an active company office geofence.
-   * WFH punches skip this check. GPS accuracy is padded into the radius.
-   */
-  private async assertOfficeGeofence(
-    companyId: string,
-    location: PunchLocation | undefined,
-    action: "check-in" | "check-out"
-  ) {
-    const offices = await this.loadGeofencedOffices(companyId);
-    if (offices.length === 0) {
-      throw new BadRequestException({
-        message: "Office location not configured",
-        code: "OFFICE_NOT_CONFIGURED",
-      });
-    }
-    if (!isValidGeoPoint(location)) {
-      throw new BadRequestException({
-        message:
-          action === "check-in"
-            ? "Location required for office check-in"
-            : "Location required for office check-out",
-        code: "LOCATION_REQUIRED",
-      });
-    }
-    const accuracy = location.accuracy ?? 0;
-    const match = findMatchingOffice(location, offices, accuracy);
-    if (!match) {
-      const nearest = findNearestOffice(location, offices);
-      throw new ForbiddenException({
-        message: "Outside office geofence",
-        code: "OUTSIDE_OFFICE",
-        details: {
-          distanceMeters: nearest
-            ? Math.round(nearest.distanceMeters)
-            : undefined,
-          radiusMeters: nearest?.office.radiusMeters,
-          officeName: nearest?.office.name,
-          accuracyMeters:
-            typeof accuracy === "number" ? Math.round(accuracy) : undefined,
-        },
-      });
-    }
-    return {
-      latitude: location.latitude,
-      longitude: location.longitude,
-      accuracy: location.accuracy,
-      matchedLocationId: match.office.id,
-      matchedLocationName: match.office.name,
-      distanceMeters: Math.round(match.distanceMeters),
-      radiusMeters: match.office.radiusMeters,
-      at: new Date().toISOString(),
-    };
-  }
-
-  async list(
+  list(
     companyId: string,
     filters: {
       employeeId?: string;
@@ -221,36 +26,14 @@ export class AttendanceService {
       to?: string;
     } = {}
   ) {
-    const where: Prisma.AttendanceRecordWhereInput = {
-      companyId,
-      deletedAt: null,
-    };
-    if (filters.employeeId) where.employeeId = filters.employeeId;
-    if (filters.status) where.status = filters.status;
-    if (filters.date) where.date = parseDate(filters.date);
-    if (filters.from || filters.to) {
-      where.date = {
-        ...(filters.from ? { gte: parseDate(filters.from) } : {}),
-        ...(filters.to ? { lte: parseDate(filters.to) } : {}),
-      };
-    }
-    const rows = await this.prisma.attendanceRecord.findMany({
-      where,
-      orderBy: { date: "desc" },
-    });
-    return rows.map(mapAttendance);
+    return this.query.list(companyId, filters);
   }
 
-  async meToday(companyId: string, employeeId?: string) {
-    if (!employeeId) return null;
-    const day = utcDay();
-    const row = await this.prisma.attendanceRecord.findFirst({
-      where: { companyId, employeeId, date: day, deletedAt: null },
-    });
-    return row ? mapAttendance(row) : null;
+  meToday(companyId: string, employeeId?: string) {
+    return this.query.meToday(companyId, employeeId);
   }
 
-  async checkIn(
+  checkIn(
     companyId: string,
     actorId: string,
     body: {
@@ -260,234 +43,14 @@ export class AttendanceService {
       location?: PunchLocation;
     }
   ) {
-    const employeeId = body.employeeId;
-    if (!employeeId) throw new BadRequestException("employeeId required");
-    const day = utcDay();
-    const dateKey = dateKeyFromDate(day);
-    const existing = await this.prisma.attendanceRecord.findFirst({
-      where: { companyId, employeeId, date: day, deletedAt: null },
-    });
-    if (existing?.checkIn) {
-      throw new ConflictException("Already checked in today");
-    }
-    if (existing?.status === "on_leave") {
-      throw new ConflictException("Employee is on leave today");
-    }
-
-    const employee = await this.prisma.employee.findFirst({
-      where: { id: employeeId, companyId, deletedAt: null },
-    });
-    if (!employee) {
-      throw new BadRequestException({
-        message: "Employee account is inactive or missing",
-        code: "EMPLOYEE_INACTIVE",
-      });
-    }
-
-    const schedule = await this.scheduleBundle(companyId);
-    if (body.wfh) {
-      const allowed = isEmployeeWfhAllowed({
-        metadata: schedule.metadata,
-        wfhDays: schedule.wfhDays,
-        department: employee.department,
-        dateKey,
-      });
-      if (!allowed) {
-        throw new ForbiddenException(
-          "WFH is not allowed for this employee today"
-        );
-      }
-    }
-
-    const geoSnapshot = body.wfh
-      ? null
-      : await this.assertOfficeGeofence(companyId, body.location, "check-in");
-
-    const now = new Date();
-    const lateMinutes = computeLateMinutes(
-      now,
-      dateKey,
-      schedule.fromTime,
-      schedule.gracePeriodMinutes
-    );
-    const isLate = lateMinutes > 0;
-    const status: AttendanceStatus = body.wfh
-      ? "wfh"
-      : isLate
-        ? "late"
-        : "present";
-
-    const nextMeta = asMetadata(existing?.metadata);
-    if (geoSnapshot) nextMeta.checkInLocation = geoSnapshot;
-    if (body.wfh) delete nextMeta.checkInLocation;
-
-    const data = {
-      checkIn: now,
-      status,
-      isLate,
-      lateMinutes,
-      isEarlyLeave: false,
-      earlyLeaveMinutes: 0,
-      overtimeMinutes: 0,
-      grossMinutes: 0,
-      breakAppliedMinutes: 0,
-      workingMinutes: 0,
-      note: body.note ?? existing?.note ?? null,
-      metadata: nextMeta as Prisma.InputJsonValue,
-      updatedBy: actorId,
-      version: existing ? { increment: 1 } : undefined,
-      deletedAt: null,
-      isArchived: false,
-    };
-
-    const row = existing
-      ? await this.prisma.attendanceRecord.update({
-          where: { id: existing.id },
-          data: data as never,
-        })
-      : await this.prisma.attendanceRecord.create({
-          data: {
-            companyId,
-            employeeId,
-            date: day,
-            checkIn: now,
-            status,
-            isLate,
-            lateMinutes,
-            note: body.note,
-            metadata: nextMeta as Prisma.InputJsonValue,
-            createdBy: actorId,
-            updatedBy: actorId,
-          },
-        });
-
-    if (isLate && !body.wfh) {
-      await this.notifications.notifyDomain({
-        companyId,
-        actorId,
-        category: "attendance",
-        priority: "normal",
-        audience: "admin",
-        titleKey: "notifications.lateTitle",
-        bodyKey: "notifications.lateBody",
-        vars: { name: employee.name, minutes: lateMinutes },
-        href: "/attendance",
-        entityType: "attendance",
-        entityId: row.id,
-        recipientIds: [],
-      });
-      await writeActivity(this.prisma, {
-        companyId,
-        type: "late",
-        title: "Late check-in",
-        description: `${employee.name} · ${lateMinutes}m`,
-        employeeId,
-        actorId,
-      });
-    } else {
-      await writeActivity(this.prisma, {
-        companyId,
-        type: "check_in",
-        title: body.wfh ? "WFH check-in" : "Check-in",
-        description: employee.name,
-        employeeId,
-        actorId,
-      });
-    }
-
-    return mapAttendance(row);
+    return this.checkinService.checkIn(companyId, actorId, body);
   }
 
-  async checkOut(
+  checkOut(
     companyId: string,
     actorId: string,
     body: { employeeId?: string; location?: PunchLocation }
   ) {
-    const employeeId = body.employeeId;
-    if (!employeeId) throw new BadRequestException("employeeId required");
-    const day = utcDay();
-    const dateKey = dateKeyFromDate(day);
-    const existing = await this.prisma.attendanceRecord.findFirst({
-      where: { companyId, employeeId, date: day, deletedAt: null },
-    });
-    if (!existing?.checkIn) {
-      throw new BadRequestException("Check-in required before check-out");
-    }
-    if (existing.checkOut) {
-      throw new ConflictException("Already checked out today");
-    }
-
-    const isWfhDay = existing.status === "wfh";
-    const geoSnapshot = isWfhDay
-      ? null
-      : await this.assertOfficeGeofence(companyId, body.location, "check-out");
-
-    const schedule = await this.scheduleBundle(companyId);
-    const now = new Date();
-    const settled = settleWorkDay({
-      dateKey,
-      checkIn: existing.checkIn,
-      checkOut: now,
-      schedule,
-      previousStatus: existing.status as AttendanceStatus,
-      wasLate: existing.isLate,
-      lateMinutes: existing.lateMinutes,
-    });
-
-    const nextMeta = asMetadata(existing.metadata);
-    if (geoSnapshot) nextMeta.checkOutLocation = geoSnapshot;
-
-    const row = await this.prisma.attendanceRecord.update({
-      where: { id: existing.id },
-      data: {
-        checkOut: now,
-        workingMinutes: settled.workingMinutes,
-        grossMinutes: settled.grossMinutes,
-        breakAppliedMinutes: settled.breakAppliedMinutes,
-        earlyLeaveMinutes: settled.earlyLeaveMinutes,
-        overtimeMinutes: settled.overtimeMinutes,
-        isEarlyLeave: settled.isEarlyLeave,
-        isLate: settled.isLate,
-        lateMinutes: settled.lateMinutes,
-        status: settled.status,
-        metadata: nextMeta as Prisma.InputJsonValue,
-        updatedBy: actorId,
-        version: { increment: 1 },
-      },
-    });
-
-    if (settled.isEarlyLeave) {
-      const employee = await this.prisma.employee.findFirst({
-        where: { id: employeeId, companyId },
-      });
-      await this.notifications.notifyDomain({
-        companyId,
-        actorId,
-        category: "attendance",
-        priority: "normal",
-        audience: "admin",
-        titleKey: "notifications.earlyLeaveTitle",
-        bodyKey: "notifications.earlyLeaveBody",
-        vars: {
-          name: employee?.name ?? employeeId,
-          minutes: settled.earlyLeaveMinutes,
-        },
-        href: "/attendance",
-        entityType: "attendance",
-        entityId: row.id,
-        recipientIds: [],
-      });
-    }
-
-    await writeActivity(this.prisma, {
-      companyId,
-      type: "check_out",
-      title: "Check-out",
-      description: `${settled.workingMinutes}m worked`,
-      employeeId,
-      actorId,
-    });
-
-    return mapAttendance(row);
+    return this.checkoutService.checkOut(companyId, actorId, body);
   }
 }

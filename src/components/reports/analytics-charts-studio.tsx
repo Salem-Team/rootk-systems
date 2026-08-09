@@ -1,32 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  PolarAngleAxis,
-  PolarGrid,
-  PolarRadiusAxis,
-  Radar,
-  RadarChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { motion, useReducedMotion } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CHART } from "@/constants/chart-colors";
-import { chartTooltipStyle } from "@/constants/chart-tooltip";
 import {
   buildLeaveAnalytics,
   buildModePie,
@@ -38,8 +14,14 @@ import {
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp } from "@/lib/animations";
 import type { TranslationPath } from "@/i18n";
-
-const tooltipStyle = chartTooltipStyle;
+import {
+  AttendanceTrendChart,
+  CompanyRadarChart,
+  HoursTrendChart,
+  LateTrendChart,
+  LeaveUtilChart,
+  WfhCompareCharts,
+} from "./analytics-chart-groups";
 
 const DAY_KEYS: Record<string, TranslationPath> = {
   Sun: "days.sun",
@@ -156,191 +138,57 @@ export function AnalyticsChartsStudio({
 
       <div className="grid gap-4 lg:grid-cols-2">
         {(focus === "attendance" || focus === "all") && (
-          <ChartPanel title={t("analytics.attendanceTrend")}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trend}>
-                <defs>
-                  <linearGradient id="attFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={CHART.present} stopOpacity={0.28} />
-                    <stop offset="95%" stopColor={CHART.present} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-                <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Area
-                  type="monotone"
-                  dataKey="attendance"
-                  name={t("charts.present")}
-                  stroke={CHART.present}
-                  fill="url(#attFill)"
-                  strokeWidth={2.25}
-                  animationDuration={900}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </ChartPanel>
+          <AttendanceTrendChart trend={trend} title={t("analytics.attendanceTrend")} />
         )}
 
         {(focus === "hours" || focus === "all") && (
-          <ChartPanel title={t("analytics.hoursTrend")}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trend}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-                <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="hours"
-                  name={t("common.hours")}
-                  stroke={CHART.hours}
-                  strokeWidth={2.25}
-                  dot={{ r: 3 }}
-                  animationDuration={900}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="overtime"
-                  name={t("analytics.overtime")}
-                  stroke={CHART.accent}
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  animationDuration={1000}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </ChartPanel>
+          <HoursTrendChart
+            trend={trend}
+            title={t("analytics.hoursTrend")}
+            hoursLabel={t("common.hours")}
+            overtimeLabel={t("analytics.overtime")}
+          />
         )}
 
         {(focus === "late" || focus === "all") && (
-          <ChartPanel title={t("analytics.lateTrend")}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={trend}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-                <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar
-                  dataKey="late"
-                  name={t("charts.late")}
-                  fill={CHART.late}
-                  radius={[6, 6, 0, 0]}
-                  animationDuration={900}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartPanel>
+          <LateTrendChart
+            trend={trend}
+            title={t("analytics.lateTrend")}
+            lateLabel={t("charts.late")}
+          />
         )}
 
         {(focus === "wfh" || focus === "all") && (
-          <>
-            <ChartPanel title={t("analytics.wfhCompare")}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={trend}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-                  <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                  <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Legend />
-                  <Bar dataKey="office" stackId="a" name={t("analytics.modeOffice")} fill={CHART.rate} radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="hybrid" stackId="a" name={t("analytics.modeHybrid")} fill={CHART.wfh} />
-                  <Bar dataKey="wfh" stackId="a" name={t("analytics.modeRemote")} fill={CHART.present} radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartPanel>
-            <ChartPanel title={t("analytics.workModeMix")}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pie}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={58}
-                    outerRadius={88}
-                    paddingAngle={3}
-                    animationDuration={900}
-                  >
-                    {pie.map((entry) => (
-                      <Cell key={entry.name} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </ChartPanel>
-          </>
+          <WfhCompareCharts
+            trend={trend}
+            pie={pie}
+            compareTitle={t("analytics.wfhCompare")}
+            mixTitle={t("analytics.workModeMix")}
+            officeLabel={t("analytics.modeOffice")}
+            hybridLabel={t("analytics.modeHybrid")}
+            remoteLabel={t("analytics.modeRemote")}
+          />
         )}
 
         {(focus === "leave" || focus === "all") && (
-          <ChartPanel title={t("analytics.leaveUtilChart")}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={leave}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-                <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Legend />
-                <Bar dataKey="approved" name={t("common.approved")} fill={CHART.present} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="pending" name={t("common.pending")} fill={CHART.late} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="remaining" name={t("employees.leaveRemaining")} fill={CHART.wfh} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartPanel>
+          <LeaveUtilChart
+            leave={leave}
+            title={t("analytics.leaveUtilChart")}
+            approvedLabel={t("common.approved")}
+            pendingLabel={t("common.pending")}
+            remainingLabel={t("employees.leaveRemaining")}
+          />
         )}
 
         {focus === "all" && (
-          <ChartPanel title={t("analytics.radarTitle")} hint={t("analytics.radarHint")}>
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radar}>
-                <PolarGrid className="stroke-border" />
-                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10 }} />
-                <Radar
-                  name={t("analytics.companyScore")}
-                  dataKey="score"
-                  stroke={CHART.rate}
-                  fill={CHART.rate}
-                  fillOpacity={0.2}
-                  animationDuration={1000}
-                />
-                <Legend />
-              </RadarChart>
-            </ResponsiveContainer>
-          </ChartPanel>
+          <CompanyRadarChart
+            radar={radar}
+            title={t("analytics.radarTitle")}
+            hint={t("analytics.radarHint")}
+            scoreLabel={t("analytics.companyScore")}
+          />
         )}
       </div>
     </motion.div>
-  );
-}
-
-function ChartPanel({
-  title,
-  hint,
-  children,
-}: {
-  title: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="surface-panel overflow-hidden">
-      <div className="panel-header">
-        <h4 className="text-[0.95rem] font-semibold tracking-tight">{title}</h4>
-        {hint ? (
-          <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
-        ) : null}
-      </div>
-      <div
-        className="panel-body h-[260px] sm:h-[280px]"
-        role="img"
-        aria-label={title}
-      >
-        {children}
-      </div>
-    </section>
   );
 }

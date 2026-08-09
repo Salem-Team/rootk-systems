@@ -1,14 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageTransition } from "@/components/shared/page-transition";
 import { PageSkeleton } from "@/components/shared/loading-state";
-import { EmptyState } from "@/components/shared/empty-state";
 import { LeaveForm } from "@/components/leave/leave-form";
-import { LeaveCard } from "@/components/leave/leave-card";
+import { LeaveRequestGrid } from "@/components/leave/leave-request-grid";
 import {
   AdminLeaveReviewPanel,
   DepartmentLeaveCalendar,
@@ -33,8 +31,8 @@ import {
   useSessionStore,
 } from "@/stores/session-store";
 import { useTranslation } from "@/hooks/use-translation";
-import { staggerContainer } from "@/lib/animations";
 import { computeLeaveBalance } from "@/lib/leave-balance";
+import { AppRole } from "@/constants/roles";
 import type { Employee, LeaveRequest } from "@/types";
 
 export default function LeavePage() {
@@ -43,7 +41,7 @@ export default function LeavePage() {
   const workEmployeeId = useSessionStore((s) =>
     getWorkEmployeeIdFromUser(s.user)
   );
-  const isAdmin = role === "admin";
+  const isAdmin = role === AppRole.admin;
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -185,31 +183,16 @@ export default function LeavePage() {
             <TabsContent value="all" className="space-y-6">
               <div className="grid gap-6 xl:grid-cols-5">
                 <div className="xl:col-span-3">
-                  {requests.length === 0 ? (
-                    <EmptyState
-                      title={t("leave.empty")}
-                      description={t("leave.emptyDesc")}
-                      actionLabel={t("leave.newRequest")}
-                      onAction={() => setCreateOpen(true)}
-                    />
-                  ) : (
-                    <motion.div
-                      variants={staggerContainer}
-                      initial="hidden"
-                      animate="visible"
-                      className="grid gap-4 sm:grid-cols-2"
-                    >
-                      {requests.map((request) => (
-                        <LeaveCard
-                          key={request.id}
-                          request={request}
-                          employee={employeeMap.get(request.employeeId)}
-                          showActions={request.status === "pending"}
-                          onUpdated={handleUpdated}
-                        />
-                      ))}
-                    </motion.div>
-                  )}
+                  <LeaveRequestGrid
+                    requests={requests}
+                    employeeMap={employeeMap}
+                    showActions={(request) => request.status === "pending"}
+                    onUpdated={handleUpdated}
+                    emptyTitle={t("leave.empty")}
+                    emptyDescription={t("leave.emptyDesc")}
+                    emptyActionLabel={t("leave.newRequest")}
+                    onEmptyAction={() => setCreateOpen(true)}
+                  />
                 </div>
                 <div className="xl:col-span-2">
                   <LeaveWorkflowSidebar
@@ -223,29 +206,15 @@ export default function LeavePage() {
             </TabsContent>
 
             <TabsContent value="pending">
-              {pending.length === 0 ? (
-                <EmptyState
-                  title={t("leave.emptyPending")}
-                  description={t("leave.emptyDesc")}
-                />
-              ) : (
-                <motion.div
-                  variants={staggerContainer}
-                  initial="hidden"
-                  animate="visible"
-                  className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
-                >
-                  {pending.map((request) => (
-                    <LeaveCard
-                      key={request.id}
-                      request={request}
-                      employee={employeeMap.get(request.employeeId)}
-                      showActions
-                      onUpdated={handleUpdated}
-                    />
-                  ))}
-                </motion.div>
-              )}
+              <LeaveRequestGrid
+                requests={pending}
+                employeeMap={employeeMap}
+                showActions
+                onUpdated={handleUpdated}
+                emptyTitle={t("leave.emptyPending")}
+                emptyDescription={t("leave.emptyDesc")}
+                className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+              />
             </TabsContent>
           </>
         ) : null}
@@ -253,30 +222,16 @@ export default function LeavePage() {
         <TabsContent value="mine" className="space-y-6">
           <div className="grid gap-6 xl:grid-cols-5">
             <div className="space-y-4 xl:col-span-3">
-              {mine.length === 0 ? (
-                <EmptyState
-                  title={t("leave.empty")}
-                  description={t("leave.emptyDesc")}
-                  actionLabel={t("leave.newRequest")}
-                  onAction={() => setCreateOpen(true)}
-                />
-              ) : (
-                <motion.div
-                  variants={staggerContainer}
-                  initial="hidden"
-                  animate="visible"
-                  className="grid gap-3 sm:grid-cols-2 sm:gap-4"
-                >
-                  {mine.map((request) => (
-                    <LeaveCard
-                      key={request.id}
-                      request={request}
-                      employee={employeeMap.get(request.employeeId)}
-                      onUpdated={handleUpdated}
-                    />
-                  ))}
-                </motion.div>
-              )}
+              <LeaveRequestGrid
+                requests={mine}
+                employeeMap={employeeMap}
+                onUpdated={handleUpdated}
+                emptyTitle={t("leave.empty")}
+                emptyDescription={t("leave.emptyDesc")}
+                emptyActionLabel={t("leave.newRequest")}
+                onEmptyAction={() => setCreateOpen(true)}
+                className="grid gap-3 sm:grid-cols-2 sm:gap-4"
+              />
             </div>
             <div className="xl:col-span-2">
               <LeaveWorkflowSidebar

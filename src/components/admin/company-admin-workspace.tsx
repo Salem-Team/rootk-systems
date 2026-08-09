@@ -2,18 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  Database,
-  Globe2,
-  Loader2,
-  Moon,
-  Palette,
-  RotateCcw,
-  Save,
-  Sparkles,
-  Sun,
-  Trash2,
-} from "lucide-react";
+import { Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { AdminSectionNav } from "@/components/admin/admin-section-nav";
@@ -32,20 +21,13 @@ import {
   NotificationSettingsPanel,
 } from "@/components/admin/notifications-approvals-panels";
 import type { AdminSection } from "@/components/admin/admin-mock-data";
+import { CompanyAppearanceSection } from "@/components/admin/company-appearance-section";
+import { CompanyDemoDataSection } from "@/components/admin/company-demo-data-section";
 import { SettingsForm } from "@/components/settings/settings-form";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useDemoData } from "@/hooks/use-demo-data";
 import { useTranslation } from "@/hooks/use-translation";
-import { fadeInUp } from "@/lib/animations";
 import { normalizeCompanyNotifications } from "@/lib/notification-policy";
 import type { CompanySettings } from "@/types";
 
@@ -174,145 +156,18 @@ export function CompanyAdminWorkspace() {
               <SettingsForm hideCompanyPolicy />
             ) : null}
             {section === "appearance" ? (
-              <motion.section
-                variants={fadeInUp}
-                initial="hidden"
-                animate="visible"
-                className="surface-panel overflow-hidden"
-              >
-                <div className="panel-header">
-                  <h3 className="flex items-center gap-2 text-[0.95rem] font-semibold">
-                    <Palette className="h-3.5 w-3.5 text-primary" aria-hidden />
-                    {t("settings.appearance")}
-                  </h3>
-                  <p className="mt-0.5 text-sm text-muted-foreground">
-                    {t("settings.appearanceDesc")}
-                    {mounted ? ` · ${theme ?? t("common.system")}` : ""}
-                  </p>
-                  <p className="mt-2 text-xs text-amber-800 dark:text-amber-300">
-                    {t("admin.companyDefaultsHint")}
-                  </p>
-                </div>
-                <div className="panel-body grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>{t("settings.theme")}</Label>
-                    <Select
-                      value={form.appearance}
-                      onValueChange={(v) => {
-                        const appearance = v as CompanySettings["appearance"];
-                        updateField("appearance", appearance);
-                        setTheme(appearance);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="system">
-                          <span className="inline-flex items-center gap-2">
-                            <Globe2 className="h-4 w-4" /> {t("common.system")}
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="light">
-                          <span className="inline-flex items-center gap-2">
-                            <Sun className="h-4 w-4" /> {t("common.light")}
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="dark">
-                          <span className="inline-flex items-center gap-2">
-                            <Moon className="h-4 w-4" /> {t("common.dark")}
-                          </span>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{t("settings.languageSection")}</Label>
-                    <Select
-                      value={form.language}
-                      onValueChange={(v) => {
-                        const language = v as CompanySettings["language"];
-                        updateField("language", language);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="en">{t("common.english")}</SelectItem>
-                        <SelectItem value="ar">{t("common.arabic")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </motion.section>
+              <CompanyAppearanceSection
+                form={form}
+                mounted={mounted}
+                theme={theme}
+                onAppearanceChange={(appearance) => {
+                  updateField("appearance", appearance);
+                  setTheme(appearance);
+                }}
+                onLanguageChange={(language) => updateField("language", language)}
+              />
             ) : null}
-            {section === "demo" ? (
-              <motion.section
-                variants={fadeInUp}
-                initial="hidden"
-                animate="visible"
-                className="surface-panel overflow-hidden"
-              >
-                <div className="panel-header">
-                  <h3 className="flex items-center gap-2 text-[0.95rem] font-semibold">
-                    <Database className="h-3.5 w-3.5 text-primary" aria-hidden />
-                    {t("settings.demoData")}
-                  </h3>
-                  <p className="mt-0.5 text-sm text-muted-foreground">
-                    {t("settings.demoDataDesc")}
-                  </p>
-                </div>
-                <div className="panel-body flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                  <Button
-                    variant="outline"
-                    className="border-primary/20"
-                    disabled={demo.busy !== null}
-                    onClick={() => {
-                      if (window.confirm(t("settings.resetDemoConfirm"))) {
-                        void demo.resetDemoData();
-                      }
-                    }}
-                  >
-                    {demo.busy === "reset" ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      <RotateCcw />
-                    )}
-                    {t("settings.resetDemo")}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    disabled={demo.busy !== null}
-                    onClick={() => void demo.generateSampleData()}
-                  >
-                    {demo.busy === "generate" ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      <Sparkles />
-                    )}
-                    {t("settings.generateSample")}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="border-destructive/30 text-destructive hover:bg-destructive/10"
-                    disabled={demo.busy !== null}
-                    onClick={() => {
-                      if (window.confirm(t("settings.clearDataConfirm"))) {
-                        void demo.clearData();
-                      }
-                    }}
-                  >
-                    {demo.busy === "clear" ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      <Trash2 />
-                    )}
-                    {t("settings.clearData")}
-                  </Button>
-                </div>
-              </motion.section>
-            ) : null}
+            {section === "demo" ? <CompanyDemoDataSection demo={demo} /> : null}
           </motion.div>
         </AnimatePresence>
 
