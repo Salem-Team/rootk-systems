@@ -12,6 +12,7 @@ import {
   TargetStatusBadge,
 } from "@/components/targets/target-status-badge";
 import { TargetProgressRing } from "@/components/targets/target-progress-ring";
+import { WorkDurationCell } from "@/components/work/work-duration-cell";
 import { useTranslation } from "@/hooks/use-translation";
 import { taskDueBucket } from "@/lib/work-utils";
 import { cn } from "@/lib/utils";
@@ -183,6 +184,7 @@ export function EmployeeTargetBreakdown({
                                 })}
                               </span>
                             ) : null}
+                            <WorkDurationCell task={task} />
                           </li>
                         );
                       })}

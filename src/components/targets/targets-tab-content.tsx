@@ -5,7 +5,7 @@ import { PerformanceReportPanel } from "@/components/targets/performance-report-
 import { TargetDashboardPanel } from "@/components/targets/target-dashboard-panel";
 import { TargetFiltersBar } from "@/components/targets/target-filters";
 import { TargetKpiCards } from "@/components/targets/target-kpi-cards";
-import { TargetList } from "@/components/targets/target-list";
+import { TargetsDataTable } from "@/components/targets/targets-data-table";
 import { WarningCenter } from "@/components/targets/warning-center";
 import type { Employee } from "@/types";
 import type {
@@ -81,7 +81,7 @@ export function TargetsTabContent({
               employees={employees}
               assigneeCounts={assigneeCounts}
             />
-            <TargetList
+            <TargetsDataTable
               targets={targets}
               categories={categoryMap}
               employees={employeeMap}
@@ -90,15 +90,6 @@ export function TargetsTabContent({
               onEdit={onEdit}
               onDelete={onDelete}
               onCreate={canAssign ? onCreate : undefined}
-              selectedAssigneeId={filters.employeeId}
-              onAssigneeSelect={(employeeId) =>
-                setFilters((prev) => {
-                  const next = { ...prev };
-                  if (employeeId) next.employeeId = employeeId;
-                  else delete next.employeeId;
-                  return next;
-                })
-              }
             />
           </>
         ) : (

@@ -20,13 +20,14 @@ import {
   YAxis,
 } from "recharts";
 import { KpiCard } from "@/components/dashboard/kpi-card";
-import { TargetList } from "@/components/targets/target-list";
+import { EmployeeTargetsTable } from "@/components/targets/employee-targets-table";
 import { StaggerItem, StaggerList } from "@/components/shared/stagger";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import { CHART } from "@/constants/chart-colors";
 import { chartTooltipStyle } from "@/constants/chart-tooltip";
 import { useLiveReload } from "@/hooks/use-live-reload";
 import { getEmployeeTargetPerformance } from "@/services/targets.service";
+import { getMyWorkTasks } from "@/services/work.service";
 import { useTranslation } from "@/hooks/use-translation";
 import { TARGETS_UPDATED_EVENT, WORK_UPDATED_EVENT } from "@/lib/events";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ import type {
   PerformanceTarget,
   TargetCategory,
 } from "@/types/targets";
+import type { WorkTask } from "@/types/work";
 
 interface EmployeePerformancePanelProps {
   employeeId: string;
@@ -47,29 +49,35 @@ interface EmployeePerformancePanelProps {
   className?: string;
 }
 
-/** Employee performance score, trend, and their assigned targets. */
+/** Employee performance score, trend, and assigned targets table. */
 export function EmployeePerformancePanel({
   employeeId,
   categories,
-  employees,
   categoryId,
-  onEdit,
   onView,
   className,
 }: EmployeePerformancePanelProps) {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
   const [performance, setPerformance] = useState<EmployeeTargetPerformance | null>(null);
+  const [linkedTasks, setLinkedTasks] = useState<WorkTask[]>([]);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
     if (!employeeId) {
       setPerformance(null);
+      setLinkedTasks([]);
       setLoading(false);
       return;
     }
-    const res = await getEmployeeTargetPerformance(employeeId);
-    if (res.success) setPerformance(res.data);
+    const [perfRes, tasksRes] = await Promise.all([
+      getEmployeeTargetPerformance(employeeId),
+      getMyWorkTasks(employeeId),
+    ]);
+    if (perfRes.success) setPerformance(perfRes.data);
+    if (tasksRes.success) {
+      setLinkedTasks(tasksRes.data.filter((task) => Boolean(task.targetId)));
+    }
     setLoading(false);
   }, [employeeId]);
 
@@ -78,7 +86,7 @@ export function EmployeePerformancePanel({
   const scopedTargets = useMemo(() => {
     if (!performance) return [] as PerformanceTarget[];
     if (!categoryId) return performance.targets;
-    return performance.targets.filter((t) => t.categoryId === categoryId);
+    return performance.targets.filter((x) => x.categoryId === categoryId);
   }, [performance, categoryId]);
 
   if (loading || !performance) return <TableSkeleton rows={4} />;
@@ -188,23 +196,23 @@ export function EmployeePerformancePanel({
         </div>
       </section>
 
-      <div className="space-y-3">
-        <div>
+      <section className="space-y-3">
+        <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-primary/[0.04] via-transparent to-emerald-500/[0.04] px-4 py-3.5 sm:px-5">
           <h3 className="text-[0.95rem] font-semibold tracking-tight">
             {t("targets.employeePerf.targetsList")}
           </h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="mt-0.5 text-sm text-muted-foreground">
             {t("targets.employeePerf.targetsListHint")}
           </p>
         </div>
-        <TargetList
+        <EmployeeTargetsTable
           targets={scopedTargets}
           categories={categories}
-          employees={employees}
-          onEdit={onEdit}
+          linkedTasks={linkedTasks}
           onView={onView}
+          onTaskCompleted={() => void reload()}
         />
-      </div>
+      </section>
     </div>
   );
 }

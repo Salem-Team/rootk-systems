@@ -125,6 +125,8 @@ export class TargetsAssignService {
           ? parseDateEnd(String(body.expectedCompletion))
           : null,
         performanceScore: metrics.performanceScore,
+        assignedAt: status === "draft" ? null : new Date(),
+        completedAt: status === "completed" ? new Date() : null,
         createdBy: actor.userId,
         updatedBy: actor.userId,
       },
@@ -192,6 +194,7 @@ export class TargetsAssignService {
   ): Promise<number> {
     const count = Math.min(opts.quantity, MAX_AUTO_TASKS_PER_TARGET);
     if (count <= 0) return 0;
+    const assignedAt = new Date();
     const data = Array.from({ length: count }, (_, i) => ({
       companyId,
       title: buildTaskTitle(type.taskTitleTemplate, type.name, i + 1),
@@ -204,6 +207,7 @@ export class TargetsAssignService {
       assigneeIds: opts.assigneeIds,
       targetId,
       origin: WorkOrigin.assigned,
+      assignedAt,
       createdBy: actor.userId,
       updatedBy: actor.userId,
     }));

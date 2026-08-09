@@ -70,6 +70,8 @@ export const createWorkTaskSchema = z.object({
 
 export const updateWorkTaskSchema = createWorkTaskSchema.partial().extend({
   status: taskStatusSchema.optional(),
+  assignedAt: z.string().optional(),
+  completedAt: z.string().nullable().optional(),
 });
 
 const optionalJoinUrlSchema = z

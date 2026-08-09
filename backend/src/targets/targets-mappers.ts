@@ -120,6 +120,8 @@ export function mapTarget(row: {
   notes: string;
   expectedCompletion: Date | null;
   performanceScore: number;
+  assignedAt?: Date | null;
+  completedAt?: Date | null;
   companyId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -165,6 +167,8 @@ export function mapTarget(row: {
       ? iso(row.expectedCompletion)
       : null,
     performanceScore: row.performanceScore,
+    assignedAt: isoOrNull(row.assignedAt ?? null),
+    completedAt: isoOrNull(row.completedAt ?? null),
     metrics,
     ...auditFields(row),
   };

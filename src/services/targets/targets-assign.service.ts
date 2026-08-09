@@ -30,6 +30,7 @@ async function generateTasksForTarget(
 ): Promise<void> {
   const actorId = getSessionUserId();
   const count = Math.min(target.quantity, MAX_AUTO_TASKS_PER_TARGET);
+  const assignedAt = new Date().toISOString();
   for (let i = 1; i <= count; i++) {
     const task: WorkTask = enrichWithAudit(
       {
@@ -51,6 +52,8 @@ async function generateTasksForTarget(
         targetId: target.id,
         subItems: [],
         origin: "assigned",
+        assignedAt,
+        completedAt: null,
       },
       actorId
     );
@@ -111,6 +114,9 @@ export async function assignTarget(
         notes: parsed.notes,
         expectedCompletion: parsed.expectedCompletion ?? null,
         performanceScore: metrics.performanceScore,
+        assignedAt: parsed.status === "draft" ? null : new Date().toISOString(),
+        completedAt:
+          parsed.status === "completed" ? new Date().toISOString() : null,
       },
       actorId
     );

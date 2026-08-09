@@ -9,7 +9,7 @@ export function SummaryTile({
 }: {
   icon: ReactNode;
   label: string;
-  value: number;
+  value: ReactNode;
   tone?: string;
 }) {
   return (

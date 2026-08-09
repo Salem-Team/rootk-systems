@@ -41,12 +41,14 @@ export class WorkTasksWriteService {
     const requireEvidenceNotes = isEmployee
       ? false
       : Boolean(body.requireEvidenceNotes);
+    const now = new Date();
+    const initialStatus = (body.status as TaskStatus) ?? TaskStatus.todo;
     const row = await this.prisma.workTask.create({
       data: {
         companyId,
         title: String(body.title ?? ""),
         description: String(body.description ?? ""),
-        status: (body.status as TaskStatus) ?? TaskStatus.todo,
+        status: initialStatus,
         priority: (body.priority as TaskPriority) ?? TaskPriority.medium,
         dueDate: body.dueDate ? parseDate(String(body.dueDate)) : null,
         tag: String(body.tag ?? ""),
@@ -60,6 +62,8 @@ export class WorkTasksWriteService {
         requireEvidenceNotes,
         evidenceLinks: sanitizeEvidenceLinks(body.evidenceLinks),
         evidenceNotes: String(body.evidenceNotes ?? ""),
+        assignedAt: now,
+        completedAt: initialStatus === TaskStatus.completed ? now : null,
         createdBy: actor.userId,
         updatedBy: actor.userId,
       },

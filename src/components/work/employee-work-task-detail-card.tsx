@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Check, Pencil, Trash2, Video } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,11 @@ import {
   TaskEvidenceBadge,
   TaskEvidenceDisplay,
 } from "@/components/work/task-completion-evidence-dialog";
+import { WorkDoneButtonMotion, WorkStatusDot } from "@/components/work/work-motion";
 import { PRIORITY_VARIANT, statusLabelKey } from "@/components/work/employee-work-hub-types";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatClockRange } from "@/lib/format-time";
-import { completionNeedsEvidenceDialog } from "@/lib/task-evidence";
+import { WorkDurationCell } from "@/components/work/work-duration-cell";
 import { taskDueBucket } from "@/lib/work-utils";
 import { snappySpring } from "@/lib/animations";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,7 @@ export function TaskDetailCard({
   onDelete?: () => void;
 }) {
   const { t, locale } = useTranslation();
+  const reduceMotion = useReducedMotion();
   const related = meetings.find((m) => m.id === task.relatedMeetingId);
   const subDone = task.subItems.filter((s) => s.done).length;
   const subPct = Math.round((subDone / Math.max(task.subItems.length, 1)) * 100);
@@ -51,17 +53,25 @@ export function TaskDetailCard({
   return (
     <motion.article
       key={task.id}
-      initial={embedded ? false : { opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={embedded ? false : { opacity: 0.01, y: 10, scale: 0.985 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={snappySpring}
       className={cn(
+        "relative overflow-hidden",
         !embedded &&
           "rounded-2xl border border-border/70 bg-card p-5 shadow-[var(--shadow-card)] sm:p-6"
       )}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      {!embedded ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-primary/[0.06] to-transparent"
+        />
+      ) : null}
+      <div className="relative flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <WorkStatusDot status={task.status} />
             {t("workHub.taskDetail")}
           </p>
           <h2 className="mt-1 text-xl font-bold tracking-tight">{task.title}</h2>
@@ -84,26 +94,34 @@ export function TaskDetailCard({
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           ) : null}
-          <Button
-            type="button"
-            size="sm"
-            variant={
-              completionNeedsEvidenceDialog(task) ? "default" : "outline"
-            }
-            onClick={onCycleStatus}
-          >
-            {task.status === "completed"
-              ? t("workEvidence.reopen")
-              : task.status === "todo"
-                ? t("workEvidence.startWork")
-                : completionNeedsEvidenceDialog(task)
-                  ? t("workEvidence.submitComplete")
-                  : t("workEvidence.markComplete")}
-          </Button>
+          <WorkDoneButtonMotion pulse={task.status === "in_progress"}>
+            <motion.div
+              whileHover={reduceMotion ? undefined : { scale: 1.03 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.97 }}
+            >
+              <Button
+                type="button"
+                size="sm"
+                variant={task.status === "in_progress" ? "default" : "outline"}
+                className={
+                  task.status === "in_progress"
+                    ? "shadow-[0_10px_22px_-14px_hsl(var(--primary)/0.85)]"
+                    : undefined
+                }
+                onClick={onCycleStatus}
+              >
+                {task.status === "completed"
+                  ? t("workEvidence.reopen")
+                  : task.status === "todo"
+                    ? t("workEvidence.startWork")
+                    : t("workEvidence.done")}
+              </Button>
+            </motion.div>
+          </WorkDoneButtonMotion>
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-1.5">
+      <div className="relative mt-3 flex flex-wrap gap-1.5">
         <OriginBadge origin={task.origin} />
         <Badge variant={PRIORITY_VARIANT[task.priority]}>
           {t(`ops.priority.${task.priority}`)}
@@ -111,7 +129,17 @@ export function TaskDetailCard({
         <Badge variant={due === "overdue" ? "danger" : "outline"}>
           {t(`ops.due.${due}`)}
         </Badge>
-        <Badge variant="secondary">{t(statusLabelKey(task.status))}</Badge>
+        <Badge
+          variant={
+            task.status === "completed"
+              ? "success"
+              : task.status === "in_progress"
+                ? "info"
+                : "secondary"
+          }
+        >
+          {t(statusLabelKey(task.status))}
+        </Badge>
         {task.tag ? <Badge variant="outline">{task.tag}</Badge> : null}
         <TaskEvidenceBadge task={task} />
       </div>
@@ -135,8 +163,8 @@ export function TaskDetailCard({
           }
         />
         <MetaChip
-          label={t("common.status")}
-          value={t(statusLabelKey(task.status))}
+          label={t("workTable.colDuration")}
+          value={<WorkDurationCell task={task} />}
         />
       </div>
 

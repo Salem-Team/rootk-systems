@@ -108,6 +108,7 @@ export function EmployeeWorkHub() {
             onSelectTask={data.selectTask}
             onCreateTask={actions.openCreateTask}
             onCycleStatus={(id) => void actions.cycleTaskStatus(id)}
+            onMarkDone={actions.markTaskDone}
             onToggleSub={(taskId, subId) => void actions.toggleSubItem(taskId, subId)}
             onOpenMeeting={openMeetingFromTask}
             onEditTask={actions.openEditTask}

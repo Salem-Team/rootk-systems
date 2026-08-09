@@ -47,12 +47,14 @@ export async function createWorkTask(
       throw new ForbiddenError("Employees can only create personal tasks");
     }
     const actor = userId;
+    const now = new Date().toISOString();
+    const status = parsed.data.status ?? "todo";
     const task = enrichWithAudit(
       {
         id: createId("task"),
         title: parsed.data.title,
         description: parsed.data.description ?? "",
-        status: parsed.data.status ?? "todo",
+        status,
         priority: parsed.data.priority ?? "medium",
         dueDate: parsed.data.dueDate ?? "",
         tag: parsed.data.tag ?? "",
@@ -72,6 +74,8 @@ export async function createWorkTask(
           isValidEvidenceUrl
         ),
         evidenceNotes: parsed.data.evidenceNotes ?? "",
+        assignedAt: now,
+        completedAt: status === "completed" ? now : null,
         subItems: (parsed.data.subItems ?? []).map((s) => ({
           id: s.id ?? createId("sub"),
           label: s.label,
@@ -166,6 +170,16 @@ export async function updateWorkTask(
       }
     }
 
+    const nextStatus = parsed.data.status ?? current.status;
+    const completedAt =
+      parsed.data.completedAt !== undefined
+        ? parsed.data.completedAt
+        : nextStatus === "completed" && current.status !== "completed"
+          ? new Date().toISOString()
+          : nextStatus !== "completed" && current.status === "completed"
+            ? null
+            : current.completedAt;
+
     const next = touchEntity(current, actor, {
       ...parsed.data,
       origin: role === AppRole.employee ? "personal" : parsed.data.origin,
@@ -183,6 +197,8 @@ export async function updateWorkTask(
         parsed.data.evidenceNotes !== undefined
           ? parsed.data.evidenceNotes
           : current.evidenceNotes,
+      assignedAt: current.assignedAt || current.createdAt,
+      completedAt,
       subItems: parsed.data.subItems
         ? parsed.data.subItems.map((s, i) => ({
             id: s.id ?? current.subItems[i]?.id ?? createId("sub"),

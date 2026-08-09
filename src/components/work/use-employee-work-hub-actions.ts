@@ -7,7 +7,7 @@ import {
   employeeOwnsPersonalMeeting,
   employeeOwnsPersonalTask,
 } from "@/lib/work-utils";
-import { nextTaskStatus, taskRequiresEvidence } from "@/lib/task-evidence";
+import { nextTaskStatus } from "@/lib/task-evidence";
 import type { WorkMeeting, WorkTask } from "@/types/work";
 import type { ComposerMode } from "@/components/work/employee-work-hub-types";
 
@@ -43,7 +43,7 @@ export function useEmployeeWorkHubActions({
     const task = tasks.find((x) => x.id === id);
     if (!task) return;
     const next = nextTaskStatus(task.status);
-    if (next === "completed" && taskRequiresEvidence(task)) {
+    if (next === "completed") {
       setEvidenceTask(task);
       return;
     }
@@ -52,6 +52,13 @@ export function useEmployeeWorkHubActions({
     );
     const res = await updateWorkTaskStatus(id, next);
     if (!res.success) await reload();
+  }
+
+  /** One-tap Done: always collect mandatory notes before completing. */
+  function markTaskDone(id: string) {
+    const task = tasks.find((x) => x.id === id);
+    if (!task || task.status === "completed") return;
+    setEvidenceTask(task);
   }
 
   function handleEvidenceCompleted(updated: WorkTask) {
@@ -141,6 +148,7 @@ export function useEmployeeWorkHubActions({
     evidenceTask,
     setEvidenceTask,
     cycleTaskStatus,
+    markTaskDone,
     handleEvidenceCompleted,
     toggleSubItem,
     openCreateTask,

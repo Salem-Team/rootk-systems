@@ -11,7 +11,7 @@ import {
   updateWorkTaskStatusSchema,
   type TaskEvidenceDto,
 } from "@/schemas/work.schema";
-import { isValidEvidenceUrl, taskRequiresEvidence, validateTaskEvidence } from "@/lib/task-evidence";
+import { isValidEvidenceUrl, validateTaskEvidence } from "@/lib/task-evidence";
 import { fromError, ok } from "@/services/api-result";
 import { getSessionRole, getSessionUserId } from "@/stores/session-store";
 import { emitWorkUpdated } from "@/lib/events";
@@ -49,8 +49,7 @@ export async function updateWorkTaskStatus(
     if (
       parsed.data.status === "completed" &&
       current.status !== "completed" &&
-      getSessionRole() === AppRole.employee &&
-      taskRequiresEvidence(current)
+      getSessionRole() === AppRole.employee
     ) {
       const check = validateTaskEvidence(current, {
         links: parsed.data.evidence?.links ?? current.evidenceLinks,
@@ -67,11 +66,19 @@ export async function updateWorkTaskStatus(
       }
     }
 
+    const completedAtPatch =
+      parsed.data.status === "completed" && current.status !== "completed"
+        ? { completedAt: new Date().toISOString() }
+        : parsed.data.status !== "completed" && current.status === "completed"
+          ? { completedAt: null }
+          : {};
+
     if (isPersonalWork(current)) {
       return updateWorkTask(id, {
         status: parsed.data.status,
         evidenceLinks: parsed.data.evidence?.links,
         evidenceNotes: parsed.data.evidence?.notes,
+        ...completedAtPatch,
       });
     }
     const actor = getSessionUserId();
@@ -85,6 +92,7 @@ export async function updateWorkTaskStatus(
       ...(parsed.data.evidence?.notes !== undefined
         ? { evidenceNotes: parsed.data.evidence.notes }
         : {}),
+      ...completedAtPatch,
     });
     const saved = await workTaskRepository.update(id, next);
     if (!saved) throw new NotFoundError("Task not found");

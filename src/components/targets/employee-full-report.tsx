@@ -22,6 +22,10 @@ import { getEmployeeTargetPerformance } from "@/services/targets.service";
 import { getWorkTasks } from "@/services/work.service";
 import { useTranslation } from "@/hooks/use-translation";
 import { taskDueBucket } from "@/lib/work-utils";
+import {
+  averageTaskDurationMs,
+  formatDurationMs,
+} from "@/lib/work-duration";
 import type { Employee } from "@/types";
 import type {
   EmployeeTargetPerformance,
@@ -111,7 +115,15 @@ export function EmployeeFullReport({
       linkedTasks.length === 0
         ? 0
         : Math.round((completed / linkedTasks.length) * 1000) / 10;
-    return { completed, open, overdue, rate, total: linkedTasks.length };
+    const avgDurationMs = averageTaskDurationMs(linkedTasks);
+    return {
+      completed,
+      open,
+      overdue,
+      rate,
+      total: linkedTasks.length,
+      avgDurationMs,
+    };
   }, [linkedTasks]);
 
   if (loading || !performance) return <TableSkeleton rows={6} />;
@@ -235,7 +247,7 @@ export function EmployeeFullReport({
             {t("targets.report.taskSummaryDesc")}
           </p>
         </div>
-        <div className="panel-body grid gap-3 sm:grid-cols-3 sm:gap-3.5">
+        <div className="panel-body grid gap-3 sm:grid-cols-2 sm:gap-3.5 lg:grid-cols-4">
           <SummaryTile
             icon={<CheckCircle2 className="h-5 w-5 text-emerald-600" />}
             label={t("targets.report.tasksDone")}
@@ -253,6 +265,12 @@ export function EmployeeFullReport({
             label={t("ops.due.overdue")}
             value={taskStats.overdue}
             tone="bg-rose-500/10"
+          />
+          <SummaryTile
+            icon={<TrendingUp className="h-5 w-5 text-teal-600" />}
+            label={t("targets.report.avgDuration")}
+            value={formatDurationMs(taskStats.avgDurationMs, t)}
+            tone="bg-teal-500/10"
           />
         </div>
       </section>

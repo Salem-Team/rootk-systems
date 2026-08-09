@@ -78,10 +78,12 @@ export function addEvidenceLink(
   return { links: [...current, normalized] };
 }
 
+/** Notes are always required for employee completion; links stay optional unless flagged. */
 export function taskRequiresEvidence(
-  task: Pick<WorkTask, "requireEvidenceLinks" | "requireEvidenceNotes">
+  _task?: Pick<WorkTask, "requireEvidenceLinks" | "requireEvidenceNotes">
 ): boolean {
-  return Boolean(task.requireEvidenceLinks || task.requireEvidenceNotes);
+  void _task;
+  return true;
 }
 
 export function resolveTaskEvidence(
@@ -106,8 +108,7 @@ export function validateTaskEvidence(
     .filter(isValidEvidenceUrl);
   const notes = (evidence.notes ?? "").trim();
   const linksOk = !task.requireEvidenceLinks || links.length > 0;
-  const notesOk =
-    !task.requireEvidenceNotes || notes.length >= EVIDENCE_NOTES_MIN;
+  const notesOk = notes.length >= EVIDENCE_NOTES_MIN;
 
   if (!linksOk && !notesOk) return { ok: false, code: "both" };
   if (!linksOk) return { ok: false, code: "links" };
@@ -127,11 +128,9 @@ export function nextTaskStatus(status: TaskStatus): TaskStatus {
   return order[(order.indexOf(status) + 1) % order.length];
 }
 
-/** Whether moving to the next status must collect completion proof first. */
+/** Whether moving to the next status must collect completion notes/proof first. */
 export function completionNeedsEvidenceDialog(task: WorkTask): boolean {
-  return (
-    nextTaskStatus(task.status) === "completed" && taskRequiresEvidence(task)
-  );
+  return nextTaskStatus(task.status) === "completed";
 }
 
 export type EvidenceBadgeState = "required" | "submitted" | "none";
@@ -146,7 +145,9 @@ export function resolveEvidenceBadgeState(
     | "status"
   >
 ): EvidenceBadgeState {
-  if (!taskRequiresEvidence(task)) return "none";
-  if (taskHasSubmittedEvidence(task)) return "submitted";
-  return "required";
+  if (task.status === "completed" && taskHasSubmittedEvidence(task)) {
+    return "submitted";
+  }
+  if (task.status !== "completed") return "required";
+  return taskHasSubmittedEvidence(task) ? "submitted" : "none";
 }

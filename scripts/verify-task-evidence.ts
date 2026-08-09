@@ -1,5 +1,6 @@
 /**
  * Task completion evidence helpers — regression checks.
+ * Notes are always mandatory for employee Done; links stay optional unless flagged.
  * Run: npx tsx scripts/verify-task-evidence.ts
  */
 
@@ -45,9 +46,11 @@ function baseTask(overrides: Partial<WorkTask> = {}): WorkTask {
     requireEvidenceNotes: false,
     evidenceLinks: [],
     evidenceNotes: "",
+    assignedAt: "2026-08-01T10:00:00.000Z",
+    completedAt: null,
     companyId: "c1",
-    createdAt: "",
-    updatedAt: "",
+    createdAt: "2026-08-01T10:00:00.000Z",
+    updatedAt: "2026-08-01T10:00:00.000Z",
     createdBy: "",
     updatedBy: "",
     deletedAt: null,
@@ -75,29 +78,40 @@ function main() {
   assert(!addOk.error && addOk.links.length === 1, "add valid link");
 
   const off = baseTask();
-  assert(!taskRequiresEvidence(off), "default task does not require evidence");
-  assert(resolveEvidenceBadgeState(off) === "none", "badge none when optional");
+  assert(taskRequiresEvidence(off), "notes always required before Done");
+  assert(resolveEvidenceBadgeState(off) === "required", "badge required while open");
   assert(
-    validateTaskEvidence(off, { links: [], notes: "" }).ok,
-    "complete without proof when not required"
+    !validateTaskEvidence(off, { links: [], notes: "" }).ok,
+    "reject empty notes even when flags off"
   );
   assert(
-    !completionNeedsEvidenceDialog(off),
-    "no dialog when evidence not required"
+    validateTaskEvidence(off, { links: [], notes: "Done with notes" }).ok,
+    "accept notes-only completion"
+  );
+  assert(
+    completionNeedsEvidenceDialog(off),
+    "dialog always needed when moving to completed"
   );
 
   const linksOnly = baseTask({ requireEvidenceLinks: true });
-  assert(taskRequiresEvidence(linksOnly), "links flag enables requirement");
+  assert(taskRequiresEvidence(linksOnly), "links flag still requires evidence");
   assert(
     !validateTaskEvidence(linksOnly, { links: [], notes: "done work" }).ok,
     "reject missing links when required"
   );
   assert(
-    validateTaskEvidence(linksOnly, {
+    !validateTaskEvidence(linksOnly, {
       links: ["https://example.com/pr/1"],
       notes: "",
     }).ok,
-    "accept links-only proof"
+    "reject links without notes"
+  );
+  assert(
+    validateTaskEvidence(linksOnly, {
+      links: ["https://example.com/pr/1"],
+      notes: "Finished the handoff",
+    }).ok,
+    "accept links + notes proof"
   );
   assert(
     completionNeedsEvidenceDialog(linksOnly),
@@ -126,25 +140,32 @@ function main() {
   assert(!bothFail.ok && bothFail.code === "both", "both missing → both code");
 
   const submitted = baseTask({
-    requireEvidenceLinks: true,
-    evidenceLinks: ["https://example.com"],
     status: "completed",
+    evidenceNotes: "Shipped",
+    evidenceLinks: ["https://example.com"],
+    completedAt: "2026-08-01T12:00:00.000Z",
   });
   assert(taskHasSubmittedEvidence(submitted), "detect submitted evidence");
   assert(
     resolveEvidenceBadgeState(submitted) === "submitted",
-    "badge submitted when proof present"
+    "badge submitted when done with proof"
   );
 
-  assert(nextTaskStatus("todo") === "in_progress", "status cycle todo→progress");
-  assert(nextTaskStatus("in_progress") === "completed", "status cycle progress→done");
-  assert(nextTaskStatus("completed") === "todo", "status cycle done→todo");
+  assert(nextTaskStatus("todo") === "in_progress", "todo → in_progress");
+  assert(nextTaskStatus("in_progress") === "completed", "in_progress → completed");
+  assert(nextTaskStatus("completed") === "todo", "completed → todo");
+
+  const todo = baseTask({ status: "todo" });
+  assert(
+    !completionNeedsEvidenceDialog(todo),
+    "no dialog when next status is in_progress"
+  );
 
   if (failed > 0) {
-    console.error(`\nTask evidence checks failed: ${failed}`);
+    console.error(`\n${failed} assertion(s) failed`);
     process.exit(1);
   }
-  console.log(`\nAll task evidence checks passed.`);
+  console.log("\nAll task-evidence checks passed.");
 }
 
 main();

@@ -217,8 +217,17 @@ async function main() {
     );
     assert(linked.length >= 2, "expected at least 2 open linked tasks");
 
-    const first = await work.updateWorkTaskStatus(linked[0].id, "completed");
-    const second = await work.updateWorkTaskStatus(linked[1].id, "completed");
+    const doneNotes = { notes: "Agent demo — unit completed with notes" };
+    const first = await work.updateWorkTaskStatus(
+      linked[0].id,
+      "completed",
+      doneNotes
+    );
+    const second = await work.updateWorkTaskStatus(
+      linked[1].id,
+      "completed",
+      doneNotes
+    );
 
     // Allow async recalculate (fire-and-forget in work.service)
     await new Promise((r) => setTimeout(r, 800));
@@ -239,7 +248,7 @@ async function main() {
       ok,
       detail: ok
         ? `completedQuantity=${completed}, percentage=${pct}%`
-        : `got completed=${completed} pct=${pct} (expected 2 / 40)`,
+        : `got completed=${completed} pct=${pct} (expected 2 / 40); first=${first.message ?? first.success}; second=${second.message ?? second.success}`,
       data: targetRes.data,
     });
   }
@@ -358,7 +367,9 @@ async function main() {
       (t) => t.targetId === assignedTargetId && t.status !== "completed"
     );
     for (const task of open) {
-      await work.updateWorkTaskStatus(task.id, "completed");
+      await work.updateWorkTaskStatus(task.id, "completed", {
+        notes: "Agent demo — remaining unit completed with notes",
+      });
     }
     await new Promise((r) => setTimeout(r, 1000));
     const targetRes = await targets.getTarget(assignedTargetId);

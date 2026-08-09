@@ -40,6 +40,10 @@ export interface WorkTask extends BaseEntity {
   evidenceLinks?: string[];
   /** Written proof / handoff notes submitted on completion. */
   evidenceNotes?: string;
+  /** ISO timestamp when the task was assigned / became actionable. */
+  assignedAt?: string;
+  /** ISO timestamp when marked completed (null/undefined while open). */
+  completedAt?: string | null;
 }
 
 /** Scheduled meeting with assigned participants. */

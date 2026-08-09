@@ -42,7 +42,8 @@ export function useTaskCompletionEvidence({
   }, [open, task]);
 
   const requireLinks = Boolean(task?.requireEvidenceLinks);
-  const requireNotes = Boolean(task?.requireEvidenceNotes);
+  /** Notes are always mandatory when an employee marks Done. */
+  const requireNotes = true;
 
   const validation = useMemo(() => {
     if (!task) return { ok: true as const };

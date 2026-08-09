@@ -13,6 +13,7 @@ import { writeActivity } from "../common/activity-writer";
 import { TargetsService } from "../targets/targets.service";
 import {
   assertCompletionEvidence,
+  completionTimestampPatch,
   isPersonal,
   mapTask,
   ownsPersonalTask,
@@ -115,6 +116,7 @@ export class WorkTasksStatusService {
           body.evidenceNotes !== undefined
             ? String(body.evidenceNotes)
             : undefined,
+        ...completionTimestampPatch(nextStatus, current.status),
         updatedBy: actor.userId,
         version: { increment: 1 },
       },
@@ -176,6 +178,7 @@ export class WorkTasksStatusService {
         status: status as TaskStatus,
         ...(evidenceLinks !== undefined ? { evidenceLinks } : {}),
         ...(evidenceNotes !== undefined ? { evidenceNotes } : {}),
+        ...completionTimestampPatch(status, current.status),
         updatedBy: actor.userId,
         version: { increment: 1 },
       },

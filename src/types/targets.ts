@@ -104,6 +104,10 @@ export interface PerformanceTarget extends BaseEntity {
   notes: string;
   expectedCompletion: string | null;
   performanceScore: number;
+  /** ISO timestamp when assigned (null while draft). */
+  assignedAt?: string | null;
+  /** ISO timestamp when fully completed. */
+  completedAt?: string | null;
   /** Computed client/server metrics (not persisted). */
   metrics?: TargetProgressMetrics;
 }

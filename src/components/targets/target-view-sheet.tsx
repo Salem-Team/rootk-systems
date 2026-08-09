@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmployeeAvatarStack } from "@/components/work/employee-multi-picker";
+import { WorkDurationCell } from "@/components/work/work-duration-cell";
 import {
   TargetPriorityBadge,
   TargetRiskBadge,
@@ -244,6 +245,9 @@ export function TargetViewSheet({
                                 ? ` · ${t("ops.due.overdue")}`
                                 : ""}
                             </p>
+                            <div className="mt-1">
+                              <WorkDurationCell task={task} />
+                            </div>
                           </div>
                         </li>
                       );

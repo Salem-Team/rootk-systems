@@ -118,14 +118,35 @@ export class TargetsProgressService {
     });
 
     const prevCompleted = target.completedQuantity;
+    const nextStatus = metrics.derivedStatus as TargetStatus;
+    const timingPatch: {
+      assignedAt?: Date;
+      completedAt?: Date | null;
+    } = {};
+    if (!target.assignedAt && nextStatus !== TargetStatus.draft) {
+      timingPatch.assignedAt = new Date();
+    }
+    if (
+      nextStatus === TargetStatus.completed &&
+      target.status !== TargetStatus.completed
+    ) {
+      timingPatch.completedAt = new Date();
+    } else if (
+      nextStatus !== TargetStatus.completed &&
+      target.status === TargetStatus.completed
+    ) {
+      timingPatch.completedAt = null;
+    }
+
     const row = await this.prisma.performanceTarget.update({
       where: { id: targetId },
       data: {
         completedQuantity: completedCount,
-        status: metrics.derivedStatus as TargetStatus,
+        status: nextStatus,
         health: metrics.health as TargetHealth,
         riskLevel: metrics.riskLevel as TargetRiskLevel,
         performanceScore: metrics.performanceScore,
+        ...timingPatch,
         updatedBy: actorId,
         version: { increment: 1 },
       },

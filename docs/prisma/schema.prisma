@@ -238,8 +238,8 @@ model Company {
   organicAdHistory      OrganicAdHistoryEvent[]
   organicAdsSettings    OrganicAdsSettings[]
   crmStages             CrmStage[]
-  crmBusinessTypes      CrmBusinessType[]
   crmFeedbackTypes      CrmFeedbackType[]
+  crmBusinessTypes      CrmBusinessType[]
   crmLeads              CrmLead[]
   crmLeadActivities     CrmLeadActivity[]
   crmLeadFeedback       CrmLeadFeedback[]
@@ -474,6 +474,10 @@ model WorkTask {
   requireEvidenceNotes  Boolean      @default(false)
   evidenceLinks         String[]     @default([])
   evidenceNotes         String       @default("")
+  /// When the task was assigned / became actionable (defaults to create time).
+  assignedAt            DateTime     @default(now())
+  /// When the assignee marked the task completed (null if open/reopened).
+  completedAt           DateTime?
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt
   createdBy             String?
@@ -490,6 +494,7 @@ model WorkTask {
   @@index([companyId, status])
   @@index([companyId, dueDate])
   @@index([companyId, targetId])
+  @@index([companyId, completedAt])
 }
 
 model WorkMeeting {
@@ -938,6 +943,10 @@ model PerformanceTarget {
   notes                String              @default("")
   expectedCompletion   DateTime?
   performanceScore     Float               @default(0)
+  /// When the target was assigned to people (null while still draft).
+  assignedAt           DateTime?
+  /// When the target reached completed status (null if open/reopened).
+  completedAt          DateTime?
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
   createdBy            String?
@@ -962,6 +971,7 @@ model PerformanceTarget {
   @@index([companyId, categoryId])
   @@index([companyId, typeId])
   @@index([companyId, riskLevel])
+  @@index([companyId, completedAt])
 }
 
 model TargetWarning {
@@ -1263,6 +1273,8 @@ model CrmLeadFeedback {
   leadId                String
   feedbackTypeId        String
   customerFeedback      String        @default("")
+  /** true = answered call (Active), false = no answer (Inactive). */
+  callAnswered          Boolean       @default(true)
   nextAction            CrmNextAction @default(none)
   nextFollowUpAt        DateTime?
   notes                 String        @default("")

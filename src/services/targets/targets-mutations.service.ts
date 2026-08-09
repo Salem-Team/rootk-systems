@@ -36,12 +36,23 @@ export async function recalculateTargetProgress(
     status: target.status,
   });
 
+  const now = new Date().toISOString();
+  const nextStatus = metrics.derivedStatus;
   const next = touchEntity(target, getSessionUserId(), {
     completedQuantity,
-    status: metrics.derivedStatus,
+    status: nextStatus,
     health: metrics.health,
     riskLevel: metrics.riskLevel,
     performanceScore: metrics.performanceScore,
+    assignedAt:
+      target.assignedAt ||
+      (nextStatus !== "draft" ? target.createdAt || now : null),
+    completedAt:
+      nextStatus === "completed" && target.status !== "completed"
+        ? now
+        : nextStatus !== "completed" && target.status === "completed"
+          ? null
+          : target.completedAt ?? null,
   });
   await performanceTargetRepository.update(targetId, next);
   await writeHistory(targetId, "progress", {

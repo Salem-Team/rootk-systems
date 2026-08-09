@@ -1,6 +1,11 @@
 import { BadRequestException } from "@nestjs/common";
-import { WorkOrigin, type WorkMeeting, type WorkTask } from "@prisma/client";
-import { auditFields, dateOnly, iso } from "../common/mappers";
+import {
+  TaskStatus,
+  WorkOrigin,
+  type WorkMeeting,
+  type WorkTask,
+} from "@prisma/client";
+import { auditFields, dateOnly, iso, isoOrNull } from "../common/mappers";
 
 export type Actor = {
   userId: string;
@@ -34,6 +39,7 @@ export function sanitizeEvidenceLinks(links: unknown): string[] {
     .slice(0, 10);
 }
 
+/** Employees must always leave notes; links stay optional unless the admin requires them. */
 export function assertCompletionEvidence(
   task: WorkTask,
   evidence: { links?: string[]; notes?: string } | undefined,
@@ -41,9 +47,6 @@ export function assertCompletionEvidence(
 ) {
   if (actorRole === "admin") return;
   const requireLinks = task.requireEvidenceLinks;
-  const requireNotes = task.requireEvidenceNotes;
-  if (!requireLinks && !requireNotes) return;
-
   const links = sanitizeEvidenceLinks(
     evidence?.links !== undefined ? evidence.links : task.evidenceLinks
   );
@@ -58,11 +61,26 @@ export function assertCompletionEvidence(
       "Proof links are required before completing this task"
     );
   }
-  if (requireNotes && notes.length < 3) {
+  if (notes.length < 3) {
     throw new BadRequestException(
       "Completion notes are required before completing this task"
     );
   }
+}
+
+/** Prisma patch for status transitions that stamp completedAt. */
+export function completionTimestampPatch(
+  nextStatus: TaskStatus | string | undefined,
+  currentStatus: TaskStatus | string
+): { completedAt: Date | null } | Record<string, never> {
+  if (!nextStatus || nextStatus === currentStatus) return {};
+  if (nextStatus === TaskStatus.completed) {
+    return { completedAt: new Date() };
+  }
+  if (currentStatus === TaskStatus.completed) {
+    return { completedAt: null };
+  }
+  return {};
 }
 
 export function mapTask(row: WorkTask) {
@@ -84,6 +102,8 @@ export function mapTask(row: WorkTask) {
     requireEvidenceNotes: row.requireEvidenceNotes,
     evidenceLinks: row.evidenceLinks ?? [],
     evidenceNotes: row.evidenceNotes ?? "",
+    assignedAt: iso(row.assignedAt ?? row.createdAt),
+    completedAt: isoOrNull(row.completedAt),
     ...auditFields(row),
   };
 }

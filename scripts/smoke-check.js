@@ -301,6 +301,16 @@ function main() {
     "prisma WorkTask evidence columns"
   );
   assert(
+    fileContains("backend/prisma/schema.prisma", "assignedAt") &&
+      fileContains("backend/prisma/schema.prisma", "completedAt"),
+    "prisma WorkTask/Target timing columns"
+  );
+  assert(
+    fileContains("src/lib/work-duration.ts", "taskDurationMs") &&
+      fileContains("src/lib/work-duration.ts", "formatDurationMs"),
+    "work duration helpers"
+  );
+  assert(
     fileContains("docs/prisma/schema.prisma", "requireEvidenceLinks"),
     "docs prisma evidence columns"
   );
