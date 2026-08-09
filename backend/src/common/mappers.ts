@@ -1,3 +1,5 @@
+import { BadRequestException } from "@nestjs/common";
+
 /** Shared serializers: Prisma DateTime/Json → frontend ISO / shapes. */
 
 export function iso(value: Date | string | null | undefined): string {
@@ -18,15 +20,36 @@ export function dateOnly(value: Date | string): string {
   return value.toISOString().slice(0, 10);
 }
 
+function utcDateOnly(now = new Date(), dayOffset = 0): Date {
+  return new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate() + dayOffset
+    )
+  );
+}
+
 export function parseDate(value: string): Date {
+  const raw = String(value ?? "").trim();
+  const lower = raw.toLowerCase();
+  // Aliases used by FE/smoke (`?date=today`).
+  if (lower === "today") return utcDateOnly();
+  if (lower === "yesterday") return utcDateOnly(new Date(), -1);
+
   // Accept YYYY-MM-DD, datetime-local, or full ISO (local date-only → start of day).
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return new Date(`${value}T00:00:00.000`);
+  let parsed: Date;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    parsed = new Date(`${raw}T00:00:00.000`);
+  } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw)) {
+    parsed = new Date(`${raw}:00`);
+  } else {
+    parsed = new Date(raw);
   }
-  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
-    return new Date(`${value}:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new BadRequestException(`Invalid date: ${value}`);
   }
-  return new Date(value);
+  return parsed;
 }
 
 /** Parse end-bound date-only as end of local day so same-day ranges work. */
