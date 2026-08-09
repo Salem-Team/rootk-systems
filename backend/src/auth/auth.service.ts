@@ -176,4 +176,73 @@ export class AuthService {
     if (!row) throw new UnauthorizedException("User not found");
     return mapUser(row);
   }
+
+  /** POST /auth/profile — update signed-in name (+ linked employee contact). */
+  async updateProfile(
+    userId: string,
+    companyId: string,
+    input: { firstName?: string; lastName?: string; phone?: string }
+  ) {
+    const row = await this.prisma.user.findFirst({
+      where: { id: userId, companyId, deletedAt: null, isActive: true },
+    });
+    if (!row) throw new UnauthorizedException("User not found");
+
+    const firstName =
+      typeof input.firstName === "string" ? input.firstName.trim() : undefined;
+    const lastName =
+      typeof input.lastName === "string" ? input.lastName.trim() : undefined;
+    const phone =
+      typeof input.phone === "string" ? input.phone.trim() : undefined;
+
+    if (firstName !== undefined && !firstName) {
+      throw new BadRequestException("First name is required");
+    }
+
+    const nextFirst = firstName ?? row.firstName?.trim() ?? "";
+    const nextLast =
+      lastName !== undefined ? lastName : (row.lastName?.trim() ?? "");
+    const displayName = [nextFirst, nextLast].filter(Boolean).join(" ").trim();
+    const initials = displayName
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase() ?? "")
+      .join("");
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(firstName !== undefined ? { firstName } : {}),
+        ...(lastName !== undefined ? { lastName } : {}),
+        ...(displayName ? { displayName } : {}),
+        ...(initials ? { initials } : {}),
+        updatedBy: userId,
+        version: { increment: 1 },
+      },
+    });
+
+    if (row.employeeId && (displayName || phone !== undefined)) {
+      await this.prisma.employee.updateMany({
+        where: { id: row.employeeId, companyId, deletedAt: null },
+        data: {
+          ...(displayName ? { name: displayName } : {}),
+          ...(phone !== undefined ? { phone } : {}),
+          updatedBy: userId,
+          version: { increment: 1 },
+        },
+      });
+    }
+
+    let phoneOut = phone ?? "";
+    if (row.employeeId) {
+      const emp = await this.prisma.employee.findFirst({
+        where: { id: row.employeeId, companyId, deletedAt: null },
+        select: { phone: true },
+      });
+      phoneOut = emp?.phone ?? phoneOut;
+    }
+
+    return { user: mapUser(updated), phone: phoneOut };
+  }
 }

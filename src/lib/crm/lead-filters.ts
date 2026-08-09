@@ -19,6 +19,8 @@ export function filterLeads(
     if (filters.ownerEmployeeId && lead.ownerEmployeeId !== filters.ownerEmployeeId)
       return false;
     if (filters.stageId && lead.stageId !== filters.stageId) return false;
+    if (filters.subStageId && lead.subStageId !== filters.subStageId)
+      return false;
     if (filters.status && lead.status !== filters.status) return false;
     if (filters.source && lead.source !== filters.source) return false;
     if (filters.tag && !lead.tags.includes(filters.tag)) return false;

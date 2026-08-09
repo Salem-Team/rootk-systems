@@ -238,6 +238,7 @@ model Company {
   organicAdHistory      OrganicAdHistoryEvent[]
   organicAdsSettings    OrganicAdsSettings[]
   crmStages             CrmStage[]
+  crmSubStages          CrmSubStage[]
   crmFeedbackTypes      CrmFeedbackType[]
   crmBusinessTypes      CrmBusinessType[]
   crmLeads              CrmLead[]
@@ -1137,11 +1138,39 @@ model CrmStage {
   version                Int              @default(1)
   metadata               Json             @default("{}")
 
-  company Company   @relation(fields: [companyId], references: [id])
-  leads   CrmLead[]
+  company   Company       @relation(fields: [companyId], references: [id])
+  leads     CrmLead[]
+  subStages CrmSubStage[]
 
   @@unique([companyId, name])
   @@index([companyId, sortOrder])
+  @@index([companyId, active])
+}
+
+/// Nested step under a CRM pipeline stage.
+model CrmSubStage {
+  id          String    @id @default(cuid())
+  companyId   String
+  stageId     String
+  name        String
+  description String    @default("")
+  sortOrder   Int       @default(0)
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+  isArchived  Boolean   @default(false)
+  version     Int       @default(1)
+  metadata    Json      @default("{}")
+
+  company Company   @relation(fields: [companyId], references: [id])
+  stage   CrmStage  @relation(fields: [stageId], references: [id])
+  leads   CrmLead[]
+
+  @@unique([companyId, stageId, name])
+  @@index([companyId, stageId, sortOrder])
   @@index([companyId, active])
 }
 
@@ -1208,6 +1237,7 @@ model CrmLead {
   source           CrmLeadSource  @default(other)
   ownerEmployeeId  String?
   stageId          String
+  subStageId       String?
   status           CrmLeadStatus  @default(active)
   tags             String[]       @default([])
   nextAction       CrmNextAction  @default(none)
@@ -1227,6 +1257,7 @@ model CrmLead {
 
   company      Company               @relation(fields: [companyId], references: [id])
   stage        CrmStage              @relation(fields: [stageId], references: [id])
+  subStage     CrmSubStage?          @relation(fields: [subStageId], references: [id])
   businessType CrmBusinessType?      @relation(fields: [businessTypeId], references: [id])
   activities   CrmLeadActivity[]
   feedback     CrmLeadFeedback[]
@@ -1234,6 +1265,7 @@ model CrmLead {
 
   @@index([companyId, ownerEmployeeId])
   @@index([companyId, stageId])
+  @@index([companyId, subStageId])
   @@index([companyId, businessTypeId])
   @@index([companyId, status])
   @@index([companyId, createdAt])

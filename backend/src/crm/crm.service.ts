@@ -11,6 +11,7 @@ import { CrmLeadsService } from "./crm-leads.service";
 import { CrmPerformanceService } from "./crm-performance.service";
 import { CrmReportsService } from "./crm-reports.service";
 import { CrmStagesService } from "./crm-stages.service";
+import { CrmSubStagesService } from "./crm-sub-stages.service";
 
 export type { Actor };
 
@@ -22,6 +23,7 @@ export type { Actor };
 export class CrmService {
   constructor(
     private readonly stages: CrmStagesService,
+    private readonly subStages: CrmSubStagesService,
     private readonly feedbackTypes: CrmFeedbackTypesService,
     private readonly businessTypes: CrmBusinessTypesService,
     private readonly leads: CrmLeadsService,
@@ -50,6 +52,24 @@ export class CrmService {
 
   deleteStage(companyId: string, actor: Actor, id: string, moveToStageId?: string) {
     return this.stages.deleteStage(companyId, actor, id, moveToStageId);
+  }
+
+  // ── Sub-stages ──────────────────────────────────────────────────────────
+
+  upsertSubStage(companyId: string, actor: Actor, body: Record<string, unknown>) {
+    return this.subStages.upsertSubStage(companyId, actor, body);
+  }
+
+  reorderSubStages(
+    companyId: string,
+    actor: Actor,
+    body: Record<string, unknown>
+  ) {
+    return this.subStages.reorderSubStages(companyId, actor, body);
+  }
+
+  deleteSubStage(companyId: string, actor: Actor, id: string) {
+    return this.subStages.deleteSubStage(companyId, actor, id);
   }
 
   // ── Feedback types ──────────────────────────────────────────────────────

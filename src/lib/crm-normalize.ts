@@ -47,21 +47,29 @@ export function ensurePaginatedLeads(raw: unknown): PaginatedLeads {
   const empty = emptyPaginatedLeads();
   if (!raw) return empty;
   if (Array.isArray(raw)) {
+    const items = (raw as CrmLead[]).map((lead) => ({
+      ...lead,
+      subStageId: lead.subStageId ?? null,
+    }));
     return {
-      items: raw as CrmLead[],
-      total: raw.length,
+      items,
+      total: items.length,
       page: 1,
-      pageSize: raw.length || 20,
+      pageSize: items.length || 20,
       totalPages: 1,
     };
   }
   if (typeof raw !== "object") return empty;
   const row = raw as Partial<PaginatedLeads> & { data?: CrmLead[] };
-  const items = Array.isArray(row.items)
+  const rawItems = Array.isArray(row.items)
     ? row.items
     : Array.isArray(row.data)
       ? row.data
       : [];
+  const items = rawItems.map((lead) => ({
+    ...lead,
+    subStageId: lead.subStageId ?? null,
+  }));
   const page = typeof row.page === "number" ? row.page : 1;
   const pageSize = typeof row.pageSize === "number" ? row.pageSize : 20;
   const total = typeof row.total === "number" ? row.total : items.length;

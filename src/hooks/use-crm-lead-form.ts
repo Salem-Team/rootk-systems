@@ -41,6 +41,7 @@ export function useCrmLeadForm({
   const [businessTypeId, setBusinessTypeId] = useState<string>("none");
   const [source, setSource] = useState<CrmLeadSource>("other");
   const [stageId, setStageId] = useState("");
+  const [subStageId, setSubStageId] = useState<string>("none");
   const [ownerEmployeeId, setOwnerEmployeeId] = useState<string>("none");
   const [status, setStatus] = useState<CrmLeadStatus>("active");
   const [tags, setTags] = useState<CrmLeadTag[]>([]);
@@ -68,6 +69,7 @@ export function useCrmLeadForm({
       setBusinessTypeId(editingLead.businessTypeId ?? "none");
       setSource(editingLead.source);
       setStageId(editingLead.stageId);
+      setSubStageId(editingLead.subStageId ?? "none");
       setOwnerEmployeeId(editingLead.ownerEmployeeId ?? "none");
       setStatus(editingLead.status);
       setTags(editingLead.tags ?? []);
@@ -87,6 +89,7 @@ export function useCrmLeadForm({
           safeStages[0]?.id ||
           ""
       );
+      setSubStageId("none");
       setOwnerEmployeeId("none");
       setStatus("active");
       setTags([]);
@@ -104,6 +107,15 @@ export function useCrmLeadForm({
     );
   }
 
+  function onStageIdChange(next: string) {
+    setStageId(next);
+    setSubStageId("none");
+  }
+
+  const activeSubStages = (
+    activeStages.find((s) => s.id === stageId)?.subStages ?? []
+  ).filter((s) => s.active || s.id === editingLead?.subStageId);
+
   async function submit() {
     const payload = {
       name: name.trim(),
@@ -114,6 +126,7 @@ export function useCrmLeadForm({
         businessTypeId === "none" ? null : businessTypeId || null,
       source,
       stageId,
+      subStageId: subStageId === "none" ? null : subStageId || null,
       ownerEmployeeId:
         ownerEmployeeId === "none" ? null : ownerEmployeeId || null,
       status,
@@ -163,7 +176,10 @@ export function useCrmLeadForm({
     source,
     setSource,
     stageId,
-    setStageId,
+    onStageIdChange,
+    subStageId,
+    setSubStageId,
+    activeSubStages,
     ownerEmployeeId,
     setOwnerEmployeeId,
     status,

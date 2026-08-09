@@ -1,5 +1,6 @@
 export {
   crmStagesSeed,
+  crmSubStagesSeed,
   crmFeedbackTypesSeed,
   crmBusinessTypesSeed,
 } from "@/mocks/crm/catalog";

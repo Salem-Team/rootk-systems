@@ -48,6 +48,7 @@ export {
 } from "./organic-ads.repository";
 export {
   crmStageRepository,
+  crmSubStageRepository,
   crmFeedbackTypeRepository,
   crmLeadRepository,
   crmLeadActivityRepository,

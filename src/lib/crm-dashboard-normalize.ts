@@ -1,4 +1,4 @@
-import type { CrmDashboard, CrmKpis } from "@/types/crm";
+import type { CrmDashboard, CrmKpis, CrmSalesPerformanceRow } from "@/types/crm";
 
 const EMPTY_KPIS: CrmKpis = {
   totalLeads: 0,
@@ -74,11 +74,20 @@ export function ensureCrmDashboard(raw: unknown): CrmDashboard {
       : Array.isArray(charts.feedbackReasons)
         ? charts.feedbackReasons
         : [],
-    salesPerformance: Array.isArray(row.salesPerformance)
-      ? row.salesPerformance
-      : Array.isArray(charts.salesPerformance)
-        ? charts.salesPerformance
-        : [],
+    salesPerformance: (
+      Array.isArray(row.salesPerformance)
+        ? row.salesPerformance
+        : Array.isArray(charts.salesPerformance)
+          ? charts.salesPerformance
+          : []
+    ).map((perf) => {
+      const item = perf as CrmSalesPerformanceRow;
+      return {
+        ...item,
+        activeCalls: Number(item.activeCalls ?? 0),
+        inactiveCalls: Number(item.inactiveCalls ?? 0),
+      };
+    }),
     needsAttention: Array.isArray(row.needsAttention) ? row.needsAttention : [],
     insights: Array.isArray(row.insights) ? row.insights : [],
   };

@@ -69,6 +69,53 @@ export class CrmController {
     return this.service.deleteStage(companyId, toDomainActor(user, actorId), id, moveTo);
   }
 
+  // ── Sub-stages ──────────────────────────────────────────────────────────
+
+  @Put("sub-stages")
+  @Roles(AppRole.admin)
+  upsertSubStage(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @CurrentUser() user: JwtPayload,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.service.upsertSubStage(
+      companyId,
+      toDomainActor(user, actorId),
+      body
+    );
+  }
+
+  @Post("sub-stages/reorder")
+  @Roles(AppRole.admin)
+  reorderSubStages(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @CurrentUser() user: JwtPayload,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.service.reorderSubStages(
+      companyId,
+      toDomainActor(user, actorId),
+      body
+    );
+  }
+
+  @Delete("sub-stages/:id")
+  @Roles(AppRole.admin)
+  deleteSubStage(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string
+  ) {
+    return this.service.deleteSubStage(
+      companyId,
+      toDomainActor(user, actorId),
+      id
+    );
+  }
+
   // ── Feedback types ──────────────────────────────────────────────────────
 
   @Get("feedback-types")

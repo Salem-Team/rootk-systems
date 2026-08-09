@@ -1,9 +1,24 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { TargetHealth, TargetPriority, TargetRiskLevel, TargetStatus, TaskStatus } from "@prisma/client";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import {
+  TargetHealth,
+  TargetPriority,
+  TargetRiskLevel,
+  TargetStatus,
+  TaskStatus,
+  WorkOrigin,
+} from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { iso, parseDate, parseDateEnd } from "../common/mappers";
-import { computeTargetProgress } from "../lib/target-progress";
-import { assertCap, type Actor } from "./targets-access";
+import {
+  buildTaskTitle,
+  computeTargetProgress,
+  MAX_AUTO_TASKS_PER_TARGET,
+} from "../lib/target-progress";
+import { assertCap, mapTaskPriority, type Actor } from "./targets-access";
 import { mapTarget } from "./targets-mappers";
 import { TargetsNotifyService } from "./targets-notify.service";
 
@@ -26,7 +41,39 @@ export class TargetsProgressService {
     });
     if (!current) throw new NotFoundException("Target not found");
 
-    // Progress fields are never editable manually.
+    const nextCategoryId =
+      body.categoryId !== undefined
+        ? String(body.categoryId)
+        : current.categoryId;
+    const nextTypeId =
+      body.typeId !== undefined ? String(body.typeId) : current.typeId;
+    if (body.categoryId !== undefined || body.typeId !== undefined) {
+      const [category, type] = await Promise.all([
+        this.prisma.targetCategory.findFirst({
+          where: { id: nextCategoryId, companyId, deletedAt: null },
+        }),
+        this.prisma.targetType.findFirst({
+          where: { id: nextTypeId, companyId, deletedAt: null },
+        }),
+      ]);
+      if (!category) throw new NotFoundException("Category not found");
+      if (!type) throw new NotFoundException("Type not found");
+      if (type.categoryId !== category.id) {
+        throw new BadRequestException(
+          "Type does not belong to the selected category"
+        );
+      }
+    }
+
+    const nextQuantity =
+      body.quantity !== undefined
+        ? Math.max(1, Math.floor(Number(body.quantity)))
+        : current.quantity;
+    if (body.quantity !== undefined && Number.isNaN(nextQuantity)) {
+      throw new BadRequestException("quantity must be a positive number");
+    }
+
+    // completedQuantity / score / health are derived — never edited manually.
     const row = await this.prisma.performanceTarget.update({
       where: { id },
       data: {
@@ -36,6 +83,11 @@ export class TargetsProgressService {
           body.description !== undefined
             ? String(body.description)
             : undefined,
+        categoryId:
+          body.categoryId !== undefined ? nextCategoryId : undefined,
+        typeId: body.typeId !== undefined ? nextTypeId : undefined,
+        quantity: body.quantity !== undefined ? nextQuantity : undefined,
+        unit: body.unit !== undefined ? String(body.unit) : undefined,
         priority:
           body.priority !== undefined
             ? (String(body.priority) as TargetPriority)
@@ -69,9 +121,71 @@ export class TargetsProgressService {
       },
     });
 
+    if (nextQuantity > current.quantity) {
+      await this.syncLinkedTasksAfterQuantityIncrease(
+        companyId,
+        actor,
+        row,
+        nextQuantity
+      );
+    }
+
     await this.notify.writeHistory(companyId, id, actor.userId, "updated", body);
     await this.notify.notifyAssignees(companyId, actor.userId, row, "updated");
     return this.recalculateTarget(companyId, id, actor.userId);
+  }
+
+  /** When goal quantity grows, top up auto-linked tasks to match (capped). */
+  private async syncLinkedTasksAfterQuantityIncrease(
+    companyId: string,
+    actor: Actor,
+    target: {
+      id: string;
+      title: string;
+      description: string;
+      typeId: string;
+      endDate: Date;
+      priority: TargetPriority;
+      assigneeIds: string[];
+    },
+    nextQuantity: number
+  ) {
+    const existingCount = await this.prisma.workTask.count({
+      where: { companyId, targetId: target.id, deletedAt: null },
+    });
+    if (existingCount === 0) return;
+
+    const desired = Math.min(nextQuantity, MAX_AUTO_TASKS_PER_TARGET);
+    const missing = desired - existingCount;
+    if (missing <= 0) return;
+
+    const type = await this.prisma.targetType.findFirst({
+      where: { id: target.typeId, companyId, deletedAt: null },
+    });
+    if (!type) return;
+
+    const assignedAt = new Date();
+    const data = Array.from({ length: missing }, (_, i) => ({
+      companyId,
+      title: buildTaskTitle(
+        type.taskTitleTemplate,
+        type.name,
+        existingCount + i + 1
+      ),
+      description: target.description || `Auto task for target: ${target.title}`,
+      status: TaskStatus.todo,
+      priority: mapTaskPriority(target.priority),
+      dueDate: target.endDate,
+      tag: type.name,
+      estimateMin: 0,
+      assigneeIds: target.assigneeIds,
+      targetId: target.id,
+      origin: WorkOrigin.assigned,
+      assignedAt,
+      createdBy: actor.userId,
+      updatedBy: actor.userId,
+    }));
+    await this.prisma.workTask.createMany({ data });
   }
 
   /**

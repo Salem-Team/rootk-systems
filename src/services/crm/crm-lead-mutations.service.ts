@@ -37,9 +37,16 @@ export async function createCrmLead(
     assertCap("create");
     await simulateDelay();
     const parsed = createLeadSchema.parse(input);
-    const { stages } = await ensureCatalog();
+    const { stages, subStages } = await ensureCatalog();
     if (!stages.some((s) => s.id === parsed.stageId)) {
       throw new ValidationError("Please select a valid stage");
+    }
+    let subStageId = parsed.subStageId ?? null;
+    if (subStageId) {
+      const sub = subStages.find((s) => s.id === subStageId);
+      if (!sub || sub.stageId !== parsed.stageId) {
+        throw new ValidationError("Please select a valid sub-stage");
+      }
     }
     const actorId = getSessionUserId() || "system";
     const empId = actorEmployeeId();
@@ -59,6 +66,7 @@ export async function createCrmLead(
         source: parsed.source,
         ownerEmployeeId: ownerEmployeeId ?? null,
         stageId: parsed.stageId,
+        subStageId,
         status: parsed.status ?? "active",
         tags: parsed.tags ?? [],
         nextAction: parsed.nextAction ?? "none",
@@ -114,7 +122,7 @@ export async function updateCrmLead(
     const parsed = updateLeadSchema.parse(input);
     const actorId = getSessionUserId() || "system";
     const empId = actorEmployeeId();
-    const { stages } = await ensureCatalog();
+    const { stages, subStages } = await ensureCatalog();
 
     if (parsed.ownerEmployeeId !== undefined && parsed.ownerEmployeeId !== existing.ownerEmployeeId) {
       if (!canCrm(getSessionRole(), "assign")) {
@@ -128,6 +136,12 @@ export async function updateCrmLead(
         ? parsed.lossReasonTypeId
         : existing.lossReasonTypeId;
 
+    const nextStageId = parsed.stageId ?? existing.stageId;
+    let nextSubStageId =
+      parsed.subStageId !== undefined
+        ? parsed.subStageId
+        : existing.subStageId;
+
     if (parsed.stageId && parsed.stageId !== existing.stageId) {
       const nextStage = stages.find((s) => s.id === parsed.stageId);
       const prevStage = stages.find((s) => s.id === existing.stageId);
@@ -140,6 +154,14 @@ export async function updateCrmLead(
           throw new ValidationError("Please select a loss reason");
         }
         convertedAt = null;
+      }
+      if (
+        nextSubStageId &&
+        !subStages.some(
+          (s) => s.id === nextSubStageId && s.stageId === nextStageId
+        )
+      ) {
+        nextSubStageId = null;
       }
       const activity = enrichWithAudit(
         {
@@ -163,6 +185,13 @@ export async function updateCrmLead(
         previousValue: prevStage?.name ?? existing.stageId,
         newValue: nextStage.name,
       });
+    }
+
+    if (nextSubStageId) {
+      const sub = subStages.find((s) => s.id === nextSubStageId);
+      if (!sub || sub.stageId !== nextStageId) {
+        throw new ValidationError("Please select a valid sub-stage");
+      }
     }
 
     if (
@@ -195,6 +224,8 @@ export async function updateCrmLead(
 
     const updated = touchEntity(existing, actorId, {
       ...parsed,
+      stageId: nextStageId,
+      subStageId: nextSubStageId,
       email: parsed.email ?? existing.email,
       companyName: parsed.companyName ?? existing.companyName,
       tags: parsed.tags ?? existing.tags,

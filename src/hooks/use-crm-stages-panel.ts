@@ -5,10 +5,13 @@ import { ensureCrmList } from "@/lib/crm-normalize";
 import {
   getCrmStages,
   removeCrmStage,
+  removeCrmSubStage,
   reorderCrmStageList,
+  reorderCrmSubStageList,
   upsertCrmStage,
+  upsertCrmSubStage,
 } from "@/services/crm.service";
-import type { CrmStage, CrmStageCategory } from "@/types/crm";
+import type { CrmStage, CrmStageCategory, CrmSubStage } from "@/types/crm";
 
 export const COLOR_SWATCHES = [
   "#082868",
@@ -44,6 +47,25 @@ function emptyDraft(sortOrder = 0): StageDraft {
   };
 }
 
+export interface SubStageDraft {
+  id?: string;
+  stageId: string;
+  name: string;
+  description: string;
+  active: boolean;
+  sortOrder: number;
+}
+
+function emptySubDraft(stageId: string, sortOrder = 0): SubStageDraft {
+  return {
+    stageId,
+    name: "",
+    description: "",
+    active: true,
+    sortOrder,
+  };
+}
+
 export function useCrmStagesPanel() {
   const { t } = useTranslation();
   const [stages, setStages] = useState<CrmStage[]>([]);
@@ -55,6 +77,9 @@ export function useCrmStagesPanel() {
   const [leadCount, setLeadCount] = useState(0);
   const [moveToStageId, setMoveToStageId] = useState("");
   const [needsMove, setNeedsMove] = useState(false);
+  const [subFormOpen, setSubFormOpen] = useState(false);
+  const [subDraft, setSubDraft] = useState<SubStageDraft>(emptySubDraft(""));
+  const [expandedStageId, setExpandedStageId] = useState<string | null>(null);
 
   const sorted = useMemo(
     () => [...stages].sort((a, b) => a.sortOrder - b.sortOrder),
@@ -182,6 +207,101 @@ export function useCrmStagesPanel() {
     setNeedsMove(false);
   }
 
+  function openCreateSub(stage: CrmStage) {
+    const count = (stage.subStages ?? []).length;
+    setSubDraft(emptySubDraft(stage.id, count));
+    setExpandedStageId(stage.id);
+    setSubFormOpen(true);
+  }
+
+  function openEditSub(sub: CrmSubStage) {
+    setSubDraft({
+      id: sub.id,
+      stageId: sub.stageId,
+      name: sub.name,
+      description: sub.description,
+      active: sub.active,
+      sortOrder: sub.sortOrder,
+    });
+    setExpandedStageId(sub.stageId);
+    setSubFormOpen(true);
+  }
+
+  async function onSaveSub() {
+    if (!subDraft.name.trim() || !subDraft.stageId) {
+      toast.error(t("crm.leadForm.validation"));
+      return;
+    }
+    setBusy(true);
+    const res = await upsertCrmSubStage({
+      id: subDraft.id,
+      stageId: subDraft.stageId,
+      name: subDraft.name.trim(),
+      description: subDraft.description,
+      active: subDraft.active,
+      sortOrder: subDraft.sortOrder,
+    });
+    setBusy(false);
+    if (!res.success) {
+      toast.error(res.message ?? t("crm.errors.saveFailed"));
+      return;
+    }
+    toast.success(t("crm.toast.subStageSaved"));
+    setSubFormOpen(false);
+    void reload();
+  }
+
+  async function toggleSubActive(sub: CrmSubStage) {
+    setBusy(true);
+    const res = await upsertCrmSubStage({
+      id: sub.id,
+      stageId: sub.stageId,
+      name: sub.name,
+      description: sub.description,
+      active: !sub.active,
+      sortOrder: sub.sortOrder,
+    });
+    setBusy(false);
+    if (!res.success) {
+      toast.error(res.message ?? t("crm.errors.saveFailed"));
+      return;
+    }
+    void reload();
+  }
+
+  async function moveSub(stageId: string, index: number, dir: -1 | 1) {
+    const stage = sorted.find((s) => s.id === stageId);
+    const list = [...(stage?.subStages ?? [])].sort(
+      (a, b) => a.sortOrder - b.sortOrder
+    );
+    const nextIndex = index + dir;
+    if (nextIndex < 0 || nextIndex >= list.length) return;
+    const ids = list.map((s) => s.id);
+    const tmp = ids[index];
+    ids[index] = ids[nextIndex];
+    ids[nextIndex] = tmp;
+    setBusy(true);
+    const res = await reorderCrmSubStageList(stageId, ids);
+    setBusy(false);
+    if (!res.success) {
+      toast.error(res.message ?? t("crm.errors.saveFailed"));
+      return;
+    }
+    void reload();
+  }
+
+  async function deleteSub(sub: CrmSubStage) {
+    setBusy(true);
+    const res = await removeCrmSubStage(sub.id);
+    setBusy(false);
+    if (!res.success) {
+      toast.error(res.message ?? t("crm.errors.deleteFailed"));
+      return;
+    }
+    toast.success(t("crm.toast.subStageDeleted"));
+    void reload();
+  }
+
   async function confirmDelete() {
     if (!deleteId) return;
     setBusy(true);
@@ -244,6 +364,12 @@ export function useCrmStagesPanel() {
     moveToStageId,
     setMoveToStageId,
     needsMove,
+    subFormOpen,
+    setSubFormOpen,
+    subDraft,
+    setSubDraft,
+    expandedStageId,
+    setExpandedStageId,
     openCreate,
     openEdit,
     openDuplicate,
@@ -253,5 +379,11 @@ export function useCrmStagesPanel() {
     askDelete,
     cancelDelete,
     confirmDelete,
+    openCreateSub,
+    openEditSub,
+    onSaveSub,
+    toggleSubActive,
+    moveSub,
+    deleteSub,
   };
 }

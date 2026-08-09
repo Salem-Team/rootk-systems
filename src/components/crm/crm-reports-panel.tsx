@@ -17,6 +17,15 @@ import {
 } from "recharts";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-state";
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeader,
+  DataTableHeaderRow,
+  DataTableRow,
+} from "@/components/ui/data-table";
 import { CHART } from "@/constants/chart-colors";
 import { chartTooltipStyle } from "@/constants/chart-tooltip";
 import { useTranslation } from "@/hooks/use-translation";
@@ -59,6 +68,17 @@ export function CrmReportsPanel({
       })),
     [safe?.leadsTrend, dateLocale]
   );
+
+  const callTotals = useMemo(() => {
+    const rows = safe?.salesPerformance ?? [];
+    return {
+      active: rows.reduce((sum, row) => sum + Number(row.activeCalls ?? 0), 0),
+      inactive: rows.reduce(
+        (sum, row) => sum + Number(row.inactiveCalls ?? 0),
+        0
+      ),
+    };
+  }, [safe?.salesPerformance]);
 
   if (loading && !safe) return <TableSkeleton rows={5} />;
 
@@ -111,6 +131,35 @@ export function CrmReportsPanel({
               </p>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="surface-panel">
+        <div className="panel-header">
+          <h3 className="text-[0.95rem] font-semibold tracking-tight">
+            {t("crm.reports.callsSummary")}
+          </h3>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {t("crm.reports.callsSummaryDesc")}
+          </p>
+        </div>
+        <div className="grid gap-2 p-4 sm:grid-cols-2">
+          <div className="rounded-lg border border-border/70 px-3 py-2.5">
+            <p className="text-[11px] text-muted-foreground">
+              {t("crm.performance.colActiveCalls")}
+            </p>
+            <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
+              {callTotals.active}
+            </p>
+          </div>
+          <div className="rounded-lg border border-border/70 px-3 py-2.5">
+            <p className="text-[11px] text-muted-foreground">
+              {t("crm.performance.colInactiveCalls")}
+            </p>
+            <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-rose-700 dark:text-rose-400">
+              {callTotals.inactive}
+            </p>
+          </div>
         </div>
       </section>
 
@@ -214,7 +263,7 @@ export function CrmReportsPanel({
               {t("crm.performance.chartTitle")}
             </h3>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {t("crm.performance.chartDesc")}
+              {t("crm.reports.callsChartDesc")}
             </p>
           </div>
           <div className="panel-body h-[260px]">
@@ -225,6 +274,8 @@ export function CrmReportsPanel({
                 <BarChart
                   data={salesPerformance.map((r) => ({
                     name: r.employeeName,
+                    activeCalls: Number(r.activeCalls ?? 0),
+                    inactiveCalls: Number(r.inactiveCalls ?? 0),
                     leads: r.leads,
                     won: r.won,
                   }))}
@@ -249,16 +300,16 @@ export function CrmReportsPanel({
                   />
                   <Tooltip contentStyle={chartTooltipStyle} />
                   <Bar
-                    dataKey="leads"
-                    name={t("crm.performance.colLeads")}
-                    fill={CHART.hours}
+                    dataKey="activeCalls"
+                    name={t("crm.performance.colActiveCalls")}
+                    fill={CHART.present}
                     radius={[6, 6, 0, 0]}
                     animationDuration={reduceMotion ? 0 : 900}
                   />
                   <Bar
-                    dataKey="won"
-                    name={t("crm.performance.colWon")}
-                    fill={CHART.present}
+                    dataKey="inactiveCalls"
+                    name={t("crm.performance.colInactiveCalls")}
+                    fill={CHART.absent}
                     radius={[6, 6, 0, 0]}
                     animationDuration={reduceMotion ? 0 : 900}
                   />
@@ -268,6 +319,71 @@ export function CrmReportsPanel({
           </div>
         </section>
       </div>
+
+      <section className="surface-panel">
+        <div className="panel-header">
+          <h3 className="text-[0.95rem] font-semibold tracking-tight">
+            {t("crm.performance.title")}
+          </h3>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {t("crm.performance.description")}
+          </p>
+        </div>
+        {salesPerformance.length === 0 ? (
+          <div className="p-6">
+            <EmptyState title={t("crm.empty.performance")} />
+          </div>
+        ) : (
+          <DataTable>
+            <DataTableHeader>
+              <DataTableHeaderRow>
+                <DataTableHead>{t("crm.performance.colSales")}</DataTableHead>
+                <DataTableHead className="text-end">
+                  {t("crm.performance.colLeads")}
+                </DataTableHead>
+                <DataTableHead className="text-end">
+                  {t("crm.performance.colActiveCalls")}
+                </DataTableHead>
+                <DataTableHead className="text-end">
+                  {t("crm.performance.colInactiveCalls")}
+                </DataTableHead>
+                <DataTableHead className="hidden text-end md:table-cell">
+                  {t("crm.performance.colWon")}
+                </DataTableHead>
+                <DataTableHead className="text-end">
+                  {t("crm.performance.colRate")}
+                </DataTableHead>
+              </DataTableHeaderRow>
+            </DataTableHeader>
+            <DataTableBody>
+              {salesPerformance.map((row) => (
+                <DataTableRow key={row.employeeId}>
+                  <DataTableCell>
+                    <span className="text-[13px] font-semibold">
+                      {row.employeeName}
+                    </span>
+                  </DataTableCell>
+                  <DataTableCell className="text-end font-mono tabular-nums">
+                    {row.leads}
+                  </DataTableCell>
+                  <DataTableCell className="text-end font-mono tabular-nums text-emerald-700 dark:text-emerald-400">
+                    {row.activeCalls}
+                  </DataTableCell>
+                  <DataTableCell className="text-end font-mono tabular-nums text-rose-700 dark:text-rose-400">
+                    {row.inactiveCalls}
+                  </DataTableCell>
+                  <DataTableCell className="hidden text-end font-mono tabular-nums md:table-cell">
+                    {row.won}
+                  </DataTableCell>
+                  <DataTableCell className="text-end font-mono tabular-nums">
+                    {Number(row.conversionRate ?? 0).toFixed(1)}%
+                  </DataTableCell>
+                </DataTableRow>
+              ))}
+            </DataTableBody>
+          </DataTable>
+        )}
+      </section>
     </div>
   );
 }

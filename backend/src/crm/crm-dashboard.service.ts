@@ -168,7 +168,12 @@ export class CrmDashboardService {
             : {}),
         },
       },
-      select: { feedbackTypeId: true },
+      select: {
+        feedbackTypeId: true,
+        leadId: true,
+        recordedByEmployeeId: true,
+        callAnswered: true,
+      },
     });
     const feedbackReasons = buildFeedbackReasons(
       countBy(feedbackRows, (f) => f.feedbackTypeId),
@@ -188,7 +193,12 @@ export class CrmDashboardService {
           select: { id: true, name: true },
         })
       : [];
-    const salesPerformance = buildSalesPerformance(allActiveLeads, stages, employees);
+    const salesPerformance = buildSalesPerformance(
+      allActiveLeads,
+      stages,
+      employees,
+      feedbackRows
+    );
 
     const attentionCounts = computeAttentionCounts(
       allActiveLeads,

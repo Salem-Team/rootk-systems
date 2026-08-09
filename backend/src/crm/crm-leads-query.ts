@@ -27,6 +27,7 @@ export function buildLeadWhere(
     ];
   }
   if (query.stageId) where.stageId = query.stageId;
+  if (query.subStageId) where.subStageId = query.subStageId;
   if (query.status && LEAD_STATUSES.has(query.status)) {
     where.status = query.status as CrmLeadStatus;
   }

@@ -76,8 +76,11 @@ export function CrmLeadFormSheet({
             source={form.source}
             onSourceChange={form.setSource}
             stageId={form.stageId}
-            onStageIdChange={form.setStageId}
+            onStageIdChange={form.onStageIdChange}
             activeStages={form.activeStages}
+            subStageId={form.subStageId}
+            onSubStageIdChange={form.setSubStageId}
+            activeSubStages={form.activeSubStages}
             ownerEmployeeId={form.ownerEmployeeId}
             onOwnerEmployeeIdChange={form.setOwnerEmployeeId}
             employees={safeEmployees}

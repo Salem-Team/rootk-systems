@@ -24,6 +24,7 @@ import type {
   CrmSalesPerformanceRow,
   CrmSalesProfile,
   CrmStage,
+  CrmSubStage,
   PaginatedLeads,
 } from "@/types/crm";
 import type {
@@ -34,6 +35,7 @@ import type {
   LeadActivityInput,
   LeadFeedbackInput,
   StageInput,
+  SubStageInput,
   UpdateLeadInput,
 } from "@/schemas/crm.schema";
 
@@ -70,6 +72,30 @@ export async function deleteCrmStage(
     `${API_ROUTES.crm.stageById(id)}${toQuery({ moveToStageId })}`,
     { ok: false }
   );
+}
+
+export async function putCrmSubStage(
+  body: SubStageInput
+): Promise<ApiResponse<CrmSubStage | null>> {
+  return api.put(API_ROUTES.crm.subStages, body, null);
+}
+
+export async function reorderCrmSubStages(
+  stageId: string,
+  ids: string[]
+): Promise<ApiResponse<CrmSubStage[]>> {
+  const res = await api.post(
+    API_ROUTES.crm.subStagesReorder,
+    { stageId, ids },
+    []
+  );
+  return withData(res, ensureCrmList<CrmSubStage>(res.data));
+}
+
+export async function deleteCrmSubStage(
+  id: string
+): Promise<ApiResponse<{ ok: boolean; leadCount?: number }>> {
+  return api.delete(API_ROUTES.crm.subStageById(id), { ok: false });
 }
 
 export async function fetchCrmFeedbackTypes(): Promise<
@@ -117,6 +143,7 @@ export async function fetchCrmLeads(
     `${API_ROUTES.crm.leads}${toQuery({
       search: filters.search,
       stageId: filters.stageId,
+      subStageId: filters.subStageId,
       status: filters.status || undefined,
       source: filters.source || undefined,
       ownerEmployeeId: filters.ownerEmployeeId,

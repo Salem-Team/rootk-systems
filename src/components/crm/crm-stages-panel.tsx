@@ -7,12 +7,16 @@ import { Button } from "@/components/ui/button";
 import { CrmStageDeleteDialog } from "@/components/crm/crm-stage-delete-dialog";
 import { CrmStageFormSheet } from "@/components/crm/crm-stage-form-sheet";
 import { CrmStageListItem } from "@/components/crm/crm-stage-list-item";
+import { CrmSubStageFormSheet } from "@/components/crm/crm-sub-stage-form-sheet";
 import { useCrmStagesPanel } from "@/hooks/use-crm-stages-panel";
 
-/** Admin stage management with reorder and safe delete. */
+/** Admin stage management with nested sub-stages, reorder, and safe delete. */
 export function CrmStagesPanel({ className }: { className?: string }) {
   const panel = useCrmStagesPanel();
   const { t } = panel;
+  const activeStageName = panel.sorted.find(
+    (s) => s.id === panel.subDraft.stageId
+  )?.name;
 
   if (panel.loading) return <TableSkeleton rows={5} />;
 
@@ -51,11 +55,20 @@ export function CrmStagesPanel({ className }: { className?: string }) {
               index={index}
               count={panel.sorted.length}
               busy={panel.busy}
+              expanded={panel.expandedStageId === stage.id}
+              onToggleExpand={(id) =>
+                panel.setExpandedStageId((prev) => (prev === id ? null : id))
+              }
               onMove={(i, dir) => void panel.move(i, dir)}
               onEdit={panel.openEdit}
               onDuplicate={panel.openDuplicate}
               onToggleActive={(s) => void panel.toggleActive(s)}
               onDelete={panel.askDelete}
+              onAddSub={panel.openCreateSub}
+              onEditSub={panel.openEditSub}
+              onToggleSubActive={(s) => void panel.toggleSubActive(s)}
+              onMoveSub={(stageId, i, dir) => void panel.moveSub(stageId, i, dir)}
+              onDeleteSub={(s) => void panel.deleteSub(s)}
             />
           ))}
         </ul>
@@ -68,6 +81,16 @@ export function CrmStagesPanel({ className }: { className?: string }) {
         onOpenChange={panel.setFormOpen}
         onDraftChange={panel.setDraft}
         onSave={() => void panel.onSave()}
+      />
+
+      <CrmSubStageFormSheet
+        open={panel.subFormOpen}
+        draft={panel.subDraft}
+        busy={panel.busy}
+        stageName={activeStageName}
+        onOpenChange={panel.setSubFormOpen}
+        onDraftChange={panel.setSubDraft}
+        onSave={() => void panel.onSaveSub()}
       />
 
       <CrmStageDeleteDialog

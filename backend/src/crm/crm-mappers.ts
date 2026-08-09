@@ -7,10 +7,23 @@ import type {
   CrmLeadFeedback,
   CrmLeadHistoryEvent,
   CrmStage,
+  CrmSubStage,
 } from "@prisma/client";
 import { auditFields, iso, isoOrNull } from "../common/mappers";
 
-export function mapStage(row: CrmStage) {
+export function mapSubStage(row: CrmSubStage) {
+  return {
+    id: row.id,
+    stageId: row.stageId,
+    name: row.name,
+    description: row.description,
+    sortOrder: row.sortOrder,
+    active: row.active,
+    ...auditFields(row),
+  };
+}
+
+export function mapStage(row: CrmStage, subStages: CrmSubStage[] = []) {
   return {
     id: row.id,
     name: row.name,
@@ -20,6 +33,7 @@ export function mapStage(row: CrmStage) {
     active: row.active,
     conversionProbability: row.conversionProbability,
     category: row.category,
+    subStages: subStages.map(mapSubStage),
     ...auditFields(row),
   };
 }
@@ -58,6 +72,7 @@ export function mapLead(row: CrmLead) {
     source: row.source,
     ownerEmployeeId: row.ownerEmployeeId,
     stageId: row.stageId,
+    subStageId: row.subStageId,
     status: row.status,
     tags: row.tags,
     nextAction: row.nextAction,

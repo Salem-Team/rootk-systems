@@ -11,6 +11,7 @@ export const API_ROUTES = {
     refresh: "/auth/refresh",
     logout: "/auth/logout",
     me: "/auth/me",
+    profile: "/auth/profile",
   },
   employees: {
     root: "/employees",
@@ -122,6 +123,9 @@ export const API_ROUTES = {
     stages: "/crm/stages",
     stageById: (id: string) => `/crm/stages/${id}`,
     stagesReorder: "/crm/stages/reorder",
+    subStages: "/crm/sub-stages",
+    subStageById: (id: string) => `/crm/sub-stages/${id}`,
+    subStagesReorder: "/crm/sub-stages/reorder",
     feedbackTypes: "/crm/feedback-types",
     feedbackTypeById: (id: string) => `/crm/feedback-types/${id}`,
     businessTypes: "/crm/business-types",

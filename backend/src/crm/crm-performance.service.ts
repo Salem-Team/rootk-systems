@@ -44,11 +44,19 @@ export class CrmPerformanceService {
         where: {
           companyId,
           deletedAt: null,
-          ...(isAdmin(actor)
-            ? {}
-            : { recordedByEmployeeId: actor.employeeId }),
+          lead: {
+            deletedAt: null,
+            ...this.shared.scopeOwnerFilter(actor),
+            ...(query.ownerEmployeeId && isAdmin(actor)
+              ? { ownerEmployeeId: query.ownerEmployeeId }
+              : {}),
+          },
         },
-        select: { recordedByEmployeeId: true, callAnswered: true },
+        select: {
+          leadId: true,
+          recordedByEmployeeId: true,
+          callAnswered: true,
+        },
       }),
     ]);
     const ownerIds = [

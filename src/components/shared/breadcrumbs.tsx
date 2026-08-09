@@ -16,7 +16,11 @@ export function Breadcrumbs({ className }: { className?: string }) {
   const segment = pathname.split("/").filter(Boolean)[0] ?? "dashboard";
   const navItem = APP_NAV.find((item) => item.href === `/${segment}`);
   const labelKey = (
-    navItem ? `nav.${navItem.key}` : "nav.dashboard"
+    segment === "profile"
+      ? "nav.profile"
+      : navItem
+        ? `nav.${navItem.key}`
+        : "nav.dashboard"
   ) as TranslationPath;
 
   return (

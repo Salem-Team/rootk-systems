@@ -42,6 +42,21 @@ class LogoutDto {
   refreshToken?: string;
 }
 
+class UpdateProfileDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  firstName?: string;
+
+  @IsOptional()
+  @IsString()
+  lastName?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+}
+
 @Controller("auth")
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
@@ -86,5 +101,17 @@ export class AuthController {
   me(@CurrentUser() user: JwtPayload) {
     if (!user) throw new UnauthorizedException();
     return this.auth.me(user);
+  }
+
+  /** Same verb style as change-password — avoids stale PATCH /me watch misses. */
+  @Post("profile")
+  @HttpCode(200)
+  @UseGuards(AuthGuard("jwt"))
+  updateProfile(
+    @CurrentUser() user: JwtPayload,
+    @Body() body: UpdateProfileDto
+  ) {
+    if (!user) throw new UnauthorizedException();
+    return this.auth.updateProfile(user.sub, user.companyId, body);
   }
 }

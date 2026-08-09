@@ -8,6 +8,7 @@ import {
   crmFeedbackTypeRepository,
   crmLeadHistoryRepository,
   crmStageRepository,
+  crmSubStageRepository,
 } from "@/repositories/crm.repository";
 import {
   getSessionRole,
@@ -20,6 +21,7 @@ import type {
   CrmLead,
   CrmLeadHistoryEvent,
   CrmStage,
+  CrmSubStage,
 } from "@/types/crm";
 
 export function assertCap(capability: Parameters<typeof canCrm>[1]): void {
@@ -73,10 +75,12 @@ export async function writeHistory(
 
 export async function ensureCatalog(): Promise<{
   stages: CrmStage[];
+  subStages: CrmSubStage[];
   feedbackTypes: CrmFeedbackType[];
   businessTypes: CrmBusinessType[];
 }> {
   let stages = await crmStageRepository.findAll();
+  let subStages = await crmSubStageRepository.findAll();
   let feedbackTypes = await crmFeedbackTypeRepository.findAll();
   let businessTypes = await crmBusinessTypeRepository.findAll();
   if (
@@ -86,6 +90,7 @@ export async function ensureCatalog(): Promise<{
   ) {
     const {
       crmStagesSeed,
+      crmSubStagesSeed,
       crmFeedbackTypesSeed,
       crmBusinessTypesSeed,
     } = await import("@/mocks/crm");
@@ -94,6 +99,12 @@ export async function ensureCatalog(): Promise<{
         await crmStageRepository.create(enrichWithAudit(s, "system"));
       }
       stages = await crmStageRepository.findAll();
+    }
+    if (subStages.length === 0) {
+      for (const s of crmSubStagesSeed) {
+        await crmSubStageRepository.create(enrichWithAudit(s, "system"));
+      }
+      subStages = await crmSubStageRepository.findAll();
     }
     if (feedbackTypes.length === 0) {
       for (const t of crmFeedbackTypesSeed) {
@@ -107,10 +118,37 @@ export async function ensureCatalog(): Promise<{
       }
       businessTypes = await crmBusinessTypeRepository.findAll();
     }
+  } else if (subStages.length === 0 && stages.length > 0) {
+    const { crmSubStagesSeed } = await import("@/mocks/crm");
+    const stageIds = new Set(stages.map((s) => s.id));
+    for (const s of crmSubStagesSeed) {
+      if (!stageIds.has(s.stageId)) continue;
+      await crmSubStageRepository.create(enrichWithAudit(s, "system"));
+    }
+    subStages = await crmSubStageRepository.findAll();
   }
   return {
     stages: stages.sort((a, b) => a.sortOrder - b.sortOrder),
+    subStages: subStages.sort((a, b) => a.sortOrder - b.sortOrder),
     feedbackTypes: feedbackTypes.sort((a, b) => a.sortOrder - b.sortOrder),
     businessTypes: businessTypes.sort((a, b) => a.sortOrder - b.sortOrder),
   };
+}
+
+export function nestSubStages(
+  stages: CrmStage[],
+  subStages: CrmSubStage[]
+): CrmStage[] {
+  const byStage = new Map<string, CrmSubStage[]>();
+  for (const sub of subStages) {
+    const list = byStage.get(sub.stageId) ?? [];
+    list.push(sub);
+    byStage.set(sub.stageId, list);
+  }
+  return stages.map((stage) => ({
+    ...stage,
+    subStages: (byStage.get(stage.id) ?? []).sort(
+      (a, b) => a.sortOrder - b.sortOrder
+    ),
+  }));
 }

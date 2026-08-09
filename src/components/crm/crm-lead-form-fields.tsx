@@ -20,6 +20,7 @@ import type {
   CrmLeadTag,
   CrmNextAction,
   CrmStage,
+  CrmSubStage,
 } from "@/types/crm";
 
 interface CrmLeadFormFieldsProps {
@@ -39,6 +40,9 @@ interface CrmLeadFormFieldsProps {
   stageId: string;
   onStageIdChange: (v: string) => void;
   activeStages: CrmStage[];
+  subStageId: string;
+  onSubStageIdChange: (v: string) => void;
+  activeSubStages: CrmSubStage[];
   ownerEmployeeId: string;
   onOwnerEmployeeIdChange: (v: string) => void;
   employees: Employee[];
@@ -73,6 +77,9 @@ export function CrmLeadFormFields({
   stageId,
   onStageIdChange,
   activeStages,
+  subStageId,
+  onSubStageIdChange,
+  activeSubStages,
   ownerEmployeeId,
   onOwnerEmployeeIdChange,
   employees,
@@ -178,6 +185,28 @@ export function CrmLeadFormFields({
             </SelectTrigger>
             <SelectContent>
               {activeStages.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-1.5">
+          <Label>{t("crm.leadForm.subStage")}</Label>
+          <Select
+            value={subStageId}
+            onValueChange={onSubStageIdChange}
+            disabled={!stageId || activeSubStages.length === 0}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t("crm.leadForm.selectSubStage")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">
+                {t("crm.leadForm.noSubStage")}
+              </SelectItem>
+              {activeSubStages.map((s) => (
                 <SelectItem key={s.id} value={s.id}>
                   {s.name}
                 </SelectItem>

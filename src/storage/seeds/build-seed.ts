@@ -29,6 +29,7 @@ import {
   organicAdsSettingsSeed,
   organicAdHistorySeed,
   crmStagesSeed,
+  crmSubStagesSeed,
   crmFeedbackTypesSeed,
   crmBusinessTypesSeed,
   crmLeadsSeed,
@@ -70,6 +71,7 @@ import type {
   CrmLeadActivity,
   CrmLeadFeedback,
   CrmStage,
+  CrmSubStage,
 } from "@/types/crm";
 import type {
   ApprovalRule,
@@ -109,6 +111,7 @@ export interface SeedPayload {
   organicAdsSettings: OrganicAdsSettings;
   organicAdHistory: OrganicAdHistoryEvent[];
   crmStages: CrmStage[];
+  crmSubStages: CrmSubStage[];
   crmFeedbackTypes: CrmFeedbackType[];
   crmBusinessTypes: CrmBusinessType[];
   crmLeads: CrmLead[];
@@ -231,6 +234,7 @@ export function buildSeedPayload(): SeedPayload {
     organicAdsSettings: organicAdsSettingsSeed,
     organicAdHistory: organicAdHistorySeed,
     crmStages: crmStagesSeed.map((s) => enrichWithAudit(s, "system")),
+    crmSubStages: crmSubStagesSeed.map((s) => enrichWithAudit(s, "system")),
     crmFeedbackTypes: crmFeedbackTypesSeed.map((t) =>
       enrichWithAudit(t, "system")
     ),

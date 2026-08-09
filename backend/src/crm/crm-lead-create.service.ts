@@ -49,6 +49,17 @@ export class CrmLeadCreateService {
       stageId = first.id;
     }
 
+    let subStageId: string | null =
+      typeof body.subStageId === "string" && body.subStageId.trim()
+        ? body.subStageId.trim()
+        : null;
+    if (subStageId) {
+      const sub = await this.prisma.crmSubStage.findFirst({
+        where: { id: subStageId, companyId, stageId, deletedAt: null },
+      });
+      if (!sub) throw new BadRequestException("Invalid subStageId");
+    }
+
     let ownerEmployeeId: string | null =
       typeof body.ownerEmployeeId === "string" && body.ownerEmployeeId
         ? body.ownerEmployeeId
@@ -105,6 +116,7 @@ export class CrmLeadCreateService {
         ),
         ownerEmployeeId,
         stageId: patch.stageId,
+        subStageId,
         status: asEnum<CrmLeadStatus>(
           body.status ?? patch.status,
           LEAD_STATUSES,

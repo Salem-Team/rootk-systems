@@ -75,6 +75,22 @@ function main() {
   );
 
   assert(fileContains("src/api/routes.ts", "profileExtras"), "route profile-extras");
+  assert(
+    fileContains("src/api/routes.ts", 'profile: "/auth/profile"'),
+    "route auth profile update"
+  );
+  assert(
+    fileContains("backend/src/auth/auth.controller.ts", '@Post("profile")'),
+    "Nest POST /auth/profile"
+  );
+  assert(
+    existsSync(join(root, "src/app/(app)/profile/page.tsx")),
+    "exists profile page"
+  );
+  assert(
+    fileContains("src/components/layout/navbar.tsx", 'router.push("/profile")'),
+    "navbar Profile opens /profile"
+  );
   assert(fileContains("src/api/routes.ts", "health"), "route health");
   assert(fileContains("src/api/http.ts", "getList"), "api.getList helper");
   assert(fileContains("src/api/contracts.ts", "unwrapList"), "unwrapList helper");

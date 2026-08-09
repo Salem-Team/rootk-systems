@@ -60,6 +60,7 @@ export const createLeadSchema = z.object({
   source: leadSource.default("other"),
   ownerEmployeeId: z.string().nullable().optional(),
   stageId: z.string().min(1, "Stage is required"),
+  subStageId: z.string().nullable().optional(),
   status: leadStatus.default("active"),
   tags: z.array(leadTag).default([]),
   nextAction: nextAction.default("none"),
@@ -82,6 +83,15 @@ export const stageSchema = z.object({
   active: z.boolean().default(true),
   conversionProbability: z.number().int().min(0).max(100).nullable().optional(),
   category: stageCategory.default("open"),
+});
+
+export const subStageSchema = z.object({
+  id: z.string().optional(),
+  stageId: z.string().min(1, "Stage is required"),
+  name: z.string().trim().min(1, "Sub-stage name is required"),
+  description: z.string().optional().default(""),
+  sortOrder: z.number().int().optional(),
+  active: z.boolean().default(true),
 });
 
 export const feedbackTypeSchema = z.object({
@@ -128,6 +138,7 @@ export const bulkLeadsSchema = z.object({
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;
 export type UpdateLeadInput = z.infer<typeof updateLeadSchema>;
 export type StageInput = z.infer<typeof stageSchema>;
+export type SubStageInput = z.infer<typeof subStageSchema>;
 export type FeedbackTypeInput = z.infer<typeof feedbackTypeSchema>;
 export type BusinessTypeInput = z.infer<typeof businessTypeSchema>;
 export type LeadActivityInput = z.infer<typeof leadActivitySchema>;

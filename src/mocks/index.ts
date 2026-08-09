@@ -36,6 +36,7 @@ export {
 } from "./organic-ads";
 export {
   crmStagesSeed,
+  crmSubStagesSeed,
   crmFeedbackTypesSeed,
   crmBusinessTypesSeed,
   crmLeadsSeed,

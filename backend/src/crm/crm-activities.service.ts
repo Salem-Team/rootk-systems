@@ -153,6 +153,19 @@ export class CrmActivitiesService {
       if (!stage) throw new BadRequestException("Invalid stageId");
     }
 
+    // Prefer a real Employee.id so Active/Inactive call metrics attribute correctly.
+    let recordedByEmployeeId: string | undefined =
+      actor.employeeId ?? lead.ownerEmployeeId ?? undefined;
+    if (recordedByEmployeeId) {
+      const recorder = await this.prisma.employee.findFirst({
+        where: { id: recordedByEmployeeId, companyId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!recorder) {
+        recordedByEmployeeId = lead.ownerEmployeeId ?? undefined;
+      }
+    }
+
     const row = await this.prisma.crmLeadFeedback.create({
       data: {
         companyId,
@@ -163,7 +176,7 @@ export class CrmActivitiesService {
         nextAction,
         nextFollowUpAt: nextFollowUpAt === undefined ? null : nextFollowUpAt,
         notes: String(body.notes ?? ""),
-        recordedByEmployeeId: actor.employeeId,
+        recordedByEmployeeId: recordedByEmployeeId ?? null,
         createdBy: actor.userId,
         updatedBy: actor.userId,
       },

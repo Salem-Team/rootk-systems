@@ -61,9 +61,25 @@ export function resolvePreviousPeriod(
 }
 
 export type CallFeedbackRow = {
+  leadId?: string | null;
   recordedByEmployeeId: string | null;
   callAnswered: boolean;
 };
+
+/**
+ * Attribute Active/Inactive call feedback to the lead owner (sales pipeline),
+ * falling back to the recorder when the lead/owner is missing.
+ */
+export function resolveCallOwnerId(
+  row: CallFeedbackRow,
+  leadOwnerById: Map<string, string | null | undefined>
+): string | null {
+  if (row.leadId) {
+    const owner = leadOwnerById.get(row.leadId);
+    if (owner) return owner;
+  }
+  return row.recordedByEmployeeId;
+}
 
 export function buildSalesPerformance(
   leads: CrmLead[],
@@ -77,23 +93,23 @@ export function buildSalesPerformance(
   const inactiveCutoff = subDays(now, INACTIVE_DAYS_THRESHOLD);
 
   const byOwner = new Map<string, CrmLead[]>();
+  const leadOwnerById = new Map<string, string | null | undefined>();
   for (const lead of leads) {
+    leadOwnerById.set(lead.id, lead.ownerEmployeeId);
     const key = lead.ownerEmployeeId ?? "__unassigned__";
     const list = byOwner.get(key) ?? [];
     list.push(lead);
     byOwner.set(key, list);
   }
 
-  const callsByRecorder = new Map<string, { active: number; inactive: number }>();
+  const callsByOwner = new Map<string, { active: number; inactive: number }>();
   for (const row of feedback) {
-    if (!row.recordedByEmployeeId) continue;
-    const bucket = callsByRecorder.get(row.recordedByEmployeeId) ?? {
-      active: 0,
-      inactive: 0,
-    };
+    const ownerId = resolveCallOwnerId(row, leadOwnerById);
+    if (!ownerId) continue;
+    const bucket = callsByOwner.get(ownerId) ?? { active: 0, inactive: 0 };
     if (row.callAnswered) bucket.active += 1;
     else bucket.inactive += 1;
-    callsByRecorder.set(row.recordedByEmployeeId, bucket);
+    callsByOwner.set(ownerId, bucket);
   }
 
   const nameById = new Map(employees.map((e) => [e.id, e.name]));
@@ -124,7 +140,7 @@ export function buildSalesPerformance(
           (!l.lastActivityAt || l.lastActivityAt < inactiveCutoff)
       ).length;
       const decided = won + lost;
-      const calls = callsByRecorder.get(employeeId) ?? { active: 0, inactive: 0 };
+      const calls = callsByOwner.get(employeeId) ?? { active: 0, inactive: 0 };
       return {
         employeeId,
         employeeName: nameById.get(employeeId) ?? employeeId,

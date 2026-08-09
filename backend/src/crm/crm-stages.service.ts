@@ -24,8 +24,14 @@ export class CrmStagesService {
     const rows = await this.prisma.crmStage.findMany({
       where: { companyId, deletedAt: null },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      include: {
+        subStages: {
+          where: { deletedAt: null },
+          orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+        },
+      },
     });
-    return rows.map(mapStage);
+    return rows.map((row) => mapStage(row, row.subStages));
   }
 
   async upsertStage(
@@ -176,10 +182,21 @@ export class CrmStagesService {
         where: { companyId, stageId: id, deletedAt: null },
         data: {
           stageId: moveToStageId,
+          subStageId: null,
           updatedBy: actor.userId,
         },
       });
     }
+
+    await this.prisma.crmSubStage.updateMany({
+      where: { companyId, stageId: id, deletedAt: null },
+      data: {
+        deletedAt: new Date(),
+        isArchived: true,
+        active: false,
+        updatedBy: actor.userId,
+      },
+    });
 
     await this.prisma.crmStage.update({
       where: { id },

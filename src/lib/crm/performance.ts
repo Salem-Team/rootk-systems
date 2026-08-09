@@ -34,12 +34,18 @@ export function buildSalesPerformance(
       (e.department === "Sales" || ownerIds.has(e.id))
   );
 
+  const leadOwnerById = new Map(
+    leads.map((l) => [l.id, l.ownerEmployeeId] as const)
+  );
+
   return salesEmployees
     .map((emp) => {
       const mine = leads.filter((l) => l.ownerEmployeeId === emp.id);
-      const mineCalls = feedback.filter(
-        (f) => f.recordedByEmployeeId === emp.id
-      );
+      const mineCalls = feedback.filter((f) => {
+        const owner =
+          leadOwnerById.get(f.leadId) ?? f.recordedByEmployeeId ?? null;
+        return owner === emp.id;
+      });
       const won = mine.filter((l) => isWon(map.get(l.stageId))).length;
       const lost = mine.filter((l) => isLost(map.get(l.stageId))).length;
       const closed = won + lost;

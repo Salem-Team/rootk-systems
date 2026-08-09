@@ -132,6 +132,9 @@ export function CrmLeadsTable({
         <DataTableBody>
           {items.map((lead) => {
             const stage = stageMap.get(lead.stageId);
+            const subStage = (stage?.subStages ?? []).find(
+              (s) => s.id === lead.subStageId
+            );
             return (
               <DataTableRow
                 key={lead.id}
@@ -172,20 +175,27 @@ export function CrmLeadsTable({
                     : t("crm.leads.unassigned")}
                 </DataTableCell>
                 <DataTableCell>
-                  <Badge
-                    variant="outline"
-                    className="max-w-[120px] truncate border-border/70 font-normal"
-                    style={
-                      stage?.color
-                        ? {
-                            borderColor: `${stage.color}55`,
-                            color: stage.color,
-                          }
-                        : undefined
-                    }
-                  >
-                    {stage?.name ?? "—"}
-                  </Badge>
+                  <div className="min-w-0">
+                    <Badge
+                      variant="outline"
+                      className="max-w-[140px] truncate border-border/70 font-normal"
+                      style={
+                        stage?.color
+                          ? {
+                              borderColor: `${stage.color}55`,
+                              color: stage.color,
+                            }
+                          : undefined
+                      }
+                    >
+                      {stage?.name ?? "—"}
+                    </Badge>
+                    {subStage ? (
+                      <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                        {subStage.name}
+                      </p>
+                    ) : null}
+                  </div>
                 </DataTableCell>
                 <DataTableCell className="hidden text-[12px] text-muted-foreground xl:table-cell">
                   {formatMaybeDate(lead.lastActivityAt)}

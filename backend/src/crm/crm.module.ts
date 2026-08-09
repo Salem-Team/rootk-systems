@@ -13,6 +13,7 @@ import { CrmPerformanceService } from "./crm-performance.service";
 import { CrmReportsService } from "./crm-reports.service";
 import { CrmSharedService } from "./crm-shared.service";
 import { CrmStagesService } from "./crm-stages.service";
+import { CrmSubStagesService } from "./crm-sub-stages.service";
 import { CrmService } from "./crm.service";
 import { RolesGuard } from "../common/roles.guard";
 
@@ -22,6 +23,7 @@ import { RolesGuard } from "../common/roles.guard";
     RolesGuard,
     CrmSharedService,
     CrmStagesService,
+    CrmSubStagesService,
     CrmFeedbackTypesService,
     CrmBusinessTypesService,
     CrmLeadCreateService,

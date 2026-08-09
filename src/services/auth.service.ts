@@ -4,7 +4,9 @@ import {
   loginWithCredentials,
   logoutRemote,
   refreshSession,
+  updateMyProfile,
   type AuthSessionPayload,
+  type ProfileUpdatePayload,
 } from "@/api/auth.api";
 import { DEFAULT_COMPANY_ID } from "@/constants/company";
 import { AppRole } from "@/constants/roles";
@@ -15,12 +17,14 @@ import {
   setLocalCredential,
   verifyLocalCredential,
 } from "@/lib/local-credentials";
-import { createAuditFields } from "@/lib/entity";
+import { createAuditFields, touchEntity } from "@/lib/entity";
+import { resolveAccountFullName } from "@/lib/user-display-name";
 import { fail, fromError, ok } from "@/services/api-result";
 import { simulateDelay } from "@/services/fake-api";
 import { usersSeed } from "@/mocks/users";
-import { userRepository } from "@/repositories";
+import { employeeRepository, userRepository } from "@/repositories";
 import {
+  getWorkEmployeeIdFromUser,
   useSessionStore,
   type SessionUser,
 } from "@/stores/session-store";
@@ -120,6 +124,123 @@ export async function signInWithCredentials(input: {
     return res;
   } catch (error) {
     return fromError(error, emptyAuthPayload());
+  }
+}
+
+function initialsFromName(name: string): string {
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase() ?? "")
+      .join("") || "U"
+  );
+}
+
+/** POST /auth/profile — update signed-in profile fields. */
+export async function updateOwnProfile(input: {
+  firstName: string;
+  lastName?: string;
+  phone?: string;
+}): Promise<ApiResponse<ProfileUpdatePayload>> {
+  const firstName = input.firstName.trim();
+  const lastName = (input.lastName ?? "").trim();
+  const phone = (input.phone ?? "").trim();
+
+  if (!firstName) {
+    return fail(
+      { user: emptyAuthPayload().user, phone: "" },
+      "First name is required",
+      "VALIDATION"
+    );
+  }
+
+  try {
+    if (isApiMode()) {
+      const res = await updateMyProfile({ firstName, lastName, phone });
+      if (res.success && res.data?.user) {
+        const current = useSessionStore.getState();
+        current.applyAuthSession({
+          user: res.data.user,
+          role: res.data.user.role,
+          accessToken: current.accessToken ?? "",
+          refreshToken: current.refreshToken,
+        });
+      }
+      return res;
+    }
+
+    await simulateDelay(220);
+    const session = useSessionStore.getState();
+    if (!session.authenticated) {
+      return fail(
+        { user: emptyAuthPayload().user, phone: "" },
+        "Not authenticated",
+        "UNAUTHORIZED"
+      );
+    }
+
+    const existing = await userRepository.findById(session.user.id);
+    if (!existing || !existing.isActive || existing.deletedAt) {
+      return fail(
+        { user: emptyAuthPayload().user, phone: "" },
+        "User not found",
+        "NOT_FOUND"
+      );
+    }
+
+    const displayName = resolveAccountFullName({ firstName, lastName });
+    const nextUser = touchEntity(
+      {
+        ...existing,
+        firstName,
+        lastName,
+        displayName,
+        initials: initialsFromName(displayName || firstName),
+      },
+      session.user.id
+    );
+    const saved = await userRepository.update(existing.id, nextUser);
+    if (!saved) {
+      return fail(
+        { user: emptyAuthPayload().user, phone: "" },
+        "User not found",
+        "NOT_FOUND"
+      );
+    }
+
+    let phoneOut = phone;
+    const employeeId = getWorkEmployeeIdFromUser(saved);
+    if (employeeId) {
+      const employee = await employeeRepository.findById(employeeId);
+      if (employee) {
+        const nextEmployee = touchEntity(
+          {
+            ...employee,
+            name: displayName || employee.name,
+            phone,
+          },
+          session.user.id
+        );
+        const savedEmployee = await employeeRepository.update(
+          employee.id,
+          nextEmployee
+        );
+        phoneOut = savedEmployee?.phone ?? phone;
+      }
+    }
+
+    session.applyAuthSession({
+      user: saved,
+      role: saved.role,
+      accessToken: session.accessToken ?? "",
+      refreshToken: session.refreshToken,
+    });
+
+    return ok({ user: saved, phone: phoneOut }, "Profile updated");
+  } catch (error) {
+    return fromError(error, { user: emptyAuthPayload().user, phone: "" });
   }
 }
 

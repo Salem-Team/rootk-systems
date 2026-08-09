@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { KeyRound, Loader2, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,6 +103,7 @@ export function SettingsSecuritySection({
 
 export function SettingsProfileSection({ user }: { user: SessionUser }) {
   const { t } = useTranslation();
+  const router = useRouter();
 
   return (
     <section className="surface-panel overflow-hidden">
@@ -132,6 +134,16 @@ export function SettingsProfileSection({ user }: { user: SessionUser }) {
           <p className="mt-1 text-sm text-muted-foreground">
             {t("settings.workspaceHintDesc")}
           </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            onClick={() => router.push("/profile")}
+          >
+            <UserRound className="h-3.5 w-3.5" />
+            {t("common.profile")}
+          </Button>
         </div>
       </div>
     </section>

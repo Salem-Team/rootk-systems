@@ -139,6 +139,33 @@ export class CrmLeadUpdateService {
       }
       stageChanged = stageId !== current.stageId;
       previousStageId = current.stageId;
+      if (stageChanged && body.subStageId === undefined) {
+        data.subStage = { disconnect: true };
+      }
+    }
+
+    if (body.subStageId !== undefined) {
+      const nextStageId =
+        typeof body.stageId === "string" ? body.stageId : current.stageId;
+      if (
+        body.subStageId === null ||
+        body.subStageId === "" ||
+        body.subStageId === undefined
+      ) {
+        data.subStage = { disconnect: true };
+      } else {
+        const subStageId = String(body.subStageId);
+        const sub = await this.prisma.crmSubStage.findFirst({
+          where: {
+            id: subStageId,
+            companyId,
+            stageId: nextStageId,
+            deletedAt: null,
+          },
+        });
+        if (!sub) throw new BadRequestException("Invalid subStageId");
+        data.subStage = { connect: { id: subStageId } };
+      }
     }
 
     const row = await this.prisma.crmLead.update({ where: { id }, data });

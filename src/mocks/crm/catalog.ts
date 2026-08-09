@@ -1,5 +1,10 @@
 import type { SeedOf } from "@/types/seed";
-import type { CrmBusinessType, CrmFeedbackType, CrmStage } from "@/types/crm";
+import type {
+  CrmBusinessType,
+  CrmFeedbackType,
+  CrmStage,
+  CrmSubStage,
+} from "@/types/crm";
 
 export const crmStagesSeed: SeedOf<CrmStage>[] = [
   {
@@ -91,6 +96,97 @@ export const crmStagesSeed: SeedOf<CrmStage>[] = [
     active: true,
     conversionProbability: 0,
     category: "lost",
+  },
+];
+
+export const crmSubStagesSeed: SeedOf<CrmSubStage>[] = [
+  {
+    id: "crm-sub-new-created",
+    stageId: "crm-stage-new",
+    name: "Created",
+    description: "Lead just entered the system",
+    sortOrder: 0,
+    active: true,
+  },
+  {
+    id: "crm-sub-new-review",
+    stageId: "crm-stage-new",
+    name: "Under review",
+    description: "Waiting for first qualification",
+    sortOrder: 1,
+    active: true,
+  },
+  {
+    id: "crm-sub-contacted-cold",
+    stageId: "crm-stage-contacted",
+    name: "Cold calls",
+    description: "Outbound first contact",
+    sortOrder: 0,
+    active: true,
+  },
+  {
+    id: "crm-sub-contacted-warm",
+    stageId: "crm-stage-contacted",
+    name: "Warm reply",
+    description: "Lead responded positively",
+    sortOrder: 1,
+    active: true,
+  },
+  {
+    id: "crm-sub-qualified-needs",
+    stageId: "crm-stage-qualified",
+    name: "Needs confirmed",
+    description: "Requirements captured",
+    sortOrder: 0,
+    active: true,
+  },
+  {
+    id: "crm-sub-interested-demo",
+    stageId: "crm-stage-interested",
+    name: "Demo scheduled",
+    description: "Product demo booked",
+    sortOrder: 0,
+    active: true,
+  },
+  {
+    id: "crm-sub-meeting-held",
+    stageId: "crm-stage-meeting",
+    name: "Meeting held",
+    description: "Discovery meeting completed",
+    sortOrder: 0,
+    active: true,
+  },
+  {
+    id: "crm-sub-proposal-sent",
+    stageId: "crm-stage-proposal",
+    name: "Proposal sent",
+    description: "Commercial offer delivered",
+    sortOrder: 0,
+    active: true,
+  },
+  {
+    id: "crm-sub-negotiation-terms",
+    stageId: "crm-stage-negotiation",
+    name: "Terms discussion",
+    description: "Negotiating commercial terms",
+    sortOrder: 0,
+    active: true,
+  },
+  {
+    id: "crm-sub-won-closed",
+    stageId: "crm-stage-won",
+    name: "Closed won",
+    description: "Deal finalized",
+    sortOrder: 0,
+    active: true,
+  },
+  {
+    id: "crm-sub-lost-budget",
+    stageId: "crm-stage-lost",
+    name: "Budget",
+    description: "Lost on budget",
+    sortOrder: 0,
+    active: true,
   },
 ];
 

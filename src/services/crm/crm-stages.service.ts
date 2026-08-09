@@ -1,11 +1,14 @@
 import {
   deleteCrmFeedbackType,
   deleteCrmStage,
+  deleteCrmSubStage,
   fetchCrmFeedbackTypes,
   fetchCrmStages,
   putCrmFeedbackType,
   putCrmStage,
+  putCrmSubStage,
   reorderCrmStages,
+  reorderCrmSubStages,
 } from "@/api/crm.api";
 import { isApiMode } from "@/lib/env";
 import { enrichWithAudit, touchEntity } from "@/lib/entity";
@@ -18,19 +21,32 @@ import {
   crmLeadFeedbackRepository,
   crmLeadRepository,
   crmStageRepository,
+  crmSubStageRepository,
 } from "@/repositories/crm.repository";
 import {
   feedbackTypeSchema,
   stageSchema,
+  subStageSchema,
   type FeedbackTypeInput,
   type StageInput,
+  type SubStageInput,
 } from "@/schemas/crm.schema";
 import { fail, fromError, ok } from "@/services/api-result";
 import { simulateDelay } from "@/services/fake-api";
 import { getSessionUserId } from "@/stores/session-store";
 import type { ApiResponse } from "@/types";
-import type { CrmFeedbackType, CrmHistoryAction, CrmStage } from "@/types/crm";
-import { assertCap, ensureCatalog, writeHistory } from "@/services/crm/crm-shared";
+import type {
+  CrmFeedbackType,
+  CrmHistoryAction,
+  CrmStage,
+  CrmSubStage,
+} from "@/types/crm";
+import {
+  assertCap,
+  ensureCatalog,
+  nestSubStages,
+  writeHistory,
+} from "@/services/crm/crm-shared";
 
 export async function getCrmStages(): Promise<ApiResponse<CrmStage[]>> {
   if (isApiMode()) {
@@ -39,8 +55,8 @@ export async function getCrmStages(): Promise<ApiResponse<CrmStage[]>> {
   }
   try {
     await simulateDelay();
-    const { stages } = await ensureCatalog();
-    return ok(stages);
+    const { stages, subStages } = await ensureCatalog();
+    return ok(nestSubStages(stages, subStages));
   } catch (error) {
     return fromError(error, []);
   }
@@ -188,9 +204,20 @@ export async function removeCrmStage(
       if (!target) throw new NotFoundError("Target stage not found");
       const actorId = getSessionUserId() || "system";
       for (const lead of leads) {
-        await crmLeadRepository.update(lead.id, touchEntity(lead, actorId, { stageId: moveToStageId })
+        await crmLeadRepository.update(
+          lead.id,
+          touchEntity(lead, actorId, {
+            stageId: moveToStageId,
+            subStageId: null,
+          })
         );
       }
+    }
+    const childSubs = (await crmSubStageRepository.findAll()).filter(
+      (s) => s.stageId === id
+    );
+    for (const sub of childSubs) {
+      await crmSubStageRepository.delete(sub.id);
     }
     await crmStageRepository.delete(id);
     await writeHistory({
@@ -204,6 +231,108 @@ export async function removeCrmStage(
     });
     emitCrmUpdated();
     return ok({ ok: true });
+  } catch (error) {
+    return fromError(error, { ok: false });
+  }
+}
+
+export async function upsertCrmSubStage(
+  input: SubStageInput
+): Promise<ApiResponse<CrmSubStage | null>> {
+  if (isApiMode()) return putCrmSubStage(input);
+  try {
+    assertCap("manage_stages");
+    await simulateDelay();
+    const parsed = subStageSchema.parse(input);
+    const actorId = getSessionUserId() || "system";
+    const parent = await crmStageRepository.findById(parsed.stageId);
+    if (!parent) throw new NotFoundError("Stage not found");
+
+    if (parsed.id) {
+      const existing = await crmSubStageRepository.findById(parsed.id);
+      if (!existing) throw new NotFoundError("Sub-stage not found");
+      const updated = touchEntity(existing, actorId, {
+        stageId: parsed.stageId,
+        name: parsed.name,
+        description: parsed.description ?? "",
+        sortOrder: parsed.sortOrder ?? existing.sortOrder,
+        active: parsed.active,
+      });
+      await crmSubStageRepository.update(updated.id, updated);
+      emitCrmUpdated();
+      return ok(updated);
+    }
+
+    const siblings = (await crmSubStageRepository.findAll()).filter(
+      (s) => s.stageId === parsed.stageId
+    );
+    const row = enrichWithAudit(
+      {
+        id: createId("crm-sub"),
+        stageId: parsed.stageId,
+        name: parsed.name,
+        description: parsed.description ?? "",
+        sortOrder: parsed.sortOrder ?? siblings.length,
+        active: parsed.active ?? true,
+      },
+      actorId
+    );
+    await crmSubStageRepository.create(row);
+    emitCrmUpdated();
+    return ok(row);
+  } catch (error) {
+    return fromError(error, null);
+  }
+}
+
+export async function reorderCrmSubStageList(
+  stageId: string,
+  ids: string[]
+): Promise<ApiResponse<CrmSubStage[]>> {
+  if (isApiMode()) return reorderCrmSubStages(stageId, ids);
+  try {
+    assertCap("manage_stages");
+    await simulateDelay();
+    const actorId = getSessionUserId() || "system";
+    const all = await crmSubStageRepository.findAll();
+    const byId = new Map(all.map((s) => [s.id, s]));
+    const updated: CrmSubStage[] = [];
+    for (let i = 0; i < ids.length; i++) {
+      const sub = byId.get(ids[i]);
+      if (!sub || sub.stageId !== stageId) continue;
+      const next = touchEntity(sub, actorId, { sortOrder: i });
+      await crmSubStageRepository.update(next.id, next);
+      updated.push(next);
+    }
+    emitCrmUpdated();
+    return ok(updated.sort((a, b) => a.sortOrder - b.sortOrder));
+  } catch (error) {
+    return fromError(error, []);
+  }
+}
+
+export async function removeCrmSubStage(
+  id: string
+): Promise<ApiResponse<{ ok: boolean; leadCount?: number }>> {
+  if (isApiMode()) return deleteCrmSubStage(id);
+  try {
+    assertCap("manage_stages");
+    await simulateDelay();
+    const sub = await crmSubStageRepository.findById(id);
+    if (!sub) throw new NotFoundError("Sub-stage not found");
+    const actorId = getSessionUserId() || "system";
+    const leads = (await crmLeadRepository.findAll()).filter(
+      (l) => l.subStageId === id
+    );
+    for (const lead of leads) {
+      await crmLeadRepository.update(
+        lead.id,
+        touchEntity(lead, actorId, { subStageId: null })
+      );
+    }
+    await crmSubStageRepository.delete(id);
+    emitCrmUpdated();
+    return ok({ ok: true, leadCount: leads.length });
   } catch (error) {
     return fromError(error, { ok: false });
   }

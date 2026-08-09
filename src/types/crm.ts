@@ -87,6 +87,15 @@ export type CrmHistoryAction =
   | "follow_up_completed"
   | "activity_added";
 
+export interface CrmSubStage extends BaseEntity {
+  id: string;
+  stageId: string;
+  name: string;
+  description: string;
+  sortOrder: number;
+  active: boolean;
+}
+
 export interface CrmStage extends BaseEntity {
   id: string;
   name: string;
@@ -96,6 +105,8 @@ export interface CrmStage extends BaseEntity {
   active: boolean;
   conversionProbability: number | null;
   category: CrmStageCategory;
+  /** Nested when loaded via stage catalog APIs. */
+  subStages?: CrmSubStage[];
 }
 
 export interface CrmFeedbackType extends BaseEntity {
@@ -126,6 +137,7 @@ export interface CrmLead extends BaseEntity {
   source: CrmLeadSource;
   ownerEmployeeId: string | null;
   stageId: string;
+  subStageId: string | null;
   status: CrmLeadStatus;
   tags: CrmLeadTag[];
   nextAction: CrmNextAction;
@@ -173,6 +185,7 @@ export interface CrmLeadHistoryEvent extends BaseEntity {
 export interface CrmLeadFilters {
   search?: string;
   stageId?: string;
+  subStageId?: string;
   status?: CrmLeadStatus | "";
   source?: CrmLeadSource | "";
   ownerEmployeeId?: string;

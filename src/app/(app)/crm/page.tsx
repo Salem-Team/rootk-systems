@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageTransition } from "@/components/shared/page-transition";
 import { PageSkeleton } from "@/components/shared/loading-state";
@@ -12,6 +12,7 @@ import { CrmFeedbackPanel } from "@/components/crm/crm-feedback-panel";
 import { CrmHubSidebar } from "@/components/crm/crm-hub-sidebar";
 import { CrmLeadFormSheet } from "@/components/crm/crm-lead-form-sheet";
 import { CrmLeadSheet } from "@/components/crm/crm-lead-sheet";
+import { CrmLeadsOverview } from "@/components/crm/crm-leads-overview";
 import { CrmLeadsPanel } from "@/components/crm/crm-leads-panel";
 import { CrmPerformancePanel } from "@/components/crm/crm-performance-panel";
 import { CrmPipelinePanel } from "@/components/crm/crm-pipeline-panel";
@@ -70,20 +71,45 @@ export default function CrmPage() {
             />
           ) : null}
 
-          {hub.tab === "leads" ? (
-            <CrmLeadsPanel
-              leads={hub.safeLeadsPage}
+          {hub.tab === "leads" && hub.leadsView === "cards" ? (
+            <CrmLeadsOverview
               stages={hub.safeStages}
-              employees={hub.safeEmployees}
-              filters={hub.leadFilters}
-              onFiltersChange={hub.setLeadFilters}
+              stageCounts={hub.stageCounts}
+              totalLeads={hub.overviewTotal}
               loading={hub.loading}
-              onRowClick={(lead) => hub.setViewLeadId(lead.id)}
+              onOpenAllLeads={hub.openAllLeads}
+              onOpenStage={hub.openStageLeads}
               onAddLead={hub.canCreate ? hub.openCreate : undefined}
-              onImported={() => void hub.reloadVisible()}
-              canAssign={hub.canAssign}
-              canImport={hub.canCreate}
             />
+          ) : null}
+
+          {hub.tab === "leads" && hub.leadsView === "table" ? (
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={hub.backToLeadsCards}
+                >
+                  <ArrowLeft className="me-1.5 h-3.5 w-3.5 rtl:rotate-180" />
+                  {t("crm.leads.backToStages")}
+                </Button>
+              </div>
+              <CrmLeadsPanel
+                leads={hub.safeLeadsPage}
+                stages={hub.safeStages}
+                employees={hub.safeEmployees}
+                filters={hub.leadFilters}
+                onFiltersChange={hub.setLeadFilters}
+                loading={hub.loading}
+                onRowClick={(lead) => hub.setViewLeadId(lead.id)}
+                onAddLead={hub.canCreate ? hub.openCreate : undefined}
+                onImported={() => void hub.reloadVisible()}
+                canAssign={hub.canAssign}
+                canImport={hub.canCreate}
+              />
+            </div>
           ) : null}
 
           {hub.tab === "pipeline" ? (

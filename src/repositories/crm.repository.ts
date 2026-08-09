@@ -9,11 +9,18 @@ import type {
   CrmLeadFeedback,
   CrmLeadHistoryEvent,
   CrmStage,
+  CrmSubStage,
 } from "@/types/crm";
 
 export class CrmStageRepository extends CollectionRepository<CrmStage> {
   constructor() {
     super(getStorageAdapter(), StorageKeys.crmStages);
+  }
+}
+
+export class CrmSubStageRepository extends CollectionRepository<CrmSubStage> {
+  constructor() {
+    super(getStorageAdapter(), StorageKeys.crmSubStages);
   }
 }
 
@@ -54,6 +61,7 @@ export class CrmLeadHistoryRepository extends CollectionRepository<CrmLeadHistor
 }
 
 export const crmStageRepository = new CrmStageRepository();
+export const crmSubStageRepository = new CrmSubStageRepository();
 export const crmFeedbackTypeRepository = new CrmFeedbackTypeRepository();
 export const crmBusinessTypeRepository = new CrmBusinessTypeRepository();
 export const crmLeadRepository = new CrmLeadRepository();

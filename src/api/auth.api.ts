@@ -63,6 +63,23 @@ export function fetchMe(): Promise<ApiResponse<AppUser | null>> {
   return api.get(API_ROUTES.auth.me, null);
 }
 
+export interface ProfileUpdatePayload {
+  user: AppUser;
+  phone: string;
+}
+
+/** POST /auth/profile */
+export function updateMyProfile(input: {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+}): Promise<ApiResponse<ProfileUpdatePayload>> {
+  return api.post(API_ROUTES.auth.profile, input, {
+    user: emptySession().user,
+    phone: "",
+  });
+}
+
 function emptySession(): AuthSessionPayload {
   return {
     user: {
