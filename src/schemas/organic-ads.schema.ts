@@ -29,6 +29,6 @@ export const organicAdsSettingsSchema = z.object({
   allowDuplicateOverride: z.boolean(),
 });
 
-export type CreateOrganicAdSchemaInput = z.infer<typeof createOrganicAdSchema>;
+export type CreateOrganicAdSchemaInput = z.input<typeof createOrganicAdSchema>;
 export type UpdateOrganicAdSchemaInput = z.infer<typeof updateOrganicAdSchema>;
 export type OrganicAdsSettingsInput = z.infer<typeof organicAdsSettingsSchema>;

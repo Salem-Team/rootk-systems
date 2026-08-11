@@ -2443,6 +2443,8 @@ export const ar: TranslationKeys = {
       completion: "نسبة الإنجاز",
       taskRate: "المهام المرتبطة المكتملة",
       linkedTasks: "المهام المرتبطة",
+      linkedTasksHint:
+        "من هنا تقدر تبدأ التاسك أو تخلّصه بـ Done مع ملاحظة.",
       noLinkedTasks: "مفيش مهام مرتبطة بالهدف ده لسه.",
     },
     assign: {
@@ -3133,6 +3135,7 @@ export const ar: TranslationKeys = {
       filterType: "تصفية حسب النوع",
       allTypes: "كل الأنواع",
       recordedAt: "تاريخ التسجيل",
+      recordedBy: "سجّله",
       lead: "العميل",
     },
     stages: {

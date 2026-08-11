@@ -1,4 +1,5 @@
 import { postOrganicAd } from "@/api/organic-ads.api";
+import { AppRole } from "@/constants/roles";
 import { isApiMode } from "@/lib/env";
 import { enrichWithAudit, touchEntity } from "@/lib/entity";
 import { ForbiddenError, ValidationError } from "@/lib/errors";
@@ -7,15 +8,15 @@ import { inspectAdUrl, normalizeAdUrl } from "@/lib/organic-ads-url";
 import { emitOrganicAdsUpdated } from "@/lib/events";
 import { organicAdvertisementRepository } from "@/repositories/organic-ads.repository";
 import { employeeRepository } from "@/repositories";
-import {
-  createOrganicAdSchema,
-  type CreateOrganicAdSchemaInput,
-} from "@/schemas/organic-ads.schema";
+import { createOrganicAdSchema } from "@/schemas/organic-ads.schema";
 import { fail, fromError, ok } from "@/services/api-result";
 import { simulateDelay } from "@/services/fake-api";
 import { getSessionRole, getSessionUserId, getWorkEmployeeId } from "@/stores/session-store";
 import type { ApiResponse } from "@/types";
-import type { OrganicAdvertisement } from "@/types/organic-ads";
+import type {
+  CreateOrganicAdInput,
+  OrganicAdvertisement,
+} from "@/types/organic-ads";
 import {
   assertCap,
   completeLinkedTaskLocal,
@@ -26,7 +27,7 @@ import {
 } from "./helpers";
 
 export async function createOrganicAd(
-  input: CreateOrganicAdSchemaInput
+  input: CreateOrganicAdInput
 ): Promise<ApiResponse<OrganicAdvertisement | null>> {
   try {
     if (isApiMode()) return postOrganicAd(input);
@@ -35,7 +36,7 @@ export async function createOrganicAd(
     const parsed = createOrganicAdSchema.parse(input);
     const role = getSessionRole();
     const ownerEmployeeId = getWorkEmployeeId();
-    if (!ownerEmployeeId && role !== "admin") {
+    if (!ownerEmployeeId && role !== AppRole.admin) {
       throw new ValidationError(
         "Your account is not linked to an employee profile"
       );

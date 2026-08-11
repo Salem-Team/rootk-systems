@@ -139,6 +139,7 @@ export function CrmLeadSheet({
                 timeline={sheet.timeline}
                 feedback={sheet.feedback}
                 businessTypes={businessTypes}
+                employees={employees}
               />
             </>
           ) : (

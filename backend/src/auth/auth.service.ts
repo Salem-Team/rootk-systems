@@ -11,6 +11,11 @@ import { DEFAULT_COMPANY_ID } from "../common/company";
 import { mapUser } from "../common/mappers";
 import type { JwtPayload } from "../common/decorators/current-user";
 import { hashPassword, verifyPassword } from "./password.util";
+import {
+  resolveLoginEmails,
+  isSystemAdminEmail,
+  SYSTEM_ADMIN_USER_ID,
+} from "../common/protected-accounts";
 
 function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -50,14 +55,28 @@ export class AuthService {
 
   async login(email: string, password: string) {
     const companyId = this.companyId();
-    const row = await this.prisma.user.findFirst({
-      where: {
-        companyId,
-        email: { equals: email, mode: "insensitive" },
-        deletedAt: null,
-        isActive: true,
-      },
-    });
+    const emails = resolveLoginEmails(email);
+    const row =
+      (await this.prisma.user.findFirst({
+        where: {
+          companyId,
+          deletedAt: null,
+          isActive: true,
+          OR: emails.map((value) => ({
+            email: { equals: value, mode: "insensitive" as const },
+          })),
+        },
+      })) ??
+      (isSystemAdminEmail(email)
+        ? await this.prisma.user.findFirst({
+            where: {
+              id: SYSTEM_ADMIN_USER_ID,
+              companyId,
+              deletedAt: null,
+              isActive: true,
+            },
+          })
+        : null);
     if (!row || !verifyPassword(password, row.passwordHash)) {
       throw new UnauthorizedException("Invalid email or password");
     }

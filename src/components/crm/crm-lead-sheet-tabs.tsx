@@ -4,6 +4,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatMaybeDateTime } from "@/lib/crm/format";
+import type { Employee } from "@/types";
 import type {
   CrmBusinessType,
   CrmLead,
@@ -27,6 +28,7 @@ interface CrmLeadSheetTabsProps {
   timeline: CrmLeadActivity[];
   feedback: CrmLeadFeedback[];
   businessTypes?: CrmBusinessType[];
+  employees?: Employee[];
 }
 
 /** Overview / timeline / feedback tabs for the lead detail sheet. */
@@ -37,10 +39,12 @@ export function CrmLeadSheetTabs({
   timeline,
   feedback,
   businessTypes = [],
+  employees = [],
 }: CrmLeadSheetTabsProps) {
   const { t } = useTranslation();
   const businessTypeName =
     businessTypes.find((b) => b.id === lead.businessTypeId)?.name || "—";
+  const employeeNameById = new Map(employees.map((e) => [e.id, e.name]));
 
   return (
     <Tabs value={tab} onValueChange={onTabChange} className="mt-4 flex min-h-0 flex-1 flex-col">
@@ -143,7 +147,15 @@ export function CrmLeadSheetTabs({
                       {item.customerFeedback}
                     </p>
                   ) : null}
-                  <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">
+                    {t("crm.feedback.recordedBy")}:{" "}
+                    <span className="font-medium text-foreground">
+                      {item.recordedByEmployeeId
+                        ? (employeeNameById.get(item.recordedByEmployeeId) ?? "—")
+                        : "—"}
+                    </span>
+                  </p>
+                  <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
                     {formatMaybeDateTime(item.createdAt)}
                   </p>
                 </li>

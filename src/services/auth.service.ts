@@ -120,7 +120,16 @@ export async function signInWithCredentials(input: {
     }
 
     const res = await loginWithCredentials(input);
-    if (res.success) applyPayload(res.data);
+    if (res.success) {
+      if (!res.data?.tokens?.accessToken) {
+        return fail(
+          emptyAuthPayload(),
+          "Invalid email or password",
+          "UNAUTHORIZED"
+        );
+      }
+      applyPayload(res.data);
+    }
     return res;
   } catch (error) {
     return fromError(error, emptyAuthPayload());

@@ -3,8 +3,21 @@ export const SYSTEM_ADMIN_EMPLOYEE_ID = "emp_admin_001";
 export const SYSTEM_ADMIN_USER_ID = "usr_admin_001";
 export const SYSTEM_ADMIN_EMAIL = "admin@rootk.systems";
 
+/** Prod historically stored the admin without the `.` in the domain. */
+export const SYSTEM_ADMIN_EMAIL_ALIASES = [
+  SYSTEM_ADMIN_EMAIL,
+  "admin@rootksystems.com",
+] as const;
+
 export function normalizeEmail(email: string | null | undefined): string {
   return (email ?? "").trim().toLowerCase();
+}
+
+export function isSystemAdminEmail(email: string | null | undefined): boolean {
+  const normalized = normalizeEmail(email);
+  return SYSTEM_ADMIN_EMAIL_ALIASES.includes(
+    normalized as (typeof SYSTEM_ADMIN_EMAIL_ALIASES)[number]
+  );
 }
 
 /**
@@ -19,6 +32,6 @@ export function isProtectedAdminAccount(input: {
 }): boolean {
   if (input.employeeId === SYSTEM_ADMIN_EMPLOYEE_ID) return true;
   if (input.userId === SYSTEM_ADMIN_USER_ID) return true;
-  if (normalizeEmail(input.email) === SYSTEM_ADMIN_EMAIL) return true;
+  if (isSystemAdminEmail(input.email)) return true;
   return false;
 }

@@ -28,7 +28,8 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT: "3011",
-        CORS_ORIGIN: "http://localhost:3010",
+        CORS_ORIGIN:
+          "http://localhost:3010,http://127.0.0.1:3010",
       },
     },
     {
@@ -36,7 +37,7 @@ module.exports = {
       cwd: root,
       // Call Next directly — avoids nested npm restarts fighting over .next
       script: path.join(root, "node_modules/next/dist/bin/next"),
-      args: ["dev", "--turbopack", "-p", "3010", "-H", "127.0.0.1"],
+      args: ["dev", "--turbopack", "-p", "3010", "-H", "0.0.0.0"],
       instances: 1,
       exec_mode: "fork",
       autorestart: true,

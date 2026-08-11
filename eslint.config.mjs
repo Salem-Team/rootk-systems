@@ -20,6 +20,7 @@ const eslintConfig = [
       "backend/**",
       "backend/dist/**",
       "scripts/**",
+      "ecosystem*.config.cjs",
       "next-env.d.ts",
     ],
   },

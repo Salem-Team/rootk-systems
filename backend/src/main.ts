@@ -4,14 +4,16 @@ import { ConfigService } from "@nestjs/config";
 import { AppModule } from "./app.module";
 import { ResponseInterceptor } from "./common/interceptors/response.interceptor";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
+import { parseCorsOrigins } from "./common/cors";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
 
   app.setGlobalPrefix("api");
+  const corsOrigins = parseCorsOrigins(config.get<string>("CORS_ORIGIN"));
   app.enableCors({
-    origin: config.get<string>("CORS_ORIGIN", "http://localhost:3000"),
+    origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
     credentials: true,
   });
   app.useGlobalPipes(

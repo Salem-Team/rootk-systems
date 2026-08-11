@@ -43,8 +43,6 @@ export function AddAdvertisementSheet({
   const canOverride = canOrganicAds(role, "override_duplicate");
 
   const [url, setUrl] = useState("");
-  const [project, setProject] = useState("");
-  const [campaign, setCampaign] = useState("");
   const [notes, setNotes] = useState("");
   const [inspecting, setInspecting] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -55,8 +53,6 @@ export function AddAdvertisementSheet({
   useEffect(() => {
     if (!open) {
       setUrl("");
-      setProject("");
-      setCampaign("");
       setNotes("");
       setInspection(null);
       setInspecting(false);
@@ -90,8 +86,6 @@ export function AddAdvertisementSheet({
     try {
       const res = await createOrganicAd({
         url: url.trim(),
-        project,
-        campaign,
         notes,
         forceDuplicate,
         linkToOpenTask: true,
@@ -239,24 +233,6 @@ export function AddAdvertisementSheet({
             </div>
           ) : null}
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="ad-project">{t("organicAds.add.project")}</Label>
-            <Input
-              id="ad-project"
-              value={project}
-              onChange={(e) => setProject(e.target.value)}
-              placeholder={t("organicAds.add.projectPlaceholder")}
-            />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="ad-campaign">{t("organicAds.add.campaign")}</Label>
-            <Input
-              id="ad-campaign"
-              value={campaign}
-              onChange={(e) => setCampaign(e.target.value)}
-              placeholder={t("organicAds.add.campaignPlaceholder")}
-            />
-          </div>
           <div className="grid gap-1.5">
             <Label htmlFor="ad-notes">{t("organicAds.add.notes")}</Label>
             <Textarea

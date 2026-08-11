@@ -8,11 +8,15 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
+import { Transform } from "class-transformer";
 import { IsEmail, IsOptional, IsString, MinLength } from "class-validator";
 import { AuthService } from "./auth.service";
 import { CurrentUser, type JwtPayload } from "../common/decorators/current-user";
 
 class LoginDto {
+  @Transform(({ value }) =>
+    typeof value === "string" ? value.trim().toLowerCase() : value
+  )
   @IsEmail()
   email!: string;
 

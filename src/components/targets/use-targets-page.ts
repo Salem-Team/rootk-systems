@@ -35,7 +35,7 @@ export function useTargetsPage() {
   const canManageCatalog = canTarget(role, "manage_categories");
   const canViewReports = canTarget(role, "view_reports");
 
-  const [tab, setTab] = useState<TargetHubTab>("dashboard");
+  const [tab, setTab] = useState<TargetHubTab>(isAdmin ? "dashboard" : "targets");
   const [categories, setCategories] = useState<TargetCategory[]>([]);
   const [types, setTypes] = useState<TargetType[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -131,6 +131,13 @@ export function useTargetsPage() {
     [TARGETS_UPDATED_EVENT, WORK_UPDATED_EVENT],
     { intervalMs: 40_000 }
   );
+
+  useEffect(() => {
+    setViewingTarget((current) => {
+      if (!current) return current;
+      return targets.find((t) => t.id === current.id) ?? current;
+    });
+  }, [targets]);
 
   // Drop stale category filter if the category was deleted from catalog.
   useEffect(() => {

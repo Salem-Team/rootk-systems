@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
-import { CheckCircle2, Circle, Eye } from "lucide-react";
+import { Eye } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -14,7 +14,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmployeeAvatarStack } from "@/components/work/employee-multi-picker";
-import { WorkDurationCell } from "@/components/work/work-duration-cell";
 import {
   TargetPriorityBadge,
   TargetRiskBadge,
@@ -24,10 +23,10 @@ import {
   TargetProgressRing,
   type ProgressRingTone,
 } from "@/components/targets/target-progress-ring";
+import { TargetLinkedTasksList } from "@/components/targets/target-linked-tasks";
+import { TaskCompletionEvidenceDialog } from "@/components/work/task-completion-evidence-dialog";
 import { getWorkTasks } from "@/services/work.service";
 import { useTranslation } from "@/hooks/use-translation";
-import { taskDueBucket } from "@/lib/work-utils";
-import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
 import type { PerformanceTarget, TargetCategory } from "@/types/targets";
 import type { WorkTask } from "@/types/work";
@@ -50,7 +49,7 @@ interface TargetViewSheetProps {
   onEdit?: (target: PerformanceTarget) => void;
 }
 
-/** Read-only target progress sheet: completion %, units, linked tasks. */
+/** Target progress sheet: completion %, units, and actionable linked tasks. */
 export function TargetViewSheet({
   target,
   open,
@@ -63,10 +62,13 @@ export function TargetViewSheet({
   const dateLocale = locale === "ar" ? arLocale : enUS;
   const [linkedTasks, setLinkedTasks] = useState<WorkTask[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
+  const [evidenceTask, setEvidenceTask] = useState<WorkTask | null>(null);
+  const targetId = target?.id;
 
   useEffect(() => {
-    if (!open || !target) {
+    if (!open || !targetId) {
       setLinkedTasks([]);
+      setEvidenceTask(null);
       return;
     }
     let mounted = true;
@@ -75,7 +77,11 @@ export function TargetViewSheet({
       const res = await getWorkTasks();
       if (!mounted) return;
       if (res.success) {
-        setLinkedTasks(res.data.filter((task) => task.targetId === target.id));
+        setLinkedTasks(
+          res.data
+            .filter((task) => task.targetId === targetId)
+            .sort((a, b) => a.title.localeCompare(b.title, undefined, { numeric: true }))
+        );
       } else {
         setLinkedTasks([]);
       }
@@ -84,7 +90,13 @@ export function TargetViewSheet({
     return () => {
       mounted = false;
     };
-  }, [open, target]);
+  }, [open, targetId]);
+
+  function applyTaskUpdate(updated: WorkTask) {
+    setLinkedTasks((prev) =>
+      prev.map((task) => (task.id === updated.id ? updated : task))
+    );
+  }
 
   const percentage = target?.metrics?.percentage ?? 0;
   const category = target ? categories.get(target.categoryId) : undefined;
@@ -95,7 +107,14 @@ export function TargetViewSheet({
       : Math.round((tasksDone / linkedTasks.length) * 1000) / 10;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <>
+    <Sheet
+      open={open}
+      onOpenChange={(next) => {
+        if (!next && evidenceTask) return;
+        onOpenChange(next);
+      }}
+    >
       <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
         {target ? (
           <>
@@ -190,71 +209,12 @@ export function TargetViewSheet({
                 </p>
               </div>
 
-              <div>
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <p className="text-[12px] font-semibold text-muted-foreground">
-                    {t("targets.view.linkedTasks")}
-                  </p>
-                  <span className="font-mono text-[11px] text-muted-foreground">
-                    {tasksDone}/{linkedTasks.length}
-                  </span>
-                </div>
-                {loadingTasks ? (
-                  <p className="text-[13px] text-muted-foreground">
-                    {t("common.loading")}
-                  </p>
-                ) : linkedTasks.length === 0 ? (
-                  <p className="text-[13px] text-muted-foreground">
-                    {t("targets.view.noLinkedTasks")}
-                  </p>
-                ) : (
-                  <ul className="space-y-1.5">
-                    {linkedTasks.map((task) => {
-                      const due = taskDueBucket(task.dueDate, task.status);
-                      return (
-                        <li
-                          key={task.id}
-                          className="flex items-start gap-2 rounded-lg border border-border/60 bg-card px-2.5 py-2"
-                        >
-                          {task.status === "completed" ? (
-                            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                          ) : (
-                            <Circle
-                              className={cn(
-                                "mt-0.5 h-4 w-4 shrink-0",
-                                due === "overdue"
-                                  ? "text-rose-500"
-                                  : "text-muted-foreground"
-                              )}
-                            />
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-[13px] font-medium">
-                              {task.title}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {task.status === "todo"
-                                ? t("ops.statusTodo")
-                                : task.status === "in_progress"
-                                  ? t("ops.statusInProgress")
-                                  : t("ops.statusCompleted")}
-                              {task.dueDate
-                                ? ` · ${format(parseISO(task.dueDate), "d MMM", { locale: dateLocale })}`
-                                : ""}
-                              {due === "overdue"
-                                ? ` · ${t("ops.due.overdue")}`
-                                : ""}
-                            </p>
-                            <div className="mt-1">
-                              <WorkDurationCell task={task} />
-                            </div>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
+              <TargetLinkedTasksList
+                tasks={linkedTasks}
+                loading={loadingTasks}
+                onTasksChanged={applyTaskUpdate}
+                onDone={setEvidenceTask}
+              />
 
               <div className="flex flex-wrap gap-2 border-t border-border/60 pt-4">
                 {onEdit ? (
@@ -281,6 +241,18 @@ export function TargetViewSheet({
         ) : null}
       </SheetContent>
     </Sheet>
+    <TaskCompletionEvidenceDialog
+      task={evidenceTask}
+      open={Boolean(evidenceTask)}
+      onOpenChange={(next) => {
+        if (!next) setEvidenceTask(null);
+      }}
+      onCompleted={(updated) => {
+        setEvidenceTask(null);
+        applyTaskUpdate(updated);
+      }}
+    />
+    </>
   );
 }
 

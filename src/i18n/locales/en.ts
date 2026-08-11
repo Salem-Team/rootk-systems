@@ -2451,6 +2451,7 @@ export const en = {
       completion: "Completion",
       taskRate: "Linked tasks done",
       linkedTasks: "Linked tasks",
+      linkedTasksHint: "Start a unit or press Done to complete it with a note.",
       noLinkedTasks: "No linked tasks for this target yet.",
     },
     assign: {
@@ -3143,6 +3144,7 @@ export const en = {
       filterType: "Filter by type",
       allTypes: "All types",
       recordedAt: "Recorded",
+      recordedBy: "Recorded by",
       lead: "Lead",
     },
     stages: {

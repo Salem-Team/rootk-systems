@@ -114,7 +114,7 @@ export function EmployeeTargetsTable({
   }
 
   return (
-    <div className={cn("space-y-3", className)}>
+    <div className={cn("flex h-full flex-col gap-3", className)}>
       <WorkMotionList className="space-y-2.5 md:hidden">
         <AnimatePresence initial={false} mode="popLayout">
           {targets.map((target) => {
@@ -211,7 +211,7 @@ export function EmployeeTargetsTable({
         </AnimatePresence>
       </WorkMotionList>
 
-      <WorkMotionTableShell className="hidden md:block">
+      <WorkMotionTableShell className="hidden min-h-0 flex-1 md:block">
         <DataTable className="min-w-[48rem]">
           <DataTableHeader>
             <DataTableHeaderRow>

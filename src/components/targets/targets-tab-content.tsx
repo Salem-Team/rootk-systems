@@ -96,7 +96,6 @@ export function TargetsTabContent({
           <EmployeePerformancePanel
             employeeId={workEmployeeId}
             categories={categoryMap}
-            employees={employeeMap}
             categoryId={filters.categoryId}
             onView={onView}
           />
