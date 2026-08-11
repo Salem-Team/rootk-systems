@@ -83,7 +83,14 @@ export function completionTimestampPatch(
   return {};
 }
 
-export function mapTask(row: WorkTask) {
+/** Employees only see themselves on a shared assignment — never co-assignees. */
+function assigneeIdsForActor(ids: string[], actor?: Actor): string[] {
+  if (!actor || actor.role !== "employee" || !actor.employeeId) return ids;
+  if (!ids.includes(actor.employeeId)) return ids;
+  return [actor.employeeId];
+}
+
+export function mapTask(row: WorkTask, actor?: Actor) {
   return {
     id: row.id,
     title: row.title,
@@ -93,7 +100,7 @@ export function mapTask(row: WorkTask) {
     dueDate: row.dueDate ? iso(row.dueDate) : "",
     tag: row.tag,
     estimateMin: row.estimateMin,
-    assigneeIds: row.assigneeIds,
+    assigneeIds: assigneeIdsForActor(row.assigneeIds, actor),
     relatedMeetingId: row.relatedMeetingId ?? undefined,
     targetId: row.targetId ?? undefined,
     subItems: row.subItems ?? [],

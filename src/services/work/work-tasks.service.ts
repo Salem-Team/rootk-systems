@@ -5,7 +5,11 @@ import { fail, fromError, ok } from "@/services/api-result";
 import { getWorkEmployeeId } from "@/stores/session-store";
 import { isAssignedTo } from "@/lib/work-utils";
 import { AppRole } from "@/constants/roles";
-import { actorContext } from "@/services/work/work-shared";
+import {
+  actorContext,
+  presentWorkTaskForActor,
+  presentWorkTasksForActor,
+} from "@/services/work/work-shared";
 import type { ApiResponse } from "@/types";
 import type { TaskStatus, WorkTask } from "@/types/work";
 
@@ -13,15 +17,35 @@ import type { TaskStatus, WorkTask } from "@/types/work";
 export async function getWorkTasks(filters: {
   employeeId?: string;
   status?: TaskStatus;
+  team?: boolean;
 } = {}): Promise<ApiResponse<WorkTask[]>> {
   const { role, employeeId: selfId } = actorContext();
-  const scoped =
-    role === AppRole.employee
-      ? { ...filters, employeeId: selfId }
+  const teamView = Boolean(filters.team) && role === AppRole.employee;
+  const scoped = teamView
+    ? { ...filters, employeeId: undefined, team: true }
+    : role === AppRole.employee
+      ? { ...filters, employeeId: selfId, team: undefined }
       : filters;
-  if (isApiMode()) return fetchWorkTasks(scoped);
+  if (isApiMode()) {
+    const res = await fetchWorkTasks(scoped);
+    if (!res.success) return res;
+    return ok(presentWorkTasksForActor(res.data ?? []));
+  }
   try {
-    return ok(await workTaskRepository.filter(scoped));
+    let tasks = await workTaskRepository.filter({
+      employeeId: teamView ? undefined : scoped.employeeId,
+      status: scoped.status,
+    });
+    if (teamView) {
+      const { listLocalDirectReportIds } = await import(
+        "@/services/team-access"
+      );
+      const reportIds = new Set(await listLocalDirectReportIds(selfId));
+      tasks = tasks.filter((task) =>
+        task.assigneeIds.some((id) => reportIds.has(id))
+      );
+    }
+    return ok(presentWorkTasksForActor(tasks));
   } catch (error) {
     return fromError(error, []);
   }
@@ -31,7 +55,11 @@ export async function getWorkTasks(filters: {
 export async function getWorkTaskById(
   id: string
 ): Promise<ApiResponse<WorkTask | null>> {
-  if (isApiMode()) return fetchWorkTaskById(id);
+  if (isApiMode()) {
+    const res = await fetchWorkTaskById(id);
+    if (!res.success || !res.data) return res;
+    return ok(presentWorkTaskForActor(res.data));
+  }
   try {
     const task = await workTaskRepository.findById(id);
     if (!task) return fail(null, "Task not found", "NOT_FOUND");
@@ -42,7 +70,7 @@ export async function getWorkTaskById(
     ) {
       return fail(null, "Task not found", "NOT_FOUND");
     }
-    return ok(task);
+    return ok(presentWorkTaskForActor(task));
   } catch (error) {
     return fromError(error, null);
   }

@@ -85,7 +85,7 @@ export function useEmployeeWorkHubData(workEmployeeId: string) {
     if (taskId) {
       setTab("tasks");
       setSelectedTaskId(taskId);
-      if (isMobile) setMobileDetailOpen(true);
+      setMobileDetailOpen(true);
     }
     if (meetingId) {
       setTab("meetings");
@@ -109,10 +109,7 @@ export function useEmployeeWorkHubData(workEmployeeId: string) {
     (checklistDone / Math.max(checklist.length, 1)) * 100
   );
 
-  const selectedTask =
-    tasks.find((x) => x.id === selectedTaskId) ??
-    (filter === "all" ? tasks[0] : tasks.find((x) => x.status === filter)) ??
-    null;
+  const selectedTask = tasks.find((x) => x.id === selectedTaskId) ?? null;
   const selectedMeeting =
     meetings.find((x) => x.id === selectedMeetingId) ??
     todayMeetings[0] ??
@@ -143,7 +140,7 @@ export function useEmployeeWorkHubData(workEmployeeId: string) {
 
   function selectTask(id: string) {
     setSelectedTaskId(id);
-    if (isMobile) setMobileDetailOpen(true);
+    setMobileDetailOpen(true);
   }
 
   function selectMeeting(id: string) {

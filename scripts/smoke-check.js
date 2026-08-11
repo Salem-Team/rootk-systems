@@ -404,6 +404,61 @@ function main() {
     "work policies mounts deduction panel"
   );
 
+  // Daily plan + auto daily report + team managers
+  for (const f of [
+    "src/lib/daily-plan.ts",
+    "src/lib/daily-report.ts",
+    "src/services/daily-plan.service.ts",
+    "src/services/daily-report.service.ts",
+    "src/app/(app)/daily-plan/page.tsx",
+    "src/components/daily-plan/daily-report-sheet.tsx",
+    "src/app/(app)/team/page.tsx",
+    "backend/src/daily-plan/daily-plan.controller.ts",
+    "backend/src/daily-plan/daily-plan-report.service.ts",
+    "backend/prisma/migrations/20260811140000_daily_plan/migration.sql",
+    "backend/prisma/migrations/20260811120000_employee_manager_id/migration.sql",
+  ]) {
+    assert(existsSync(join(root, f)), `exists ${f}`);
+  }
+  assert(
+    fileContains("src/api/routes.ts", 'report: "/daily-plan/report"'),
+    "route daily-plan report"
+  );
+  assert(
+    fileContains("backend/src/daily-plan/daily-plan.controller.ts", '@Get("report")'),
+    "Nest GET /daily-plan/report"
+  );
+  assert(
+    fileContains("src/services/daily-plan.service.ts", "isApiMode()") &&
+      fileContains("src/services/daily-report.service.ts", "isApiMode()"),
+    "daily plan/report dual-mode"
+  );
+  assert(
+    fileContains("backend/prisma/schema.prisma", "model DailyPlan") &&
+      fileContains("docs/prisma/schema.prisma", "model DailyPlan"),
+    "prisma DailyPlan FE docs + backend"
+  );
+  assert(
+    fileContains("backend/prisma/schema.prisma", "managerEmployeeId") &&
+      fileContains("src/lib/team.ts", "directReportIds"),
+    "manager hierarchy wiring"
+  );
+  assert(
+    fileContains("src/constants/navigation.ts", 'key: "dailyPlan"') &&
+      fileContains("src/i18n/locales/ar.ts", "dailyPlan:") &&
+      fileContains("src/i18n/locales/en.ts", "reportDescShort"),
+    "daily plan nav + i18n"
+  );
+  assert(
+    fileContains("backend/src/app.module.ts", "DailyPlanModule"),
+    "DailyPlanModule registered"
+  );
+  assert(
+    fileContains("src/lib/organic-ads-task-match.ts", "isOrganicAdsLinkableTask") &&
+      fileContains("backend/src/lib/organic-ads-task-match.ts", "isOrganicAdsLinkableTask"),
+    "organic ads task match FE+BE"
+  );
+
   assert(fileContains("tsconfig.json", '"backend"'), "tsconfig excludes backend");
   assert(fileContains("eslint.config.mjs", "backend/**"), "eslint ignores backend");
   assert(fileContains("eslint.config.mjs", "scripts/**"), "eslint ignores scripts");

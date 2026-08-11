@@ -136,6 +136,8 @@ export interface TargetHistoryEvent extends BaseEntity {
 
 export interface TargetFilters {
   employeeId?: string;
+  /** Manager view: targets assigned to direct reports. */
+  team?: boolean;
   department?: string;
   branch?: string;
   roleKey?: string;

@@ -19,6 +19,7 @@ import { PreferencesModule } from "./preferences/preferences.module";
 import { TargetsModule } from "./targets/targets.module";
 import { OrganicAdsModule } from "./organic-ads/organic-ads.module";
 import { CrmModule } from "./crm/crm.module";
+import { DailyPlanModule } from "./daily-plan/daily-plan.module";
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { CrmModule } from "./crm/crm.module";
     TargetsModule,
     OrganicAdsModule,
     CrmModule,
+    DailyPlanModule,
   ],
 })
 export class AppModule {}

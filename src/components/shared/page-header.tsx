@@ -37,11 +37,15 @@ export function PageHeader({
             {eyebrow ? <p className="type-eyebrow">{eyebrow}</p> : null}
             <h1 className="type-title">{title}</h1>
             {description ? (
-              <p className="type-subtitle hidden sm:block">{description}</p>
+              <p className="type-subtitle line-clamp-2 sm:line-clamp-none">
+                {description}
+              </p>
             ) : null}
           </div>
           {actions ? (
-            <div className="flex flex-wrap items-center gap-2">{actions}</div>
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+              {actions}
+            </div>
           ) : null}
         </div>
         <div className="soft-divider mt-4 sm:mt-5" aria-hidden />
@@ -74,7 +78,7 @@ export function PageHeader({
           {description ? (
             <motion.p
               variants={fadeInUp}
-              className="type-subtitle hidden sm:block"
+              className="type-subtitle line-clamp-2 sm:line-clamp-none"
             >
               {description}
             </motion.p>
@@ -83,7 +87,7 @@ export function PageHeader({
         {actions ? (
           <motion.div
             variants={fadeInUp}
-            className="flex flex-wrap items-center gap-2"
+            className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end"
           >
             {actions}
           </motion.div>

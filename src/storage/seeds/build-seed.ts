@@ -28,6 +28,7 @@ import {
   organicAdsSeed,
   organicAdsSettingsSeed,
   organicAdHistorySeed,
+  dailyPlanSeed,
   crmStagesSeed,
   crmSubStagesSeed,
   crmFeedbackTypesSeed,
@@ -64,6 +65,7 @@ import type {
   OrganicAdsSettings,
   OrganicAdvertisement,
 } from "@/types/organic-ads";
+import type { DailyPlan } from "@/types/daily-plan";
 import type {
   CrmBusinessType,
   CrmFeedbackType,
@@ -110,6 +112,7 @@ export interface SeedPayload {
   organicAds: OrganicAdvertisement[];
   organicAdsSettings: OrganicAdsSettings;
   organicAdHistory: OrganicAdHistoryEvent[];
+  dailyPlan: DailyPlan;
   crmStages: CrmStage[];
   crmSubStages: CrmSubStage[];
   crmFeedbackTypes: CrmFeedbackType[];
@@ -233,6 +236,7 @@ export function buildSeedPayload(): SeedPayload {
     organicAds: organicAdsSeed,
     organicAdsSettings: organicAdsSettingsSeed,
     organicAdHistory: organicAdHistorySeed,
+    dailyPlan: dailyPlanSeed,
     crmStages: crmStagesSeed.map((s) => enrichWithAudit(s, "system")),
     crmSubStages: crmSubStagesSeed.map((s) => enrichWithAudit(s, "system")),
     crmFeedbackTypes: crmFeedbackTypesSeed.map((t) =>

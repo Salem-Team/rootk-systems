@@ -10,6 +10,8 @@ import type { WorkTask } from "@/types/work";
 export function AdminWorkTaskList({
   tasks,
   employeeMap,
+  assigneeFilter,
+  onSelectAssignee,
   onView,
   onEdit,
   onDeleteRequest,
@@ -55,6 +57,8 @@ export function AdminWorkTaskList({
       tasks={tasks}
       employees={employeeMap}
       showAssignee
+      assigneeFilter={assigneeFilter}
+      onSelectAssignee={onSelectAssignee}
       onView={onView}
       onEdit={onEdit}
       onDelete={onDeleteRequest}

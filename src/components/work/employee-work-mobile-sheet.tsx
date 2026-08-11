@@ -59,8 +59,8 @@ export function EmployeeWorkMobileSheet({
   const { t } = useTranslation();
 
   return (
-    <Sheet open={open && isMobile} onOpenChange={onOpenChange}>
-      <SheetContent className="gap-0 p-0 sm:max-w-md lg:hidden">
+    <Sheet open={open && (isMobile || tab === "tasks")} onOpenChange={onOpenChange}>
+      <SheetContent className="gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b border-border/60 px-4 py-4 text-start">
           <SheetTitle>
             {tab === "meetings"
@@ -97,7 +97,6 @@ export function EmployeeWorkMobileSheet({
               <TaskDetailCard
                 task={selectedTask}
                 meetings={meetings}
-                nameOf={nameOf}
                 embedded
                 onCycleStatus={() => onCycleStatus(selectedTask.id)}
                 onToggleSub={(subId) => onToggleSub(selectedTask.id, subId)}

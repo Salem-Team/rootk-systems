@@ -37,6 +37,10 @@ export const API_ROUTES = {
     holidays: "/schedule/holidays",
     holidayById: (id: string) => `/schedule/holidays/${id}`,
   },
+  dailyPlan: {
+    root: "/daily-plan",
+    report: "/daily-plan/report",
+  },
   settings: {
     root: "/settings",
   },

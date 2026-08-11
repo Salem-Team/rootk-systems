@@ -14,11 +14,13 @@ import { isValidEvidenceUrl, validateTaskEvidence } from "@/lib/task-evidence";
 import { fromError, ok } from "@/services/api-result";
 import { emitWorkUpdated } from "@/lib/events";
 import { forcePersonalTaskPayload, isPersonalWork } from "@/lib/work-utils";
+import { assertEmployeeCanAssignToTeam } from "@/services/team-access";
 import { AppRole } from "@/constants/roles";
 import {
   actorContext,
   assertEmployeeCanEditTask,
   emptyTask,
+  presentWorkTaskForActor,
 } from "@/services/work/work-shared";
 import type { ApiResponse } from "@/types";
 import type { WorkTask } from "@/types/work";
@@ -28,22 +30,34 @@ export async function createWorkTask(
   input: CreateWorkTaskDto
 ): Promise<ApiResponse<WorkTask>> {
   const { role, userId, employeeId } = actorContext();
+  const teamAssign =
+    role === AppRole.employee &&
+    input.origin === "assigned" &&
+    (input.assigneeIds?.length ?? 0) > 0;
   const normalized =
-    role === AppRole.employee
+    role === AppRole.employee && !teamAssign
       ? forcePersonalTaskPayload(input, employeeId)
       : input;
 
   if (isApiMode()) {
     const res = await postWorkTask(normalized);
     if (res.success) emitWorkUpdated();
-    return res;
+    if (!res.success || !res.data) return res;
+    return ok(presentWorkTaskForActor(res.data), res.message);
   }
   try {
     const parsed = createWorkTaskSchema.safeParse(normalized);
     if (!parsed.success) {
       throw new ValidationError("Invalid task payload", parsed.error.flatten());
     }
-    if (role === AppRole.employee && parsed.data.origin !== "personal") {
+    if (teamAssign) {
+      await assertEmployeeCanAssignToTeam(parsed.data.assigneeIds);
+    }
+    if (
+      role === AppRole.employee &&
+      parsed.data.origin !== "personal" &&
+      !teamAssign
+    ) {
       throw new ForbiddenError("Employees can only create personal tasks");
     }
     const actor = userId;
@@ -96,7 +110,7 @@ export async function createWorkTask(
       actorId: actor,
       origin: task.origin,
     });
-    return ok(task, "Task created");
+    return ok(presentWorkTaskForActor(task), "Task created");
   } catch (error) {
     return fromError(error, emptyTask(""));
   }
@@ -120,7 +134,8 @@ export async function updateWorkTask(
   if (isApiMode()) {
     const res = await patchWorkTask(id, payload);
     if (res.success) emitWorkUpdated();
-    return res;
+    if (!res.success || !res.data) return res;
+    return ok(presentWorkTaskForActor(res.data), res.message);
   }
   try {
     const parsed = updateWorkTaskSchema.safeParse(payload);
@@ -230,7 +245,7 @@ export async function updateWorkTask(
       );
       void recalculateTargetProgress(saved.targetId);
     }
-    return ok(saved, "Task updated");
+    return ok(presentWorkTaskForActor(saved), "Task updated");
   } catch (error) {
     return fromError(error, emptyTask(id));
   }

@@ -9,6 +9,7 @@ import {
   sanitizeEvidenceLinks,
   type Actor,
 } from "./work-mappers";
+import { assertCanAssignToTeam } from "../lib/team";
 
 export type { Actor };
 
@@ -26,21 +27,42 @@ export class WorkTasksWriteService {
     body: Record<string, unknown>
   ) {
     const isEmployee = actor.role === "employee";
-    const origin = isEmployee
-      ? WorkOrigin.personal
-      : ((body.origin as WorkOrigin) ?? WorkOrigin.assigned);
-    const assigneeIds = isEmployee
-      ? [actor.employeeId]
-      : ((body.assigneeIds as string[]) ?? []);
-    if (isEmployee && origin !== WorkOrigin.personal) {
+    const requestedAssignees = Array.isArray(body.assigneeIds)
+      ? (body.assigneeIds as string[]).map(String).filter(Boolean)
+      : [];
+    const wantsTeamAssign =
+      isEmployee &&
+      body.origin === WorkOrigin.assigned &&
+      requestedAssignees.length > 0;
+    if (wantsTeamAssign) {
+      await assertCanAssignToTeam(
+        this.prisma,
+        companyId,
+        actor,
+        requestedAssignees
+      );
+    }
+    const origin = wantsTeamAssign
+      ? WorkOrigin.assigned
+      : isEmployee
+        ? WorkOrigin.personal
+        : ((body.origin as WorkOrigin) ?? WorkOrigin.assigned);
+    const assigneeIds = wantsTeamAssign
+      ? requestedAssignees
+      : isEmployee
+        ? [actor.employeeId]
+        : requestedAssignees;
+    if (isEmployee && origin !== WorkOrigin.personal && !wantsTeamAssign) {
       throw new ForbiddenException("Employees can only create personal tasks");
     }
-    const requireEvidenceLinks = isEmployee
-      ? false
-      : Boolean(body.requireEvidenceLinks);
-    const requireEvidenceNotes = isEmployee
-      ? false
-      : Boolean(body.requireEvidenceNotes);
+    const requireEvidenceLinks =
+      isEmployee && !wantsTeamAssign
+        ? false
+        : Boolean(body.requireEvidenceLinks);
+    const requireEvidenceNotes =
+      isEmployee && !wantsTeamAssign
+        ? false
+        : Boolean(body.requireEvidenceNotes);
     const now = new Date();
     const initialStatus = (body.status as TaskStatus) ?? TaskStatus.todo;
     const row = await this.prisma.workTask.create({
@@ -93,7 +115,7 @@ export class WorkTasksWriteService {
       });
     }
 
-    return mapTask(row);
+    return mapTask(row, actor);
   }
 
   async toggleSubItem(
@@ -126,7 +148,7 @@ export class WorkTasksWriteService {
         version: { increment: 1 },
       },
     });
-    return mapTask(row);
+    return mapTask(row, actor);
   }
 
   async deleteTask(companyId: string, actor: Actor, id: string) {

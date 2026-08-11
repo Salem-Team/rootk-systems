@@ -1,8 +1,16 @@
 import type { Employee } from "@/types";
 import type { SeedOf } from "@/types/seed";
 
+function withManagerIds(rows: SeedOf<Employee>[]): SeedOf<Employee>[] {
+  const byName = new Map(rows.map((row) => [row.name, row.id]));
+  return rows.map((row) => ({
+    ...row,
+    managerEmployeeId: row.manager ? byName.get(row.manager) : undefined,
+  }));
+}
+
 /** Raw seed — Egyptian workforce sample. */
-export const employeesSeed: SeedOf<Employee>[] = [
+export const employeesSeed: SeedOf<Employee>[] = withManagerIds([
   {
     id: "emp-001",
     employeeId: "RK-1001",
@@ -203,4 +211,4 @@ export const employeesSeed: SeedOf<Employee>[] = [
     location: "New Cairo",
     manager: "Layla Hassan",
   },
-];
+]);

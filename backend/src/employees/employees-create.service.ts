@@ -7,6 +7,7 @@ import { writeActivity } from "../common/activity-writer";
 import { hashPassword } from "../auth/password.util";
 import { AppRole } from "../common/roles";
 import { requireCreateFields } from "./employees-validators";
+import { resolveManagerAssignment } from "./employees-manager";
 
 /** Employee creation flow (employee record + salary profile + login account). */
 @Injectable()
@@ -29,12 +30,19 @@ export class EmployeesCreateService {
       joinDate: string;
       status?: string;
       manager?: string;
+      managerEmployeeId?: string;
       employeeId?: string;
       password: string;
     }
   ) {
     requireCreateFields(body);
     const password = body.password.trim();
+    const manager = await resolveManagerAssignment(
+      this.prisma,
+      companyId,
+      undefined,
+      body
+    );
     try {
       const row = await this.prisma.employee.create({
         data: {
@@ -47,7 +55,8 @@ export class EmployeesCreateService {
           position: body.position.trim(),
           location: body.location ?? "",
           phone: body.phone ?? "",
-          managerName: body.manager,
+          managerName: manager.managerName,
+          managerEmployeeId: manager.managerEmployeeId,
           joinDate: parseDate(body.joinDate),
           status: (body.status as EmployeeStatus) ?? EmployeeStatus.active,
           createdBy: actorId,

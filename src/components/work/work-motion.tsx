@@ -108,23 +108,31 @@ export function WorkMotionRow({
   children,
   selected,
   index = 0,
+  striped = false,
   onClick,
 }: {
   className?: string;
   children: React.ReactNode;
   selected?: boolean;
   index?: number;
+  striped?: boolean;
   onClick?: () => void;
 }) {
   const reduceMotion = useReducedMotion();
+  const zebra =
+    striped && !selected && index % 2 === 1 ? "bg-muted/25" : undefined;
+  const rowClass = cn(
+    "border-b border-border/50 last:border-0 transition-colors",
+    selected ? "bg-primary/[0.05]" : "hover:bg-muted/40",
+    zebra,
+    onClick && "cursor-pointer",
+    className
+  );
+
   if (reduceMotion) {
     return (
       <tr
-        className={cn(
-          "border-b border-border/60 last:border-0 transition-colors",
-          selected ? "bg-primary/[0.05]" : "hover:bg-muted/40",
-          className
-        )}
+        className={rowClass}
         onClick={onClick}
         data-state={selected ? "selected" : undefined}
       >
@@ -142,13 +150,7 @@ export function WorkMotionRow({
         ease: easeOutExpo,
         delay: Math.min(index * 0.03, 0.24),
       }}
-      whileHover={{ backgroundColor: "hsl(var(--muted) / 0.45)" }}
-      className={cn(
-        "border-b border-border/60 last:border-0 transition-colors",
-        selected && "bg-primary/[0.05]",
-        onClick && "cursor-pointer",
-        className
-      )}
+      className={rowClass}
       onClick={onClick}
       data-state={selected ? "selected" : undefined}
     >

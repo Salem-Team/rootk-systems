@@ -18,7 +18,9 @@ import { useTranslation } from "@/hooks/use-translation";
 import {
   createOrganicAd,
   inspectOrganicAdUrl,
+  listLinkableOrganicAdTasks,
 } from "@/services/organic-ads.service";
+import type { LinkableWorkTask } from "@/types/organic-ads";
 import { canOrganicAds } from "@/lib/organic-ads-policies";
 import { useSessionStore } from "@/stores/session-store";
 import type { UrlInspectionResult } from "@/types/organic-ads";
@@ -49,6 +51,7 @@ export function AddAdvertisementSheet({
   const [inspection, setInspection] = useState<UrlInspectionResult | null>(
     null
   );
+  const [nextTask, setNextTask] = useState<LinkableWorkTask | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -57,7 +60,12 @@ export function AddAdvertisementSheet({
       setInspection(null);
       setInspecting(false);
       setSaving(false);
+      setNextTask(null);
+      return;
     }
+    void listLinkableOrganicAdTasks().then((res) => {
+      if (res.success) setNextTask(res.data[0] ?? null);
+    });
   }, [open]);
 
   useEffect(() => {
@@ -98,7 +106,11 @@ export function AddAdvertisementSheet({
         toast.error(res.message || t("organicAds.toast.createFailed"));
         return;
       }
-      toast.success(t("organicAds.toast.created"));
+      toast.success(
+        res.data?.workTaskId
+          ? t("organicAds.toast.createdAndCounted")
+          : t("organicAds.toast.created")
+      );
       onOpenChange(false);
       onCreated?.();
     } finally {
@@ -232,6 +244,24 @@ export function AddAdvertisementSheet({
               </div>
             </div>
           ) : null}
+
+          {nextTask ? (
+            <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5 text-[12px]">
+              <p className="font-medium text-foreground">
+                {t("organicAds.add.willCount")}
+              </p>
+              <p className="mt-1 text-muted-foreground">
+                {nextTask.title}
+                {nextTask.targetTitle
+                  ? ` · ${nextTask.targetTitle} (${nextTask.targetCompleted}/${nextTask.targetQuantity})`
+                  : ""}
+              </p>
+            </div>
+          ) : (
+            <p className="text-[12px] text-muted-foreground">
+              {t("organicAds.add.noOpenQuota")}
+            </p>
+          )}
 
           <div className="grid gap-1.5">
             <Label htmlFor="ad-notes">{t("organicAds.add.notes")}</Label>

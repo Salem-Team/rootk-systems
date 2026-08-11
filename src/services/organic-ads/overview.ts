@@ -60,7 +60,10 @@ export async function getOrganicAdsOverview(
     ]);
     const nameMap = new Map(employees.map((e) => [e.id, e.name]));
     const empLite = employees.map((e) => ({ id: e.id, name: e.name }));
-    const linkedTargets = await linkedTargetsForAds(ads);
+    const linkedTargets = await linkedTargetsForAds(
+      ads,
+      canOrganicAds(getSessionRole(), "view_team") ? null : getWorkEmployeeId()
+    );
 
     return ok({
       kpis: buildKpis(ads, range),
@@ -175,7 +178,7 @@ export async function getSalesAdvertisingProfile(
       platformMap.set(a.platform, (platformMap.get(a.platform) ?? 0) + 1);
     }
 
-    const linkedTargets = await linkedTargetsForAds(ads);
+    const linkedTargets = await linkedTargetsForAds(ads, employeeId);
 
     return ok({
       employeeId,

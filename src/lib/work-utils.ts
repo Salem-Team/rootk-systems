@@ -45,6 +45,15 @@ export function isAssignedTo(ids: string[], employeeId: string): boolean {
   return ids.includes(employeeId);
 }
 
+/** Employees only see themselves on a task — never co-assignees. */
+export function scopeWorkTaskAssigneesForEmployee<
+  T extends { assigneeIds: string[] },
+>(task: T, employeeId: string): T {
+  if (!employeeId || !isAssignedTo(task.assigneeIds, employeeId)) return task;
+  if (task.assigneeIds.length === 1) return task;
+  return { ...task, assigneeIds: [employeeId] };
+}
+
 export function filterTasksForEmployee(
   tasks: WorkTask[],
   employeeId: string

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { assignOrganicAdsQuota } from "@/services/organic-ads.service";
 import {
   createWorkMeeting,
   createWorkTask,
@@ -8,6 +9,8 @@ import {
   updateWorkMeeting,
   updateWorkTask,
 } from "@/services/work.service";
+import { emitTargetsUpdated, emitWorkUpdated } from "@/lib/events";
+import { clampOrganicAdsQuantity } from "@/lib/organic-ads-task-match";
 import { useTranslation } from "@/hooks/use-translation";
 import { toStorageIso } from "@/lib/flexible-datetime";
 import type { WorkMeeting, WorkTask } from "@/types/work";
@@ -87,6 +90,29 @@ export function useAdminWorkPanelForms({
       return;
     }
     setBusy(true);
+    if (!editingTaskId && taskForm.countsAsOrganicAd) {
+      const res = await assignOrganicAdsQuota({
+        title: taskForm.title.trim(),
+        description: taskForm.description.trim(),
+        quantity: clampOrganicAdsQuantity(taskForm.organicAdsCount || 1),
+        assigneeIds: taskForm.assigneeIds,
+        dueDate: taskForm.dueDate
+          ? toStorageIso(taskForm.dueDate, "end")
+          : undefined,
+        priority: taskForm.priority,
+      });
+      setBusy(false);
+      if (!res.success) {
+        toast.error(res.message ?? t("common.error"));
+        return;
+      }
+      setTaskDialogOpen(false);
+      emitTargetsUpdated();
+      emitWorkUpdated();
+      await reload();
+      toast.success(t("workAdmin.organicAdsAssigned"));
+      return;
+    }
     const payload = {
       title: taskForm.title.trim(),
       description: taskForm.description.trim(),

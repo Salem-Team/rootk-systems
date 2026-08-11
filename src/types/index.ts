@@ -60,6 +60,8 @@ export interface Employee extends BaseEntity {
   joinDate: string;
   location: string;
   manager?: string;
+  /** Employee.id of the direct manager. */
+  managerEmployeeId?: string;
 }
 
 export interface AttendanceRecord extends BaseEntity {
@@ -240,4 +242,6 @@ export type * from "@/types/payroll";
 export type * from "@/types/work";
 export type * from "@/types/targets";
 export type * from "@/types/organic-ads";
+export type * from "@/types/daily-plan";
+export type * from "@/types/daily-report";
 export type * from "@/types/crm";

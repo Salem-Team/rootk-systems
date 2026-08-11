@@ -1,7 +1,12 @@
 import { ForbiddenError } from "@/lib/errors";
 import { AppRole } from "@/constants/roles";
 import { getSessionRole, getSessionUserId, getWorkEmployeeId } from "@/stores/session-store";
-import { employeeOwnsPersonalMeeting, employeeOwnsPersonalTask, isAssignedTo } from "@/lib/work-utils";
+import {
+  employeeOwnsPersonalMeeting,
+  employeeOwnsPersonalTask,
+  isAssignedTo,
+  scopeWorkTaskAssigneesForEmployee,
+} from "@/lib/work-utils";
 import type { UserRole } from "@/types";
 import type { WorkMeeting, WorkTask } from "@/types/work";
 
@@ -72,6 +77,17 @@ export function actorContext(): {
     userId: getSessionUserId(),
     employeeId: getWorkEmployeeId(),
   };
+}
+
+/** Hide co-assignees when the signed-in viewer is an employee. */
+export function presentWorkTaskForActor(task: WorkTask): WorkTask {
+  const { role, employeeId } = actorContext();
+  if (role !== AppRole.employee || !employeeId) return task;
+  return scopeWorkTaskAssigneesForEmployee(task, employeeId);
+}
+
+export function presentWorkTasksForActor(tasks: WorkTask[]): WorkTask[] {
+  return tasks.map(presentWorkTaskForActor);
 }
 
 export function assertEmployeeCanEditTask(task: WorkTask): void {

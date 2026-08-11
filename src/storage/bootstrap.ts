@@ -44,6 +44,7 @@ async function writeSeed(): Promise<void> {
     storage.setItem(StorageKeys.organicAds, seed.organicAds),
     storage.setItem(StorageKeys.organicAdsSettings, seed.organicAdsSettings),
     storage.setItem(StorageKeys.organicAdHistory, seed.organicAdHistory),
+    storage.setItem(StorageKeys.dailyPlan, seed.dailyPlan),
     storage.setItem(StorageKeys.crmStages, seed.crmStages),
     storage.setItem(StorageKeys.crmSubStages, seed.crmSubStages),
     storage.setItem(StorageKeys.crmFeedbackTypes, seed.crmFeedbackTypes),

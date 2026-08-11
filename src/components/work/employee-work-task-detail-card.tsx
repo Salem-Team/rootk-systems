@@ -24,7 +24,6 @@ import type { WorkMeeting, WorkTask } from "@/types/work";
 export function TaskDetailCard({
   task,
   meetings,
-  nameOf,
   embedded,
   onCycleStatus,
   onToggleSub,
@@ -34,7 +33,6 @@ export function TaskDetailCard({
 }: {
   task: WorkTask;
   meetings: WorkMeeting[];
-  nameOf: (id: string) => string;
   embedded?: boolean;
   onCycleStatus: () => void;
   onToggleSub: (subId: string) => void;
@@ -48,7 +46,6 @@ export function TaskDetailCard({
   const subDone = task.subItems.filter((s) => s.done).length;
   const subPct = Math.round((subDone / Math.max(task.subItems.length, 1)) * 100);
   const due = taskDueBucket(task.dueDate, task.status);
-  const ownerLabel = task.assigneeIds.map(nameOf).join(", ");
 
   return (
     <motion.article
@@ -152,8 +149,7 @@ export function TaskDetailCard({
 
       <TaskEvidenceDisplay task={task} className="mt-4" />
 
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <MetaChip label={t("workHub.owner")} value={ownerLabel || "—"} />
+      <div className="mt-4 grid grid-cols-2 gap-2">
         <MetaChip
           label={t("workHub.estimate")}
           value={

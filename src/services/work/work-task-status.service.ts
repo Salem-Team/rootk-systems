@@ -21,6 +21,7 @@ import {
   assertEmployeeCanEditTask,
   assertEmployeeCanTouchTaskProgress,
   emptyTask,
+  presentWorkTaskForActor,
 } from "@/services/work/work-shared";
 import { updateWorkTask } from "@/services/work/work-task-mutations.service";
 import type { ApiResponse } from "@/types";
@@ -35,7 +36,8 @@ export async function updateWorkTaskStatus(
   if (isApiMode()) {
     const res = await patchWorkTaskStatus(id, status, evidence);
     if (res.success) emitWorkUpdated();
-    return res;
+    if (!res.success || !res.data) return res;
+    return ok(presentWorkTaskForActor(res.data), res.message);
   }
   try {
     const parsed = updateWorkTaskStatusSchema.safeParse({ status, evidence });
@@ -116,7 +118,7 @@ export async function updateWorkTaskStatus(
       );
       void recalculateTargetProgress(saved.targetId);
     }
-    return ok(saved, "Task updated");
+    return ok(presentWorkTaskForActor(saved), "Task updated");
   } catch (error) {
     return fromError(error, emptyTask(id));
   }
@@ -130,7 +132,8 @@ export async function toggleWorkTaskSubItem(
   if (isApiMode()) {
     const res = await patchWorkTaskSubItemToggle(id, subId);
     if (res.success) emitWorkUpdated();
-    return res;
+    if (!res.success || !res.data) return res;
+    return ok(presentWorkTaskForActor(res.data), res.message);
   }
   try {
     const current = await workTaskRepository.findById(id);
@@ -145,7 +148,7 @@ export async function toggleWorkTaskSubItem(
     const saved = await workTaskRepository.update(id, next);
     if (!saved) throw new NotFoundError("Task not found");
     emitWorkUpdated();
-    return ok(saved);
+    return ok(presentWorkTaskForActor(saved));
   } catch (error) {
     return fromError(error, emptyTask(id));
   }

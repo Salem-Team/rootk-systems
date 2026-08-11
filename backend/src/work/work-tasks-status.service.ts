@@ -130,7 +130,7 @@ export class WorkTasksStatusService {
       );
     }
 
-    return mapTask(row);
+    return mapTask(row, actor);
   }
 
   async updateTaskStatus(
@@ -220,6 +220,6 @@ export class WorkTasksStatusService {
       );
     }
 
-    return mapTask(row);
+    return mapTask(row, actor);
   }
 }

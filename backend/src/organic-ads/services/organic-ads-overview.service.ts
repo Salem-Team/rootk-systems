@@ -1,8 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { AdPlatform, AdStatus, AdValidationStatus, type OrganicAdvertisement } from "@prisma/client";
+import { AdPlatform, AdStatus, AdValidationStatus, TargetStatus, type OrganicAdvertisement } from "@prisma/client";
 import { differenceInCalendarDays, eachDayOfInterval, format, parseISO, startOfDay, subDays } from "date-fns";
 import { PrismaService } from "../../prisma/prisma.service";
 import { iso } from "../../common/mappers";
+import { isOrganicAdsType } from "../../lib/organic-ads-task-match";
 import {
   assertCap,
   buildScopedWhere,
@@ -13,6 +14,7 @@ import {
   type DateRangePreset,
   type TeamActivitySort,
 } from "../organic-ads.helpers";
+import { AppRole } from "../../common/roles";
 import { OrganicAdsSettingsService } from "./organic-ads-settings.service";
 import { OrganicAdsHistoryService } from "./organic-ads-history.service";
 
@@ -46,7 +48,10 @@ export class OrganicAdsOverviewService {
           where: {
             companyId,
             deletedAt: null,
-            organicAdvertisements: { some: { deletedAt: null } },
+            status: { notIn: [TargetStatus.cancelled, TargetStatus.archived] },
+            ...(actor.role === AppRole.admin || !actor.employeeId
+              ? {}
+              : { assigneeIds: { has: actor.employeeId } }),
           },
           select: {
             id: true,
@@ -56,8 +61,10 @@ export class OrganicAdsOverviewService {
             status: true,
             health: true,
             assigneeIds: true,
+            typeId: true,
+            type: { select: { name: true, unit: true, metadata: true } },
           },
-          take: 20,
+          take: 80,
         }),
       ]);
 
@@ -234,16 +241,25 @@ export class OrganicAdsOverviewService {
       recentActivity: historyEvents,
       settings: mapSettings(settings),
       range,
-      linkedTargets: linkedTargets.map((t) => ({
-        id: t.id,
-        title: t.title,
-        quantity: t.quantity,
-        completedQuantity: t.completedQuantity,
-        remaining: Math.max(0, t.quantity - t.completedQuantity),
-        status: t.status,
-        health: t.health,
-        assigneeIds: t.assigneeIds,
-      })),
+      linkedTargets: linkedTargets
+        .filter(
+          (t) =>
+            isOrganicAdsType(t.type) ||
+            ads.some((a) => a.targetId === t.id)
+        )
+        .slice(0, 20)
+        .map((t) => ({
+          id: t.id,
+          title: t.title,
+          quantity: t.quantity,
+          completedQuantity: t.completedQuantity,
+          remaining: Math.max(0, t.quantity - t.completedQuantity),
+          status: t.status,
+          health: t.health,
+          assigneeIds: t.assigneeIds,
+          typeName: t.type.name,
+          unit: t.type.unit,
+        })),
     };
   }
 }

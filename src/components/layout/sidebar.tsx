@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
+import { SidebarDailyPlan } from "@/components/layout/sidebar-daily-plan";
 import { SidebarEmployeeTasks } from "@/components/layout/sidebar-employee-tasks";
 import { APP_NAV, navForRole } from "@/constants/navigation";
 import { useUiStore } from "@/stores/ui-store";
@@ -146,6 +147,8 @@ export function Sidebar() {
             );
           })}
         </motion.nav>
+
+        {!sidebarCollapsed ? <SidebarDailyPlan /> : null}
 
         {role === "employee" && !sidebarCollapsed ? (
           <SidebarEmployeeTasks collapsed={false} />

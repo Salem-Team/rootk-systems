@@ -46,23 +46,31 @@ export function defaultTargetAssignForm(): TargetAssignFormState {
 export function formFromCatalog(
   defaultCategoryId: string | undefined,
   categories: TargetCategory[],
-  types: TargetType[]
+  types: TargetType[],
+  options?: { typeId?: string; quantity?: number }
 ): TargetAssignFormState {
   const base = defaultTargetAssignForm();
+  const preferredType =
+    options?.typeId && types.some((ty) => ty.id === options.typeId && ty.active)
+      ? types.find((ty) => ty.id === options.typeId)
+      : undefined;
   const preferred =
-    defaultCategoryId &&
+    preferredType?.categoryId ||
+    (defaultCategoryId &&
     categories.some((c) => c.id === defaultCategoryId && c.active)
       ? defaultCategoryId
-      : categories.find((c) => c.active)?.id ?? "";
+      : categories.find((c) => c.active)?.id ?? "");
   if (!preferred) return base;
-  const firstType = types.find(
-    (ty) => ty.categoryId === preferred && ty.active
-  );
+  const firstType =
+    preferredType && preferredType.categoryId === preferred
+      ? preferredType
+      : types.find((ty) => ty.categoryId === preferred && ty.active);
   return {
     ...base,
     categoryId: preferred,
     typeId: firstType?.id ?? "",
     unit: firstType?.unit ?? base.unit,
+    quantity: options?.quantity ?? base.quantity,
   };
 }
 

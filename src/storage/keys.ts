@@ -38,6 +38,7 @@ export const StorageKeys = {
   organicAds: key("organic-ads"),
   organicAdHistory: key("organic-ad-history"),
   organicAdsSettings: key("organic-ads-settings"),
+  dailyPlan: key("daily-plan"),
   crmStages: key("crm-stages"),
   crmSubStages: key("crm-sub-stages"),
   crmFeedbackTypes: key("crm-feedback-types"),

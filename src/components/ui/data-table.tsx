@@ -2,19 +2,31 @@ import { cn } from "@/lib/utils";
 
 export function DataTable({
   className,
+  embedded = false,
   ...props
-}: React.HTMLAttributes<HTMLTableElement>) {
+}: React.HTMLAttributes<HTMLTableElement> & { embedded?: boolean }) {
+  const table = (
+    <div
+      className={cn(
+        "table-scroll overflow-x-auto overscroll-x-contain",
+        !embedded && "-mx-px"
+      )}
+    >
+      <table
+        className={cn(
+          "w-full min-w-[36rem] text-start text-sm sm:min-w-[640px]",
+          className
+        )}
+        {...props}
+      />
+    </div>
+  );
+
+  if (embedded) return table;
+
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-card)]">
-      <div className="table-scroll -mx-px overflow-x-auto overscroll-x-contain">
-        <table
-          className={cn(
-            "w-full min-w-[36rem] text-start text-sm sm:min-w-[640px]",
-            className
-          )}
-          {...props}
-        />
-      </div>
+      {table}
     </div>
   );
 }

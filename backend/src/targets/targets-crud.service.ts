@@ -3,6 +3,7 @@ import { Prisma, TargetPriority, TargetRiskLevel, TargetStatus } from "@prisma/c
 import { PrismaService } from "../prisma/prisma.service";
 import { AppRole } from "../common/roles";
 import { assertCap, type Actor } from "./targets-access";
+import { listDirectReportIds } from "../lib/team";
 import { mapTarget } from "./targets-mappers";
 import { TargetsNotifyService } from "./targets-notify.service";
 
@@ -23,7 +24,15 @@ export class TargetsCrudService {
       deletedAt: null,
     };
 
-    if (actor.role === AppRole.employee) {
+    if (actor.role === AppRole.employee && filters.team === "true") {
+      const reportIds = await listDirectReportIds(
+        this.prisma,
+        companyId,
+        actor.employeeId
+      );
+      if (reportIds.length === 0) return [];
+      where.assigneeIds = { hasSome: reportIds };
+    } else if (actor.role === AppRole.employee) {
       where.assigneeIds = { has: actor.employeeId };
     } else if (filters.employeeId) {
       where.assigneeIds = { has: filters.employeeId };

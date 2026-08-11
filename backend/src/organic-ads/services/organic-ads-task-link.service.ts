@@ -3,10 +3,11 @@ import { Prisma, TaskStatus } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { iso } from "../../common/mappers";
 import { WorkService } from "../../work/work.service";
+import { isOrganicAdsLinkableTask } from "../../lib/organic-ads-task-match";
 import { assertCap, type Actor } from "../organic-ads.helpers";
 import { AppRole } from "../../common/roles";
 
-/** Links advertisements to target-tracked WorkTasks and syncs task completion. */
+/** Links advertisements to ads-quota WorkTasks and syncs task completion. */
 @Injectable()
 export class OrganicAdsTaskLinkService {
   constructor(
@@ -16,8 +17,8 @@ export class OrganicAdsTaskLinkService {
   ) {}
 
   /**
-   * Find next open target-linked WorkTask for an employee that isn't already
-   * claimed by an OrganicAdvertisement. Prefers organic/ads-tagged work.
+   * Find next open ads-quota WorkTask for an employee that isn't already
+   * claimed by an OrganicAdvertisement. Target-linked ads tasks are preferred.
    */
   async findOpenLinkableTask(
     companyId: string,
@@ -31,13 +32,18 @@ export class OrganicAdsTaskLinkService {
           id: preferredTaskId,
           companyId,
           deletedAt: null,
-          targetId: { not: null },
           assigneeIds: { has: ownerEmployeeId },
           status: { not: TaskStatus.completed },
           organicAdvertisement: null,
         },
+        include: { target: { include: { type: true } } },
       });
-      if (preferred) return preferred;
+      if (
+        preferred &&
+        isOrganicAdsLinkableTask(preferred, preferred.target?.type)
+      ) {
+        return preferred;
+      }
       throw new BadRequestException(
         "Selected task is not available to link with this advertisement"
       );
@@ -46,34 +52,26 @@ export class OrganicAdsTaskLinkService {
     const where: Prisma.WorkTaskWhereInput = {
       companyId,
       deletedAt: null,
-      targetId: preferredTargetId ? preferredTargetId : { not: null },
       assigneeIds: { has: ownerEmployeeId },
       status: { not: TaskStatus.completed },
       organicAdvertisement: null,
+      ...(preferredTargetId ? { targetId: preferredTargetId } : {}),
     };
 
     const candidates = await this.prisma.workTask.findMany({
       where,
       orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
-      take: 40,
+      take: 80,
       include: { target: { include: { type: true } } },
     });
 
-    if (candidates.length === 0) return null;
+    const adsTasks = candidates.filter((t) =>
+      isOrganicAdsLinkableTask(t, t.target?.type)
+    );
+    if (adsTasks.length === 0) return null;
 
-    const preferred = candidates.find((t) => {
-      const unit = (t.target?.type?.unit ?? "").toLowerCase();
-      const name = (t.target?.type?.name ?? "").toLowerCase();
-      const tag = (t.tag ?? "").toLowerCase();
-      return (
-        unit.includes("ad") ||
-        name.includes("organic") ||
-        name.includes("ad") ||
-        tag.includes("organic") ||
-        tag.includes("ad")
-      );
-    });
-    return preferred ?? candidates[0] ?? null;
+    const withTarget = adsTasks.find((t) => !!t.targetId);
+    return withTarget ?? adsTasks[0] ?? null;
   }
 
   /**
@@ -131,29 +129,39 @@ export class OrganicAdsTaskLinkService {
       where: {
         companyId,
         deletedAt: null,
-        targetId: { not: null },
         assigneeIds: { has: ownerId },
         status: { not: TaskStatus.completed },
         organicAdvertisement: null,
       },
       orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
-      take: 50,
+      take: 80,
       include: {
-        target: { select: { id: true, title: true, quantity: true, completedQuantity: true, status: true } },
+        target: {
+          select: {
+            id: true,
+            title: true,
+            quantity: true,
+            completedQuantity: true,
+            status: true,
+            type: { select: { id: true, name: true, unit: true, metadata: true } },
+          },
+        },
       },
     });
 
-    return rows.map((t) => ({
-      id: t.id,
-      title: t.title,
-      status: t.status,
-      dueDate: t.dueDate ? iso(t.dueDate) : "",
-      tag: t.tag,
-      targetId: t.targetId,
-      targetTitle: t.target?.title ?? "",
-      targetQuantity: t.target?.quantity ?? 0,
-      targetCompleted: t.target?.completedQuantity ?? 0,
-      targetStatus: t.target?.status ?? "",
-    }));
+    return rows
+      .filter((t) => isOrganicAdsLinkableTask(t, t.target?.type))
+      .map((t) => ({
+        id: t.id,
+        title: t.title,
+        status: t.status,
+        dueDate: t.dueDate ? iso(t.dueDate) : "",
+        tag: t.tag,
+        targetId: t.targetId,
+        targetTitle: t.target?.title ?? "",
+        targetQuantity: t.target?.quantity ?? 0,
+        targetCompleted: t.target?.completedQuantity ?? 0,
+        targetStatus: t.target?.status ?? "",
+      }));
   }
 }

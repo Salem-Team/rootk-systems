@@ -29,6 +29,7 @@ export {
   performanceTargetsSeed,
   targetWarningsSeed,
 } from "./targets";
+export { dailyPlanSeed } from "./daily-plan";
 export {
   organicAdsSeed,
   organicAdsSettingsSeed,

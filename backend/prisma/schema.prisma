@@ -245,6 +245,7 @@ model Company {
   crmLeadActivities     CrmLeadActivity[]
   crmLeadFeedback       CrmLeadFeedback[]
   crmLeadHistory        CrmLeadHistoryEvent[]
+  dailyPlan             DailyPlan?
 }
 
 model User {
@@ -306,8 +307,10 @@ model Employee {
   position     String
   location     String?
   phone        String?
-  managerName  String?
-  joinDate     DateTime       @db.Date
+  managerName       String?
+  /// Employee.id of the direct manager (org hierarchy).
+  managerEmployeeId String?
+  joinDate          DateTime       @db.Date
   status       EmployeeStatus @default(active)
   avatarUrl    String?
   createdAt    DateTime       @default(now())
@@ -325,6 +328,7 @@ model Employee {
   @@unique([companyId, employeeCode])
   @@index([companyId, status])
   @@index([companyId, department])
+  @@index([companyId, managerEmployeeId])
 }
 
 model CompanySettings {
@@ -352,6 +356,48 @@ model CompanySettings {
   metadata      Json     @default("{}")
 
   company Company @relation(fields: [companyId], references: [id])
+}
+
+/// Company-wide daily timetable. Current activity is derived from wall-clock time.
+model DailyPlan {
+  id          String   @id @default(cuid())
+  companyId   String   @unique
+  title       String   @default("Daily Plan")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+  isArchived  Boolean  @default(false)
+  version     Int      @default(1)
+  metadata    Json     @default("{}")
+
+  company Company         @relation(fields: [companyId], references: [id])
+  slots   DailyPlanSlot[]
+}
+
+model DailyPlanSlot {
+  id          String   @id @default(cuid())
+  companyId   String
+  planId      String
+  title       String
+  description String   @default("")
+  /// Stored as HH:mm (24h). Displayed in 12-hour in the UI.
+  startTime   String
+  endTime     String
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+  isArchived  Boolean  @default(false)
+  version     Int      @default(1)
+  metadata    Json     @default("{}")
+
+  plan DailyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, planId, sortOrder])
 }
 
 model LeaveRequest {

@@ -96,21 +96,16 @@ export function EmployeeWorkHub() {
           <EmployeeWorkTaskPanel
             tasks={data.tasks}
             visibleTasks={data.visibleTasks}
-            meetings={data.meetings}
             selectedTask={data.selectedTask}
             originFilter={data.originFilter}
             setOriginFilter={data.setOriginFilter}
             filter={data.filter}
             setFilter={data.setFilter}
-            nameOf={data.nameOf}
             workEmployeeId={workEmployeeId}
             userId={user?.id ?? ""}
             onSelectTask={data.selectTask}
             onCreateTask={actions.openCreateTask}
-            onCycleStatus={(id) => void actions.cycleTaskStatus(id)}
             onMarkDone={actions.markTaskDone}
-            onToggleSub={(taskId, subId) => void actions.toggleSubItem(taskId, subId)}
-            onOpenMeeting={openMeetingFromTask}
             onEditTask={actions.openEditTask}
             onDeleteTask={(task) => void actions.handleDeletePersonal("task", task.id)}
           />

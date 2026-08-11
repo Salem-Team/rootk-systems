@@ -8,3 +8,4 @@ export * from "./notification.schema";
 export * from "./auth.schema";
 export * from "./targets.schema";
 export * from "./payroll.schema";
+export * from "./daily-plan.schema";

@@ -224,7 +224,6 @@ export class TargetsController {
   }
 
   @Post()
-  @Roles(AppRole.admin)
   assign(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,

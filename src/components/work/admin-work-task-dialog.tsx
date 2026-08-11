@@ -13,9 +13,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Field } from "@/components/work/admin-work-field";
 import { AdminWorkTaskEvidenceFields } from "@/components/work/admin-work-task-evidence-fields";
 import { useTranslation } from "@/hooks/use-translation";
+import { ORGANIC_ADS_MAX_QUANTITY, ORGANIC_ADS_TAG } from "@/lib/organic-ads-task-match";
 import type { Employee } from "@/types";
 import type { TaskPriority, TaskStatus, WorkMeeting, WorkTask } from "@/types/work";
 import type { TaskFormState } from "@/components/work/admin-work-panel-types";
@@ -181,6 +183,54 @@ export function AdminWorkTaskDialog({
             }
             label={t("workAdmin.fieldAssignees")}
           />
+          {!isEditing ? (
+            <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">
+                    {t("workAdmin.fieldOrganicAds")}
+                  </p>
+                  <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                    {t("workAdmin.fieldOrganicAdsDesc")}
+                  </p>
+                </div>
+                <Switch
+                  checked={taskForm.countsAsOrganicAd}
+                  onCheckedChange={(countsAsOrganicAd) =>
+                    setTaskForm((p) => ({
+                      ...p,
+                      countsAsOrganicAd,
+                      tag: countsAsOrganicAd ? ORGANIC_ADS_TAG : p.tag,
+                      organicAdsCount: countsAsOrganicAd
+                        ? Math.max(1, p.organicAdsCount || 1)
+                        : p.organicAdsCount,
+                    }))
+                  }
+                  aria-label={t("workAdmin.fieldOrganicAds")}
+                />
+              </div>
+              {taskForm.countsAsOrganicAd ? (
+                <Field
+                  label={t("workAdmin.fieldOrganicAdsCount")}
+                  htmlFor="task-ads-count"
+                >
+                  <Input
+                    id="task-ads-count"
+                    type="number"
+                    min={1}
+                    max={ORGANIC_ADS_MAX_QUANTITY}
+                    value={taskForm.organicAdsCount || 1}
+                    onChange={(e) =>
+                      setTaskForm((p) => ({
+                        ...p,
+                        organicAdsCount: Number(e.target.value) || 1,
+                      }))
+                    }
+                  />
+                </Field>
+              ) : null}
+            </div>
+          ) : null}
           <Field label={t("workAdmin.fieldSubItems")} htmlFor="task-subs">
             <Textarea
               id="task-subs"

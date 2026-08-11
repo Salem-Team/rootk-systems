@@ -3,7 +3,11 @@ import { isApiMode } from "@/lib/env";
 import { enrichWithAudit } from "@/lib/entity";
 import { ValidationError } from "@/lib/errors";
 import { createId } from "@/lib/id";
-import { emitTargetsUpdated } from "@/lib/events";
+import { emitTargetsUpdated, emitWorkUpdated } from "@/lib/events";
+import {
+  isOrganicAdsType,
+  taskTagForTargetType,
+} from "@/lib/organic-ads-task-match";
 import {
   buildTaskTitle,
   computeTargetProgress,
@@ -23,6 +27,9 @@ import { fromError, ok } from "@/services/api-result";
 import { getSessionUserId } from "@/stores/session-store";
 import type { ApiResponse, PerformanceTarget, TargetType, WorkTask } from "@/types";
 import { assertCap, notifyQuietly, withMetrics, writeHistory } from "./targets-shared";
+import { assertEmployeeCanAssignToTeam } from "@/services/team-access";
+import { AppRole } from "@/constants/roles";
+import { getSessionRole } from "@/stores/session-store";
 
 async function generateTasksForTarget(
   target: PerformanceTarget,
@@ -46,7 +53,7 @@ async function generateTasksForTarget(
               ? "low"
               : "medium",
         dueDate: target.endDate,
-        tag: type.name,
+        tag: taskTagForTargetType(type),
         estimateMin: 0,
         assigneeIds: target.assigneeIds,
         targetId: target.id,
@@ -66,8 +73,12 @@ export async function assignTarget(
 ): Promise<ApiResponse<PerformanceTarget>> {
   if (isApiMode()) return postTarget(input);
   try {
-    assertCap("assign");
     const parsed = assignTargetSchema.parse(input);
+    if (getSessionRole() === AppRole.admin) {
+      assertCap("assign");
+    } else {
+      await assertEmployeeCanAssignToTeam(parsed.assigneeIds);
+    }
     const actorId = getSessionUserId();
     const type = await targetTypeRepository.findById(parsed.typeId);
     if (!type) throw new ValidationError("Invalid target type");
@@ -122,8 +133,9 @@ export async function assignTarget(
     );
 
     await performanceTargetRepository.create(target);
-    if (parsed.generateTasks !== false) {
+    if (isOrganicAdsType(type) || parsed.generateTasks !== false) {
       await generateTasksForTarget(target, type);
+      emitWorkUpdated();
     }
     await writeHistory(target.id, "assigned", {
       quantity: target.quantity,

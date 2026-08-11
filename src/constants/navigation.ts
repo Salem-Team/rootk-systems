@@ -4,6 +4,8 @@ import {
   LayoutDashboard,
   Clock,
   Users,
+  UsersRound,
+  CalendarClock,
   CalendarDays,
   FileText,
   BarChart3,
@@ -31,7 +33,9 @@ export type NavKey =
   | "tasks"
   | "targets"
   | "organicAds"
-  | "crm";
+  | "crm"
+  | "team"
+  | "dailyPlan";
 
 export interface AppNavItem {
   key: NavKey;
@@ -56,6 +60,12 @@ export const APP_NAV: AppNavItem[] = [
     roles: [AppRole.admin, AppRole.employee],
   },
   {
+    key: "dailyPlan",
+    href: "/daily-plan",
+    icon: CalendarClock,
+    roles: [AppRole.admin, AppRole.employee],
+  },
+  {
     key: "tasks",
     href: "/tasks",
     icon: ListTodo,
@@ -66,6 +76,12 @@ export const APP_NAV: AppNavItem[] = [
     key: "targets",
     href: "/targets",
     icon: Target,
+    roles: [AppRole.admin, AppRole.employee],
+  },
+  {
+    key: "team",
+    href: "/team",
+    icon: UsersRound,
     roles: [AppRole.admin, AppRole.employee],
   },
   {

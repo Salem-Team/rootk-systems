@@ -4,6 +4,7 @@ export const NOTIFICATION_UPDATED_EVENT = "rootk:notification-updated";
 export const TARGETS_UPDATED_EVENT = "rootk:targets-updated";
 export const ORGANIC_ADS_UPDATED_EVENT = "rootk:organic-ads-updated";
 export const CRM_UPDATED_EVENT = "rootk:crm-updated";
+export const DAILY_PLAN_UPDATED_EVENT = "rootk:daily-plan-updated";
 
 export type NotificationUpdatedDetail = {
   /** Play in-app chime when a new notification is created. */
@@ -37,6 +38,11 @@ export function emitOrganicAdsUpdated() {
 export function emitCrmUpdated() {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(CRM_UPDATED_EVENT));
+}
+
+export function emitDailyPlanUpdated() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(DAILY_PLAN_UPDATED_EVENT));
 }
 
 export function emitNotificationsUpdated(detail?: NotificationUpdatedDetail) {

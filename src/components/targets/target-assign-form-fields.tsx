@@ -43,6 +43,7 @@ export function TargetAssignFormFields({
   employees,
   onCategoryChange,
   onTypeChange,
+  forceGenerateTasks = false,
 }: {
   form: TargetAssignFormState;
   patch: (next: Partial<TargetAssignFormState>) => void;
@@ -52,6 +53,7 @@ export function TargetAssignFormFields({
   employees: Employee[];
   onCategoryChange: (categoryId: string) => void;
   onTypeChange: (typeId: string) => void;
+  forceGenerateTasks?: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -209,12 +211,18 @@ export function TargetAssignFormFields({
               {t("targets.assign.fieldGenerateTasks")}
             </p>
             <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-              {t("targets.assign.generateTasksDesc")}
+              {forceGenerateTasks
+                ? t("targets.assign.generateTasksAdsDesc")
+                : t("targets.assign.generateTasksDesc")}
             </p>
           </div>
           <Switch
-            checked={form.generateTasks}
-            onCheckedChange={(generateTasks) => patch({ generateTasks })}
+            checked={forceGenerateTasks || form.generateTasks}
+            onCheckedChange={(generateTasks) => {
+              if (forceGenerateTasks) return;
+              patch({ generateTasks });
+            }}
+            disabled={forceGenerateTasks}
             aria-label={t("targets.assign.fieldGenerateTasks")}
           />
         </div>

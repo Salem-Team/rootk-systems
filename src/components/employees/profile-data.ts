@@ -1,3 +1,7 @@
+import {
+  findDirectReports as findReportsByManagerId,
+  findManager as findManagerByLink,
+} from "@/lib/team";
 import type { Employee } from "@/types";
 import { buildMockEmployeeProfileExtras } from "@/mocks/employee-profile";
 import type {
@@ -34,15 +38,14 @@ export function findManager(
   employee: Employee,
   roster: Employee[]
 ): Employee | null {
-  if (!employee.manager) return null;
-  return roster.find((e) => e.name === employee.manager) ?? null;
+  return findManagerByLink(employee, roster) as Employee | null;
 }
 
 export function findDirectReports(
   employee: Employee,
   roster: Employee[]
 ): Employee[] {
-  return roster.filter((e) => e.manager === employee.name);
+  return findReportsByManagerId(employee.id, roster);
 }
 
 export function findDepartmentPeers(

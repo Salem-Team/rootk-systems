@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { ensureOrganicAdsCatalog } from "../lib/organic-ads-catalog";
 import { assertCap, type Actor } from "./targets-access";
 import { mapCategory } from "./targets-mappers";
 
@@ -7,13 +8,13 @@ import { mapCategory } from "./targets-mappers";
 export class TargetsCategoriesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  listCategories(companyId: string) {
-    return this.prisma.targetCategory
-      .findMany({
-        where: { companyId, deletedAt: null },
-        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-      })
-      .then((rows) => rows.map(mapCategory));
+  async listCategories(companyId: string) {
+    await ensureOrganicAdsCatalog(this.prisma, companyId);
+    const rows = await this.prisma.targetCategory.findMany({
+      where: { companyId, deletedAt: null },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    });
+    return rows.map(mapCategory);
   }
 
   async upsertCategory(

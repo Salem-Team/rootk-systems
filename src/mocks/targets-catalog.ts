@@ -133,6 +133,20 @@ export const targetTypesSeed: TargetType[] = [
     },
     ACTOR
   ),
+  enrichWithAudit(
+    {
+      id: "ttype-organic-ads",
+      categoryId: "tcat-mkt",
+      name: "Organic Ads",
+      description: "Published organic advertisements",
+      unit: "ads",
+      taskTitleTemplate: "Organic Ad #{n}",
+      active: true,
+      sortOrder: 2,
+      metadata: { organicAds: true },
+    },
+    ACTOR
+  ),
 ];
 
 export const targetTemplatesSeed: TargetTemplate[] = [
@@ -173,6 +187,28 @@ export const targetTemplatesSeed: TargetTemplate[] = [
           unit: "meetings",
           weight: 2,
           sortOrder: 2,
+        },
+      ],
+    },
+    ACTOR
+  ),
+  enrichWithAudit(
+    {
+      id: "ttpl-organic-ads-weekly",
+      categoryId: "tcat-mkt",
+      name: "Weekly Organic Ads",
+      description: "Standard weekly organic advertising quota",
+      active: true,
+      items: [
+        {
+          id: "tti-organic-ads",
+          companyId: "",
+          templateId: "ttpl-organic-ads-weekly",
+          typeId: "ttype-organic-ads",
+          quantity: 5,
+          unit: "ads",
+          weight: 1,
+          sortOrder: 0,
         },
       ],
     },

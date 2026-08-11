@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
+import { SidebarDailyPlan } from "@/components/layout/sidebar-daily-plan";
 import { APP_NAV, MOBILE_NAV, navForRole } from "@/constants/navigation";
 import { useUiStore } from "@/stores/ui-store";
 import { useSessionStore } from "@/stores/session-store";
@@ -165,7 +166,13 @@ export function MobileDrawer() {
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <ScrollArea className="h-[calc(100vh-3.5rem)] px-3 py-4">
+            <ScrollArea className="h-[calc(100dvh-3.5rem)] px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              <div className="mb-3">
+                <SidebarDailyPlan
+                  className="mx-0 mt-0"
+                  onNavigate={() => setMobileMenuOpen(false)}
+                />
+              </div>
               <nav className="space-y-1">
                 {items.map((item) => {
                   const active =

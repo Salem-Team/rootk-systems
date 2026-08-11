@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Target } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageTransition } from "@/components/shared/page-transition";
 import { PageSkeleton } from "@/components/shared/loading-state";
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AddAdvertisementSheet } from "@/components/organic-ads/add-advertisement-sheet";
+import { TargetAssignSheet } from "@/components/targets/target-assign-sheet";
 import { AdvertisementDetailsSheet } from "@/components/organic-ads/advertisement-details-sheet";
 import { AdvertisementList } from "@/components/organic-ads/advertisement-list";
 import { OrganicAdsHubSidebar } from "@/components/organic-ads/organic-ads-hub-sidebar";
@@ -64,6 +65,16 @@ function OrganicAdsPageContent() {
                 ))}
               </SelectContent>
             </Select>
+            {page.canViewTeam ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => page.setAssignOpen(true)}
+              >
+                <Target className="me-1.5 h-4 w-4" aria-hidden />
+                {t("organicAds.actions.assignQuota")}
+              </Button>
+            ) : null}
             {page.canCreate ? (
               <Button type="button" onClick={() => page.setAddOpen(true)}>
                 <Plus className="me-1.5 h-4 w-4" aria-hidden />
@@ -158,6 +169,23 @@ function OrganicAdsPageContent() {
           if (ad) page.setViewing(ad);
         }}
       />
+
+      {page.canViewTeam ? (
+        <TargetAssignSheet
+          open={page.assignOpen}
+          onOpenChange={page.setAssignOpen}
+          categories={page.categories}
+          types={page.types}
+          employees={page.employees}
+          defaultCategoryId={page.organicAdsCategoryId}
+          defaultTypeId={page.organicAdsTypeId}
+          defaultQuantity={5}
+          onSaved={() => {
+            page.setAssignOpen(false);
+            void page.load();
+          }}
+        />
+      ) : null}
 
       <AdvertisementDetailsSheet
         ad={page.viewing}

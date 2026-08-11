@@ -222,7 +222,7 @@ export function EmployeeOrgFields({
         <Label>{t("employees.manager")}</Label>
         <Controller
           control={form.control}
-          name="manager"
+          name="managerEmployeeId"
           render={({ field }) => (
             <Select
               value={field.value || NONE_MANAGER}
@@ -238,7 +238,7 @@ export function EmployeeOrgFields({
                   {t("employees.noManager")}
                 </SelectItem>
                 {managerOptions.map((m) => (
-                  <SelectItem key={m.id} value={m.name}>
+                  <SelectItem key={m.id} value={m.id}>
                     <span className="inline-flex items-center gap-2">
                       <Users className="h-3.5 w-3.5 text-muted-foreground" />
                       {m.name}

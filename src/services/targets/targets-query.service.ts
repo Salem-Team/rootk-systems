@@ -11,7 +11,25 @@ export async function getTargets(
   if (isApiMode()) return fetchTargets(filters);
   try {
     const rows = await performanceTargetRepository.findAll();
-    return ok(scopeTargets(rows, filters));
+    let scoped = scopeTargets(rows, filters);
+    if (filters.team) {
+      const { getSessionRole, getWorkEmployeeId } = await import(
+        "@/stores/session-store"
+      );
+      const { AppRole } = await import("@/constants/roles");
+      if (getSessionRole() === AppRole.employee) {
+        const { listLocalDirectReportIds } = await import(
+          "@/services/team-access"
+        );
+        const reportIds = new Set(
+          await listLocalDirectReportIds(getWorkEmployeeId())
+        );
+        scoped = scoped.filter((target) =>
+          target.assigneeIds.some((id) => reportIds.has(id))
+        );
+      }
+    }
+    return ok(scoped);
   } catch (error) {
     return fromError(error, []);
   }

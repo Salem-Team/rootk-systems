@@ -36,13 +36,15 @@ export class WorkController {
     @Query("employeeId") employeeId?: string,
     @Query("status") status?: string,
     @Query("priority") priority?: string,
-    @Query("origin") origin?: string
+    @Query("origin") origin?: string,
+    @Query("team") team?: string
   ) {
     return this.service.listTasks(companyId, toActor(user), {
       employeeId,
       status,
       priority,
       origin,
+      team,
     });
   }
 

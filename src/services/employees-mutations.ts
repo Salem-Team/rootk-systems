@@ -66,6 +66,7 @@ export async function createEmployee(
       joinDate: data.joinDate,
       location: data.location ?? "",
       manager: data.manager,
+      managerEmployeeId: data.managerEmployeeId,
       ...createAuditFields(actor),
     };
     const created = await employeeRepository.create(employee);
@@ -122,6 +123,10 @@ export async function updateEmployee(
     const { password, ...rest } = parsed.data;
     const previous = await employeeRepository.findById(id);
     if (!previous) throw new NotFoundError("Employee not found");
+    const nextManagerId = (rest.managerEmployeeId ?? "").trim();
+    if (nextManagerId && nextManagerId === id) {
+      throw new ValidationError("An employee cannot be their own manager");
+    }
     const updated = await employeeRepository.mutate(id, (current) =>
       touchEntity(current, actor, {
         ...rest,

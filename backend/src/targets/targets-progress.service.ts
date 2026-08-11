@@ -13,6 +13,7 @@ import {
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { iso, parseDate, parseDateEnd } from "../common/mappers";
+import { taskTagForTargetType } from "../lib/organic-ads-task-match";
 import {
   buildTaskTitle,
   computeTargetProgress,
@@ -176,7 +177,7 @@ export class TargetsProgressService {
       status: TaskStatus.todo,
       priority: mapTaskPriority(target.priority),
       dueDate: target.endDate,
-      tag: type.name,
+      tag: taskTagForTargetType(type),
       estimateMin: 0,
       assigneeIds: target.assigneeIds,
       targetId: target.id,

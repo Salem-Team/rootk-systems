@@ -32,6 +32,9 @@ export async function getTargetCategories(): Promise<
 > {
   if (isApiMode()) return fetchTargetCategories();
   try {
+    await import("@/services/organic-ads/catalog").then((m) =>
+      m.ensureOrganicAdsCatalogLocal()
+    );
     const rows = await targetCategoryRepository.findAll();
     return ok(
       rows.sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
@@ -112,6 +115,9 @@ export async function getTargetTypes(
 ): Promise<ApiResponse<TargetType[]>> {
   if (isApiMode()) return fetchTargetTypes(categoryId);
   try {
+    await import("@/services/organic-ads/catalog").then((m) =>
+      m.ensureOrganicAdsCatalogLocal()
+    );
     const rows = await targetTypeRepository.findAll();
     const filtered = categoryId
       ? rows.filter((t) => t.categoryId === categoryId)

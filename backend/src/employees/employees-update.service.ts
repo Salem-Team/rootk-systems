@@ -4,6 +4,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { mapEmployee, parseDate } from "../common/mappers";
 import { hashPassword } from "../auth/password.util";
 import { assertOptionalPassword } from "./employees-validators";
+import { resolveManagerAssignment } from "./employees-manager";
 
 /** Employee update flow, including keeping the linked login account in sync. */
 @Injectable()
@@ -30,6 +31,12 @@ export class EmployeesUpdateService {
     const nextName =
       typeof body.name === "string" ? body.name.trim() : undefined;
 
+    const hasManagerPatch =
+      "managerEmployeeId" in body || "manager" in body;
+    const manager = hasManagerPatch
+      ? await resolveManagerAssignment(this.prisma, companyId, id, body)
+      : null;
+
     const row = await this.prisma.employee.update({
       where: { id },
       data: {
@@ -39,7 +46,12 @@ export class EmployeesUpdateService {
         position: body.position as string | undefined,
         location: body.location as string | undefined,
         phone: body.phone as string | undefined,
-        managerName: body.manager as string | undefined,
+        ...(manager
+          ? {
+              managerName: manager.managerName,
+              managerEmployeeId: manager.managerEmployeeId,
+            }
+          : {}),
         employeeCode: body.employeeId as string | undefined,
         joinDate: body.joinDate ? parseDate(String(body.joinDate)) : undefined,
         status: body.status as EmployeeStatus | undefined,

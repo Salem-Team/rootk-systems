@@ -41,6 +41,7 @@ export {
   targetWarningRepository,
   targetHistoryRepository,
 } from "./targets.repository";
+export { dailyPlanRepository } from "./daily-plan.repository";
 export {
   organicAdvertisementRepository,
   organicAdHistoryRepository,

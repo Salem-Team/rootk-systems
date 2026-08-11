@@ -3,6 +3,7 @@ import { ForbiddenError } from "@/lib/errors";
 import { createId } from "@/lib/id";
 import { isInRange } from "@/lib/organic-ads-analytics";
 import { canOrganicAds } from "@/lib/organic-ads-policies";
+import { isOrganicAdsLinkableTask, isOrganicAdsType } from "@/lib/organic-ads-task-match";
 import { emitWorkUpdated } from "@/lib/events";
 import {
   organicAdHistoryRepository,
@@ -128,20 +129,38 @@ export async function claimedTaskIds(): Promise<Set<string>> {
   );
 }
 
+async function adsTypeByTargetId() {
+  const { performanceTargetRepository, targetTypeRepository } = await import(
+    "@/repositories"
+  );
+  const [targets, types] = await Promise.all([
+    performanceTargetRepository.findAll(),
+    targetTypeRepository.findAll(),
+  ]);
+  const typeMap = new Map(types.map((ty) => [ty.id, ty]));
+  const out = new Map<string, (typeof types)[number]>();
+  for (const target of targets) {
+    const type = typeMap.get(target.typeId);
+    if (type) out.set(target.id, type);
+  }
+  return out;
+}
+
 export async function findOpenLinkableTaskLocal(
   ownerEmployeeId: string,
   preferredTaskId?: string,
   preferredTargetId?: string
 ): Promise<WorkTask | null> {
   const claimed = await claimedTaskIds();
-  const tasks = (await workTaskRepository.findAll()).filter(
-    (t) =>
-      !t.deletedAt &&
-      !!t.targetId &&
-      t.status !== "completed" &&
-      t.assigneeIds.includes(ownerEmployeeId) &&
-      !claimed.has(t.id)
-  );
+  const typeByTarget = await adsTypeByTargetId();
+  const tasks = (await workTaskRepository.findAll()).filter((t) => {
+    if (t.deletedAt || t.status === "completed") return false;
+    if (!t.assigneeIds.includes(ownerEmployeeId) || claimed.has(t.id)) {
+      return false;
+    }
+    const type = t.targetId ? typeByTarget.get(t.targetId) : null;
+    return isOrganicAdsLinkableTask(t, type);
+  });
 
   if (preferredTaskId) {
     return tasks.find((t) => t.id === preferredTaskId) ?? null;
@@ -151,17 +170,7 @@ export async function findOpenLinkableTaskLocal(
     ? tasks.filter((t) => t.targetId === preferredTargetId)
     : tasks;
 
-  const preferred = scoped.find((t) => {
-    const tag = (t.tag ?? "").toLowerCase();
-    const title = (t.title ?? "").toLowerCase();
-    return (
-      tag.includes("organic") ||
-      tag.includes("ad") ||
-      title.includes("organic") ||
-      title.includes("ad")
-    );
-  });
-  return preferred ?? scoped[0] ?? null;
+  return scoped.find((t) => !!t.targetId) ?? scoped[0] ?? null;
 }
 
 export async function completeLinkedTaskLocal(
@@ -186,16 +195,33 @@ export async function reopenLinkedTaskLocal(taskId: string): Promise<void> {
 }
 
 export async function linkedTargetsForAds(
-  ads: OrganicAdvertisement[]
+  ads: OrganicAdvertisement[],
+  ownerEmployeeId?: string | null
 ): Promise<LinkedTargetProgress[]> {
-  const targetIds = [
-    ...new Set(ads.map((a) => a.targetId).filter((id): id is string => !!id)),
-  ];
-  if (targetIds.length === 0) return [];
-  const { performanceTargetRepository } = await import("@/repositories");
-  const targets = await performanceTargetRepository.findAll();
+  const { performanceTargetRepository, targetTypeRepository } = await import(
+    "@/repositories"
+  );
+  const [targets, types] = await Promise.all([
+    performanceTargetRepository.findAll(),
+    targetTypeRepository.findAll(),
+  ]);
+  const typeMap = new Map(types.map((ty) => [ty.id, ty]));
+  const linkedIds = new Set(
+    ads.map((a) => a.targetId).filter((id): id is string => !!id)
+  );
+
   return targets
-    .filter((t) => targetIds.includes(t.id))
+    .filter((t) => {
+      if (t.deletedAt) return false;
+      if (["cancelled", "archived"].includes(t.status)) return false;
+      const type = typeMap.get(t.typeId);
+      const isAds = isOrganicAdsType(type) || linkedIds.has(t.id);
+      if (!isAds) return false;
+      if (ownerEmployeeId && !t.assigneeIds.includes(ownerEmployeeId)) {
+        return false;
+      }
+      return true;
+    })
     .map((t) => ({
       id: t.id,
       title: t.title,
@@ -205,6 +231,8 @@ export async function linkedTargetsForAds(
       status: t.status,
       health: t.health,
       assigneeIds: t.assigneeIds,
+      typeName: typeMap.get(t.typeId)?.name,
+      unit: t.unit,
     }));
 }
 

@@ -25,6 +25,9 @@ export interface TaskFormState {
   subItemsText: string;
   requireEvidenceLinks: boolean;
   requireEvidenceNotes: boolean;
+  /** When set, assignment creates an Organic Ads target + N linked tasks. */
+  countsAsOrganicAd: boolean;
+  organicAdsCount: number;
 }
 
 export interface MeetingFormState {
@@ -54,6 +57,8 @@ export function emptyTaskForm(): TaskFormState {
     subItemsText: "",
     requireEvidenceLinks: false,
     requireEvidenceNotes: false,
+    countsAsOrganicAd: false,
+    organicAdsCount: 1,
   };
 }
 
@@ -86,6 +91,8 @@ export function taskToForm(task: WorkTask): TaskFormState {
     subItemsText: task.subItems.map((s) => s.label).join("\n"),
     requireEvidenceLinks: Boolean(task.requireEvidenceLinks),
     requireEvidenceNotes: Boolean(task.requireEvidenceNotes),
+    countsAsOrganicAd: false,
+    organicAdsCount: 1,
   };
 }
 

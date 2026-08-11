@@ -1,17 +1,8 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { format, parseISO } from "date-fns";
+import { AnimatePresence } from "framer-motion";
 import { ar as arLocale, enUS } from "date-fns/locale";
-import {
-  CheckCircle2,
-  Circle,
-  Eye,
-  Loader2,
-  Pencil,
-  Trash2,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DataTable,
@@ -21,58 +12,44 @@ import {
   DataTableHeader,
   DataTableHeaderRow,
 } from "@/components/ui/data-table";
-import { OriginBadge } from "@/components/work/employee-work-composer";
-import { TaskEvidenceBadge } from "@/components/work/task-completion-evidence-dialog";
-import { WorkDurationCell } from "@/components/work/work-duration-cell";
+import {
+  TaskAssigneeCell,
+  TaskDueCell,
+  TaskOriginCell,
+  TaskPriorityPill,
+  TaskRowMenu,
+  TaskStatusCell,
+  TaskTitleCell,
+} from "@/components/work/work-tasks-table-cells";
 import {
   WorkDoneButtonMotion,
   WorkMotionCard,
   WorkMotionList,
   WorkMotionRow,
   WorkMotionTableShell,
-  WorkStatusDot,
 } from "@/components/work/work-motion";
-import { PRIORITY_VARIANT } from "@/components/work/employee-work-hub-types";
 import { EmptyState } from "@/components/shared/empty-state";
 import { useTranslation } from "@/hooks/use-translation";
-import { snappySpring } from "@/lib/animations";
-import { completionNeedsEvidenceDialog } from "@/lib/task-evidence";
 import { taskDueBucket } from "@/lib/work-utils";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
 import type { WorkTask } from "@/types/work";
 
-function statusBadgeKey(status: WorkTask["status"]) {
-  if (status === "todo") return "ops.statusTodo";
-  if (status === "in_progress") return "ops.statusInProgress";
-  return "ops.statusCompleted";
-}
-
-function assigneeLabel(
-  ids: string[],
-  employees?: Map<string, Employee>
-): string {
-  if (!employees || ids.length === 0) return "—";
-  return (
-    ids
-      .map((id) => employees.get(id)?.name)
-      .filter(Boolean)
-      .join(", ") || "—"
-  );
-}
-
-/** Responsive tasks table — desktop table + mobile stacked cards with premium motion. */
+/** Responsive tasks table — desktop CRM-style rows + mobile stacked cards. */
 export function WorkTasksTable({
   tasks,
   employees,
   showAssignee = false,
   busyId,
   selectedId,
+  assigneeFilter,
   onView,
   onDone,
   onSelect,
   onEdit,
   onDelete,
+  onSelectAssignee,
+  canManage,
   emptyTitle,
   emptyDesc,
   className,
@@ -82,18 +59,21 @@ export function WorkTasksTable({
   showAssignee?: boolean;
   busyId?: string | null;
   selectedId?: string | null;
+  assigneeFilter?: string;
   onView?: (task: WorkTask) => void;
   onDone?: (task: WorkTask) => void;
   onSelect?: (task: WorkTask) => void;
   onEdit?: (task: WorkTask) => void;
   onDelete?: (task: WorkTask) => void;
+  onSelectAssignee?: (id: string) => void;
+  canManage?: (task: WorkTask) => boolean;
   emptyTitle?: string;
   emptyDesc?: string;
   className?: string;
 }) {
   const { t, locale } = useTranslation();
-  const reduceMotion = useReducedMotion();
   const dateLocale = locale === "ar" ? arLocale : enUS;
+  const openTask = onSelect ?? onView;
 
   if (tasks.length === 0) {
     return (
@@ -119,70 +99,22 @@ export function WorkTasksTable({
                 <button
                   type="button"
                   className="w-full text-start"
-                  onClick={() => onSelect?.(task) ?? onView?.(task)}
+                  onClick={() => openTask?.(task)}
                 >
-                  <div className="flex items-start gap-2.5">
-                    <motion.span
-                      className={cn(
-                        "mt-0.5",
-                        task.status === "completed"
-                          ? "text-emerald-600"
-                          : task.status === "in_progress"
-                            ? "text-sky-600"
-                            : "text-muted-foreground"
-                      )}
-                      animate={
-                        reduceMotion || task.status !== "completed"
-                          ? undefined
-                          : { scale: [1, 1.15, 1] }
-                      }
-                      transition={{ duration: 0.45 }}
-                    >
-                        {task.status === "completed" ? (
-                        <CheckCircle2 className="h-4 w-4" />
-                      ) : (
-                        <Circle className="h-4 w-4" />
-                      )}
-                    </motion.span>
-                    <span className="min-w-0 flex-1">
-                      <span
-                        className={cn(
-                          "block text-[14px] font-semibold leading-snug",
-                          task.status === "completed" &&
-                            "text-muted-foreground line-through decoration-border"
-                        )}
-                      >
-                        {task.title}
-                      </span>
-                      <span className="mt-1.5 flex flex-wrap items-center gap-1">
-                        <WorkStatusDot status={task.status} className="me-0.5" />
-                        <OriginBadge origin={task.origin} />
-                        <Badge
-                          variant={PRIORITY_VARIANT[task.priority]}
-                          className="h-5"
-                        >
-                          {t(`ops.priority.${task.priority}`)}
-                        </Badge>
-                        <Badge
-                          variant={due === "overdue" ? "danger" : "outline"}
-                          className="h-5"
-                        >
-                          {t(`ops.due.${due}`)}
-                        </Badge>
-                        <TaskEvidenceBadge task={task} />
-                      </span>
-                      <span className="mt-2.5 block">
-                        <WorkDurationCell task={task} />
-                      </span>
-                      {showAssignee ? (
-                        <span className="mt-1.5 block text-[11px] text-muted-foreground">
-                          {assigneeLabel(task.assigneeIds, employees)}
-                        </span>
-                      ) : null}
-                    </span>
-                  </div>
+                  <TaskTitleCell task={task} />
+                  <span className="mt-3 flex flex-wrap items-center gap-2">
+                    <TaskStatusCell status={task.status} />
+                    <TaskPriorityPill priority={task.priority} />
+                  </span>
+                  <span className="mt-2.5 block">
+                    <TaskDueCell
+                      dueDate={task.dueDate}
+                      overdue={due === "overdue"}
+                      dateLocale={dateLocale}
+                    />
+                  </span>
                 </button>
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-3 flex items-center justify-between gap-2">
                   {onDone && task.status !== "completed" ? (
                     <WorkDoneButtonMotion
                       pulse={task.status === "in_progress"}
@@ -191,46 +123,29 @@ export function WorkTasksTable({
                       <Button
                         type="button"
                         size="sm"
-                        className="w-full shadow-sm"
+                        className="w-full"
                         disabled={busy}
                         onClick={() => onDone(task)}
                       >
                         {busy ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          <motion.span
-                            whileHover={reduceMotion ? undefined : { scale: 1.08 }}
-                            transition={snappySpring}
-                            className="inline-flex"
-                          >
-                            <CheckCircle2 className="h-4 w-4" />
-                          </motion.span>
+                          <CheckCircle2 className="h-4 w-4" />
                         )}
                         {t("workEvidence.done")}
                       </Button>
                     </WorkDoneButtonMotion>
-                  ) : null}
-                  {onEdit ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onEdit(task)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                  ) : null}
-                  {onDelete ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => onDelete(task)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  ) : null}
+                  ) : (
+                    <span />
+                  )}
+                  <TaskRowMenu
+                    task={task}
+                    busy={busy}
+                    canManage={canManage?.(task)}
+                    onView={openTask}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                  />
                 </div>
               </WorkMotionCard>
             );
@@ -239,160 +154,104 @@ export function WorkTasksTable({
       </WorkMotionList>
 
       <WorkMotionTableShell className="hidden md:block">
-        <DataTable className="min-w-[44rem]">
-          <DataTableHeader>
-            <DataTableHeaderRow>
-              <DataTableHead>{t("workTable.colTask")}</DataTableHead>
-              <DataTableHead>{t("workTable.colStatus")}</DataTableHead>
-              {showAssignee ? (
-                <DataTableHead>{t("workTable.colAssignee")}</DataTableHead>
-              ) : null}
-              <DataTableHead>{t("workTable.colDue")}</DataTableHead>
-              <DataTableHead>{t("workTable.colDuration")}</DataTableHead>
-              <DataTableHead className="w-40 text-end">
-                {t("workTable.colActions")}
-              </DataTableHead>
-            </DataTableHeaderRow>
-          </DataTableHeader>
-          <DataTableBody>
-            {tasks.map((task, index) => {
-              const due = taskDueBucket(task.dueDate, task.status);
-              const busy = busyId === task.id;
-              const selected = selectedId === task.id;
-              return (
-                <WorkMotionRow
-                  key={task.id}
-                  index={index}
-                  selected={selected}
-                  onClick={
-                    onSelect || onView
-                      ? () => onSelect?.(task) ?? onView?.(task)
-                      : undefined
-                  }
-                >
-                  <DataTableCell>
-                    <div className="min-w-0 max-w-[280px]">
-                      <div className="flex items-center gap-2">
-                        <WorkStatusDot status={task.status} />
-                        <p
-                          className={cn(
-                            "truncate text-[13px] font-semibold",
-                            task.status === "completed" &&
-                              "text-muted-foreground line-through decoration-border"
-                          )}
-                        >
-                          {task.title}
-                        </p>
+        <section className="surface-panel overflow-hidden">
+          <DataTable embedded className="min-w-[46rem]">
+            <DataTableHeader>
+              <DataTableHeaderRow>
+                <DataTableHead className="h-11">
+                  {t("workTable.colTask")}
+                </DataTableHead>
+                <DataTableHead className="h-11">
+                  {t("workTable.colStatus")}
+                </DataTableHead>
+                <DataTableHead className="hidden h-11 sm:table-cell">
+                  {t("workTable.colPriority")}
+                </DataTableHead>
+                {showAssignee ? (
+                  <DataTableHead className="hidden h-11 lg:table-cell">
+                    {t("workTable.colAssignee")}
+                  </DataTableHead>
+                ) : null}
+                <DataTableHead className="h-11">
+                  {t("workTable.colDue")}
+                </DataTableHead>
+                <DataTableHead className="hidden h-11 xl:table-cell">
+                  {t("workTable.colOrigin")}
+                </DataTableHead>
+                <DataTableHead className="h-11 w-12 text-end">
+                  <span className="sr-only">{t("workTable.colActions")}</span>
+                </DataTableHead>
+              </DataTableHeaderRow>
+            </DataTableHeader>
+            <DataTableBody>
+              {tasks.map((task, index) => {
+                const due = taskDueBucket(task.dueDate, task.status);
+                const busy = busyId === task.id;
+                const selected = selectedId === task.id;
+                return (
+                  <WorkMotionRow
+                    key={task.id}
+                    index={index}
+                    selected={selected}
+                    striped
+                    onClick={openTask ? () => openTask(task) : undefined}
+                  >
+                    <DataTableCell className="py-4">
+                      <div className="min-w-0 max-w-[280px]">
+                        <TaskTitleCell task={task} />
                       </div>
-                      <div className="mt-1.5 flex flex-wrap gap-1 ps-4">
-                        <OriginBadge origin={task.origin} />
-                        <Badge
-                          variant={PRIORITY_VARIANT[task.priority]}
-                          className="h-5"
-                        >
-                          {t(`ops.priority.${task.priority}`)}
-                        </Badge>
-                        <TaskEvidenceBadge task={task} />
-                      </div>
-                    </div>
-                  </DataTableCell>
-                  <DataTableCell>
-                    <Badge
-                      variant={
-                        task.status === "completed"
-                          ? "success"
-                          : task.status === "in_progress"
-                            ? "info"
-                            : "secondary"
-                      }
-                    >
-                      {t(statusBadgeKey(task.status))}
-                    </Badge>
-                  </DataTableCell>
-                  {showAssignee ? (
-                    <DataTableCell className="max-w-[140px] truncate text-[12px] text-muted-foreground">
-                      {assigneeLabel(task.assigneeIds, employees)}
                     </DataTableCell>
-                  ) : null}
-                  <DataTableCell className="whitespace-nowrap text-[12px] text-muted-foreground">
-                    {task.dueDate
-                      ? format(
-                          parseISO(task.dueDate.slice(0, 10)),
-                          "d MMM yyyy",
-                          { locale: dateLocale }
-                        )
-                      : t("ops.due.none")}
-                    {due === "overdue" ? (
-                      <Badge variant="danger" className="ms-1.5 h-5">
-                        {t("ops.due.overdue")}
-                      </Badge>
+                    <DataTableCell className="py-4 whitespace-nowrap">
+                      <TaskStatusCell status={task.status} />
+                    </DataTableCell>
+                    <DataTableCell className="hidden py-4 sm:table-cell">
+                      <TaskPriorityPill priority={task.priority} />
+                    </DataTableCell>
+                    {showAssignee ? (
+                      <DataTableCell
+                        className="hidden py-4 lg:table-cell"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <TaskAssigneeCell
+                          ids={task.assigneeIds}
+                          employees={employees}
+                          selectedId={assigneeFilter}
+                          onSelect={onSelectAssignee}
+                        />
+                      </DataTableCell>
                     ) : null}
-                  </DataTableCell>
-                  <DataTableCell>
-                    <WorkDurationCell task={task} />
-                  </DataTableCell>
-                  <DataTableCell onClick={(e) => e.stopPropagation()}>
-                    <div className="flex justify-end gap-1.5">
-                      {onView || onSelect ? (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => onSelect?.(task) ?? onView?.(task)}
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          {t("common.view")}
-                        </Button>
-                      ) : null}
-                      {onDone && task.status !== "completed" ? (
-                        <WorkDoneButtonMotion
-                          pulse={task.status === "in_progress"}
-                        >
-                          <Button
-                            type="button"
-                            size="sm"
-                            disabled={busy}
-                            onClick={() => onDone(task)}
-                          >
-                            {busy ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                            )}
-                            {completionNeedsEvidenceDialog(task)
-                              ? t("workEvidence.done")
-                              : t("workEvidence.markComplete")}
-                          </Button>
-                        </WorkDoneButtonMotion>
-                      ) : null}
-                      {onEdit ? (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => onEdit(task)}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                      ) : null}
-                      {onDelete ? (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => onDelete(task)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      ) : null}
-                    </div>
-                  </DataTableCell>
-                </WorkMotionRow>
-              );
-            })}
-          </DataTableBody>
-        </DataTable>
+                    <DataTableCell className="py-4 whitespace-nowrap">
+                      <TaskDueCell
+                        dueDate={task.dueDate}
+                        overdue={due === "overdue"}
+                        dateLocale={dateLocale}
+                      />
+                    </DataTableCell>
+                    <DataTableCell className="hidden py-4 xl:table-cell">
+                      <TaskOriginCell origin={task.origin} />
+                    </DataTableCell>
+                    <DataTableCell
+                      className="py-4"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex justify-end">
+                        <TaskRowMenu
+                          task={task}
+                          busy={busy}
+                          canManage={canManage?.(task)}
+                          onView={openTask}
+                          onDone={onDone}
+                          onEdit={onEdit}
+                          onDelete={onDelete}
+                        />
+                      </div>
+                    </DataTableCell>
+                  </WorkMotionRow>
+                );
+              })}
+            </DataTableBody>
+          </DataTable>
+        </section>
       </WorkMotionTableShell>
     </div>
   );

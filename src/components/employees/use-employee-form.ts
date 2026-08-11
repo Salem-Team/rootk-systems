@@ -78,28 +78,15 @@ export function useEmployeeForm({
   const values = form.watch();
 
   const managerOptions = useMemo(() => {
-    const currentManager = values.manager?.trim();
-    const options = roster
+    const currentId = values.managerEmployeeId?.trim();
+    return roster
       .filter((e) => e.id !== employee?.id)
       .filter(
         (e) =>
-          e.status === "active" ||
-          (currentManager ? e.name === currentManager : false)
+          e.status === "active" || (currentId ? e.id === currentId : false)
       )
       .sort((a, b) => a.name.localeCompare(b.name));
-
-    // Keep free-text managers that are not in the roster (legacy seed).
-    if (currentManager && !options.some((e) => e.name === currentManager)) {
-      return [
-        {
-          id: `legacy-manager-${currentManager}`,
-          name: currentManager,
-        } as Pick<Employee, "id" | "name">,
-        ...options,
-      ];
-    }
-    return options;
-  }, [roster, employee?.id, values.manager]);
+  }, [roster, employee?.id, values.managerEmployeeId]);
 
   const locationOptions = useMemo(() => {
     const current = values.location?.trim();
@@ -115,7 +102,11 @@ export function useEmployeeForm({
 
   useHydrateOnOpen(open, employee?.id ?? "create", () => {
     if (employee) {
-      form.reset(fromEmployee(employee));
+      const managerEmployeeId =
+        employee.managerEmployeeId ||
+        roster.find((e) => e.name === employee.manager)?.id ||
+        "";
+      form.reset({ ...fromEmployee(employee), managerEmployeeId });
       return;
     }
     form.reset({
@@ -202,7 +193,10 @@ export function useEmployeeForm({
         location: data.location.trim() || undefined,
         joinDate: data.joinDate,
         status: data.status,
-        manager: data.manager?.trim() || undefined,
+        managerEmployeeId: data.managerEmployeeId?.trim() || "",
+        manager: data.managerEmployeeId
+          ? roster.find((e) => e.id === data.managerEmployeeId)?.name ?? ""
+          : "",
         employeeId: data.employeeId?.trim() || undefined,
         ...(password ? { password } : {}),
       };

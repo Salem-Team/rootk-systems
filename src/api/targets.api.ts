@@ -69,6 +69,7 @@ export function fetchTargets(
       completedOnly: filters.completedOnly,
       hasWarning: filters.hasWarning,
       search: filters.search,
+      team: filters.team ? "true" : undefined,
       minProgress: filters.minProgress,
       maxProgress: filters.maxProgress,
     })}`

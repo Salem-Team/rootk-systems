@@ -1,4 +1,5 @@
 /** Dual-mode: Nest API when `NEXT_PUBLIC_DATA_SOURCE=api`, else LocalStorage. */
+export { assignOrganicAdsQuota } from "./organic-ads/assign-quota";
 export { createOrganicAd } from "./organic-ads/create";
 export {
   deleteOrganicAd,

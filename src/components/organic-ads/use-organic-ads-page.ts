@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { getWorkforceEmployees } from "@/services/employees.service";
+import { getTargetCategories, getTargetTypes } from "@/services/targets.service";
 import {
   deleteOrganicAd,
   getOrganicAds,
@@ -14,10 +15,12 @@ import {
 } from "@/services/organic-ads.service";
 import { useLiveReload } from "@/hooks/use-live-reload";
 import { useTranslation } from "@/hooks/use-translation";
-import { ORGANIC_ADS_UPDATED_EVENT } from "@/lib/events";
+import { ORGANIC_ADS_UPDATED_EVENT, TARGETS_UPDATED_EVENT } from "@/lib/events";
+import { isOrganicAdsType } from "@/lib/organic-ads-task-match";
 import { canOrganicAds } from "@/lib/organic-ads-policies";
 import { useSessionStore } from "@/stores/session-store";
 import type { Employee } from "@/types";
+import type { TargetCategory, TargetType } from "@/types/targets";
 import type {
   AdStatus,
   DateRangePreset,
@@ -69,7 +72,10 @@ export function useOrganicAdsPage() {
   });
   const [ready, setReady] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
   const [viewing, setViewing] = useState<OrganicAdvertisement | null>(null);
+  const [categories, setCategories] = useState<TargetCategory[]>([]);
+  const [types, setTypes] = useState<TargetType[]>([]);
 
   const employeeMap = useMemo(
     () => new Map(employees.map((e) => [e.id, e.name])),
@@ -97,14 +103,18 @@ export function useOrganicAdsPage() {
       tab === "validation"
         ? { page: 1, pageSize: 100 }
         : filters;
-    const [overviewRes, adsRes, empRes] = await Promise.all([
+    const [overviewRes, adsRes, empRes, catRes, typeRes] = await Promise.all([
       getOrganicAdsOverview(range, activitySort),
       getOrganicAds(listFilters),
       getWorkforceEmployees(),
+      getTargetCategories(),
+      getTargetTypes(),
     ]);
     if (overviewRes.success) setOverview(overviewRes.data);
     if (adsRes.success) setAds(adsRes.data.items);
     if (empRes.success) setEmployees(empRes.data);
+    if (catRes.success) setCategories(catRes.data);
+    if (typeRes.success) setTypes(typeRes.data);
 
     if (canViewPerformance) {
       const perfRes = await getSalesPerformance();
@@ -113,7 +123,7 @@ export function useOrganicAdsPage() {
     setReady(true);
   }, [activitySort, canViewPerformance, filters, range, tab]);
 
-  useLiveReload(load, [ORGANIC_ADS_UPDATED_EVENT]);
+  useLiveReload(load, [ORGANIC_ADS_UPDATED_EVENT, TARGETS_UPDATED_EVENT]);
 
   useEffect(() => {
     const urlTab = parseTab(searchParams.get("tab"));
@@ -215,6 +225,12 @@ export function useOrganicAdsPage() {
     ready,
     addOpen,
     setAddOpen,
+    assignOpen,
+    setAssignOpen,
+    categories,
+    types,
+    organicAdsTypeId: types.find((ty) => isOrganicAdsType(ty))?.id,
+    organicAdsCategoryId: types.find((ty) => isOrganicAdsType(ty))?.categoryId,
     viewing,
     setViewing,
     employeeMap,

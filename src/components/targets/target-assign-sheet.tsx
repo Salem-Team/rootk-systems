@@ -15,6 +15,7 @@ import { assignTarget, updateTarget } from "@/services/targets.service";
 import { useHydrateOnOpen } from "@/hooks/use-hydrate-on-open";
 import { useTranslation } from "@/hooks/use-translation";
 import { emitTargetsUpdated, emitWorkUpdated } from "@/lib/events";
+import { isOrganicAdsType } from "@/lib/organic-ads-task-match";
 import { isValidDateTimeRange, toStorageIso } from "@/lib/flexible-datetime";
 import type { Employee } from "@/types";
 import type { PerformanceTarget, TargetCategory, TargetType } from "@/types/targets";
@@ -35,6 +36,9 @@ interface TargetAssignSheetProps {
   editingTarget?: PerformanceTarget | null;
   /** Prefill category from hub sidebar selection when creating. */
   defaultCategoryId?: string;
+  defaultTypeId?: string;
+  defaultQuantity?: number;
+  defaultAssigneeIds?: string[];
   onSaved: (target: PerformanceTarget) => void;
 }
 
@@ -47,6 +51,9 @@ export function TargetAssignSheet({
   employees,
   editingTarget,
   defaultCategoryId,
+  defaultTypeId,
+  defaultQuantity,
+  defaultAssigneeIds,
   onSaved,
 }: TargetAssignSheetProps) {
   const { t } = useTranslation();
@@ -62,29 +69,51 @@ export function TargetAssignSheet({
     return active;
   }, [categories, editingTarget]);
 
-  useHydrateOnOpen(open, editingTarget?.id ?? "create", () => {
-    if (editingTarget) {
-      setForm(targetAssignFormFromTarget(editingTarget));
-      return;
+  useHydrateOnOpen(
+    open,
+    `${editingTarget?.id ?? "create"}:${(defaultAssigneeIds ?? []).join(",")}:${defaultTypeId ?? ""}`,
+    () => {
+      if (editingTarget) {
+        setForm(targetAssignFormFromTarget(editingTarget));
+        return;
+      }
+      setForm({
+        ...formFromCatalog(defaultCategoryId, categories, types, {
+          typeId: defaultTypeId,
+          quantity: defaultQuantity,
+        }),
+        assigneeIds: defaultAssigneeIds ?? [],
+      });
     }
-    setForm(formFromCatalog(defaultCategoryId, categories, types));
-  });
+  );
 
   // Fill category/type if catalog arrived after open — never clobber typed fields.
   useEffect(() => {
     if (!open || editingTarget) return;
     setForm((prev) => {
       if (prev.categoryId) return prev;
-      const next = formFromCatalog(defaultCategoryId, categories, types);
+      const next = formFromCatalog(defaultCategoryId, categories, types, {
+        typeId: defaultTypeId,
+        quantity: defaultQuantity,
+      });
       if (!next.categoryId) return prev;
       return {
         ...prev,
         categoryId: next.categoryId,
         typeId: next.typeId || prev.typeId,
         unit: next.unit || prev.unit,
+        quantity: next.quantity || prev.quantity,
       };
     });
-  }, [open, editingTarget, defaultCategoryId, categories, types]);
+  }, [
+    open,
+    editingTarget,
+    defaultCategoryId,
+    defaultTypeId,
+    defaultQuantity,
+    categories,
+    types,
+  ]);
 
   const typesForCategory = useMemo(
     () =>
@@ -113,7 +142,11 @@ export function TargetAssignSheet({
 
   function onTypeChange(typeId: string) {
     const type = types.find((ty) => ty.id === typeId);
-    patch({ typeId, unit: type?.unit ?? form.unit });
+    patch({
+      typeId,
+      unit: type?.unit ?? form.unit,
+      generateTasks: isOrganicAdsType(type) ? true : form.generateTasks,
+    });
   }
 
   function validateForm(): string | null {
@@ -175,7 +208,10 @@ export function TargetAssignSheet({
             ownerId: "",
             notes: form.notes.trim(),
             status: "assigned",
-            generateTasks: form.generateTasks,
+            generateTasks:
+              isOrganicAdsType(
+                types.find((ty) => ty.id === form.typeId)
+              ) || form.generateTasks,
           });
     setBusy(false);
 
@@ -211,6 +247,9 @@ export function TargetAssignSheet({
           employees={employees}
           onCategoryChange={onCategoryChange}
           onTypeChange={onTypeChange}
+          forceGenerateTasks={isOrganicAdsType(
+            types.find((ty) => ty.id === form.typeId)
+          )}
         />
 
         <div className="mt-6 flex flex-col-reverse gap-3 border-t border-border/60 pt-5 sm:flex-row sm:justify-end">

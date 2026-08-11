@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-09T17:46:02.142Z",
+  "generatedAt": "2026-08-11T09:46:03.927Z",
   "mode": "local",
   "failed": 0,
   "passed": 10,
@@ -10,7 +10,7 @@
       "actor": "admin",
       "title": "Open Target Catalog",
       "ok": true,
-      "detail": "4 categories, 6 types",
+      "detail": "4 categories, 7 types",
       "data": {
         "categories": [
           "Sales",
@@ -23,6 +23,7 @@
           "Calls",
           "Published Posts",
           "Meetings",
+          "Organic Ads",
           "Pull Requests",
           "Follow Ups"
         ]
@@ -33,22 +34,22 @@
       "actor": "admin",
       "title": "Create category + type (Operations / Site Visits)",
       "ok": true,
-      "detail": "category=tcat_6f58744e4f7e4de7 type=ttype_3b08b83b972b4dec"
+      "detail": "category=tcat_92167646edc546a9 type=ttype_002c348c2fb44e97"
     },
     {
       "id": "assign-target",
       "actor": "admin",
       "title": "Assign target + auto-create 5 tasks",
       "ok": true,
-      "detail": "target=pt_54f76f554f334c5a, linkedTasks=5, progress=0%",
+      "detail": "target=pt_b8dd5e3a7e1f4e62, linkedTasks=5, progress=0%",
       "data": {
-        "targetId": "pt_54f76f554f334c5a",
+        "targetId": "pt_b8dd5e3a7e1f4e62",
         "linkedTaskIds": [
-          "task_bf19f9791d984444",
-          "task_522d835919a14e5b",
-          "task_432e63e7d3c94a33",
-          "task_f0af3ac8c1894757",
-          "task_7662d7f3ae064018"
+          "task_c4fe225a4e1b4ea1",
+          "task_64a287a6d9bb42f8",
+          "task_16e06420a7c54f0e",
+          "task_e504e7b2ded9470d",
+          "task_d054cc2b83704dc6"
         ],
         "title": "Agent Demo — 5 Site Visits"
       }
@@ -60,17 +61,17 @@
       "ok": true,
       "detail": "completedQuantity=2, percentage=40%",
       "data": {
-        "id": "pt_54f76f554f334c5a",
+        "id": "pt_b8dd5e3a7e1f4e62",
         "title": "Agent Demo — 5 Site Visits",
         "description": "Live agent scenario: auto-generate 5 visit tasks; progress must come from task completion only.",
-        "categoryId": "tcat_6f58744e4f7e4de7",
-        "typeId": "ttype_3b08b83b972b4dec",
+        "categoryId": "tcat_92167646edc546a9",
+        "typeId": "ttype_002c348c2fb44e97",
         "templateId": null,
         "quantity": 5,
         "unit": "visits",
         "completedQuantity": 2,
-        "startDate": "2026-08-09",
-        "endDate": "2026-08-16",
+        "startDate": "2026-08-11",
+        "endDate": "2026-08-18",
         "priority": "high",
         "weight": 1,
         "assigneeScope": "employee",
@@ -86,31 +87,31 @@
         "riskLevel": "low",
         "notes": "Created by Target User Agent",
         "expectedCompletion": null,
-        "performanceScore": 74.3,
-        "assignedAt": "2026-08-09T17:45:50.076Z",
+        "performanceScore": 75.4,
+        "assignedAt": "2026-08-11T09:45:50.333Z",
         "completedAt": null,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:50.076Z",
-        "updatedAt": "2026-08-09T17:45:55.065Z",
+        "createdAt": "2026-08-11T09:45:50.333Z",
+        "updatedAt": "2026-08-11T09:45:55.521Z",
         "createdBy": "emp-001",
         "updatedBy": "emp-003",
         "deletedAt": null,
         "isArchived": false,
-        "version": 2,
+        "version": 3,
         "metadata": {},
         "metrics": {
           "completed": 2,
           "remaining": 3,
           "percentage": 40,
-          "expectedProgress": 10.8,
+          "expectedProgress": 6.6,
           "actualProgress": 40,
-          "variance": 29.2,
-          "performanceScore": 74.3,
-          "remainingDays": 7.1,
+          "variance": 33.4,
+          "performanceScore": 75.4,
+          "remainingDays": 7.5,
           "totalDays": 8,
-          "elapsedDays": 0.9,
+          "elapsedDays": 0.5,
           "requiredDailyRate": 0.4,
-          "completionForecast": "2026-08-11T00:54:48.835Z",
+          "completionForecast": "2026-08-12T04:54:49.690Z",
           "trend": "ahead",
           "riskLevel": "low",
           "health": "excellent",
@@ -130,21 +131,21 @@
       "actor": "admin",
       "title": "Send performance warning",
       "ok": true,
-      "detail": "warning=tw_7b9ac307b1d14903"
+      "detail": "warning=tw_0999841dbcb3493d"
     },
     {
       "id": "ack-warning",
       "actor": "employee",
       "title": "Employee acknowledges warning",
       "ok": true,
-      "detail": "acknowledgedAt=2026-08-09T17:45:56.744Z"
+      "detail": "acknowledgedAt=2026-08-11T09:45:57.734Z"
     },
     {
       "id": "dashboard",
       "actor": "admin",
       "title": "Dashboard + delayed center load with agent target visible",
       "ok": true,
-      "detail": "total=7, completed=1, delayedTargets=4, avgScore=37",
+      "detail": "total=7, completed=1, delayedTargets=5, avgScore=31.7",
       "data": {
         "kpis": {
           "total": 7,
@@ -153,8 +154,8 @@
           "delayed": 1,
           "critical": 4,
           "completionRate": 14.3,
-          "averagePerformance": 37,
-          "employeesAtRisk": 3,
+          "averagePerformance": 31.7,
+          "employeesAtRisk": 4,
           "upcomingDeadlines": 5,
           "byCategory": [
             {
@@ -176,7 +177,7 @@
               "count": 3
             },
             {
-              "id": "tcat_6f58744e4f7e4de7",
+              "id": "tcat_92167646edc546a9",
               "name": "Agent Demo — Operations",
               "color": "#0F766E",
               "count": 1
@@ -208,7 +209,7 @@
             {
               "department": "Design",
               "count": 3,
-              "avgScore": 60.6
+              "avgScore": 55.1
             },
             {
               "department": "Engineering",
@@ -218,7 +219,7 @@
             {
               "department": "Sales",
               "count": 2,
-              "avgScore": 38.6
+              "avgScore": 28.4
             }
           ],
           "topPerformers": [
@@ -230,13 +231,13 @@
             },
             {
               "employeeId": "emp-003",
-              "score": 54.1,
+              "score": 44,
               "completed": 0,
               "total": 3
             },
             {
               "employeeId": "emp-014",
-              "score": 38.6,
+              "score": 28.4,
               "completed": 0,
               "total": 2
             },
@@ -268,13 +269,13 @@
             },
             {
               "employeeId": "emp-014",
-              "score": 38.6,
+              "score": 28.4,
               "completed": 0,
               "total": 2
             },
             {
               "employeeId": "emp-003",
-              "score": 54.1,
+              "score": 44,
               "completed": 0,
               "total": 3
             },
@@ -286,16 +287,6 @@
             }
           ],
           "completionTrend": [
-            {
-              "date": "2026-07-27",
-              "created": 0,
-              "completed": 0
-            },
-            {
-              "date": "2026-07-28",
-              "created": 0,
-              "completed": 0
-            },
             {
               "date": "2026-07-29",
               "created": 0,
@@ -353,12 +344,22 @@
             },
             {
               "date": "2026-08-09",
+              "created": 0,
+              "completed": 0
+            },
+            {
+              "date": "2026-08-10",
+              "created": 0,
+              "completed": 0
+            },
+            {
+              "date": "2026-08-11",
               "created": 7,
               "completed": 1
             }
           ]
         },
-        "delayedCount": 4,
+        "delayedCount": 5,
         "criticalCount": 4
       }
     },
@@ -367,19 +368,19 @@
       "actor": "employee",
       "title": "Employee performance page shows target + warning",
       "ok": true,
-      "detail": "score=54.1, targets=3, warnings=1",
+      "detail": "score=44, targets=3, warnings=1",
       "data": {
         "employeeId": "emp-003",
-        "overallScore": 54.1,
+        "overallScore": 44,
         "currentTargets": 3,
         "completed": 0,
         "remaining": 11,
         "warnings": 1,
-        "delayedTasks": 12,
+        "delayedTasks": 19,
         "monthlyTrend": [
           {
             "month": "2026-08",
-            "score": 54.1
+            "score": 44
           }
         ],
         "targets": [
@@ -408,12 +409,12 @@
             "status": "on_track",
             "notes": "Focus on enterprise leads",
             "expectedCompletion": "2026-08-10",
-            "health": "critical",
+            "health": "delayed",
             "riskLevel": "critical",
-            "performanceScore": 17.6,
+            "performanceScore": 0,
             "companyId": "cmp_rootk_001",
-            "createdAt": "2026-08-09T17:45:48.121Z",
-            "updatedAt": "2026-08-09T17:45:48.121Z",
+            "createdAt": "2026-08-11T09:45:46.548Z",
+            "updatedAt": "2026-08-11T09:45:46.548Z",
             "createdBy": "user-admin",
             "updatedBy": "user-admin",
             "deletedAt": null,
@@ -424,19 +425,19 @@
               "completed": 3,
               "remaining": 7,
               "percentage": 30,
-              "expectedProgress": 85.8,
+              "expectedProgress": 100,
               "actualProgress": 30,
-              "variance": -55.8,
-              "performanceScore": 17.6,
-              "remainingDays": 1.1,
+              "variance": -70,
+              "performanceScore": 0,
+              "remainingDays": 0,
               "totalDays": 8,
-              "elapsedDays": 6.9,
-              "requiredDailyRate": 6.4,
-              "completionForecast": "2026-08-25T18:13:15.776Z",
+              "elapsedDays": 8,
+              "requiredDailyRate": 7,
+              "completionForecast": "2026-08-30T01:46:00.214Z",
               "trend": "critical",
               "riskLevel": "critical",
-              "health": "critical",
-              "derivedStatus": "behind_schedule"
+              "health": "delayed",
+              "derivedStatus": "delayed"
             }
           },
           {
@@ -465,12 +466,12 @@
             "status": "on_track",
             "notes": "Shared sales meetings pack",
             "expectedCompletion": "2026-08-12",
-            "health": "average",
-            "riskLevel": "medium",
-            "performanceScore": 70.5,
+            "health": "critical",
+            "riskLevel": "high",
+            "performanceScore": 56.7,
             "companyId": "cmp_rootk_001",
-            "createdAt": "2026-08-09T17:45:48.121Z",
-            "updatedAt": "2026-08-09T17:45:48.121Z",
+            "createdAt": "2026-08-11T09:45:46.548Z",
+            "updatedAt": "2026-08-11T09:45:46.548Z",
             "createdBy": "user-admin",
             "updatedBy": "user-admin",
             "deletedAt": null,
@@ -481,33 +482,33 @@
               "completed": 2,
               "remaining": 1,
               "percentage": 66.7,
-              "expectedProgress": 71.5,
+              "expectedProgress": 86.7,
               "actualProgress": 66.7,
-              "variance": -4.8,
-              "performanceScore": 70.5,
-              "remainingDays": 3.1,
+              "variance": -20,
+              "performanceScore": 56.7,
+              "remainingDays": 1.5,
               "totalDays": 11,
-              "elapsedDays": 7.9,
-              "requiredDailyRate": 0.3,
-              "completionForecast": "2026-08-13T16:08:58.099Z",
-              "trend": "on_track",
-              "riskLevel": "medium",
-              "health": "average",
-              "derivedStatus": "on_track"
+              "elapsedDays": 9.5,
+              "requiredDailyRate": 0.7,
+              "completionForecast": "2026-08-16T04:09:00.325Z",
+              "trend": "behind",
+              "riskLevel": "high",
+              "health": "critical",
+              "derivedStatus": "behind_schedule"
             }
           },
           {
-            "id": "pt_54f76f554f334c5a",
+            "id": "pt_b8dd5e3a7e1f4e62",
             "title": "Agent Demo — 5 Site Visits",
             "description": "Live agent scenario: auto-generate 5 visit tasks; progress must come from task completion only.",
-            "categoryId": "tcat_6f58744e4f7e4de7",
-            "typeId": "ttype_3b08b83b972b4dec",
+            "categoryId": "tcat_92167646edc546a9",
+            "typeId": "ttype_002c348c2fb44e97",
             "templateId": null,
             "quantity": 5,
             "unit": "visits",
             "completedQuantity": 2,
-            "startDate": "2026-08-09",
-            "endDate": "2026-08-16",
+            "startDate": "2026-08-11",
+            "endDate": "2026-08-18",
             "priority": "high",
             "weight": 1,
             "assigneeScope": "employee",
@@ -523,31 +524,31 @@
             "riskLevel": "low",
             "notes": "Created by Target User Agent",
             "expectedCompletion": null,
-            "performanceScore": 74.3,
-            "assignedAt": "2026-08-09T17:45:50.076Z",
+            "performanceScore": 75.4,
+            "assignedAt": "2026-08-11T09:45:50.333Z",
             "completedAt": null,
             "companyId": "cmp_rootk_001",
-            "createdAt": "2026-08-09T17:45:50.076Z",
-            "updatedAt": "2026-08-09T17:45:55.065Z",
+            "createdAt": "2026-08-11T09:45:50.333Z",
+            "updatedAt": "2026-08-11T09:45:55.521Z",
             "createdBy": "emp-001",
             "updatedBy": "emp-003",
             "deletedAt": null,
             "isArchived": false,
-            "version": 2,
+            "version": 3,
             "metadata": {},
             "metrics": {
               "completed": 2,
               "remaining": 3,
               "percentage": 40,
-              "expectedProgress": 10.8,
+              "expectedProgress": 6.6,
               "actualProgress": 40,
-              "variance": 29.2,
-              "performanceScore": 74.3,
-              "remainingDays": 7.1,
+              "variance": 33.4,
+              "performanceScore": 75.4,
+              "remainingDays": 7.5,
               "totalDays": 8,
-              "elapsedDays": 0.9,
+              "elapsedDays": 0.5,
               "requiredDailyRate": 0.4,
-              "completionForecast": "2026-08-11T00:54:56.832Z",
+              "completionForecast": "2026-08-12T04:55:00.542Z",
               "trend": "ahead",
               "riskLevel": "low",
               "health": "excellent",
@@ -564,17 +565,17 @@
       "ok": true,
       "detail": "status=completed, percentage=100%",
       "data": {
-        "id": "pt_54f76f554f334c5a",
+        "id": "pt_b8dd5e3a7e1f4e62",
         "title": "Agent Demo — 5 Site Visits",
         "description": "Live agent scenario: auto-generate 5 visit tasks; progress must come from task completion only.",
-        "categoryId": "tcat_6f58744e4f7e4de7",
-        "typeId": "ttype_3b08b83b972b4dec",
+        "categoryId": "tcat_92167646edc546a9",
+        "typeId": "ttype_002c348c2fb44e97",
         "templateId": null,
         "quantity": 5,
         "unit": "visits",
         "completedQuantity": 5,
-        "startDate": "2026-08-09",
-        "endDate": "2026-08-16",
+        "startDate": "2026-08-11",
+        "endDate": "2026-08-18",
         "priority": "high",
         "weight": 1,
         "assigneeScope": "employee",
@@ -591,30 +592,30 @@
         "notes": "Created by Target User Agent",
         "expectedCompletion": null,
         "performanceScore": 100,
-        "assignedAt": "2026-08-09T17:45:50.076Z",
-        "completedAt": "2026-08-09T17:46:01.580Z",
+        "assignedAt": "2026-08-11T09:45:50.333Z",
+        "completedAt": "2026-08-11T09:46:02.812Z",
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:50.076Z",
-        "updatedAt": "2026-08-09T17:46:01.580Z",
+        "createdAt": "2026-08-11T09:45:50.333Z",
+        "updatedAt": "2026-08-11T09:46:03.403Z",
         "createdBy": "emp-001",
         "updatedBy": "emp-003",
         "deletedAt": null,
         "isArchived": false,
-        "version": 4,
+        "version": 6,
         "metadata": {},
         "metrics": {
           "completed": 5,
           "remaining": 0,
           "percentage": 100,
-          "expectedProgress": 10.8,
+          "expectedProgress": 6.6,
           "actualProgress": 100,
-          "variance": 89.2,
+          "variance": 93.4,
           "performanceScore": 100,
-          "remainingDays": 7.1,
+          "remainingDays": 7.5,
           "totalDays": 8,
-          "elapsedDays": 0.9,
+          "elapsedDays": 0.5,
           "requiredDailyRate": 0,
-          "completionForecast": "2026-08-09T17:46:02.142Z",
+          "completionForecast": "2026-08-11T09:46:03.926Z",
           "trend": "ahead",
           "riskLevel": "low",
           "health": "excellent",
@@ -626,7 +627,7 @@
   "storage": {
     "categories": [
       {
-        "id": "tcat_6f58744e4f7e4de7",
+        "id": "tcat_92167646edc546a9",
         "name": "Agent Demo — Operations",
         "color": "#0F766E",
         "icon": "Building2",
@@ -634,8 +635,8 @@
         "active": true,
         "sortOrder": 90,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:49.135Z",
-        "updatedAt": "2026-08-09T17:45:49.135Z",
+        "createdAt": "2026-08-11T09:45:48.999Z",
+        "updatedAt": "2026-08-11T09:45:48.999Z",
         "createdBy": "emp-001",
         "updatedBy": "emp-001",
         "deletedAt": null,
@@ -652,8 +653,8 @@
         "active": true,
         "sortOrder": 1,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.547Z",
+        "updatedAt": "2026-08-11T09:45:46.547Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
@@ -670,8 +671,8 @@
         "active": true,
         "sortOrder": 2,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
@@ -688,8 +689,8 @@
         "active": true,
         "sortOrder": 3,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
@@ -706,8 +707,8 @@
         "active": true,
         "sortOrder": 4,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
@@ -718,8 +719,8 @@
     ],
     "types": [
       {
-        "id": "ttype_3b08b83b972b4dec",
-        "categoryId": "tcat_6f58744e4f7e4de7",
+        "id": "ttype_002c348c2fb44e97",
+        "categoryId": "tcat_92167646edc546a9",
         "name": "Site Visits",
         "description": "On-site customer visits",
         "unit": "visits",
@@ -727,8 +728,8 @@
         "active": true,
         "sortOrder": 1,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:49.460Z",
-        "updatedAt": "2026-08-09T17:45:49.460Z",
+        "createdAt": "2026-08-11T09:45:49.419Z",
+        "updatedAt": "2026-08-11T09:45:49.419Z",
         "createdBy": "emp-001",
         "updatedBy": "emp-001",
         "deletedAt": null,
@@ -746,8 +747,8 @@
         "active": true,
         "sortOrder": 1,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
@@ -765,8 +766,8 @@
         "active": true,
         "sortOrder": 2,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
@@ -784,8 +785,8 @@
         "active": true,
         "sortOrder": 3,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
@@ -803,8 +804,8 @@
         "active": true,
         "sortOrder": 1,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
@@ -822,8 +823,8 @@
         "active": true,
         "sortOrder": 2,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
@@ -841,14 +842,33 @@
         "active": true,
         "sortOrder": 1,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
         "isArchived": false,
         "version": 1,
         "metadata": {}
+      },
+      {
+        "id": "ttype-organic-ads",
+        "categoryId": "tcat-mkt",
+        "name": "Organic Ads",
+        "description": "Published organic advertisements",
+        "unit": "ads",
+        "taskTitleTemplate": "Organic Ad #{n}",
+        "active": true,
+        "sortOrder": 2,
+        "metadata": {},
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1
       }
     ],
     "templates": [
@@ -891,8 +911,36 @@
           }
         ],
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
+        "createdBy": "user-admin",
+        "updatedBy": "user-admin",
+        "deletedAt": null,
+        "isArchived": false,
+        "version": 1,
+        "metadata": {}
+      },
+      {
+        "id": "ttpl-organic-ads-weekly",
+        "categoryId": "tcat-mkt",
+        "name": "Weekly Organic Ads",
+        "description": "Standard weekly organic advertising quota",
+        "active": true,
+        "items": [
+          {
+            "id": "tti-organic-ads",
+            "companyId": "",
+            "templateId": "ttpl-organic-ads-weekly",
+            "typeId": "ttype-organic-ads",
+            "quantity": 5,
+            "unit": "ads",
+            "weight": 1,
+            "sortOrder": 0
+          }
+        ],
+        "companyId": "cmp_rootk_001",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
@@ -903,17 +951,17 @@
     ],
     "targets": [
       {
-        "id": "pt_54f76f554f334c5a",
+        "id": "pt_b8dd5e3a7e1f4e62",
         "title": "Agent Demo — 5 Site Visits",
         "description": "Live agent scenario: auto-generate 5 visit tasks; progress must come from task completion only.",
-        "categoryId": "tcat_6f58744e4f7e4de7",
-        "typeId": "ttype_3b08b83b972b4dec",
+        "categoryId": "tcat_92167646edc546a9",
+        "typeId": "ttype_002c348c2fb44e97",
         "templateId": null,
         "quantity": 5,
         "unit": "visits",
         "completedQuantity": 5,
-        "startDate": "2026-08-09",
-        "endDate": "2026-08-16",
+        "startDate": "2026-08-11",
+        "endDate": "2026-08-18",
         "priority": "high",
         "weight": 1,
         "assigneeScope": "employee",
@@ -930,16 +978,16 @@
         "notes": "Created by Target User Agent",
         "expectedCompletion": null,
         "performanceScore": 100,
-        "assignedAt": "2026-08-09T17:45:50.076Z",
-        "completedAt": "2026-08-09T17:46:01.580Z",
+        "assignedAt": "2026-08-11T09:45:50.333Z",
+        "completedAt": "2026-08-11T09:46:02.812Z",
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:50.076Z",
-        "updatedAt": "2026-08-09T17:46:01.580Z",
+        "createdAt": "2026-08-11T09:45:50.333Z",
+        "updatedAt": "2026-08-11T09:46:03.403Z",
         "createdBy": "emp-001",
         "updatedBy": "emp-003",
         "deletedAt": null,
         "isArchived": false,
-        "version": 4,
+        "version": 6,
         "metadata": {}
       },
       {
@@ -967,12 +1015,12 @@
         "status": "on_track",
         "notes": "Focus on enterprise leads",
         "expectedCompletion": "2026-08-10",
-        "health": "critical",
+        "health": "delayed",
         "riskLevel": "critical",
-        "performanceScore": 17.6,
+        "performanceScore": 0,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
@@ -1009,8 +1057,8 @@
         "riskLevel": "critical",
         "performanceScore": 0,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
@@ -1047,8 +1095,8 @@
         "riskLevel": "medium",
         "performanceScore": 90,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
@@ -1081,12 +1129,12 @@
         "status": "in_progress",
         "notes": "Seeded for UI demo — complete linked tasks to raise progress",
         "expectedCompletion": "2026-08-09",
-        "health": "critical",
+        "health": "delayed",
         "riskLevel": "critical",
-        "performanceScore": 6.6,
+        "performanceScore": 0,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
@@ -1123,8 +1171,8 @@
         "riskLevel": "critical",
         "performanceScore": 0,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
@@ -1158,12 +1206,12 @@
         "status": "on_track",
         "notes": "Shared sales meetings pack",
         "expectedCompletion": "2026-08-12",
-        "health": "average",
-        "riskLevel": "medium",
-        "performanceScore": 70.5,
+        "health": "critical",
+        "riskLevel": "high",
+        "performanceScore": 56.7,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
@@ -1174,19 +1222,19 @@
     ],
     "warnings": [
       {
-        "id": "tw_7b9ac307b1d14903",
-        "targetId": "pt_54f76f554f334c5a",
+        "id": "tw_0999841dbcb3493d",
+        "targetId": "pt_b8dd5e3a7e1f4e62",
         "employeeId": "emp-003",
         "reason": "Agent Demo: pace behind after first day of visits",
         "managerNotes": "Please complete at least one visit daily",
         "requiredAction": "Finish 2 more visits within 48 hours",
         "penaltyType": "performance_note",
         "penaltyNote": "Logged by Target User Agent",
-        "acknowledgedAt": "2026-08-09T17:45:56.744Z",
+        "acknowledgedAt": "2026-08-11T09:45:57.734Z",
         "acknowledgedBy": "emp-003",
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:55.753Z",
-        "updatedAt": "2026-08-09T17:45:56.744Z",
+        "createdAt": "2026-08-11T09:45:56.167Z",
+        "updatedAt": "2026-08-11T09:45:57.734Z",
         "createdBy": "emp-001",
         "updatedBy": "emp-003",
         "deletedAt": null,
@@ -1206,8 +1254,8 @@
         "acknowledgedAt": null,
         "acknowledgedBy": null,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
@@ -1227,8 +1275,8 @@
         "acknowledgedAt": null,
         "acknowledgedBy": null,
         "companyId": "cmp_rootk_001",
-        "createdAt": "2026-08-09T17:45:48.121Z",
-        "updatedAt": "2026-08-09T17:45:48.121Z",
+        "createdAt": "2026-08-11T09:45:46.548Z",
+        "updatedAt": "2026-08-11T09:45:46.548Z",
         "createdBy": "user-admin",
         "updatedBy": "user-admin",
         "deletedAt": null,
@@ -1245,8 +1293,8 @@
     "delayed": 1,
     "critical": 4,
     "completionRate": 14.3,
-    "averagePerformance": 37,
-    "employeesAtRisk": 3,
+    "averagePerformance": 31.7,
+    "employeesAtRisk": 4,
     "upcomingDeadlines": 5,
     "byCategory": [
       {
@@ -1268,7 +1316,7 @@
         "count": 3
       },
       {
-        "id": "tcat_6f58744e4f7e4de7",
+        "id": "tcat_92167646edc546a9",
         "name": "Agent Demo — Operations",
         "color": "#0F766E",
         "count": 1
@@ -1300,7 +1348,7 @@
       {
         "department": "Design",
         "count": 3,
-        "avgScore": 60.6
+        "avgScore": 55.1
       },
       {
         "department": "Engineering",
@@ -1310,7 +1358,7 @@
       {
         "department": "Sales",
         "count": 2,
-        "avgScore": 38.6
+        "avgScore": 28.4
       }
     ],
     "topPerformers": [
@@ -1322,13 +1370,13 @@
       },
       {
         "employeeId": "emp-003",
-        "score": 54.1,
+        "score": 44,
         "completed": 0,
         "total": 3
       },
       {
         "employeeId": "emp-014",
-        "score": 38.6,
+        "score": 28.4,
         "completed": 0,
         "total": 2
       },
@@ -1360,13 +1408,13 @@
       },
       {
         "employeeId": "emp-014",
-        "score": 38.6,
+        "score": 28.4,
         "completed": 0,
         "total": 2
       },
       {
         "employeeId": "emp-003",
-        "score": 54.1,
+        "score": 44,
         "completed": 0,
         "total": 3
       },
@@ -1378,16 +1426,6 @@
       }
     ],
     "completionTrend": [
-      {
-        "date": "2026-07-27",
-        "created": 0,
-        "completed": 0
-      },
-      {
-        "date": "2026-07-28",
-        "created": 0,
-        "completed": 0
-      },
       {
         "date": "2026-07-29",
         "created": 0,
@@ -1445,10 +1483,20 @@
       },
       {
         "date": "2026-08-09",
+        "created": 0,
+        "completed": 0
+      },
+      {
+        "date": "2026-08-10",
+        "created": 0,
+        "completed": 0
+      },
+      {
+        "date": "2026-08-11",
         "created": 7,
         "completed": 1
       }
     ]
   },
-  "agentTargetId": "pt_54f76f554f334c5a"
+  "agentTargetId": "pt_b8dd5e3a7e1f4e62"
 }

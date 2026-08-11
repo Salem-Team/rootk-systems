@@ -3,6 +3,7 @@ import { AdStatus, type OrganicAdvertisement } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { iso } from "../../common/mappers";
 import { canOrganicAds } from "../../lib/organic-ads-policies";
+import { isOrganicAdsType } from "../../lib/organic-ads-task-match";
 import {
   assertCap,
   computeHealthScore,
@@ -133,17 +134,23 @@ export class OrganicAdsPerformanceService {
       leads: null,
       qualified: null,
       deals: null,
-      linkedTargets: targets.map((t) => ({
-        id: t.id,
-        title: t.title,
-        typeName: t.type.name,
-        unit: t.type.unit,
-        quantity: t.quantity,
-        completedQuantity: t.completedQuantity,
-        remaining: Math.max(0, t.quantity - t.completedQuantity),
-        status: t.status,
-        health: t.health,
-      })),
+      linkedTargets: targets
+        .filter(
+          (t) =>
+            isOrganicAdsType(t.type) ||
+            ads.some((a) => a.targetId === t.id)
+        )
+        .map((t) => ({
+          id: t.id,
+          title: t.title,
+          typeName: t.type.name,
+          unit: t.type.unit,
+          quantity: t.quantity,
+          completedQuantity: t.completedQuantity,
+          remaining: Math.max(0, t.quantity - t.completedQuantity),
+          status: t.status,
+          health: t.health,
+        })),
     };
   }
 }

@@ -53,6 +53,8 @@ export interface WorkTaskFilters extends PaginationQuery {
   status?: TaskStatus;
   priority?: TaskPriority;
   origin?: "assigned" | "personal";
+  /** Manager view: tasks assigned to direct reports. */
+  team?: boolean;
 }
 
 export interface WorkMeetingFilters extends PaginationQuery {
@@ -87,6 +89,7 @@ export interface CreateEmployeeInput {
   joinDate: string;
   status?: EmployeeStatus;
   manager?: string;
+  managerEmployeeId?: string;
   /** Optional HR code; Nest may auto-generate if omitted. */
   employeeId?: string;
   /** Initial login password (required on create). */

@@ -13,11 +13,17 @@ import { writeActivity } from "../common/activity-writer";
 import { isValidDateTimeRange } from "../common/flexible-datetime";
 import { parseDate, parseDateEnd } from "../common/mappers";
 import {
+  isOrganicAdsType,
+  taskTagForTargetType,
+} from "../lib/organic-ads-task-match";
+import {
   buildTaskTitle,
   computeTargetProgress,
   MAX_AUTO_TASKS_PER_TARGET,
 } from "../lib/target-progress";
 import { assertCap, mapTaskPriority, type Actor } from "./targets-access";
+import { assertCanAssignToTeam } from "../lib/team";
+import { AppRole } from "../common/roles";
 import { mapTarget } from "./targets-mappers";
 import { TargetsNotifyService } from "./targets-notify.service";
 
@@ -33,7 +39,6 @@ export class TargetsAssignService {
     actor: Actor,
     body: Record<string, unknown>
   ) {
-    assertCap(actor, "assign");
     const title = String(body.title ?? "").trim();
     const categoryId = String(body.categoryId ?? "");
     const typeId = String(body.typeId ?? "");
@@ -43,6 +48,12 @@ export class TargetsAssignService {
     const assigneeIds = Array.isArray(body.assigneeIds)
       ? (body.assigneeIds as string[]).map(String).filter(Boolean)
       : [];
+
+    if (actor.role === AppRole.admin) {
+      assertCap(actor, "assign");
+    } else {
+      await assertCanAssignToTeam(this.prisma, companyId, actor, assigneeIds);
+    }
 
     if (!title) throw new BadRequestException("title is required");
     if (!categoryId || !typeId)
@@ -81,7 +92,8 @@ export class TargetsAssignService {
     const status =
       (String(body.status ?? "assigned") as TargetStatus) ||
       TargetStatus.assigned;
-    const generateTasks = body.generateTasks !== false;
+    const generateTasks =
+      isOrganicAdsType(type) || body.generateTasks !== false;
 
     const metrics = computeTargetProgress({
       quantity,
@@ -202,7 +214,7 @@ export class TargetsAssignService {
       status: TaskStatus.todo,
       priority: mapTaskPriority(opts.priority),
       dueDate: parseDateEnd(opts.endDate),
-      tag: type.name,
+      tag: taskTagForTargetType(type),
       estimateMin: 0,
       assigneeIds: opts.assigneeIds,
       targetId,

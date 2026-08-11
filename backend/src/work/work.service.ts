@@ -26,6 +26,7 @@ export class WorkService {
       status?: string;
       priority?: string;
       origin?: string;
+      team?: string;
     } = {}
   ) {
     return this.tasks.listTasks(companyId, actor, filters);

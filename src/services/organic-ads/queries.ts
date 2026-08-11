@@ -128,17 +128,26 @@ export async function listLinkableOrganicAdTasks(
     const ownerId = employeeId || getWorkEmployeeId();
     if (!ownerId) return ok([]);
     const claimed = await claimedTaskIds();
-    const tasks = (await workTaskRepository.findAll()).filter(
-      (t) =>
-        !t.deletedAt &&
-        !!t.targetId &&
-        t.status !== "completed" &&
-        t.assigneeIds.includes(ownerId) &&
-        !claimed.has(t.id)
+    const { performanceTargetRepository, targetTypeRepository } = await import(
+      "@/repositories"
     );
-    const { performanceTargetRepository } = await import("@/repositories");
-    const targets = await performanceTargetRepository.findAll();
+    const [allTasks, targets, types] = await Promise.all([
+      workTaskRepository.findAll(),
+      performanceTargetRepository.findAll(),
+      targetTypeRepository.findAll(),
+    ]);
+    const typeMap = new Map(types.map((ty) => [ty.id, ty]));
     const targetMap = new Map(targets.map((t) => [t.id, t]));
+    const { isOrganicAdsLinkableTask } = await import(
+      "@/lib/organic-ads-task-match"
+    );
+    const tasks = allTasks.filter((t) => {
+      if (t.deletedAt || t.status === "completed") return false;
+      if (!t.assigneeIds.includes(ownerId) || claimed.has(t.id)) return false;
+      const target = t.targetId ? targetMap.get(t.targetId) : undefined;
+      const type = target ? typeMap.get(target.typeId) : undefined;
+      return isOrganicAdsLinkableTask(t, type);
+    });
 
     return ok(
       tasks.map((t) => {

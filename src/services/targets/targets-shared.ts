@@ -49,7 +49,9 @@ export function scopeTargets(
   const role = getSessionRole();
   let list = items.map(withMetrics);
 
-  if (role === AppRole.employee) {
+  if (role === AppRole.employee && filters.team) {
+    /* report ids filled by getTargets after loading the roster */
+  } else if (role === AppRole.employee) {
     const empId = getWorkEmployeeId();
     list = list.filter((t) => t.assigneeIds.includes(empId));
   } else if (filters.employeeId) {

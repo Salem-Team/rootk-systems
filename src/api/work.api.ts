@@ -75,6 +75,7 @@ export function fetchWorkTasks(
       status: filters.status,
       priority: filters.priority,
       origin: filters.origin,
+      team: filters.team ? "true" : undefined,
       page: filters.page,
       pageSize: filters.pageSize,
       cursor: filters.cursor,
