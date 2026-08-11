@@ -99,7 +99,7 @@ export function EmployeePreferencesPanel() {
           {t("common.refresh")}
         </Button>
       </div>
-      <div className="overflow-x-auto p-2 sm:p-3">
+      <div className="table-scroll p-2 sm:p-3">
         <DataTable>
           <DataTableHeader>
             <DataTableHeaderRow>

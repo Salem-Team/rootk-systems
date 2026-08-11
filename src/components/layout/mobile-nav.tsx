@@ -149,7 +149,8 @@ export function MobileDrawer() {
             }
             transition={
               reduceMotion ? { duration: 0.12 } : softSpring
-            }            className="fixed inset-y-0 start-0 z-50 w-[min(100%,280px)] bg-sidebar text-sidebar-foreground shadow-[var(--shadow-card-hover)] lg:hidden"
+            }
+            className="fixed inset-y-0 start-0 z-50 flex w-[min(100%,280px)] flex-col bg-sidebar text-sidebar-foreground shadow-[var(--shadow-card-hover)] lg:hidden"
             role="dialog"
             aria-modal="true"
             aria-label={t("common.navDrawer")}
@@ -166,7 +167,7 @@ export function MobileDrawer() {
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <ScrollArea className="h-[calc(100dvh-3.5rem)] px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <ScrollArea className="min-h-0 flex-1 px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <div className="mb-3">
                 <SidebarDailyPlan
                   className="mx-0 mt-0"

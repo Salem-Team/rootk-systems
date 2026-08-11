@@ -50,7 +50,7 @@ export function AttendanceHeatmap({ records }: AttendanceHeatmapProps) {
         </div>
         <div className="panel-body space-y-3">
           <div
-            className="overflow-x-auto pb-1"
+            className="scroll-x pb-1"
             role="img"
             aria-label={t("attendance.heatmapTitle")}
           >

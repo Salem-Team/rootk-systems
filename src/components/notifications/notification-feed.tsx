@@ -118,10 +118,7 @@ export function NotificationFeed({
           </p>
         </div>
       ) : (
-        <ScrollArea
-          style={{ maxHeight }}
-          className="px-2 py-2"
-        >
+        <ScrollArea className="min-h-0 px-2 py-2" style={{ height: maxHeight }}>
           <ul className={cn("space-y-1", !dense && "space-y-2 p-1")}>
             {items.map((item) => (
               <li key={item.id}>

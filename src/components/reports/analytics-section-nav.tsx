@@ -46,7 +46,7 @@ export function AnalyticsSectionNav({
   return (
     <nav
       aria-label={t("analytics.navLabel")}
-      className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible"
+      className="scroll-x flex gap-1 pb-1 lg:flex-col lg:overflow-visible"
     >
       {ITEMS.map((item) => {
         const Icon = item.icon;

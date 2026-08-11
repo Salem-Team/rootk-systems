@@ -34,7 +34,7 @@ export function TargetHubCategoryList({
   return (
     <>
       {/* Mobile chips */}
-      <div className="flex gap-1.5 overflow-x-auto px-2 pb-2 lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="scroll-x flex gap-1.5 px-2 pb-2 lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <CategoryChip
           label={t("targets.sidebar.allCategories")}
           count={totalCount}
@@ -67,7 +67,7 @@ export function TargetHubCategoryList({
       </div>
 
       {/* Desktop list */}
-      <ScrollArea className="hidden max-h-[min(42vh,360px)] lg:block">
+      <ScrollArea className="hidden h-[min(42vh,360px)] lg:block">
         <ul className="grid gap-0.5 px-2 pb-2">
           <li>
             <CategoryRow

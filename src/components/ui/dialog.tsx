@@ -48,7 +48,7 @@ const DialogContent = React.forwardRef<
       className={cn(
         // Base shell
         "fixed z-50 flex w-full flex-col gap-4 border border-border/80 bg-card shadow-[var(--shadow-float)] outline-none",
-        "overflow-y-auto overscroll-contain",
+        "min-h-0 overflow-y-auto overscroll-contain",
         // Mobile: bottom sheet — stays usable on short viewports
         "inset-x-0 bottom-0 top-auto max-h-[min(92dvh,100%)] translate-x-0 translate-y-0",
         "rounded-t-[1.25rem] rounded-b-none",

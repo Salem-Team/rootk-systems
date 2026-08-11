@@ -81,7 +81,7 @@ export function OrganicAdsHubSidebar({
         </p>
       </div>
 
-      <ul className="flex gap-1 overflow-x-auto p-2 [scrollbar-width:none] lg:grid lg:gap-0.5 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
+      <ul className="scroll-x flex gap-1 p-2 [scrollbar-width:none] lg:grid lg:gap-0.5 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
         {views.map((item) => {
           const Icon = item.icon;
           const isActive = tab === item.id;

@@ -69,7 +69,7 @@ export function AdminSectionNav({
           {t("admin.navTitle")}
         </p>
       </div>
-      <ul className="flex gap-1 overflow-x-auto p-2 [scrollbar-width:none] lg:grid lg:grid-cols-1 lg:gap-0.5 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
+      <ul className="scroll-x flex gap-1 p-2 [scrollbar-width:none] lg:grid lg:grid-cols-1 lg:gap-0.5 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
         {ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive = active === item.id;

@@ -118,7 +118,7 @@ export function PortalSectionNav({
           role="tablist"
           aria-label={t("portal.navLabel")}
         >
-          <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="scroll-x flex min-w-0 flex-1 gap-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {MOBILE_QUICK.map((id) => {
               const item = ITEM_MAP[id];
               const Icon = item.icon;
@@ -166,12 +166,12 @@ export function PortalSectionNav({
       </div>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="max-w-[min(100%,22rem)] gap-0 p-0 lg:hidden">
+        <SheetContent className="flex max-w-[min(100%,22rem)] flex-col gap-0 overflow-hidden p-0 lg:hidden">
           <SheetHeader className="border-b border-border/60 px-5 py-4">
             <SheetTitle>{t("portal.navTitle")}</SheetTitle>
             <SheetDescription>{t("portal.navLabel")}</SheetDescription>
           </SheetHeader>
-          <div className="overflow-y-auto px-3 py-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
             {grouped.map((group) => (
               <div key={group.labelKey} className="mb-4">
                 <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">

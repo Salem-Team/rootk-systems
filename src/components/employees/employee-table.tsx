@@ -184,7 +184,7 @@ export function EmployeeTable({
             );
           })}
         </ul>
-        <div className="hidden overflow-x-auto md:block">
+        <div className="table-scroll hidden md:block">
           <table
             className="w-full min-w-[36rem] text-start text-sm md:min-w-[640px]"
             aria-label={t("employees.title")}

@@ -148,6 +148,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: clip;
+    overflow-y: auto;
     max-width: 100%;
   }
 
@@ -171,7 +172,7 @@
     font-feature-settings: "ss01" on, "cv11" on, "kern" on, "tnum" on;
     text-rendering: optimizeLegibility;
     min-height: 100dvh;
-    overflow-x: clip;
+    overflow: visible;
     max-width: 100%;
     background-color: var(--background);
     background-image:
@@ -532,10 +533,33 @@
       0 0 0 4px color-mix(in oklab, var(--ring) 45%, transparent);
   }
 
-  .table-scroll {
+  .table-scroll,
+  .scroll-x {
     position: relative;
-    -webkit-overflow-scrolling: touch;
+    overflow-x: auto;
+    overflow-y: hidden;
     overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .scroll-y {
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+  }
+
+
+  [data-radix-scroll-area-viewport] {
+    overflow: hidden auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  [data-radix-scroll-area-viewport] > div {
+    display: block !important;
+    min-width: 0;
+    min-height: 0;
   }
 
   .filter-toolbar {

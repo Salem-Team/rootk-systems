@@ -27,7 +27,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <AuthGate>
       <PreferenceSync />
-      <div className="min-h-dvh overflow-x-clip bg-background">
+      <div className="min-h-dvh bg-background">
         <a href="#main-content" className="skip-link">
           {t("a11y.skipToContent")}
         </a>
@@ -46,7 +46,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             id="main-content"
             tabIndex={-1}
             aria-label={t("a11y.mainContent")}
-            className="min-w-0 overflow-x-clip px-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-4 sm:px-4 sm:pt-5 md:px-6 md:pt-6 lg:px-8 lg:pb-12 lg:pt-7"
+            className="min-w-0 px-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-4 sm:px-4 sm:pt-5 md:px-6 md:pt-6 lg:px-8 lg:pb-12 lg:pt-7"
           >
             <div className="content-frame min-w-0">{children}</div>
           </main>

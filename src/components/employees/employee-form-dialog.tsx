@@ -158,7 +158,7 @@ export function EmployeeFormDialog({
             onSubmit={form.handleSubmit(onSubmit)}
             noValidate
           >
-            <div className="flex-1 space-y-3.5 overflow-y-auto px-5 py-4">
+            <div className="min-h-0 flex-1 space-y-3.5 overflow-y-auto overscroll-contain px-5 py-4">
               <EmployeeIdentityFields
                 form={form}
                 t={t}

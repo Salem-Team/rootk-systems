@@ -107,7 +107,7 @@ export function WeeklyPlanner({ schedule }: WeeklyPlannerProps) {
           initial="hidden"
           animate="visible"
           className={cn(
-            "-mx-3 flex gap-2.5 overflow-x-auto px-3 pb-1 [scrollbar-width:none]",
+            "-mx-3 scroll-x flex gap-2.5 px-3 pb-1 [scrollbar-width:none]",
             "snap-x snap-mandatory scroll-ps-3",
             "sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-3 sm:overflow-visible sm:px-0 sm:pb-0 sm:snap-none",
             "lg:grid-cols-4 xl:grid-cols-7",

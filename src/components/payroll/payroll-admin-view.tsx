@@ -127,7 +127,7 @@ export function PayrollAdminView({
       <PayrollKpiRow summary={summary} />
 
       <Tabs value={tab} onValueChange={onTabChange}>
-        <TabsList className="flex h-auto w-full flex-nowrap justify-start gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap">
+        <TabsList className="scroll-x flex h-auto w-full flex-nowrap justify-start gap-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible">
           <TabsTrigger value="overview" className="shrink-0">
             {t("payroll.tabOverview")}
           </TabsTrigger>

@@ -46,7 +46,7 @@ export function Sidebar() {
         <BrandMark collapsed={sidebarCollapsed} />
       </div>
 
-      <ScrollArea className="flex-1 px-2 py-3">
+      <ScrollArea className="min-h-0 flex-1 px-2 py-3">
         <motion.nav
           key={role}
           variants={reduceMotion ? undefined : staggerContainer}

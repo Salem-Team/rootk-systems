@@ -86,7 +86,7 @@ export function PayrollLedgerTable({
           ))
         )}
       </ul>
-      <div className="panel-body hidden overflow-x-auto md:block">
+      <div className="panel-body table-scroll hidden md:block">
         <table className="w-full min-w-[720px] text-sm">
           <thead>
             <tr className="border-b border-border/70 text-start text-xs text-muted-foreground">

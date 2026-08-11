@@ -76,7 +76,7 @@ function HeatmapCard({
         <h3 className="text-[0.95rem] font-semibold">{title}</h3>
         <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
       </div>
-      <div className="panel-body overflow-x-auto">
+      <div className="panel-body table-scroll">
         <div
           className="inline-grid gap-1"
           style={{

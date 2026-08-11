@@ -86,7 +86,7 @@ export function CrmPipelinePanel({
         </p>
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:thin]">
+      <div className="scroll-x flex gap-3 pb-2 [scrollbar-width:thin]">
         {activeStages.map((stage) => {
           const items = byStage.get(stage.id) ?? [];
           const pct = total > 0 ? Math.round((items.length / total) * 100) : 0;
@@ -114,7 +114,7 @@ export function CrmPipelinePanel({
                 </p>
               </div>
 
-              <ul className="flex max-h-[min(60vh,520px)] flex-col gap-1.5 overflow-y-auto p-2">
+              <ul className="scroll-y flex max-h-[min(60vh,520px)] flex-col gap-1.5 p-2">
                 {items.length === 0 ? (
                   <li className="px-2 py-6 text-center text-[12px] text-muted-foreground">
                     {t("crm.empty.pipeline")}

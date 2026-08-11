@@ -131,7 +131,7 @@ export function EmployeeProfileDrawer({
         }
       }}
     >
-      <SheetContent className="gap-0 p-0 sm:max-w-xl">
+      <SheetContent className="flex flex-col gap-0 overflow-hidden p-0 sm:max-w-xl">
         {employee && extras ? (
           <>
             <SheetHeader className="sr-only">
@@ -143,7 +143,7 @@ export function EmployeeProfileDrawer({
               </SheetDescription>
             </SheetHeader>
 
-            <ScrollArea className="h-full">
+            <ScrollArea className="min-h-0 flex-1">
               <div className="px-5 pb-8 pt-5 sm:px-6">
                 <AnimatePresence mode="wait">
                   <motion.div

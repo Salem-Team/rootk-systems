@@ -25,7 +25,7 @@ export function SettingsNav({
         <p className="section-label text-primary/70">{eyebrow}</p>
         <p className="mt-1 text-sm font-semibold tracking-tight">{title}</p>
       </div>
-      <ul className="flex gap-1 overflow-x-auto p-2 [scrollbar-width:none] lg:grid lg:gap-0.5 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
+      <ul className="scroll-x flex gap-1 p-2 [scrollbar-width:none] lg:grid lg:gap-0.5 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = section === item.id;

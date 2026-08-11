@@ -82,7 +82,7 @@ export function TaskBoardWidget() {
       title={t("ops.tasksTitle")}
       description={t("ops.tasksDesc")}
       actions={
-        <div className="-mx-1 flex max-w-full gap-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="-mx-1 scroll-x flex max-w-full gap-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {(["all", "todo", "in_progress", "completed"] as const).map((f) => (
             <Button
               key={f}

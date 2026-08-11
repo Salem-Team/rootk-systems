@@ -24,7 +24,7 @@ export function CrmDashboardStageCards({
           {t("crm.dashboard.stageCards")}
         </h3>
       </div>
-      <div className="flex gap-3 overflow-x-auto px-3 pb-3 pt-1 [scrollbar-width:thin]">
+      <div className="scroll-x flex gap-3 px-3 pb-3 pt-1 [scrollbar-width:thin]">
         {stageCards.length === 0 ? (
           <p className="px-1 py-4 text-sm text-muted-foreground">
             {t("crm.empty.chart")}

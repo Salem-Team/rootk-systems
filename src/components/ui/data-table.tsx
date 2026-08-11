@@ -8,7 +8,7 @@ export function DataTable({
   const table = (
     <div
       className={cn(
-        "table-scroll overflow-x-auto overscroll-x-contain",
+        "table-scroll",
         !embedded && "-mx-px"
       )}
     >

@@ -65,7 +65,7 @@ export function PayrollReportsPanel({
             {t("payroll.departmentPayroll")}
           </h3>
         </div>
-        <div className="overflow-x-auto">
+        <div className="table-scroll">
           <table className="w-full min-w-[640px] text-sm">
             <thead className="border-b border-border/70 bg-muted/30 text-start text-xs text-muted-foreground">
               <tr>

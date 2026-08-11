@@ -141,7 +141,7 @@ export default function LeavePage() {
         className="space-y-6"
       >
         {isAdmin ? (
-          <TabsList className="flex h-auto w-full flex-nowrap justify-start gap-1 overflow-x-auto [scrollbar-width:none] sm:w-auto sm:flex-wrap [&::-webkit-scrollbar]:hidden">
+          <TabsList className="scroll-x flex h-auto w-full flex-nowrap justify-start gap-1 [scrollbar-width:none] sm:w-auto sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
             <TabsTrigger value="workflow" className="shrink-0">
               {t("leaveWorkflow.reviewTab")}
             </TabsTrigger>

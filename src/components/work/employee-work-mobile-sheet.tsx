@@ -60,7 +60,7 @@ export function EmployeeWorkMobileSheet({
 
   return (
     <Sheet open={open && (isMobile || tab === "tasks")} onOpenChange={onOpenChange}>
-      <SheetContent className="gap-0 p-0 sm:max-w-md">
+      <SheetContent className="flex flex-col gap-0 overflow-hidden p-0 sm:max-w-md">
         <SheetHeader className="border-b border-border/60 px-4 py-4 text-start">
           <SheetTitle>
             {tab === "meetings"
@@ -73,7 +73,7 @@ export function EmployeeWorkMobileSheet({
               : t("workHub.taskDetailDesc")}
           </SheetDescription>
         </SheetHeader>
-        <ScrollArea className="h-[calc(100dvh-5.5rem)]">
+        <ScrollArea className="min-h-0 flex-1">
           <div className="p-4 pb-8">
             {tab === "meetings" && selectedMeeting ? (
               <MeetingDetailCard
