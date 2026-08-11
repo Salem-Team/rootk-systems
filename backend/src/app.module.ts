@@ -1,5 +1,8 @@
 import { Module } from "@nestjs/common";
+import { APP_GUARD } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
+import { PermissionsGuard } from "./common/permissions.guard";
+import { PermissionsModule } from "./permissions/permissions.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { AuthModule } from "./auth/auth.module";
 import { HealthModule } from "./health/health.module";
@@ -34,6 +37,7 @@ import { DailyPlanModule } from "./daily-plan/daily-plan.module";
     SettingsModule,
     NotificationsModule,
     UsersModule,
+    PermissionsModule,
     PreferencesModule,
     WorkModule,
     OrgModule,
@@ -44,6 +48,12 @@ import { DailyPlanModule } from "./daily-plan/daily-plan.module";
     OrganicAdsModule,
     CrmModule,
     DailyPlanModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: PermissionsGuard,
+    },
   ],
 })
 export class AppModule {}

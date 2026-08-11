@@ -1,5 +1,6 @@
 import type { AppRoleName } from "../common/roles";
 import { AppRole } from "../common/roles";
+import { TARGET_CAPABILITY_TO_PERMISSION } from "../common/permissions-catalog";
 
 export type TargetCapability =
   | "view"
@@ -44,7 +45,11 @@ export function targetCapabilitiesForRole(
 
 export function canTarget(
   role: AppRoleName | string,
-  capability: TargetCapability
+  capability: TargetCapability,
+  permissions?: readonly string[]
 ): boolean {
+  if (permissions) {
+    return permissions.includes(TARGET_CAPABILITY_TO_PERMISSION[capability]);
+  }
   return targetCapabilitiesForRole(role).includes(capability);
 }

@@ -1,3 +1,4 @@
+import { CRM_CAPABILITY_TO_PERMISSION } from "@/constants/permissions";
 import { AppRole } from "@/constants/roles";
 import type { CrmCapability } from "@/types/crm";
 import type { UserRole } from "@/types";
@@ -30,6 +31,13 @@ export function crmCapabilitiesForRole(role: UserRole): CrmCapability[] {
   return role === AppRole.admin ? ADMIN : EMPLOYEE;
 }
 
-export function canCrm(role: UserRole, capability: CrmCapability): boolean {
+export function canCrm(
+  role: UserRole,
+  capability: CrmCapability,
+  permissions?: readonly string[]
+): boolean {
+  if (permissions) {
+    return permissions.includes(CRM_CAPABILITY_TO_PERMISSION[capability]);
+  }
   return crmCapabilitiesForRole(role).includes(capability);
 }

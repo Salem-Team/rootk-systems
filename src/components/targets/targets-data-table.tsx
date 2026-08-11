@@ -67,9 +67,12 @@ export function TargetsDataTable({
 }) {
   const { t, locale } = useTranslation();
   const role = useSessionStore((s) => s.role);
+  const permissions = useSessionStore((s) =>
+    s.authenticated ? s.permissions : undefined
+  );
   const dateLocale = locale === "ar" ? arLocale : enUS;
-  const canEdit = canTarget(role, "edit");
-  const canDelete = canTarget(role, "delete");
+  const canEdit = canTarget(role, "edit", permissions);
+  const canDelete = canTarget(role, "delete", permissions);
 
   if (loading) return <TableSkeleton rows={5} />;
 

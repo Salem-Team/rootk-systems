@@ -6,6 +6,7 @@ import { ActorId, CompanyId, requireUser } from "../common/tenant";
 import { AppRole } from "../common/roles";
 import { Roles } from "../common/roles.decorator";
 import { RolesGuard } from "../common/roles.guard";
+import { RequirePermission } from "../common/permissions.decorator";
 import {
   CurrentUser,
   type JwtPayload,
@@ -43,6 +44,7 @@ export class DailyPlanController {
 
   @Put()
   @Roles(AppRole.admin)
+  @RequirePermission("dailyPlan.editCompanyPlan")
   put(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,

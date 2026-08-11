@@ -55,6 +55,12 @@ export const API_ROUTES = {
     byId: (id: string) => `/users/${id}`,
     preferences: (id: string) => `/users/${id}/preferences`,
   },
+  permissions: {
+    me: "/permissions/me",
+    catalog: "/permissions/catalog",
+    users: "/permissions/users",
+    userById: (userId: string) => `/permissions/users/${userId}`,
+  },
   preferences: {
     /** Admin: all employee preference rows */
     employeeRows: "/preferences/employees",

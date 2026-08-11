@@ -1,8 +1,7 @@
 import { ForbiddenException, Injectable } from "@nestjs/common";
 import { TaskStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { AppRole } from "../common/roles";
-import { type Actor } from "./targets-access";
+import { canSeeTargetOthers, type Actor } from "./targets-access";
 import { TargetsCrudService } from "./targets-crud.service";
 import { TargetsWarningsService } from "./targets-warnings.service";
 
@@ -20,7 +19,7 @@ export class TargetsPerformanceService {
     employeeId: string
   ) {
     if (
-      actor.role === AppRole.employee &&
+      !canSeeTargetOthers(actor).all &&
       actor.employeeId !== employeeId
     ) {
       throw new ForbiddenException("Not allowed");

@@ -13,7 +13,7 @@ import {
   type Prisma,
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { assertCap, isAdmin, type Actor } from "./crm-access";
+import { assertCap, canViewOthersLeads, type Actor } from "./crm-access";
 import {
   CRM_SYSTEM_ACTOR_ID,
   DEFAULT_BUSINESS_TYPES,
@@ -163,7 +163,7 @@ export class CrmSharedService {
   }
 
   scopeOwnerFilter(actor: Actor): Prisma.CrmLeadWhereInput {
-    if (isAdmin(actor)) return {};
+    if (canViewOthersLeads(actor)) return {};
     const employeeId = actor.employeeId?.trim();
     if (!employeeId) return { id: { in: [] } };
     return { ownerEmployeeId: employeeId };
@@ -180,7 +180,7 @@ export class CrmSharedService {
 
   assertCanEditLead(actor: Actor, lead: CrmLead) {
     assertCap(actor, "edit");
-    if (isAdmin(actor)) return;
+    if (canViewOthersLeads(actor)) return;
     if (lead.ownerEmployeeId !== actor.employeeId) {
       throw new ForbiddenException("You can only edit your own leads");
     }

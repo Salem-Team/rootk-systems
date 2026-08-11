@@ -17,6 +17,7 @@ import { Roles } from "../common/roles.decorator";
 import { RolesGuard } from "../common/roles.guard";
 import { AppRole } from "../common/roles";
 import { toDomainActor } from "../common/scoped-employee";
+import { RequirePermission } from "../common/permissions.decorator";
 
 @Controller("organic-ads")
 @UseGuards(AuthGuard("jwt"), RolesGuard)
@@ -46,6 +47,7 @@ export class OrganicAdsController {
 
   @Get("performance")
   @Roles(AppRole.admin)
+  @RequirePermission("organicAds.viewPerformance")
   performance(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -64,6 +66,7 @@ export class OrganicAdsController {
 
   @Patch("settings")
   @Roles(AppRole.admin)
+  @RequirePermission("organicAds.manageSettings")
   updateSettings(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,

@@ -25,6 +25,7 @@ import { employeeRepository } from "@/repositories";
 import { fromError, ok } from "@/services/api-result";
 import { simulateDelay } from "@/services/fake-api";
 import {
+  authPermissionSet,
   getSessionRole,
   getSessionUserId,
   getWorkEmployeeId,
@@ -39,6 +40,7 @@ import type {
 } from "@/types/organic-ads";
 import {
   assertCap,
+  canSeeOrganicAdsTeam,
   defaultSettings,
   linkedTargetsForAds,
   scopedAds,
@@ -62,12 +64,12 @@ export async function getOrganicAdsOverview(
     const empLite = employees.map((e) => ({ id: e.id, name: e.name }));
     const linkedTargets = await linkedTargetsForAds(
       ads,
-      canOrganicAds(getSessionRole(), "view_team") ? null : getWorkEmployeeId()
+      canSeeOrganicAdsTeam() ? null : getWorkEmployeeId()
     );
 
     return ok({
       kpis: buildKpis(ads, range),
-      teamActivity: canOrganicAds(getSessionRole(), "view_team")
+      teamActivity: canSeeOrganicAdsTeam()
         ? buildTeamActivity(ads, empLite, settings, activitySort)
         : buildTeamActivity(
             ads,
@@ -75,7 +77,7 @@ export async function getOrganicAdsOverview(
             settings,
             activitySort
           ),
-      needsAttention: canOrganicAds(getSessionRole(), "view_team")
+      needsAttention: canSeeOrganicAdsTeam()
         ? buildNeedsAttention(ads, settings, new Date(), nameMap)
         : buildNeedsAttention(ads, settings, new Date(), nameMap).filter(
             (i) => i.employeeId === getWorkEmployeeId()
@@ -83,7 +85,7 @@ export async function getOrganicAdsOverview(
       weeklyActivity: buildWeeklyActivity(ads),
       platforms: buildPlatformBreakdown(ads),
       recentActivity: history.filter((h) => {
-        if (canOrganicAds(getSessionRole(), "view_audit")) return true;
+        if (canOrganicAds(getSessionRole(), "view_audit", authPermissionSet())) return true;
         const mine = getWorkEmployeeId();
         return h.actorId === mine || h.actorId === getSessionUserId();
       }),
@@ -153,9 +155,8 @@ export async function getSalesAdvertisingProfile(
   try {
     if (isApiMode()) return fetchSalesAdvertisingProfile(employeeId);
     await simulateDelay();
-    const role = getSessionRole();
     if (
-      !canOrganicAds(role, "view_team") &&
+      !canSeeOrganicAdsTeam() &&
       employeeId !== getWorkEmployeeId()
     ) {
       throw new ForbiddenError("You can only view your own advertising profile");

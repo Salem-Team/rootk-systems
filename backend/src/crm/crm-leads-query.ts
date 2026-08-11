@@ -1,7 +1,7 @@
 /** Pure Prisma where-clause builder for lead listing/filtering. */
 import { CrmLeadSource, CrmLeadStatus, type Prisma } from "@prisma/client";
 import { endOfDay, startOfDay } from "date-fns";
-import { isAdmin, type Actor } from "./crm-access";
+import { canViewOthersLeads, type Actor } from "./crm-access";
 import { LEAD_SOURCES, LEAD_STATUSES } from "./crm-input";
 import { CrmSharedService } from "./crm-shared.service";
 
@@ -34,7 +34,7 @@ export function buildLeadWhere(
   if (query.source && LEAD_SOURCES.has(query.source)) {
     where.source = query.source as CrmLeadSource;
   }
-  if (query.ownerEmployeeId && isAdmin(actor)) {
+  if (query.ownerEmployeeId && canViewOthersLeads(actor)) {
     where.ownerEmployeeId = query.ownerEmployeeId;
   }
   if (query.tag) where.tags = { has: query.tag };

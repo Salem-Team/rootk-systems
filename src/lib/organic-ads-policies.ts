@@ -1,3 +1,4 @@
+import { ORGANIC_ADS_CAPABILITY_TO_PERMISSION } from "@/constants/permissions";
 import { AppRole } from "@/constants/roles";
 import type { OrganicAdsCapability } from "@/types/organic-ads";
 import type { UserRole } from "@/types";
@@ -34,7 +35,11 @@ export function organicAdsCapabilitiesForRole(
 
 export function canOrganicAds(
   role: UserRole,
-  capability: OrganicAdsCapability
+  capability: OrganicAdsCapability,
+  permissions?: readonly string[]
 ): boolean {
+  if (permissions) {
+    return permissions.includes(ORGANIC_ADS_CAPABILITY_TO_PERMISSION[capability]);
+  }
   return organicAdsCapabilitiesForRole(role).includes(capability);
 }

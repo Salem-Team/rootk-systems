@@ -1,15 +1,32 @@
 import { ForbiddenException } from "@nestjs/common";
 import type { JwtPayload } from "./decorators/current-user";
 import { isEmployeeRole } from "./roles";
+import {
+  canViewOthersInModule,
+  type PermissionId,
+} from "./permissions-catalog";
 
 /**
- * Employees may only see/act on their own employeeId.
- * Admins keep the optional query/body override.
+ * Own-only unless the actor may view other users' records in this module.
  */
 export function resolveScopedEmployeeId(
   user: JwtPayload,
-  requestedEmployeeId?: string
+  requestedEmployeeId?: string,
+  scope?: { viewAll?: PermissionId; viewTeam?: PermissionId }
 ): string | undefined {
+  const access = scope
+    ? canViewOthersInModule(user.permissions, scope.viewAll, scope.viewTeam)
+    : canViewOthersInModule(
+        user.permissions,
+        "dataAccess.viewOtherUsers",
+        undefined
+      );
+  if (access.all || access.team) {
+    return requestedEmployeeId ?? undefined;
+  }
+  if (user.employeeId?.trim()) {
+    return user.employeeId;
+  }
   if (isEmployeeRole(user.role)) {
     return requireLinkedEmployeeId(user);
   }
@@ -52,5 +69,6 @@ export function toDomainActor(user: JwtPayload, actorUserId: string) {
     employeeId: isEmployeeRole(role)
       ? requireLinkedEmployeeId(user)
       : (user.employeeId?.trim() || actorUserId),
+    permissions: user.permissions ?? [],
   };
 }

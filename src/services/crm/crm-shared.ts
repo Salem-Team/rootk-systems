@@ -1,4 +1,5 @@
 import { AppRole } from "@/constants/roles";
+import { canViewOthersInModule } from "@/constants/permissions";
 import { enrichWithAudit } from "@/lib/entity";
 import { ForbiddenError } from "@/lib/errors";
 import { createId } from "@/lib/id";
@@ -11,6 +12,8 @@ import {
   crmSubStageRepository,
 } from "@/repositories/crm.repository";
 import {
+  authPermissionSet,
+  getSessionPermissions,
   getSessionRole,
   getSessionUserId,
   getWorkEmployeeId,
@@ -26,7 +29,7 @@ import type {
 
 export function assertCap(capability: Parameters<typeof canCrm>[1]): void {
   const role = getSessionRole();
-  if (!canCrm(role, capability)) {
+  if (!canCrm(role, capability, authPermissionSet())) {
     throw new ForbiddenError("You do not have permission for this action");
   }
 }
@@ -35,21 +38,28 @@ export function isAdmin(): boolean {
   return getSessionRole() === AppRole.admin;
 }
 
+export function canViewOthersCrm(): boolean {
+  return canViewOthersInModule(
+    getSessionPermissions(),
+    "crm.viewOthersLeads"
+  ).all;
+}
+
 export function actorEmployeeId(): string | null {
   return getWorkEmployeeId();
 }
 
-/** Non-admin CRM lists always pin owner to the signed-in sales user. */
+/** Lists pin owner to the signed-in sales user unless they may see others. */
 export function scopeCrmFiltersToActor<T extends { ownerEmployeeId?: string }>(
   filters: T
 ): T {
-  if (isAdmin()) return filters;
+  if (canViewOthersCrm()) return filters;
   const empId = actorEmployeeId()?.trim() ?? "";
   return { ...filters, ownerEmployeeId: empId || undefined };
 }
 
 export function assertLeadAccess(lead: CrmLead): void {
-  if (isAdmin()) return;
+  if (canViewOthersCrm()) return;
   const empId = actorEmployeeId();
   if (!empId || lead.ownerEmployeeId !== empId) {
     throw new ForbiddenError("You can only access your assigned leads");

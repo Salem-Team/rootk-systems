@@ -6,7 +6,12 @@ import { bulkUpdateCrmLeads } from "@/services/crm.service";
 import type { Employee } from "@/types";
 import type { CrmLeadFilters, CrmStage, PaginatedLeads } from "@/types/crm";
 
-export type BulkAction = "assign" | "change_stage" | "change_status" | "archive";
+export type BulkAction =
+  | "assign"
+  | "change_stage"
+  | "change_status"
+  | "archive"
+  | "delete";
 
 interface UseCrmLeadsPanelArgs {
   leads: PaginatedLeads | null;
@@ -27,9 +32,6 @@ export function useCrmLeadsPanel({
   const [searchLocal, setSearchLocal] = useState(filters.search ?? "");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [bulkAction, setBulkAction] = useState<BulkAction | "">("");
-  const [bulkValue, setBulkValue] = useState("");
-  const [archiveOpen, setArchiveOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const safeStages = useMemo(() => ensureCrmList<CrmStage>(stages), [stages]);
@@ -100,6 +102,10 @@ export function useCrmLeadsPanel({
     onFiltersChange({ page: 1, pageSize: filters.pageSize ?? 20 });
   }
 
+  function clearSelection() {
+    setSelected(new Set());
+  }
+
   async function runBulk(action: BulkAction, value?: string) {
     if (selected.size === 0) return;
     setBusy(true);
@@ -110,38 +116,24 @@ export function useCrmLeadsPanel({
     });
     setBusy(false);
     if (!res.success) {
-      toast.error(res.message ?? t("crm.errors.saveFailed"));
+      toast.error(
+        res.message ??
+          (action === "delete"
+            ? t("crm.errors.deleteFailed")
+            : t("crm.errors.saveFailed"))
+      );
       return;
     }
+    const count = String(res.data.updated);
     toast.success(
-      t("crm.toast.bulkUpdated", { count: String(res.data.updated) })
+      action === "delete"
+        ? t("crm.toast.bulkDeleted", { count })
+        : action === "archive"
+          ? t("crm.toast.archived")
+          : t("crm.toast.bulkUpdated", { count })
     );
     setSelected(new Set());
-    setBulkAction("");
-    setBulkValue("");
-    setArchiveOpen(false);
     onFiltersChange({ ...filters });
-  }
-
-  async function applyBulk() {
-    if (!bulkAction || selected.size === 0) return;
-    if (bulkAction === "archive") {
-      setArchiveOpen(true);
-      return;
-    }
-    if (
-      (bulkAction === "change_stage" || bulkAction === "change_status") &&
-      !bulkValue
-    ) {
-      return;
-    }
-    const value =
-      bulkAction === "assign"
-        ? bulkValue === "none" || !bulkValue
-          ? ""
-          : bulkValue
-        : bulkValue || undefined;
-    await runBulk(bulkAction, value);
   }
 
   const hasActiveFilters = Boolean(
@@ -160,12 +152,6 @@ export function useCrmLeadsPanel({
     filtersOpen,
     setFiltersOpen,
     selected,
-    bulkAction,
-    setBulkAction,
-    bulkValue,
-    setBulkValue,
-    archiveOpen,
-    setArchiveOpen,
     busy,
     safeStages,
     safeEmployees,
@@ -177,8 +163,8 @@ export function useCrmLeadsPanel({
     toggleAll,
     toggleOne,
     clearFilters,
+    clearSelection,
     runBulk,
-    applyBulk,
     hasActiveFilters,
   };
 }

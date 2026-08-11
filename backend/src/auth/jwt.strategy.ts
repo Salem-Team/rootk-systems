@@ -4,6 +4,7 @@ import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 import type { JwtPayload } from "../common/decorators/current-user";
 import { AppRole, isEmployeeRole } from "../common/roles";
+import { loadEffectivePermissions } from "../common/permissions";
 import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
@@ -35,6 +36,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         role: true,
         companyId: true,
         employeeId: true,
+        email: true,
       },
     });
     if (!user) {
@@ -47,6 +49,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       );
     }
 
+    const permissions = await loadEffectivePermissions(this.prisma, user);
+
     return {
       sub: user.id,
       role:
@@ -54,6 +58,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         payload.role,
       companyId: user.companyId ?? payload.companyId,
       employeeId: user.employeeId ?? undefined,
+      permissions,
     };
   }
 }

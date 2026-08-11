@@ -1,3 +1,4 @@
+import { TARGET_CAPABILITY_TO_PERMISSION } from "@/constants/permissions";
 import { AppRole } from "@/constants/roles";
 import type { TargetCapability } from "@/types/targets";
 import type { UserRole } from "@/types";
@@ -32,7 +33,11 @@ export function targetCapabilitiesForRole(role: UserRole): TargetCapability[] {
 
 export function canTarget(
   role: UserRole,
-  capability: TargetCapability
+  capability: TargetCapability,
+  permissions?: readonly string[]
 ): boolean {
+  if (permissions) {
+    return permissions.includes(TARGET_CAPABILITY_TO_PERMISSION[capability]);
+  }
   return targetCapabilitiesForRole(role).includes(capability);
 }

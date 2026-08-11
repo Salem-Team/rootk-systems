@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException, ForbiddenException } from "@nestjs/common";
 import { AdPlatform, AdStatus, AdValidationStatus, Prisma } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
-import { canOrganicAds } from "../../lib/organic-ads-policies";
 import { inspectAdUrl } from "../../lib/organic-ads-url";
 import {
   assertCap,
   buildScopedWhere,
+  canSeeOrganicAdsTeam,
   findDuplicate,
   mapAd,
   resolveDateRange,
@@ -22,7 +22,7 @@ export class OrganicAdsQueryService {
     assertCap(actor, "create");
     const inspected = inspectAdUrl(url ?? "");
     const ads = await this.prisma.organicAdvertisement.findMany({
-      where: { companyId, deletedAt: null },
+      where: buildScopedWhere(companyId, actor),
     });
     const duplicate = findDuplicate(
       ads,
@@ -51,7 +51,7 @@ export class OrganicAdsQueryService {
       ];
     }
     if (typeof filters.ownerEmployeeId === "string" && filters.ownerEmployeeId) {
-      if (!canOrganicAds(actor.role, "view_team")) {
+      if (!canSeeOrganicAdsTeam(actor)) {
         where.ownerEmployeeId = actor.employeeId;
       } else {
         where.ownerEmployeeId = filters.ownerEmployeeId;
@@ -126,7 +126,7 @@ export class OrganicAdsQueryService {
     });
     if (!row) throw new NotFoundException("Advertisement not found");
     if (
-      !canOrganicAds(actor.role, "view_team") &&
+      !canSeeOrganicAdsTeam(actor) &&
       row.ownerEmployeeId !== actor.employeeId
     ) {
       throw new ForbiddenException("You can only view your own advertisements");

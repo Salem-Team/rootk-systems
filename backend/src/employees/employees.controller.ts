@@ -5,6 +5,7 @@ import { ActorId, CompanyId } from "../common/tenant";
 import { Roles } from "../common/roles.decorator";
 import { RolesGuard } from "../common/roles.guard";
 import { AppRole } from "../common/roles";
+import { RequirePermission } from "../common/permissions.decorator";
 
 @Controller("employees")
 @UseGuards(AuthGuard("jwt"), RolesGuard)
@@ -39,6 +40,7 @@ export class EmployeesController {
 
   @Post()
   @Roles(AppRole.admin)
+  @RequirePermission("employees.create")
   create(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -49,6 +51,7 @@ export class EmployeesController {
 
   @Patch(":id/status")
   @Roles(AppRole.admin)
+  @RequirePermission("employees.changeStatus")
   status(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -60,6 +63,7 @@ export class EmployeesController {
 
   @Patch(":id")
   @Roles(AppRole.admin)
+  @RequirePermission("employees.edit")
   update(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -71,6 +75,7 @@ export class EmployeesController {
 
   @Delete(":id")
   @Roles(AppRole.admin)
+  @RequirePermission("employees.delete")
   remove(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,

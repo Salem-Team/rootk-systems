@@ -2,10 +2,11 @@ import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/commo
 import { AdStatus, type OrganicAdvertisement } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { iso } from "../../common/mappers";
-import { canOrganicAds } from "../../lib/organic-ads-policies";
 import { isOrganicAdsType } from "../../lib/organic-ads-task-match";
 import {
   assertCap,
+  buildScopedWhere,
+  canSeeOrganicAdsTeam,
   computeHealthScore,
   isInRange,
   mapAd,
@@ -26,7 +27,7 @@ export class OrganicAdsPerformanceService {
     const [settings, ads, employees] = await Promise.all([
       this.settings.ensureSettings(companyId),
       this.prisma.organicAdvertisement.findMany({
-        where: { companyId, deletedAt: null },
+        where: buildScopedWhere(companyId, actor),
       }),
       this.prisma.employee.findMany({
         where: { companyId, deletedAt: null },
@@ -73,7 +74,7 @@ export class OrganicAdsPerformanceService {
   async getSalesProfile(companyId: string, actor: Actor, employeeId: string) {
     assertCap(actor, "view_own");
     if (
-      !canOrganicAds(actor.role, "view_team") &&
+      !canSeeOrganicAdsTeam(actor) &&
       employeeId !== actor.employeeId
     ) {
       throw new ForbiddenException(

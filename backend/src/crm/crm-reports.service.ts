@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { assertCap, isAdmin, type Actor } from "./crm-access";
+import { assertCap, type Actor } from "./crm-access";
+import { canCrm } from "../lib/crm-policies";
 import { CrmDashboardService } from "./crm-dashboard.service";
 import { CrmPerformanceService } from "./crm-performance.service";
 
@@ -15,7 +16,12 @@ export class CrmReportsService {
     actor: Actor,
     query: Record<string, string | undefined>
   ) {
-    assertCap(actor, isAdmin(actor) ? "view_reports" : "view_dashboard");
+    assertCap(
+      actor,
+      canCrm(actor.role, "view_reports", actor.permissions)
+        ? "view_reports"
+        : "view_dashboard"
+    );
     const dashboard = await this.dashboardService.dashboard(companyId, actor, query);
     const performance = await this.performanceService.performance(
       companyId,

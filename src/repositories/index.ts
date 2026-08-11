@@ -28,6 +28,10 @@ export {
 } from "./user-preferences.repository";
 export { userRepository, UserRepository } from "./user.repository";
 export {
+  permissionsRepository,
+  PermissionsRepository,
+} from "./permissions.repository";
+export {
   workTaskRepository,
   workMeetingRepository,
   WorkTaskRepository,

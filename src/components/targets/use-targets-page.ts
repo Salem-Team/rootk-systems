@@ -27,13 +27,16 @@ import type { TargetHubTab } from "@/components/targets/target-hub-sidebar";
 export function useTargetsPage() {
   const { t } = useTranslation();
   const role = useSessionStore((s) => s.role);
+  const permissions = useSessionStore((s) =>
+    s.authenticated ? s.permissions : undefined
+  );
   const workEmployeeId = useSessionStore((s) =>
     getWorkEmployeeIdFromUser(s.user)
   );
   const isAdmin = role === AppRole.admin;
-  const canAssign = canTarget(role, "assign");
-  const canManageCatalog = canTarget(role, "manage_categories");
-  const canViewReports = canTarget(role, "view_reports");
+  const canAssign = canTarget(role, "assign", permissions);
+  const canManageCatalog = canTarget(role, "manage_categories", permissions);
+  const canViewReports = canTarget(role, "view_reports", permissions);
 
   const [tab, setTab] = useState<TargetHubTab>(isAdmin ? "dashboard" : "targets");
   const [categories, setCategories] = useState<TargetCategory[]>([]);

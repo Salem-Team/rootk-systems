@@ -21,7 +21,10 @@ import type { PerformanceTarget, TargetCategory, TargetType } from "@/types/targ
 export default function TargetDelayedFocusPage() {
   const { t } = useTranslation();
   const role = useSessionStore((s) => s.role);
-  const canEdit = canTarget(role, "edit");
+  const permissions = useSessionStore((s) =>
+    s.authenticated ? s.permissions : undefined
+  );
+  const canEdit = canTarget(role, "edit", permissions);
 
   const [categories, setCategories] = useState<TargetCategory[]>([]);
   const [types, setTypes] = useState<TargetType[]>([]);

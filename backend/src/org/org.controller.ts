@@ -5,6 +5,7 @@ import { ActorId, CompanyId } from "../common/tenant";
 import { Roles } from "../common/roles.decorator";
 import { RolesGuard } from "../common/roles.guard";
 import { AppRole } from "../common/roles";
+import { RequirePermission } from "../common/permissions.decorator";
 
 @Controller("org")
 @UseGuards(AuthGuard("jwt"), RolesGuard)
@@ -18,12 +19,14 @@ export class OrgController {
 
   @Post("locations/resolve-maps-url")
   @Roles(AppRole.admin)
+  @RequirePermission("settings.manageOrganization")
   resolveMapsUrl(@Body() body: { url?: string }) {
     return this.service.resolveMapsUrl(String(body.url ?? ""));
   }
 
   @Put("locations")
   @Roles(AppRole.admin)
+  @RequirePermission("settings.manageOrganization")
   upsertLocation(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -34,6 +37,7 @@ export class OrgController {
 
   @Delete("locations/:id")
   @Roles(AppRole.admin)
+  @RequirePermission("settings.manageOrganization")
   deleteLocation(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -49,6 +53,7 @@ export class OrgController {
 
   @Put("departments")
   @Roles(AppRole.admin)
+  @RequirePermission("settings.manageOrganization")
   upsertDepartment(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -59,6 +64,7 @@ export class OrgController {
 
   @Delete("departments/:id")
   @Roles(AppRole.admin)
+  @RequirePermission("settings.manageOrganization")
   deleteDepartment(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -74,6 +80,7 @@ export class OrgController {
 
   @Put("positions")
   @Roles(AppRole.admin)
+  @RequirePermission("settings.manageOrganization")
   upsertPosition(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -84,6 +91,7 @@ export class OrgController {
 
   @Delete("positions/:id")
   @Roles(AppRole.admin)
+  @RequirePermission("settings.manageOrganization")
   deletePosition(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -99,6 +107,7 @@ export class OrgController {
 
   @Put("shifts")
   @Roles(AppRole.admin)
+  @RequirePermission("schedule.manageShifts")
   upsertShift(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -109,6 +118,7 @@ export class OrgController {
 
   @Delete("shifts/:id")
   @Roles(AppRole.admin)
+  @RequirePermission("schedule.manageShifts")
   deleteShift(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -124,6 +134,7 @@ export class OrgController {
 
   @Patch("approvals/:id")
   @Roles(AppRole.admin)
+  @RequirePermission("settings.manageApprovals")
   patchApproval(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,

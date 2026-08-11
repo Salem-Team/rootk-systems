@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { CrmLeadStatus, CrmStageCategory, type Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { assertCap, isAdmin, type Actor } from "./crm-access";
+import { assertCap, canViewOthersLeads, type Actor } from "./crm-access";
 import { buildPipelineBreakdown, buildSalesPerformance, countBy, round1 } from "./crm-analytics";
 import { PERFORMANCE_PROFILE_RECENT_LIMIT } from "./crm-defaults";
 import {
@@ -23,7 +23,7 @@ export class CrmPerformanceService {
     actor: Actor,
     query: Record<string, string | undefined>
   ) {
-    if (!isAdmin(actor)) {
+    if (!canViewOthersLeads(actor)) {
       assertCap(actor, "view_dashboard");
     } else {
       assertCap(actor, "view_performance");
@@ -38,7 +38,7 @@ export class CrmPerformanceService {
       deletedAt: null,
       ...this.shared.scopeOwnerFilter(actor),
     };
-    if (query.ownerEmployeeId && isAdmin(actor)) {
+    if (query.ownerEmployeeId && canViewOthersLeads(actor)) {
       where.ownerEmployeeId = query.ownerEmployeeId;
     }
     const [leads, feedback] = await Promise.all([
@@ -50,7 +50,7 @@ export class CrmPerformanceService {
           lead: {
             deletedAt: null,
             ...this.shared.scopeOwnerFilter(actor),
-            ...(query.ownerEmployeeId && isAdmin(actor)
+            ...(query.ownerEmployeeId && canViewOthersLeads(actor)
               ? { ownerEmployeeId: query.ownerEmployeeId }
               : {}),
           },
@@ -79,10 +79,10 @@ export class CrmPerformanceService {
   }
 
   async performanceProfile(companyId: string, actor: Actor, employeeId: string) {
-    if (!isAdmin(actor) && actor.employeeId !== employeeId) {
+    if (!canViewOthersLeads(actor) && actor.employeeId !== employeeId) {
       throw new ForbiddenException("You can only view your own performance");
     }
-    if (isAdmin(actor)) assertCap(actor, "view_performance");
+    if (canViewOthersLeads(actor)) assertCap(actor, "view_performance");
     else assertCap(actor, "view_dashboard");
 
     await this.shared.ensureDefaultStages(companyId);

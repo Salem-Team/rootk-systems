@@ -140,14 +140,16 @@ export function CrmLeadsPanel({
         employees={panel.safeEmployees}
         canAssign={canAssign}
         busy={panel.busy}
-        bulkAction={panel.bulkAction}
-        bulkValue={panel.bulkValue}
-        archiveOpen={panel.archiveOpen}
-        onBulkActionChange={panel.setBulkAction}
-        onBulkValueChange={panel.setBulkValue}
-        onArchiveOpenChange={panel.setArchiveOpen}
-        onApply={() => void panel.applyBulk()}
-        onConfirmArchive={() => void panel.runBulk("archive")}
+        onAssign={(ownerEmployeeId) =>
+          void panel.runBulk("assign", ownerEmployeeId)
+        }
+        onChangeStage={(stageId) => void panel.runBulk("change_stage", stageId)}
+        onChangeStatus={(status) =>
+          void panel.runBulk("change_status", status)
+        }
+        onArchive={() => void panel.runBulk("archive")}
+        onDelete={() => void panel.runBulk("delete")}
+        onClear={panel.clearSelection}
       />
 
       <CrmLeadsTable

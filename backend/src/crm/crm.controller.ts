@@ -18,6 +18,7 @@ import { Roles } from "../common/roles.decorator";
 import { RolesGuard } from "../common/roles.guard";
 import { AppRole } from "../common/roles";
 import { toDomainActor } from "../common/scoped-employee";
+import { RequirePermission } from "../common/permissions.decorator";
 
 @Controller("crm")
 @UseGuards(AuthGuard("jwt"), RolesGuard)
@@ -33,6 +34,7 @@ export class CrmController {
 
   @Put("stages")
   @Roles(AppRole.admin)
+  @RequirePermission("crm.manageStages")
   upsertStage(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -44,6 +46,7 @@ export class CrmController {
 
   @Post("stages/reorder")
   @Roles(AppRole.admin)
+  @RequirePermission("crm.manageStages")
   reorderStages(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -55,6 +58,7 @@ export class CrmController {
 
   @Delete("stages/:id")
   @Roles(AppRole.admin)
+  @RequirePermission("crm.manageStages")
   deleteStage(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -73,6 +77,7 @@ export class CrmController {
 
   @Put("sub-stages")
   @Roles(AppRole.admin)
+  @RequirePermission("crm.manageStages")
   upsertSubStage(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -88,6 +93,7 @@ export class CrmController {
 
   @Post("sub-stages/reorder")
   @Roles(AppRole.admin)
+  @RequirePermission("crm.manageStages")
   reorderSubStages(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -103,6 +109,7 @@ export class CrmController {
 
   @Delete("sub-stages/:id")
   @Roles(AppRole.admin)
+  @RequirePermission("crm.manageStages")
   deleteSubStage(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -125,6 +132,7 @@ export class CrmController {
 
   @Put("feedback-types")
   @Roles(AppRole.admin)
+  @RequirePermission("crm.manageFeedbackTypes")
   upsertFeedbackType(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -136,6 +144,7 @@ export class CrmController {
 
   @Delete("feedback-types/:id")
   @Roles(AppRole.admin)
+  @RequirePermission("crm.manageFeedbackTypes")
   deleteFeedbackType(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,

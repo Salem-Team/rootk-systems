@@ -8,7 +8,7 @@ import {
   subDays,
 } from "date-fns";
 import { PrismaService } from "../prisma/prisma.service";
-import { assertCap, isAdmin, type Actor } from "./crm-access";
+import { assertCap, canViewOthersLeads, type Actor } from "./crm-access";
 import {
   buildFeedbackReasons,
   buildSalesPerformance,
@@ -42,9 +42,9 @@ export class CrmDashboardService {
     assertCap(actor, "view_dashboard");
     const { from, to } = resolveDateBounds(query);
     const ownerFilter =
-      query.ownerEmployeeId && isAdmin(actor)
+      query.ownerEmployeeId && canViewOthersLeads(actor)
         ? { ownerEmployeeId: query.ownerEmployeeId }
-        : !isAdmin(actor)
+        : !canViewOthersLeads(actor)
           ? { ownerEmployeeId: actor.employeeId }
           : {};
     const sourceFilter =
@@ -109,7 +109,7 @@ export class CrmDashboardService {
           deletedAt: null,
           createdAt: { gte: prevFrom, lte: endOfDay(prevTo) },
           ...this.shared.scopeOwnerFilter(actor),
-          ...(query.ownerEmployeeId && isAdmin(actor)
+          ...(query.ownerEmployeeId && canViewOthersLeads(actor)
             ? { ownerEmployeeId: query.ownerEmployeeId }
             : {}),
           ...(query.source && LEAD_SOURCES.has(query.source)
@@ -163,7 +163,7 @@ export class CrmDashboardService {
         lead: {
           deletedAt: null,
           ...this.shared.scopeOwnerFilter(actor),
-          ...(query.ownerEmployeeId && isAdmin(actor)
+          ...(query.ownerEmployeeId && canViewOthersLeads(actor)
             ? { ownerEmployeeId: query.ownerEmployeeId }
             : {}),
         },

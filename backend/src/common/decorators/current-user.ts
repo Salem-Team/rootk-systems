@@ -5,6 +5,7 @@ export type JwtPayload = {
   role: "admin" | "employee";
   companyId: string;
   employeeId?: string;
+  permissions?: string[];
 };
 
 export const CurrentUser = createParamDecorator(

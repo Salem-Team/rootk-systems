@@ -5,6 +5,7 @@ import { ActorId, CompanyId } from "../common/tenant";
 import { AppRole } from "../common/roles";
 import { Roles } from "../common/roles.decorator";
 import { RolesGuard } from "../common/roles.guard";
+import { RequirePermission } from "../common/permissions.decorator";
 
 @Controller("settings")
 @UseGuards(AuthGuard("jwt"), RolesGuard)
@@ -18,6 +19,7 @@ export class SettingsController {
 
   @Patch()
   @Roles(AppRole.admin)
+  @RequirePermission("settings.editCompanyProfile")
   patch(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,

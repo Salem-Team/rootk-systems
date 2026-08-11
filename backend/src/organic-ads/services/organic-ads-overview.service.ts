@@ -7,6 +7,7 @@ import { isOrganicAdsType } from "../../lib/organic-ads-task-match";
 import {
   assertCap,
   buildScopedWhere,
+  canSeeOrganicAdsTeam,
   computeHealthScore,
   isInRange,
   mapSettings,
@@ -14,7 +15,6 @@ import {
   type DateRangePreset,
   type TeamActivitySort,
 } from "../organic-ads.helpers";
-import { AppRole } from "../../common/roles";
 import { OrganicAdsSettingsService } from "./organic-ads-settings.service";
 import { OrganicAdsHistoryService } from "./organic-ads-history.service";
 
@@ -49,7 +49,7 @@ export class OrganicAdsOverviewService {
             companyId,
             deletedAt: null,
             status: { notIn: [TargetStatus.cancelled, TargetStatus.archived] },
-            ...(actor.role === AppRole.admin || !actor.employeeId
+            ...(canSeeOrganicAdsTeam(actor) || !actor.employeeId
               ? {}
               : { assigneeIds: { has: actor.employeeId } }),
           },

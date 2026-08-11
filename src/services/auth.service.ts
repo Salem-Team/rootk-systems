@@ -9,7 +9,13 @@ import {
   type ProfileUpdatePayload,
 } from "@/api/auth.api";
 import { DEFAULT_COMPANY_ID } from "@/constants/company";
+import {
+  resolveEffectivePermissions,
+  type PermissionId,
+} from "@/constants/permissions";
 import { AppRole } from "@/constants/roles";
+import { isProtectedAdminAccount } from "@/lib/protected-accounts";
+import { permissionsRepository } from "@/repositories/permissions.repository";
 import { isApiMode } from "@/lib/env";
 import { DEMO_PASSWORD } from "@/lib/demo-auth";
 import {
@@ -61,10 +67,14 @@ function applyPayload(payload: AuthSessionPayload): void {
     role: payload.role,
     accessToken: payload.tokens.accessToken,
     refreshToken: payload.tokens.refreshToken ?? null,
+    permissions: payload.permissions,
   });
 }
 
-function toSessionPayload(user: AppUser): AuthSessionPayload {
+function toSessionPayload(
+  user: AppUser,
+  permissions?: PermissionId[]
+): AuthSessionPayload {
   return {
     user,
     role: user.role,
@@ -72,7 +82,19 @@ function toSessionPayload(user: AppUser): AuthSessionPayload {
       accessToken: `demo.${user.role}.${user.id}`,
       refreshToken: `demo-refresh.${user.role}.${user.id}`,
     },
+    permissions,
   };
+}
+
+async function localPermissionsFor(user: AppUser): Promise<PermissionId[]> {
+  const stored = await permissionsRepository.findByUserId(user.id);
+  return resolveEffectivePermissions(user.role, stored, {
+    protectedAdmin: isProtectedAdminAccount({
+      userId: user.id,
+      employeeId: user.employeeId,
+      email: user.email,
+    }),
+  });
 }
 
 /** Ensure seed users exist in local storage with demo credentials. */
@@ -114,7 +136,7 @@ export async function signInWithCredentials(input: {
           "UNAUTHORIZED"
         );
       }
-      const payload = toSessionPayload(match);
+      const payload = toSessionPayload(match, await localPermissionsFor(match));
       applyPayload(payload);
       return ok(payload, "Signed in");
     }
@@ -175,6 +197,7 @@ export async function updateOwnProfile(input: {
           role: res.data.user.role,
           accessToken: current.accessToken ?? "",
           refreshToken: current.refreshToken,
+          permissions: current.permissions,
         });
       }
       return res;
@@ -245,6 +268,7 @@ export async function updateOwnProfile(input: {
       role: saved.role,
       accessToken: session.accessToken ?? "",
       refreshToken: session.refreshToken,
+      permissions: session.permissions,
     });
 
     return ok({ user: saved, phone: phoneOut }, "Profile updated");
@@ -344,11 +368,13 @@ export async function hydrateCurrentUser(): Promise<ApiResponse<AppUser | null>>
     const res = await fetchMe();
     if (res.success && res.data) {
       const current = useSessionStore.getState();
+      const payload = res.data as AppUser & { permissions?: PermissionId[] };
       current.applyAuthSession({
-        user: res.data,
-        role: res.data.role,
+        user: payload,
+        role: payload.role,
         accessToken: current.accessToken ?? "",
         refreshToken: current.refreshToken,
+        permissions: payload.permissions,
       });
     }
     return res;

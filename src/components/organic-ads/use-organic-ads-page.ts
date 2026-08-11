@@ -17,6 +17,7 @@ import { useLiveReload } from "@/hooks/use-live-reload";
 import { useTranslation } from "@/hooks/use-translation";
 import { ORGANIC_ADS_UPDATED_EVENT, TARGETS_UPDATED_EVENT } from "@/lib/events";
 import { isOrganicAdsType } from "@/lib/organic-ads-task-match";
+import { canViewOthersInModule } from "@/constants/permissions";
 import { canOrganicAds } from "@/lib/organic-ads-policies";
 import { useSessionStore } from "@/stores/session-store";
 import type { Employee } from "@/types";
@@ -50,11 +51,18 @@ export function useOrganicAdsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const role = useSessionStore((s) => s.role);
+  const permissions = useSessionStore((s) =>
+    s.authenticated ? s.permissions : undefined
+  );
 
-  const canCreate = canOrganicAds(role, "create");
-  const canViewPerformance = canOrganicAds(role, "view_performance");
-  const canManageSettings = canOrganicAds(role, "manage_settings");
-  const canViewTeam = canOrganicAds(role, "view_team");
+  const canCreate = canOrganicAds(role, "create", permissions);
+  const canViewPerformance = canOrganicAds(role, "view_performance", permissions);
+  const canManageSettings = canOrganicAds(role, "manage_settings", permissions);
+  const canViewTeam = canViewOthersInModule(
+    permissions,
+    "organicAds.viewAll",
+    "organicAds.viewTeam"
+  ).team;
 
   const [tab, setTab] = useState<OrganicAdsHubTab>(() =>
     parseTab(searchParams.get("tab"))

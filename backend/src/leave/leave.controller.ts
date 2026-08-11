@@ -17,6 +17,7 @@ import { Roles } from "../common/roles.decorator";
 import { RolesGuard } from "../common/roles.guard";
 import { AppRole, isEmployeeRole } from "../common/roles";
 import { resolveScopedEmployeeId } from "../common/scoped-employee";
+import { RequirePermission } from "../common/permissions.decorator";
 
 @Controller("leave")
 @UseGuards(AuthGuard("jwt"), RolesGuard)
@@ -32,7 +33,10 @@ export class LeaveController {
     @Query("type") type?: string
   ) {
     return this.service.list(companyId, {
-      employeeId: resolveScopedEmployeeId(user, employeeId),
+      employeeId: resolveScopedEmployeeId(user, employeeId, {
+        viewAll: "leave.viewAll",
+        viewTeam: "leave.viewTeam",
+      }),
       status,
       type,
     });
@@ -75,6 +79,7 @@ export class LeaveController {
 
   @Patch(":id/approve")
   @Roles(AppRole.admin)
+  @RequirePermission("leave.approve")
   approve(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -92,6 +97,7 @@ export class LeaveController {
 
   @Patch(":id/reject")
   @Roles(AppRole.admin)
+  @RequirePermission("leave.reject")
   reject(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -108,6 +114,7 @@ export class LeaveController {
   }
 
   @Delete(":id")
+  @RequirePermission("leave.delete")
   remove(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,

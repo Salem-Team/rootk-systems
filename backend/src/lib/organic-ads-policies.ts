@@ -1,5 +1,6 @@
 import type { AppRoleName } from "../common/roles";
 import { AppRole } from "../common/roles";
+import { ORGANIC_ADS_CAPABILITY_TO_PERMISSION } from "../common/permissions-catalog";
 
 export type OrganicAdsCapability =
   | "view_own"
@@ -46,7 +47,13 @@ export function organicAdsCapabilitiesForRole(
 
 export function canOrganicAds(
   role: AppRoleName | string,
-  capability: OrganicAdsCapability
+  capability: OrganicAdsCapability,
+  permissions?: readonly string[]
 ): boolean {
+  if (permissions) {
+    return permissions.includes(
+      ORGANIC_ADS_CAPABILITY_TO_PERMISSION[capability]
+    );
+  }
   return organicAdsCapabilitiesForRole(role).includes(capability);
 }

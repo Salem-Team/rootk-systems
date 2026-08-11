@@ -13,6 +13,7 @@ import { workTaskRepository } from "@/repositories";
 import { fromError, ok } from "@/services/api-result";
 import { simulateDelay } from "@/services/fake-api";
 import {
+  authPermissionSet,
   getSessionRole,
   getSessionUserId,
   getWorkEmployeeId,
@@ -28,6 +29,7 @@ import type {
 } from "@/types/organic-ads";
 import {
   assertCap,
+  canSeeOrganicAdsTeam,
   claimedTaskIds,
   filterAds,
   findDuplicate,
@@ -44,7 +46,7 @@ export async function inspectOrganicAdUrl(
     const inspected = inspectAdUrl(url);
     const ads = await scopedAds();
     const all = await organicAdvertisementRepository.findAll();
-    const pool = canOrganicAds(getSessionRole(), "view_team") ? all : ads;
+    const pool = canSeeOrganicAdsTeam() ? all : ads;
     const duplicate = findDuplicate(
       pool.filter((a) => !a.deletedAt),
       inspected.canonicalUrl,
@@ -178,7 +180,7 @@ export async function getOrganicAdHistory(
     await simulateDelay();
     assertCap("view_own");
     const history = await organicAdHistoryRepository.latest(limit);
-    if (canOrganicAds(getSessionRole(), "view_audit")) {
+    if (canOrganicAds(getSessionRole(), "view_audit", authPermissionSet())) {
       return ok(history);
     }
     const mine = getWorkEmployeeId();

@@ -3,9 +3,8 @@ import { Prisma, TargetPenaltyType } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { dateOnly, iso } from "../common/mappers";
-import { AppRole } from "../common/roles";
 import { computeTargetProgress } from "../lib/target-progress";
-import { assertCap, type Actor } from "./targets-access";
+import { assertCap, canSeeTargetOthers, type Actor } from "./targets-access";
 import { mapWarning } from "./targets-mappers";
 import { TargetsNotifyService } from "./targets-notify.service";
 
@@ -27,7 +26,7 @@ export class TargetsWarningsService {
       deletedAt: null,
     };
     if (filters.targetId) where.targetId = filters.targetId;
-    if (actor.role === AppRole.employee) {
+    if (!canSeeTargetOthers(actor).all) {
       where.employeeId = actor.employeeId;
     } else if (filters.employeeId) {
       where.employeeId = filters.employeeId;
@@ -122,7 +121,7 @@ export class TargetsWarningsService {
     });
     if (!row) throw new NotFoundException("Warning not found");
     if (
-      actor.role === AppRole.employee &&
+      !canSeeTargetOthers(actor).all &&
       row.employeeId !== actor.employeeId
     ) {
       throw new ForbiddenException("Not your warning");

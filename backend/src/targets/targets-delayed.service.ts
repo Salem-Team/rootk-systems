@@ -2,8 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { Prisma, TaskStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { auditFields, iso } from "../common/mappers";
-import { AppRole } from "../common/roles";
-import { type Actor } from "./targets-access";
+import { canSeeTargetOthers, type Actor } from "./targets-access";
 import { TargetsCrudService } from "./targets-crud.service";
 
 @Injectable()
@@ -35,7 +34,7 @@ export class TargetsDelayedService {
         { targetId: { in: delayedTargets.map((t) => t.id) } },
       ],
     };
-    if (actor.role === AppRole.employee) {
+    if (!canSeeTargetOthers(actor).all) {
       taskWhere.assigneeIds = { has: actor.employeeId };
     }
 

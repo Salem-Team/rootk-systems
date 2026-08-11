@@ -17,7 +17,11 @@ import {
 } from "@/schemas/crm.schema";
 import { fromError, ok } from "@/services/api-result";
 import { simulateDelay } from "@/services/fake-api";
-import { getSessionRole, getSessionUserId } from "@/stores/session-store";
+import {
+  authPermissionSet,
+  getSessionRole,
+  getSessionUserId,
+} from "@/stores/session-store";
 import type { ApiResponse } from "@/types";
 import type { CrmLead } from "@/types/crm";
 import {
@@ -128,7 +132,7 @@ export async function updateCrmLead(
     const { stages, subStages } = await ensureCatalog();
 
     if (parsed.ownerEmployeeId !== undefined && parsed.ownerEmployeeId !== existing.ownerEmployeeId) {
-      if (!canCrm(getSessionRole(), "assign")) {
+      if (!canCrm(getSessionRole(), "assign", authPermissionSet())) {
         throw new ForbiddenError("You cannot reassign leads");
       }
     }

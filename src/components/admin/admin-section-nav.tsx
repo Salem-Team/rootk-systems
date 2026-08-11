@@ -8,6 +8,7 @@ import {
   ClipboardCheck,
   Database,
   Home,
+  KeyRound,
   MapPin,
   Briefcase,
   Palette,
@@ -22,6 +23,12 @@ import { layoutSpring } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 import type { AdminSection } from "@/components/admin/admin-mock-data";
 import type { TranslationPath } from "@/i18n";
+import {
+  ADMIN_SECTION_PERMISSION,
+  hasPermissionId,
+  type PermissionId,
+} from "@/constants/permissions";
+import { useSessionStore } from "@/stores/session-store";
 
 const ITEMS: {
   id: AdminSection;
@@ -46,6 +53,7 @@ const ITEMS: {
   { id: "myPrefs", labelKey: "admin.navMyPrefs", icon: UserRound },
   { id: "appearance", labelKey: "admin.navAppearance", icon: Palette },
   { id: "demo", labelKey: "admin.navDemo", icon: Database },
+  { id: "permissions", labelKey: "admin.navPermissions", icon: KeyRound },
 ];
 
 export function AdminSectionNav({
@@ -57,6 +65,16 @@ export function AdminSectionNav({
 }) {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
+  const permissions = useSessionStore((s) => s.permissions);
+  const role = useSessionStore((s) => s.role);
+  const visibleItems = ITEMS.filter((item) => {
+    const required = ADMIN_SECTION_PERMISSION[item.id] as
+      | PermissionId
+      | null
+      | undefined;
+    if (!required) return true;
+    return hasPermissionId(required, permissions, role);
+  });
 
   return (
     <nav
@@ -70,7 +88,7 @@ export function AdminSectionNav({
         </p>
       </div>
       <ul className="scroll-x flex gap-1 p-2 [scrollbar-width:none] lg:grid lg:grid-cols-1 lg:gap-0.5 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
-        {ITEMS.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           const isActive = active === item.id;
           return (

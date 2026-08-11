@@ -1,5 +1,6 @@
 import type { AppRoleName } from "../common/roles";
 import { AppRole } from "../common/roles";
+import { CRM_CAPABILITY_TO_PERMISSION } from "../common/permissions-catalog";
 
 export type CrmCapability =
   | "view"
@@ -48,7 +49,11 @@ export function crmCapabilitiesForRole(
 
 export function canCrm(
   role: AppRoleName | string,
-  capability: CrmCapability
+  capability: CrmCapability,
+  permissions?: readonly string[]
 ): boolean {
+  if (permissions) {
+    return permissions.includes(CRM_CAPABILITY_TO_PERMISSION[capability]);
+  }
   return crmCapabilitiesForRole(role).includes(capability);
 }

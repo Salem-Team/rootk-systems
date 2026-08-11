@@ -5,6 +5,7 @@ import { ActorId, CompanyId } from "../common/tenant";
 import { AppRole } from "../common/roles";
 import { Roles } from "../common/roles.decorator";
 import { RolesGuard } from "../common/roles.guard";
+import { RequirePermission } from "../common/permissions.decorator";
 
 @Controller("schedule")
 @UseGuards(AuthGuard("jwt"), RolesGuard)
@@ -18,6 +19,7 @@ export class ScheduleController {
 
   @Patch()
   @Roles(AppRole.admin)
+  @RequirePermission("schedule.editPolicies")
   patch(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -37,6 +39,7 @@ export class ScheduleController {
 
   @Post("holidays")
   @Roles(AppRole.admin)
+  @RequirePermission("schedule.manageHolidays")
   addHoliday(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -48,6 +51,7 @@ export class ScheduleController {
 
   @Delete("holidays/:id")
   @Roles(AppRole.admin)
+  @RequirePermission("schedule.manageHolidays")
   removeHoliday(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,

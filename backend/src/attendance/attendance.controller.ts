@@ -31,7 +31,10 @@ export class AttendanceController {
     @Query("to") to?: string
   ) {
     return this.service.list(companyId, {
-      employeeId: resolveScopedEmployeeId(user, employeeId),
+      employeeId: resolveScopedEmployeeId(user, employeeId, {
+        viewAll: "attendance.viewAll",
+        viewTeam: "attendance.viewTeam",
+      }),
       date,
       status,
       from,

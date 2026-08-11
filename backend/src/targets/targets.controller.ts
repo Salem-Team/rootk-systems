@@ -18,6 +18,7 @@ import { Roles } from "../common/roles.decorator";
 import { RolesGuard } from "../common/roles.guard";
 import { AppRole } from "../common/roles";
 import { toDomainActor } from "../common/scoped-employee";
+import { RequirePermission } from "../common/permissions.decorator";
 
 @Controller("targets")
 @UseGuards(AuthGuard("jwt"), RolesGuard)
@@ -35,6 +36,7 @@ export class TargetsController {
 
   @Put("categories")
   @Roles(AppRole.admin)
+  @RequirePermission("targets.manageCategories")
   upsertCategory(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -50,6 +52,7 @@ export class TargetsController {
 
   @Delete("categories/:id")
   @Roles(AppRole.admin)
+  @RequirePermission("targets.manageCategories")
   deleteCategory(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -73,6 +76,7 @@ export class TargetsController {
 
   @Put("types")
   @Roles(AppRole.admin)
+  @RequirePermission("targets.manageTypes")
   upsertType(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -84,6 +88,7 @@ export class TargetsController {
 
   @Delete("types/:id")
   @Roles(AppRole.admin)
+  @RequirePermission("targets.manageTypes")
   deleteType(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -100,6 +105,7 @@ export class TargetsController {
 
   @Put("templates")
   @Roles(AppRole.admin)
+  @RequirePermission("targets.manageTemplates")
   upsertTemplate(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -115,6 +121,7 @@ export class TargetsController {
 
   @Delete("templates/:id")
   @Roles(AppRole.admin)
+  @RequirePermission("targets.manageTemplates")
   deleteTemplate(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -162,6 +169,7 @@ export class TargetsController {
 
   @Post("warnings")
   @Roles(AppRole.admin)
+  @RequirePermission("targets.sendWarnings")
   sendWarning(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -239,6 +247,7 @@ export class TargetsController {
 
   @Patch(":id")
   @Roles(AppRole.admin)
+  @RequirePermission("targets.edit")
   update(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -256,6 +265,7 @@ export class TargetsController {
 
   @Post(":id/recalculate")
   @Roles(AppRole.admin)
+  @RequirePermission("targets.edit")
   recalculate(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -266,6 +276,7 @@ export class TargetsController {
 
   @Delete(":id")
   @Roles(AppRole.admin)
+  @RequirePermission("targets.delete")
   remove(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,

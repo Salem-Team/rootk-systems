@@ -21,7 +21,7 @@ import { EmployeeFormDialog } from "@/components/employees/employee-form-dialog"
 import { Button } from "@/components/ui/button";
 import { getTodayAttendance } from "@/services/attendance.service";
 import { getEmployees } from "@/services/employees.service";
-import { RoleGate } from "@/components/shared/role-gate";
+import { PermissionGate } from "@/components/shared/permission-gate";
 import { useUiStore } from "@/stores/ui-store";
 import { useTranslation } from "@/hooks/use-translation";
 import type { AttendanceRecord, Employee } from "@/types";
@@ -171,7 +171,7 @@ export default function EmployeesPage() {
   }
 
   return (
-    <RoleGate allow={["admin"]}>
+    <PermissionGate anyOf={["employees.view"]}>
       <PageTransition>
         <PageHeader
           title={t("employees.title")}
@@ -252,6 +252,6 @@ export default function EmployeesPage() {
           }}
         />
       </PageTransition>
-    </RoleGate>
+    </PermissionGate>
   );
 }

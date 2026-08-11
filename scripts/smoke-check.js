@@ -503,6 +503,44 @@ function main() {
     "sales profile leads are owner-scoped"
   );
 
+  assert(
+    existsSync(join(root, "src/constants/permissions.ts")) &&
+      existsSync(join(root, "backend/src/common/permissions-catalog.ts")) &&
+      existsSync(join(root, "backend/src/permissions/permissions.controller.ts")) &&
+      existsSync(join(root, "src/components/admin/user-permissions-panel.tsx")),
+    "user permissions catalog + API + settings UI"
+  );
+  assert(
+    fileContains("backend/prisma/schema.prisma", "model UserPermissionOverride") &&
+      fileContains("docs/prisma/schema.prisma", "model UserPermissionOverride"),
+    "UserPermissionOverride in prisma schemas"
+  );
+  assert(
+    fileContains("src/constants/permissions.ts", "dataAccess.viewOtherUsers") &&
+      fileContains("src/constants/permissions.ts", "canViewOthersInModule") &&
+      fileContains("backend/src/common/permissions-catalog.ts", "canViewOthersInModule"),
+    "master data-access switch is wired FE+BE"
+  );
+  assert(
+    fileContains("src/services/auth.service.ts", "permissions: payload.permissions") &&
+      fileContains("backend/src/auth/jwt.strategy.ts", "loadEffectivePermissions"),
+    "session and JWT hydrate effective permissions"
+  );
+  assert(
+    fileContains("backend/src/organic-ads/organic-ads.helpers.ts", "canSeeOrganicAdsTeam") &&
+      fileContains("src/services/organic-ads/helpers.ts", "canSeeOrganicAdsTeam"),
+    "organic ads team visibility uses master switch"
+  );
+  assert(
+    fileContains("backend/src/targets/targets-access.ts", "canSeeTargetOthers") &&
+      fileContains("backend/src/crm/crm-access.ts", "canViewOthersLeads"),
+    "targets + CRM scope other-users via permissions"
+  );
+  assert(
+    existsSync(join(root, "scripts/verify-permissions.ts")),
+    "exists scripts/verify-permissions.ts"
+  );
+
   assert(fileContains("tsconfig.json", '"backend"'), "tsconfig excludes backend");
   assert(fileContains("eslint.config.mjs", "backend/**"), "eslint ignores backend");
   assert(fileContains("eslint.config.mjs", "scripts/**"), "eslint ignores scripts");

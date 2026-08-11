@@ -1,5 +1,6 @@
 import { api } from "@/api/http";
 import { API_ROUTES } from "@/api/routes";
+import type { PermissionId } from "@/constants/permissions";
 import type { ApiResponse, AppUser, UserRole } from "@/types";
 
 export interface AuthTokens {
@@ -12,6 +13,7 @@ export interface AuthSessionPayload {
   user: AppUser;
   role: UserRole;
   tokens: AuthTokens;
+  permissions?: PermissionId[];
 }
 
 /** POST /auth/login */

@@ -1,8 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma, TargetPriority, TargetRiskLevel, TargetStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { AppRole } from "../common/roles";
-import { assertCap, type Actor } from "./targets-access";
+import { assertCap, canSeeTargetOthers, type Actor } from "./targets-access";
 import { listDirectReportIds } from "../lib/team";
 import { mapTarget } from "./targets-mappers";
 import { TargetsNotifyService } from "./targets-notify.service";
@@ -24,7 +23,12 @@ export class TargetsCrudService {
       deletedAt: null,
     };
 
-    if (actor.role === AppRole.employee && filters.team === "true") {
+    const others = canSeeTargetOthers(actor);
+    if (others.all) {
+      if (filters.employeeId) {
+        where.assigneeIds = { has: filters.employeeId };
+      }
+    } else if (others.team && filters.team === "true") {
       const reportIds = await listDirectReportIds(
         this.prisma,
         companyId,
@@ -32,10 +36,8 @@ export class TargetsCrudService {
       );
       if (reportIds.length === 0) return [];
       where.assigneeIds = { hasSome: reportIds };
-    } else if (actor.role === AppRole.employee) {
+    } else {
       where.assigneeIds = { has: actor.employeeId };
-    } else if (filters.employeeId) {
-      where.assigneeIds = { has: filters.employeeId };
     }
 
     if (filters.department) where.department = filters.department;
@@ -96,7 +98,7 @@ export class TargetsCrudService {
     });
     if (!row) throw new NotFoundException("Target not found");
     if (
-      actor.role === AppRole.employee &&
+      !canSeeTargetOthers(actor).all &&
       !row.assigneeIds.includes(actor.employeeId)
     ) {
       throw new ForbiddenException("Not allowed to view this target");

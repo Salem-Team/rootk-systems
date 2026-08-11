@@ -5,10 +5,12 @@ import { ActorId, CompanyId } from "../common/tenant";
 import { Roles } from "../common/roles.decorator";
 import { RolesGuard } from "../common/roles.guard";
 import { AppRole } from "../common/roles";
+import { RequirePermission } from "../common/permissions.decorator";
 
 @Controller("preferences")
 @UseGuards(AuthGuard("jwt"), RolesGuard)
 @Roles(AppRole.admin)
+@RequirePermission("settings.viewEmployeePreferences")
 export class PreferencesController {
   constructor(private readonly service: PreferencesService) {}
 

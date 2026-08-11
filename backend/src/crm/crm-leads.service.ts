@@ -7,7 +7,7 @@ import {
 import { CrmLeadStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { writeActivity } from "../common/activity-writer";
-import { assertCap, isAdmin, type Actor } from "./crm-access";
+import { assertCap, canViewOthersLeads, type Actor } from "./crm-access";
 import {
   clampPage,
   clampPageSize,
@@ -26,7 +26,13 @@ const LEAD_SORT_KEYS = new Set([
   "lastActivityAt",
 ]);
 
-const BULK_ACTIONS = ["assign", "change_stage", "change_status", "archive"];
+const BULK_ACTIONS = [
+  "assign",
+  "change_stage",
+  "change_status",
+  "archive",
+  "delete",
+];
 
 @Injectable()
 export class CrmLeadsService {
@@ -81,10 +87,10 @@ export class CrmLeadsService {
   async deleteLead(companyId: string, actor: Actor, id: string) {
     const lead = await this.shared.requireLead(companyId, actor, id);
     const isOwner = lead.ownerEmployeeId === actor.employeeId;
-    if (!isAdmin(actor) && !isOwner) {
+    if (!canViewOthersLeads(actor) && !isOwner) {
       throw new ForbiddenException("You can only delete your own leads");
     }
-    if (isAdmin(actor)) assertCap(actor, "delete");
+    if (!isOwner) assertCap(actor, "delete");
     // owners may soft-delete without admin delete capability
 
     await this.prisma.crmLead.update({
@@ -163,7 +169,7 @@ export class CrmLeadsService {
   ) {
     if (action === "assign") {
       await this.updateService.updateLead(companyId, actor, leadId, {
-        ownerEmployeeId: typeof value === "string" ? value : null,
+        ownerEmployeeId: typeof value === "string" && value ? value : null,
       });
     } else if (action === "change_stage") {
       await this.updateService.updateLead(companyId, actor, leadId, {
@@ -184,6 +190,8 @@ export class CrmLeadsService {
         where: { id: leadId },
         data: { isArchived: true, updatedBy: actor.userId },
       });
+    } else if (action === "delete") {
+      await this.deleteLead(companyId, actor, leadId);
     }
   }
 }

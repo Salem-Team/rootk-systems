@@ -23,6 +23,13 @@ import {
 import type { AdminSection } from "@/components/admin/admin-mock-data";
 import { CompanyAppearanceSection } from "@/components/admin/company-appearance-section";
 import { CompanyDemoDataSection } from "@/components/admin/company-demo-data-section";
+import { UserPermissionsPanel } from "@/components/admin/user-permissions-panel";
+import {
+  ADMIN_SECTION_PERMISSION,
+  hasPermissionId,
+  type PermissionId,
+} from "@/constants/permissions";
+import { useSessionStore } from "@/stores/session-store";
 import { SettingsForm } from "@/components/settings/settings-form";
 import { Button } from "@/components/ui/button";
 import { useSettingsStore } from "@/stores/settings-store";
@@ -36,6 +43,8 @@ export function CompanyAdminWorkspace() {
   const { settings, isSaving, fetchSettings, saveSettings } = useSettingsStore();
   const { setTheme, theme } = useTheme();
   const demo = useDemoData();
+  const permissions = useSessionStore((s) => s.permissions);
+  const role = useSessionStore((s) => s.role);
   const [section, setSection] = useState<AdminSection>("profile");
   const [mounted, setMounted] = useState(false);
   const [form, setForm] = useState<CompanySettings>(settings);
@@ -44,6 +53,21 @@ export function CompanyAdminWorkspace() {
     setMounted(true);
     void fetchSettings();
   }, [fetchSettings]);
+
+  useEffect(() => {
+    const required = ADMIN_SECTION_PERMISSION[section] as PermissionId | null;
+    if (!required) return;
+    if (hasPermissionId(required, permissions, role)) return;
+    const entries = Object.entries(ADMIN_SECTION_PERMISSION) as Array<
+      [AdminSection, PermissionId | null]
+    >;
+    const canOpen = ([id, perm]: [AdminSection, PermissionId | null]) =>
+      !perm || hasPermissionId(perm, permissions, role);
+    const fallback =
+      entries.find(([id, perm]) => id !== "myPrefs" && canOpen([id, perm])) ??
+      entries.find(canOpen);
+    setSection(fallback?.[0] ?? "myPrefs");
+  }, [permissions, role, section]);
 
   useEffect(() => {
     setForm({
@@ -168,6 +192,7 @@ export function CompanyAdminWorkspace() {
               />
             ) : null}
             {section === "demo" ? <CompanyDemoDataSection demo={demo} /> : null}
+            {section === "permissions" ? <UserPermissionsPanel /> : null}
           </motion.div>
         </AnimatePresence>
 

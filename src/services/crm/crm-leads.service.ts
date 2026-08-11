@@ -158,7 +158,7 @@ export async function bulkUpdateCrmLeads(
     for (const id of parsed.ids) {
       if (parsed.action === "assign") {
         const res = await updateCrmLead(id, {
-          ownerEmployeeId: parsed.value ?? null,
+          ownerEmployeeId: parsed.value || null,
         });
         if (res.success) updated++;
       } else if (parsed.action === "change_stage") {
@@ -171,6 +171,9 @@ export async function bulkUpdateCrmLeads(
         if (res.success) updated++;
       } else if (parsed.action === "archive") {
         const res = await updateCrmLead(id, { status: "archived" });
+        if (res.success) updated++;
+      } else if (parsed.action === "delete") {
+        const res = await removeCrmLead(id);
         if (res.success) updated++;
       }
     }

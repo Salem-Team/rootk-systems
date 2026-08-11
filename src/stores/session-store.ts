@@ -2,6 +2,10 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import {
+  permissionsForRole,
+  type PermissionId,
+} from "@/constants/permissions";
 import { AppRole } from "@/constants/roles";
 import { isApiMode } from "@/lib/env";
 import {
@@ -87,13 +91,16 @@ interface SessionState {
   authenticated: boolean;
   accessToken: string | null;
   refreshToken: string | null;
+  permissions: PermissionId[];
   /** Apply auth payload (JWT or local session). */
   applyAuthSession: (input: {
     user: AppUser | SessionUser;
     role: UserRole;
     accessToken: string;
     refreshToken?: string | null;
+    permissions?: PermissionId[] | string[] | null;
   }) => void;
+  setPermissions: (permissions: PermissionId[]) => void;
   setTokens: (tokens: AuthTokens) => void;
   signOut: () => void;
   isAdmin: () => boolean;
@@ -112,14 +119,19 @@ export const useSessionStore = create<SessionState>()(
       authenticated: false,
       accessToken: null,
       refreshToken: null,
-      applyAuthSession: ({ user, role, accessToken, refreshToken }) =>
+      permissions: permissionsForRole(AppRole.admin),
+      applyAuthSession: ({ user, role, accessToken, refreshToken, permissions }) =>
         set({
           authenticated: true,
           role,
           user: fromAppUser(user as AppUser),
           accessToken,
           refreshToken: refreshToken ?? null,
+          permissions: Array.isArray(permissions)
+            ? (permissions.filter(Boolean) as PermissionId[])
+            : permissionsForRole(role),
         }),
+      setPermissions: (permissions) => set({ permissions }),
       setTokens: ({ accessToken, refreshToken }) =>
         set({ accessToken, refreshToken }),
       signOut: () =>
@@ -129,6 +141,7 @@ export const useSessionStore = create<SessionState>()(
           user: EMPTY_USER,
           accessToken: null,
           refreshToken: null,
+          permissions: permissionsForRole(AppRole.admin),
         }),
       isAdmin: () => get().role === AppRole.admin,
       isEmployee: () => get().role === AppRole.employee,
@@ -141,6 +154,7 @@ export const useSessionStore = create<SessionState>()(
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
         user: state.user,
+        permissions: state.permissions,
       }),
       merge: (persisted, current) => {
         const p = persisted as
@@ -152,6 +166,7 @@ export const useSessionStore = create<SessionState>()(
                 | "accessToken"
                 | "refreshToken"
                 | "user"
+                | "permissions"
               >
             >
           | undefined;
@@ -160,13 +175,17 @@ export const useSessionStore = create<SessionState>()(
           rawUser && typeof rawUser === "object"
             ? fromAppUser(rawUser as AppUser)
             : current.user;
+        const role = p?.role ?? current.role;
         return {
           ...current,
-          role: p?.role ?? current.role,
+          role,
           user,
           authenticated: p?.authenticated ?? false,
           accessToken: p?.accessToken ?? null,
           refreshToken: p?.refreshToken ?? null,
+          permissions: Array.isArray(p?.permissions)
+            ? p.permissions
+            : permissionsForRole(role),
         };
       },
     }
@@ -179,6 +198,19 @@ export function getSessionUserId(): string {
 
 export function getSessionRole(): UserRole {
   return useSessionStore.getState().role;
+}
+
+export function getSessionPermissions(): PermissionId[] {
+  const state = useSessionStore.getState();
+  if (!state.authenticated) return [];
+  return Array.isArray(state.permissions) ? state.permissions : [];
+}
+
+/** Session grants when signed in; `undefined` lets role defaults apply (scripts/tests). */
+export function authPermissionSet(): PermissionId[] | undefined {
+  const state = useSessionStore.getState();
+  if (!state.authenticated) return undefined;
+  return state.permissions;
 }
 
 /**

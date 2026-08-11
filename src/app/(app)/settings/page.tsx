@@ -4,26 +4,24 @@ import { PageHeader } from "@/components/shared/page-header";
 import { PageTransition } from "@/components/shared/page-transition";
 import { SettingsForm } from "@/components/settings/settings-form";
 import { CompanyAdminWorkspace } from "@/components/admin/company-admin-workspace";
-import { RoleGate } from "@/components/shared/role-gate";
-import { useSessionStore } from "@/stores/session-store";
+import { useCanManageCompanySettings } from "@/hooks/use-permission";
 import { useTranslation } from "@/hooks/use-translation";
 
 export default function SettingsPage() {
   const { t } = useTranslation();
-  const role = useSessionStore((s) => s.role);
-  const isAdmin = role === "admin";
+  const showWorkspace = useCanManageCompanySettings();
 
   return (
     <PageTransition>
-      {isAdmin ? (
-        <RoleGate allow={["admin"]}>
+      {showWorkspace ? (
+        <>
           <PageHeader
             eyebrow={t("admin.eyebrow")}
             title={t("admin.title")}
-            description={t("admin.description")}
+            description={t("permissions.description")}
           />
           <CompanyAdminWorkspace />
-        </RoleGate>
+        </>
       ) : (
         <>
           <PageHeader

@@ -8,7 +8,7 @@ import {
 } from "@/components/reports/report-filters";
 import { ExecutiveKpiRow } from "@/components/reports/executive-kpi-row";
 import { AnalyticsSectionNav } from "@/components/reports/analytics-section-nav";
-import { RoleGate } from "@/components/shared/role-gate";
+import { PermissionGate } from "@/components/shared/permission-gate";
 import { useTranslation } from "@/hooks/use-translation";
 import { useReportsData } from "@/app/(app)/reports/use-reports-data";
 import { ReportsSectionContent } from "@/app/(app)/reports/reports-section-content";
@@ -32,14 +32,14 @@ export default function ReportsPage() {
 
   if (loading || !stats) {
     return (
-      <RoleGate allow={["admin"]}>
+      <PermissionGate anyOf={["reports.viewWeekly", "reports.viewMonthly"]}>
         <PageSkeleton />
-      </RoleGate>
+      </PermissionGate>
     );
   }
 
   return (
-    <RoleGate allow={["admin"]}>
+    <PermissionGate anyOf={["reports.viewWeekly", "reports.viewMonthly"]}>
       <PageTransition>
         <PageHeader
           title={t("reports.title")}
@@ -76,6 +76,6 @@ export default function ReportsPage() {
           </div>
         </div>
       </PageTransition>
-    </RoleGate>
+    </PermissionGate>
   );
 }

@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { CrmActivityType, CrmNextAction, type Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { writeActivity } from "../common/activity-writer";
-import { assertCap, isAdmin, type Actor } from "./crm-access";
+import { assertCap, canViewOthersLeads, type Actor } from "./crm-access";
 import {
   clampPage,
   clampPageSize,
@@ -261,7 +261,7 @@ export class CrmActivitiesService {
     const where: Prisma.CrmLeadActivityWhereInput = {
       companyId,
       deletedAt: null,
-      ...(isAdmin(actor)
+      ...(canViewOthersLeads(actor)
         ? {}
         : { lead: { deletedAt: null, ...this.shared.scopeOwnerFilter(actor) } }),
     };
@@ -297,7 +297,7 @@ export class CrmActivitiesService {
       lead: {
         deletedAt: null,
         ...this.shared.scopeOwnerFilter(actor),
-        ...(query.ownerEmployeeId && isAdmin(actor)
+        ...(query.ownerEmployeeId && canViewOthersLeads(actor)
           ? { ownerEmployeeId: query.ownerEmployeeId }
           : {}),
       },

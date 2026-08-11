@@ -31,8 +31,11 @@ interface WarningCenterProps {
 export function WarningCenter({ targets, employees, className }: WarningCenterProps) {
   const { t, locale } = useTranslation();
   const role = useSessionStore((s) => s.role);
+  const permissions = useSessionStore((s) =>
+    s.authenticated ? s.permissions : undefined
+  );
   const dateLocale = locale === "ar" ? arLocale : enUS;
-  const canSend = canTarget(role, "send_warnings");
+  const canSend = canTarget(role, "send_warnings", permissions);
 
   const [warnings, setWarnings] = useState<TargetWarning[]>([]);
   const [loading, setLoading] = useState(true);

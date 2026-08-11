@@ -28,14 +28,17 @@ import type {
 
 export function useCrmHub() {
   const role = useSessionStore((s) => s.role);
+  const permissions = useSessionStore((s) =>
+    s.authenticated ? s.permissions : undefined
+  );
 
-  const canCreate = canCrm(role, "create");
-  const canAssign = canCrm(role, "assign");
-  const canManageStages = canCrm(role, "manage_stages");
-  const canManageBusinessTypes = canCrm(role, "manage_business_types");
-  const canViewPerformance = canCrm(role, "view_performance");
-  const canViewReports = canCrm(role, "view_reports");
-  const canViewDashboard = canCrm(role, "view_dashboard");
+  const canCreate = canCrm(role, "create", permissions);
+  const canAssign = canCrm(role, "assign", permissions);
+  const canManageStages = canCrm(role, "manage_stages", permissions);
+  const canManageBusinessTypes = canCrm(role, "manage_business_types", permissions);
+  const canViewPerformance = canCrm(role, "view_performance", permissions);
+  const canViewReports = canCrm(role, "view_reports", permissions);
+  const canViewDashboard = canCrm(role, "view_dashboard", permissions);
 
   const [tab, setTab] = useState<CrmHubTab>(
     canViewDashboard ? "dashboard" : "leads"

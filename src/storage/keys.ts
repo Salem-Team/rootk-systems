@@ -18,6 +18,7 @@ export const StorageKeys = {
   monthlyStats: key("monthly-stats"),
   notifications: key("notifications"),
   users: key("users"),
+  permissionOverrides: key("permission-overrides"),
   /** Local-mode email→password map (never synced to API). */
   credentials: key("credentials"),
   locations: key("locations"),

@@ -15,9 +15,19 @@ import { Roles } from "../common/roles.decorator";
 import { RolesGuard } from "../common/roles.guard";
 import { AppRole, isEmployeeRole } from "../common/roles";
 import { CurrentUser, type JwtPayload } from "../common/decorators/current-user";
+import { RequirePermission } from "../common/permissions.decorator";
+import { canViewOthersInModule } from "../common/permissions-catalog";
 
 function assertOwnPayroll(user: JwtPayload, employeeId: string) {
+  const others = canViewOthersInModule(
+    user.permissions,
+    "payroll.viewAllPayslips"
+  );
+  if (others.all) return;
   if (isEmployeeRole(user.role) && user.employeeId !== employeeId) {
+    throw new ForbiddenException("Cannot access another employee's payroll");
+  }
+  if (!isEmployeeRole(user.role) && user.employeeId !== employeeId) {
     throw new ForbiddenException("Cannot access another employee's payroll");
   }
 }
@@ -35,12 +45,14 @@ export class PayrollController {
 
   @Get("policies")
   @Roles(AppRole.admin)
+  @RequirePermission("payroll.editPolicies")
   policies(@CompanyId() companyId: string) {
     return this.service.policies(companyId);
   }
 
   @Patch("policies")
   @Roles(AppRole.admin)
+  @RequirePermission("payroll.editPolicies")
   patchPolicies(
     @CompanyId() companyId: string,
     @Body() body: Record<string, unknown>
@@ -50,12 +62,14 @@ export class PayrollController {
 
   @Get("rules")
   @Roles(AppRole.admin)
+  @RequirePermission("payroll.editPolicies")
   rules(@CompanyId() companyId: string) {
     return this.service.rules(companyId);
   }
 
   @Patch("rules/:id/toggle")
   @Roles(AppRole.admin)
+  @RequirePermission("payroll.editPolicies")
   toggle(
     @CompanyId() companyId: string,
     @Param("id") id: string,
@@ -66,30 +80,35 @@ export class PayrollController {
 
   @Post("runs/advance")
   @Roles(AppRole.admin)
+  @RequirePermission("payroll.runPayroll")
   advance(@CompanyId() companyId: string, @ActorId() actorId: string) {
     return this.service.advance(companyId, actorId);
   }
 
   @Post("runs/cancel")
   @Roles(AppRole.admin)
+  @RequirePermission("payroll.runPayroll")
   cancel(@CompanyId() companyId: string, @ActorId() actorId: string) {
     return this.service.cancel(companyId, actorId);
   }
 
   @Get("runs")
   @Roles(AppRole.admin)
+  @RequirePermission("payroll.runPayroll")
   runs(@CompanyId() companyId: string) {
     return this.service.listRuns(companyId);
   }
 
   @Get("reports")
   @Roles(AppRole.admin)
+  @RequirePermission("payroll.viewReports")
   reports(@CompanyId() companyId: string) {
     return this.service.reports(companyId);
   }
 
   @Get("payslips")
   @Roles(AppRole.admin)
+  @RequirePermission("payroll.viewAllPayslips")
   payslips(@CompanyId() companyId: string) {
     return this.service.payslips(companyId);
   }
@@ -118,6 +137,7 @@ export class PayrollController {
 
   @Get("salary-profiles")
   @Roles(AppRole.admin)
+  @RequirePermission("payroll.editSalaryProfiles")
   salaryProfiles(@CompanyId() companyId: string) {
     return this.service.listSalaryProfiles(companyId);
   }
@@ -135,6 +155,7 @@ export class PayrollController {
 
   @Patch("salary-profiles/:employeeId")
   @Roles(AppRole.admin)
+  @RequirePermission("payroll.editSalaryProfiles")
   patchSalary(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,

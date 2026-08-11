@@ -2,6 +2,7 @@ import { enrichWithAudit } from "@/lib/entity";
 import { ForbiddenError } from "@/lib/errors";
 import { createId } from "@/lib/id";
 import { isInRange } from "@/lib/organic-ads-analytics";
+import { canViewOthersInModule } from "@/constants/permissions";
 import { canOrganicAds } from "@/lib/organic-ads-policies";
 import { isOrganicAdsLinkableTask, isOrganicAdsType } from "@/lib/organic-ads-task-match";
 import { emitWorkUpdated } from "@/lib/events";
@@ -11,7 +12,12 @@ import {
   organicAdvertisementRepository,
 } from "@/repositories/organic-ads.repository";
 import { workTaskRepository } from "@/repositories";
-import { getSessionRole, getWorkEmployeeId } from "@/stores/session-store";
+import {
+  authPermissionSet,
+  getSessionPermissions,
+  getSessionRole,
+  getWorkEmployeeId,
+} from "@/stores/session-store";
 import type { WorkTask } from "@/types";
 import type {
   LinkedTargetProgress,
@@ -27,9 +33,17 @@ export function assertCap(
   capability: Parameters<typeof canOrganicAds>[1]
 ): void {
   const role = getSessionRole();
-  if (!canOrganicAds(role, capability)) {
+  if (!canOrganicAds(role, capability, authPermissionSet())) {
     throw new ForbiddenError("You do not have permission for this action");
   }
+}
+
+export function canSeeOrganicAdsTeam(): boolean {
+  return canViewOthersInModule(
+    getSessionPermissions(),
+    "organicAds.viewAll",
+    "organicAds.viewTeam"
+  ).team;
 }
 
 export async function defaultSettings(): Promise<OrganicAdsSettings> {
@@ -84,11 +98,15 @@ function normalizeAd(ad: OrganicAdvertisement): OrganicAdvertisement {
 }
 
 export async function scopedAds(): Promise<OrganicAdvertisement[]> {
-  const role = getSessionRole();
   const all = (await organicAdvertisementRepository.findAll())
     .filter((a) => !a.deletedAt)
     .map(normalizeAd);
-  if (canOrganicAds(role, "view_team")) return all;
+  const others = canViewOthersInModule(
+    getSessionPermissions(),
+    "organicAds.viewAll",
+    "organicAds.viewTeam"
+  );
+  if (others.team) return all;
   const employeeId = getWorkEmployeeId();
   if (!employeeId) return [];
   return all.filter((a) => a.ownerEmployeeId === employeeId);

@@ -15,6 +15,7 @@ import { toDomainActor } from "../common/scoped-employee";
 import { CurrentUser, type JwtPayload } from "../common/decorators/current-user";
 import { ActorId, CompanyId } from "../common/tenant";
 import { CrmService } from "./crm.service";
+import { RequirePermission } from "../common/permissions.decorator";
 
 /** Catalog CRUD routes for CRM (business types). */
 @Controller("crm")
@@ -29,6 +30,7 @@ export class CrmCatalogController {
 
   @Put("business-types")
   @Roles(AppRole.admin)
+  @RequirePermission("crm.manageBusinessTypes")
   upsertBusinessType(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -44,6 +46,7 @@ export class CrmCatalogController {
 
   @Delete("business-types/:id")
   @Roles(AppRole.admin)
+  @RequirePermission("crm.manageBusinessTypes")
   deleteBusinessType(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,

@@ -10,6 +10,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { DEFAULT_COMPANY_ID } from "../common/company";
 import { mapUser } from "../common/mappers";
 import type { JwtPayload } from "../common/decorators/current-user";
+import { loadEffectivePermissions } from "../common/permissions";
 import { hashPassword, verifyPassword } from "./password.util";
 import {
   resolveLoginEmails,
@@ -81,13 +82,14 @@ export class AuthService {
       throw new UnauthorizedException("Invalid email or password");
     }
     const user = mapUser(row);
+    const permissions = await loadEffectivePermissions(this.prisma, row);
     const tokens = await this.issueTokens({
       sub: row.id,
       role: row.role,
       companyId: row.companyId,
       employeeId: row.employeeId ?? undefined,
     });
-    return { user, role: row.role, tokens };
+    return { user, role: row.role, tokens, permissions };
   }
 
   async changePassword(
@@ -193,7 +195,8 @@ export class AuthService {
       },
     });
     if (!row) throw new UnauthorizedException("User not found");
-    return mapUser(row);
+    const permissions = await loadEffectivePermissions(this.prisma, row);
+    return { ...mapUser(row), permissions };
   }
 
   /** POST /auth/profile — update signed-in name (+ linked employee contact). */

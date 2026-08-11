@@ -221,6 +221,7 @@ model Company {
   updatedAt DateTime @updatedAt
 
   users         User[]
+  permissionOverrides UserPermissionOverride[]
   employees     Employee[]
   settings      CompanySettings?
   leaveRequests LeaveRequest[]
@@ -271,9 +272,28 @@ model User {
 
   company     Company          @relation(fields: [companyId], references: [id])
   preferences UserPreferences?
+  permissionOverrides UserPermissionOverride[]
 
   @@unique([companyId, email])
   @@index([companyId, role])
+}
+
+model UserPermissionOverride {
+  id           String   @id @default(cuid())
+  companyId    String
+  userId       String
+  permissionId String
+  granted      Boolean
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdBy    String?
+  updatedBy    String?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, userId, permissionId])
+  @@index([companyId, userId])
 }
 
 model UserPreferences {

@@ -7,7 +7,8 @@ import {
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { writeActivity } from "../common/activity-writer";
-import { assertCap, isAdmin, type Actor } from "./crm-access";
+import { assertCap, type Actor } from "./crm-access";
+import { canCrm } from "../lib/crm-policies";
 import {
   asEnum,
   asOptionalDate,
@@ -64,7 +65,7 @@ export class CrmLeadCreateService {
       typeof body.ownerEmployeeId === "string" && body.ownerEmployeeId
         ? body.ownerEmployeeId
         : null;
-    if (!isAdmin(actor)) {
+    if (!canCrm(actor.role, "assign", actor.permissions)) {
       if (!actor.employeeId) {
         throw new ForbiddenException("You can only create leads assigned to you");
       }

@@ -27,12 +27,13 @@ export function Sidebar() {
   const pathname = usePathname();
   const { sidebarCollapsed, toggleSidebar } = useUiStore();
   const role = useSessionStore((s) => s.role);
+  const permissions = useSessionStore((s) => s.permissions);
   const pendingLeave = usePendingLeaveCount();
   const openTaskCount = useOpenTaskCount();
   const { t, isRtl } = useTranslation();
   const reduceMotion = useReducedMotion();
   const CollapseIcon = isRtl ? ChevronRight : ChevronLeft;
-  const items = navForRole(role, APP_NAV);
+  const items = navForRole(role, APP_NAV, permissions);
 
   return (
     <aside

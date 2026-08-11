@@ -66,11 +66,14 @@ export function TargetList({
   const { t, locale } = useTranslation();
   const reduceMotion = useReducedMotion();
   const role = useSessionStore((s) => s.role);
+  const permissions = useSessionStore((s) =>
+    s.authenticated ? s.permissions : undefined
+  );
   const dateLocale = locale === "ar" ? arLocale : enUS;
 
-  const canEdit = canTarget(role, "edit");
-  const canWarn = canTarget(role, "send_warnings");
-  const canDelete = canTarget(role, "delete");
+  const canEdit = canTarget(role, "edit", permissions);
+  const canWarn = canTarget(role, "send_warnings", permissions);
+  const canDelete = canTarget(role, "delete", permissions);
 
   if (loading) return <TableSkeleton rows={5} />;
 

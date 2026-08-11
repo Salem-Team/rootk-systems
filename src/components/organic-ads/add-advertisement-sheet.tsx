@@ -42,7 +42,10 @@ export function AddAdvertisementSheet({
 }: AddAdvertisementSheetProps) {
   const { t } = useTranslation();
   const role = useSessionStore((s) => s.role);
-  const canOverride = canOrganicAds(role, "override_duplicate");
+  const permissions = useSessionStore((s) =>
+    s.authenticated ? s.permissions : undefined
+  );
+  const canOverride = canOrganicAds(role, "override_duplicate", permissions);
 
   const [url, setUrl] = useState("");
   const [notes, setNotes] = useState("");

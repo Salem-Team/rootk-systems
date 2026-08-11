@@ -19,10 +19,11 @@ import { layoutSpring, softSpring } from "@/lib/animations";
 export function MobileBottomNav() {
   const pathname = usePathname();
   const role = useSessionStore((s) => s.role);
+  const permissions = useSessionStore((s) => s.permissions);
   const setMobileMenuOpen = useUiStore((s) => s.setMobileMenuOpen);
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
-  const items = navForRole(role, MOBILE_NAV);
+  const items = navForRole(role, MOBILE_NAV, permissions);
 
   return (
     <nav
@@ -114,10 +115,11 @@ export function MobileDrawer() {
   const pathname = usePathname();
   const { mobileMenuOpen, setMobileMenuOpen } = useUiStore();
   const role = useSessionStore((s) => s.role);
+  const permissions = useSessionStore((s) => s.permissions);
   const pendingLeave = usePendingLeaveCount();
   const { t, isRtl } = useTranslation();
   const reduceMotion = useReducedMotion();
-  const items = navForRole(role, APP_NAV);
+  const items = navForRole(role, APP_NAV, permissions);
 
   return (
     <AnimatePresence>

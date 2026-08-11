@@ -61,7 +61,7 @@ export class OrganicAdsHistoryService {
       take: Math.min(100, Math.max(1, limit)),
     });
 
-    const filtered = canOrganicAds(actor.role, "view_audit")
+    const filtered = canOrganicAds(actor.role, "view_audit", actor.permissions)
       ? rows
       : rows.filter(
           (h) => h.actorId === actor.userId || h.actorId === actor.employeeId

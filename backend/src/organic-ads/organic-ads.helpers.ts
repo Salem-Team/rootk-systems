@@ -19,11 +19,13 @@ import {
 } from "date-fns";
 import { auditFields, iso, isoOrNull } from "../common/mappers";
 import { canOrganicAds } from "../lib/organic-ads-policies";
+import { canViewOthersInModule } from "../common/permissions-catalog";
 
 export type Actor = {
   userId: string;
   role: "admin" | "employee";
   employeeId: string;
+  permissions?: string[];
 };
 
 export type DateRangePreset = "this_week" | "last_7_days" | "this_month" | "all";
@@ -33,7 +35,7 @@ export function assertCap(
   actor: Actor,
   capability: Parameters<typeof canOrganicAds>[1]
 ) {
-  if (!canOrganicAds(actor.role, capability)) {
+  if (!canOrganicAds(actor.role, capability, actor.permissions)) {
     throw new ForbiddenException("You do not have permission for this action");
   }
 }
@@ -136,6 +138,14 @@ export function computeHealthScore(
   return Math.max(0, Math.min(100, Math.round(score)));
 }
 
+export function canSeeOrganicAdsTeam(actor: Actor): boolean {
+  return canViewOthersInModule(
+    actor.permissions,
+    "organicAds.viewAll",
+    "organicAds.viewTeam"
+  ).team;
+}
+
 /** Tenant + team-visibility scoped where-clause for advertisement queries. */
 export function buildScopedWhere(
   companyId: string,
@@ -145,7 +155,7 @@ export function buildScopedWhere(
     companyId,
     deletedAt: null,
   };
-  if (!canOrganicAds(actor.role, "view_team")) {
+  if (!canSeeOrganicAdsTeam(actor)) {
     where.ownerEmployeeId = actor.employeeId;
   }
   return where;

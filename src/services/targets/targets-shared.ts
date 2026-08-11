@@ -1,4 +1,4 @@
-import { AppRole } from "@/constants/roles";
+import { canViewOthersInModule } from "@/constants/permissions";
 import { enrichWithAudit } from "@/lib/entity";
 import { ForbiddenError } from "@/lib/errors";
 import { createId } from "@/lib/id";
@@ -6,6 +6,8 @@ import { canTarget } from "@/lib/target-policies";
 import { computeTargetProgress } from "@/lib/target-progress";
 import { targetHistoryRepository } from "@/repositories";
 import {
+  authPermissionSet,
+  getSessionPermissions,
   getSessionRole,
   getSessionUserId,
   getWorkEmployeeId,
@@ -37,7 +39,7 @@ export function withMetrics(target: PerformanceTarget): PerformanceTarget {
 
 export function assertCap(capability: Parameters<typeof canTarget>[1]) {
   const role = getSessionRole();
-  if (!canTarget(role, capability)) {
+  if (!canTarget(role, capability, authPermissionSet())) {
     throw new ForbiddenError("Insufficient target permissions");
   }
 }
@@ -46,16 +48,22 @@ export function scopeTargets(
   items: PerformanceTarget[],
   filters: TargetFilters
 ): PerformanceTarget[] {
-  const role = getSessionRole();
   let list = items.map(withMetrics);
+  const others = canViewOthersInModule(
+    getSessionPermissions(),
+    "targets.viewAll",
+    "targets.viewTeam"
+  );
 
-  if (role === AppRole.employee && filters.team) {
+  if (others.all) {
+    if (filters.employeeId) {
+      list = list.filter((t) => t.assigneeIds.includes(filters.employeeId!));
+    }
+  } else if (others.team && filters.team) {
     /* report ids filled by getTargets after loading the roster */
-  } else if (role === AppRole.employee) {
+  } else {
     const empId = getWorkEmployeeId();
     list = list.filter((t) => t.assigneeIds.includes(empId));
-  } else if (filters.employeeId) {
-    list = list.filter((t) => t.assigneeIds.includes(filters.employeeId!));
   }
 
   if (filters.department)

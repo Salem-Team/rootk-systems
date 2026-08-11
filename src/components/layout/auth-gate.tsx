@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { getMyPermissions } from "@/services/permissions.service";
 import { useSessionStore } from "@/stores/session-store";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
@@ -20,6 +21,15 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       router.replace("/login");
     }
   }, [authenticated, ready, router, pathname]);
+
+  useEffect(() => {
+    if (!ready || !authenticated) return;
+    void getMyPermissions().then((res) => {
+      if (res.success && Array.isArray(res.data)) {
+        useSessionStore.getState().setPermissions(res.data);
+      }
+    });
+  }, [authenticated, ready]);
 
   if (!ready || !authenticated) {
     return (

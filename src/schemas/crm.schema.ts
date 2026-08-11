@@ -131,7 +131,13 @@ export const leadFeedbackSchema = z.object({
 
 export const bulkLeadsSchema = z.object({
   ids: z.array(z.string()).min(1),
-  action: z.enum(["assign", "change_stage", "change_status", "archive"]),
+  action: z.enum([
+    "assign",
+    "change_stage",
+    "change_status",
+    "archive",
+    "delete",
+  ]),
   value: z.string().optional(),
 });
 
