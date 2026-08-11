@@ -47,8 +47,8 @@ export function CompanyIdentitySection({
   return (
     <section className="surface-panel overflow-hidden">
       <div className="panel-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-border bg-white shadow-sm">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-white shadow-sm sm:h-14 sm:w-14">
             <Image
               src={LOGO_SRC}
               alt={t("app.name")}
@@ -57,16 +57,16 @@ export function CompanyIdentitySection({
               className="h-full w-full object-contain p-1"
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <h3 className="text-base font-semibold tracking-tight">
               {t("admin.companyProfile")}
             </h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-[13px] leading-relaxed text-muted-foreground sm:text-sm">
               {t("admin.companyProfileDesc")}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-muted/30 px-3 py-2">
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/70 bg-muted/30 px-3 py-2">
           <Palette className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
           <span className="text-xs text-muted-foreground">
             {t("admin.brandPreview")}

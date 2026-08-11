@@ -20,17 +20,17 @@ export function PermissionGate({
   if (allowed) return <>{children}</>;
 
   return (
-    <div className="flex min-h-[50vh] flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/60 px-6 py-14 text-center">
+    <div className="flex min-h-[min(50vh,28rem)] flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/60 px-4 py-12 text-center sm:px-6 sm:py-14">
       <div className="mb-3.5 flex h-12 w-12 items-center justify-center rounded-lg bg-muted text-muted-foreground">
         <ShieldAlert className="h-5 w-5" aria-hidden />
       </div>
       <h2 className="text-base font-semibold tracking-tight">
         {t("permissions.deniedTitle")}
       </h2>
-      <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">
+      <p className="mt-1.5 max-w-sm text-[13px] leading-relaxed text-muted-foreground sm:text-sm">
         {t("permissions.deniedDesc")}
       </p>
-      <Button asChild className="mt-5" size="lg">
+      <Button asChild className="mt-5 w-full min-h-11 sm:w-auto" size="lg">
         <Link href="/dashboard">{t("roles.goDashboard")}</Link>
       </Button>
     </div>

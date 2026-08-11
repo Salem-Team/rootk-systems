@@ -36,6 +36,7 @@ import { useSettingsStore } from "@/stores/settings-store";
 import { useDemoData } from "@/hooks/use-demo-data";
 import { useTranslation } from "@/hooks/use-translation";
 import { normalizeCompanyNotifications } from "@/lib/notification-policy";
+import { cn } from "@/lib/utils";
 import type { CompanySettings } from "@/types";
 
 export function CompanyAdminWorkspace() {
@@ -134,12 +135,17 @@ export function CompanyAdminWorkspace() {
     section === "appearance";
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
-      <aside className="lg:sticky lg:top-20 lg:self-start">
+    <div className="grid gap-4 sm:gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
+      <aside className="max-lg:contents lg:sticky lg:top-20 lg:self-start">
         <AdminSectionNav active={section} onChange={setSection} />
       </aside>
 
-      <div className="min-w-0 space-y-4">
+      <div
+        className={cn(
+          "min-w-0 space-y-4",
+          showSave && "max-lg:pb-16"
+        )}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={section}
@@ -197,8 +203,13 @@ export function CompanyAdminWorkspace() {
         </AnimatePresence>
 
         {showSave ? (
-          <div className="flex justify-end">
-            <Button size="lg" onClick={() => void handleSave()} disabled={isSaving}>
+          <div className="pointer-events-none max-lg:fixed max-lg:inset-x-0 max-lg:bottom-[5.5rem] max-lg:z-30 max-lg:px-3 max-lg:pb-[env(safe-area-inset-bottom)] lg:flex lg:justify-end">
+            <Button
+              size="lg"
+              className="pointer-events-auto w-full min-h-12 shadow-[var(--shadow-float)] lg:w-auto lg:min-h-10 lg:shadow-none"
+              onClick={() => void handleSave()}
+              disabled={isSaving}
+            >
               {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
               {t("common.save")}
             </Button>

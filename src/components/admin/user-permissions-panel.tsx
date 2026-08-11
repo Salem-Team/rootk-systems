@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, RotateCcw, Save, Search, Shield } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  RotateCcw,
+  Save,
+  Search,
+  Shield,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   ALL_PERMISSION_IDS,
@@ -17,6 +25,7 @@ import {
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp } from "@/lib/animations";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +34,11 @@ import type {
   UserPermissionDetail,
   UserPermissionSummary,
 } from "@/types/permissions";
+import type { AppUser } from "@/types";
+
+function displayName(user: AppUser) {
+  return user.displayName?.trim() || user.email;
+}
 
 export function UserPermissionsPanel() {
   const { t } = useTranslation();
@@ -35,6 +49,7 @@ export function UserPermissionsPanel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState("");
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
   const loadUsers = useCallback(async () => {
     const res = await listPermissionUsers();
@@ -72,7 +87,7 @@ export function UserPermissionsPanel() {
     const q = query.trim().toLowerCase();
     if (!q) return users;
     return users.filter((row) => {
-      const name = (row.user.displayName || row.user.email).toLowerCase();
+      const name = displayName(row.user).toLowerCase();
       return name.includes(q) || row.user.email.toLowerCase().includes(q);
     });
   }, [query, users]);
@@ -95,6 +110,21 @@ export function UserPermissionsPanel() {
       else next.delete(id);
       return next;
     });
+  }
+
+  function openUser(id: string) {
+    setSelectedId(id);
+    setMobileDetailOpen(true);
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  function closeMobileDetail() {
+    setMobileDetailOpen(false);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }
 
   async function handleSave() {
@@ -125,71 +155,126 @@ export function UserPermissionsPanel() {
     );
   }
 
+  const actions = detail ? (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="min-h-11 flex-1 sm:min-h-8 sm:flex-none"
+        disabled={detail.isProtected}
+        onClick={resetDefaults}
+      >
+        <RotateCcw />
+        <span className="truncate">{t("permissions.resetDefaults")}</span>
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        className="min-h-11 flex-1 sm:min-h-8 sm:flex-none"
+        disabled={!dirty || saving || detail.isProtected}
+        onClick={() => void handleSave()}
+      >
+        {saving ? <Loader2 className="animate-spin" /> : <Save />}
+        {t("common.save")}
+      </Button>
+    </>
+  ) : null;
+
   return (
     <motion.section
       variants={fadeInUp}
       initial="hidden"
       animate="visible"
-      className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]"
+      className="grid gap-4 lg:grid-cols-[minmax(16.5rem,19rem)_minmax(0,1fr)]"
     >
-      <div className="surface-panel overflow-hidden">
+      <div
+        className={cn(
+          "surface-panel overflow-hidden",
+          mobileDetailOpen && "hidden lg:block"
+        )}
+      >
         <div className="border-b border-border/60 px-3 py-3 sm:px-4">
           <h3 className="flex items-center gap-2 text-[0.95rem] font-semibold">
             <Shield className="h-4 w-4 text-primary" aria-hidden />
             {t("permissions.title")}
           </h3>
-          <p className="mt-1 text-[12px] text-muted-foreground">
+          <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
             {t("permissions.usersHint")}
           </p>
           <div className="relative mt-3">
-            <Search className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground sm:start-2.5 sm:h-3.5 sm:w-3.5" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("permissions.searchUsers")}
-              className="ps-8"
+              className="h-11 ps-10 text-base sm:h-9 sm:ps-8 sm:text-sm"
             />
           </div>
         </div>
-        <ul className="max-h-[70vh] overflow-y-auto p-2">
+        <ul className="max-h-none space-y-0.5 p-2 lg:max-h-[70vh] lg:overflow-y-auto">
           {filteredUsers.length === 0 ? (
-            <li className="px-3 py-8 text-center text-sm text-muted-foreground">
+            <li className="px-3 py-10 text-center text-sm text-muted-foreground">
               {t("permissions.noUsers")}
             </li>
           ) : (
             filteredUsers.map((row) => {
               const active = row.user.id === selectedId;
-              const name = row.user.displayName?.trim() || row.user.email;
+              const name = displayName(row.user);
               return (
                 <li key={row.user.id}>
                   <button
                     type="button"
-                    onClick={() => setSelectedId(row.user.id)}
+                    onClick={() => openUser(row.user.id)}
+                    aria-current={active ? "true" : undefined}
+                    aria-label={t("permissions.openUser", { name })}
                     className={cn(
-                      "flex w-full flex-col rounded-lg px-3 py-2 text-start transition-colors",
+                      "flex min-h-[3.75rem] w-full touch-manipulation items-center gap-3 rounded-xl px-2.5 py-2.5 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                       active
                         ? "bg-primary/[0.08] text-foreground"
-                        : "hover:bg-muted/50"
+                        : "hover:bg-muted/50 active:bg-muted/70"
                     )}
                   >
-                    <span className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-medium">{name}</span>
-                      <Badge variant={row.role === "admin" ? "default" : "secondary"}>
-                        {row.role === "admin"
-                          ? t("permissions.roleAdmin")
-                          : t("permissions.roleEmployee")}
-                      </Badge>
-                    </span>
-                    <span className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                      {row.user.email}
-                    </span>
-                    <span className="mt-1 text-[11px] text-muted-foreground">
-                      {row.overrideCount > 0
-                        ? t("permissions.overridesHint", {
+                    <Avatar className="h-10 w-10 border border-border/60">
+                      <AvatarFallback className="text-[11px]">
+                        {row.user.initials || name.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-semibold">
+                          {name}
+                        </span>
+                        <Badge
+                          variant={row.role === "admin" ? "default" : "secondary"}
+                          className="shrink-0"
+                        >
+                          {row.role === "admin"
+                            ? t("permissions.roleAdmin")
+                            : t("permissions.roleEmployee")}
+                        </Badge>
+                      </span>
+                      <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                        {row.user.email}
+                      </span>
+                      <span className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                        {row.isProtected ? (
+                          <Badge variant="warning" className="px-1.5 py-0 text-[10px]">
+                            {t("permissions.protectedShort")}
+                          </Badge>
+                        ) : row.overrideCount > 0 ? (
+                          t("permissions.overridesHint", {
                             count: row.overrideCount,
                           })
-                        : t("permissions.roleDefaults")}
+                        ) : (
+                          t("permissions.roleDefaults")
+                        )}
+                      </span>
                     </span>
+                    <ChevronRight
+                      className="h-4 w-4 shrink-0 text-muted-foreground lg:hidden rtl:rotate-180"
+                      aria-hidden
+                    />
                   </button>
                 </li>
               );
@@ -198,72 +283,99 @@ export function UserPermissionsPanel() {
         </ul>
       </div>
 
-      <div className="surface-panel min-w-0 overflow-hidden">
+      <div
+        className={cn(
+          "surface-panel min-w-0 overflow-hidden",
+          !mobileDetailOpen && "hidden lg:block"
+        )}
+      >
         {!detail ? (
           <div className="px-4 py-16 text-center text-sm text-muted-foreground">
             {t("permissions.selectUser")}
           </div>
         ) : (
-          <div className="space-y-4 p-4 sm:p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h3 className="text-[0.95rem] font-semibold">
-                  {detail.user.displayName?.trim() || detail.user.email}
-                </h3>
-                <p className="mt-0.5 text-[12px] text-muted-foreground">
-                  {t("permissions.enabledCount", {
-                    enabled: draft.size,
-                    total: ALL_PERMISSION_IDS.length,
-                  })}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col">
+            <div className="border-b border-border/60 px-3 py-3 sm:px-5 sm:py-4">
+              <div className="flex items-start gap-2.5">
                 <Button
                   type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={detail.isProtected}
-                  onClick={resetDefaults}
+                  variant="ghost"
+                  size="icon"
+                  className="mt-0.5 h-11 w-11 shrink-0 lg:hidden"
+                  onClick={closeMobileDetail}
+                  aria-label={t("permissions.backToUsers")}
                 >
-                  <RotateCcw />
-                  {t("permissions.resetDefaults")}
+                  <ChevronLeft className="h-5 w-5 rtl:rotate-180" />
                 </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={!dirty || saving || detail.isProtected}
-                  onClick={() => void handleSave()}
-                >
-                  {saving ? <Loader2 className="animate-spin" /> : <Save />}
-                  {t("common.save")}
-                </Button>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start gap-3">
+                    <Avatar className="mt-0.5 hidden h-11 w-11 border border-border/60 sm:flex">
+                      <AvatarFallback className="text-xs">
+                        {detail.user.initials ||
+                          displayName(detail.user).slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate text-[1.02rem] font-semibold leading-snug sm:text-[0.95rem]">
+                        {displayName(detail.user)}
+                      </h3>
+                      <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
+                        {detail.user.email}
+                      </p>
+                      <p className="mt-1 text-[12px] text-muted-foreground">
+                        {t("permissions.enabledCount", {
+                          enabled: draft.size,
+                          total: ALL_PERMISSION_IDS.length,
+                        })}
+                        {dirty ? (
+                          <span className="ms-2 font-medium text-amber-700 dark:text-amber-300">
+                            · {t("permissions.unsaved")}
+                          </span>
+                        ) : null}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="hidden flex-wrap justify-end gap-2 lg:flex">
+                  {actions}
+                </div>
               </div>
             </div>
 
-            {detail.isProtected ? (
-              <div className="rounded-lg border border-amber-300/70 bg-amber-50 px-3 py-2 text-[12px] text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100">
-                <p className="font-medium">{t("permissions.protectedTitle")}</p>
-                <p className="mt-0.5 opacity-90">
-                  {t("permissions.protectedDesc")}
+            <div className="space-y-4 p-3 pb-14 sm:p-5 lg:pb-5">
+              {detail.isProtected ? (
+                <div className="rounded-xl border border-amber-300/70 bg-amber-50 px-3 py-2.5 text-[12px] leading-relaxed text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100 sm:rounded-lg">
+                  <p className="font-medium">{t("permissions.protectedTitle")}</p>
+                  <p className="mt-0.5 opacity-90">
+                    {t("permissions.protectedDesc")}
+                  </p>
+                </div>
+              ) : null}
+
+              {!draft.has("dataAccess.viewOtherUsers") ? (
+                <p className="rounded-xl border border-border/70 bg-muted/40 px-3 py-2.5 text-[12px] leading-relaxed text-muted-foreground sm:rounded-lg">
+                  {t("permissions.masterOffHint")}
                 </p>
-              </div>
-            ) : null}
+              ) : null}
 
-            {!draft.has("dataAccess.viewOtherUsers") ? (
-              <p className="rounded-lg border border-border/70 bg-muted/40 px-3 py-2 text-[12px] text-muted-foreground">
-                {t("permissions.masterOffHint")}
-              </p>
-            ) : null}
-
-            <UserPermissionsEditor
-              effective={draft}
-              defaults={defaults}
-              locked={detail.isProtected}
-              onChange={toggle}
-            />
+              <UserPermissionsEditor
+                effective={draft}
+                defaults={defaults}
+                locked={detail.isProtected}
+                onChange={toggle}
+              />
+            </div>
           </div>
         )}
       </div>
+
+      {mobileDetailOpen && detail ? (
+        <div className="pointer-events-none fixed inset-x-0 bottom-[5.5rem] z-30 px-3 pb-[env(safe-area-inset-bottom)] lg:hidden">
+          <div className="pointer-events-auto flex gap-2 rounded-2xl border border-border/70 bg-card/95 p-2 shadow-[var(--shadow-float)] backdrop-blur-xl">
+            {actions}
+          </div>
+        </div>
+      ) : null}
     </motion.section>
   );
 }

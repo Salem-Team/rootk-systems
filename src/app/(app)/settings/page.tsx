@@ -16,9 +16,10 @@ export default function SettingsPage() {
       {showWorkspace ? (
         <>
           <PageHeader
+            className="mb-4 sm:mb-7"
             eyebrow={t("admin.eyebrow")}
             title={t("admin.title")}
-            description={t("permissions.description")}
+            description={t("admin.description")}
           />
           <CompanyAdminWorkspace />
         </>
