@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useHydrateOnOpen } from "@/hooks/use-hydrate-on-open";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -59,14 +60,14 @@ export function CrmFeedbackForm({
     [stages, lead?.stageId]
   );
 
-  useEffect(() => {
-    if (!open || !lead) return;
+  useHydrateOnOpen(open, lead?.id, () => {
+    if (!lead) return;
     setTags([...(lead.tags ?? [])]);
     setStageId(lead.stageId);
     setCustomerFeedback("");
     setCallAnswered(true);
     setSaving(false);
-  }, [open, lead]);
+  });
 
   function toggleTag(tag: CrmLeadTag) {
     setTags((prev) =>

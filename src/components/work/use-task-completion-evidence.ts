@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { useMemo, useState, type KeyboardEvent } from "react";
+import { useHydrateOnOpen } from "@/hooks/use-hydrate-on-open";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/use-translation";
 import {
@@ -30,8 +31,8 @@ export function useTaskCompletionEvidence({
   const [touched, setTouched] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!open || !task) return;
+  useHydrateOnOpen(open, task?.id, () => {
+    if (!task) return;
     const existing = resolveTaskEvidence(task);
     setLinks(existing.links);
     setNotes(existing.notes);
@@ -39,7 +40,7 @@ export function useTaskCompletionEvidence({
     setLinkError(null);
     setBusy(false);
     setTouched(false);
-  }, [open, task]);
+  });
 
   const requireLinks = Boolean(task?.requireEvidenceLinks);
   /** Notes are always mandatory when an employee marks Done. */

@@ -42,36 +42,32 @@ export function EmployeePerformanceDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const { t } = useTranslation();
+  const employeeId = employee?.id;
+  const joinDate = employee?.joinDate ?? "";
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<EmployeeTaskPerformance | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open || !employee) return;
+    if (!open || !employeeId) return;
     let mounted = true;
     setLoading(true);
     setError(null);
     setStats(null);
-    void getWorkTasks({ employeeId: employee.id }).then((res) => {
+    void getWorkTasks({ employeeId }).then((res) => {
       if (!mounted) return;
       setLoading(false);
       if (!res.success) {
         setError(res.message ?? t("common.error"));
-        setStats(emptyStats(employee.joinDate));
+        setStats(emptyStats(joinDate));
         return;
       }
-      setStats(
-        computeEmployeeTaskPerformance(
-          res.data,
-          employee.id,
-          employee.joinDate
-        )
-      );
+      setStats(computeEmployeeTaskPerformance(res.data, employeeId, joinDate));
     });
     return () => {
       mounted = false;
     };
-  }, [open, employee, t]);
+  }, [open, employeeId, joinDate, t]);
 
   if (!employee) return null;
 

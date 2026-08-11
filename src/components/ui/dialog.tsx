@@ -44,6 +44,7 @@ const DialogContent = React.forwardRef<
     <DialogOverlay className={overlayClassName} />
     <DialogPrimitive.Content
       ref={ref}
+      data-ui-overlay=""
       className={cn(
         // Base shell
         "fixed z-50 flex w-full flex-col gap-4 border border-border/80 bg-card shadow-[var(--shadow-float)] outline-none",

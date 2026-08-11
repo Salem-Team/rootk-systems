@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useHydrateOnOpen } from "@/hooks/use-hydrate-on-open";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/use-translation";
 import { toLocalInput } from "@/lib/crm/lead-form-options";
@@ -59,8 +60,7 @@ export function useCrmLeadForm({
     (b) => b.active || b.id === editingLead?.businessTypeId
   );
 
-  useEffect(() => {
-    if (!open) return;
+  useHydrateOnOpen(open, editingLead?.id ?? "create", () => {
     if (editingLead) {
       setName(editingLead.name);
       setPhone(editingLead.phone);
@@ -98,8 +98,7 @@ export function useCrmLeadForm({
       setNotes("");
     }
     setSaving(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, editingLead, defaultStageId]);
+  });
 
   function toggleTag(tag: CrmLeadTag) {
     setTags((prev) =>

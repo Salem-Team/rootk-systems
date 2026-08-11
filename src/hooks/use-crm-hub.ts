@@ -99,8 +99,8 @@ export function useCrmHub() {
     setPerformance,
   });
 
-  const reloadVisible = useCallback(async () => {
-    setLoading(true);
+  const reloadVisible = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true);
     await loadCore();
     const jobs: Promise<void>[] = [];
     if (tab === "dashboard" || tab === "reports") jobs.push(loadDashboard());
@@ -130,7 +130,13 @@ export function useCrmHub() {
     loadPerformance,
   ]);
 
-  useLiveReload(reloadVisible, [CRM_UPDATED_EVENT], { intervalMs: 40_000 });
+  useLiveReload(
+    () => {
+      void reloadVisible({ silent: true });
+    },
+    [CRM_UPDATED_EVENT],
+    { intervalMs: 40_000 }
+  );
 
   useEffect(() => {
     void reloadVisible();

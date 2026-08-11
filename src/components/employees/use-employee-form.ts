@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useHydrateOnOpen } from "@/hooks/use-hydrate-on-open";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -109,19 +110,19 @@ export function useEmployeeForm({
   }, [values.location]);
 
   useEffect(() => {
-    if (!open) {
-      setConfirmDeleteOpen(false);
-      return;
-    }
+    if (!open) setConfirmDeleteOpen(false);
+  }, [open]);
+
+  useHydrateOnOpen(open, employee?.id ?? "create", () => {
     if (employee) {
       form.reset(fromEmployee(employee));
-    } else {
-      form.reset({
-        ...emptyValues(),
-        employeeId: suggestEmployeeCode(usedCodes),
-      });
+      return;
     }
-  }, [open, employee, form, usedCodes]);
+    form.reset({
+      ...emptyValues(),
+      employeeId: suggestEmployeeCode(usedCodes),
+    });
+  });
 
   const previewName = values.name?.trim() || t("employees.previewName");
   const previewInitials = useMemo(

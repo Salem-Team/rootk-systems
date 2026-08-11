@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { assignTarget, updateTarget } from "@/services/targets.service";
+import { useHydrateOnOpen } from "@/hooks/use-hydrate-on-open";
 import { useTranslation } from "@/hooks/use-translation";
 import { emitTargetsUpdated, emitWorkUpdated } from "@/lib/events";
 import { isValidDateTimeRange, toStorageIso } from "@/lib/flexible-datetime";
@@ -19,6 +20,7 @@ import type { Employee } from "@/types";
 import type { PerformanceTarget, TargetCategory, TargetType } from "@/types/targets";
 import {
   defaultTargetAssignForm,
+  formFromCatalog,
   targetAssignFormFromTarget,
   type TargetAssignFormState,
 } from "./target-assign-form-state";
@@ -60,31 +62,28 @@ export function TargetAssignSheet({
     return active;
   }, [categories, editingTarget]);
 
-  useEffect(() => {
-    if (!open) return;
+  useHydrateOnOpen(open, editingTarget?.id ?? "create", () => {
     if (editingTarget) {
       setForm(targetAssignFormFromTarget(editingTarget));
       return;
     }
-    const base = defaultTargetAssignForm();
-    const preferred =
-      defaultCategoryId &&
-      categories.some((c) => c.id === defaultCategoryId && c.active)
-        ? defaultCategoryId
-        : categories.find((c) => c.active)?.id ?? "";
-    if (preferred) {
-      const firstType = types.find(
-        (ty) => ty.categoryId === preferred && ty.active
-      );
-      setForm({
-        ...base,
-        categoryId: preferred,
-        typeId: firstType?.id ?? "",
-        unit: firstType?.unit ?? base.unit,
-      });
-      return;
-    }
-    setForm(base);
+    setForm(formFromCatalog(defaultCategoryId, categories, types));
+  });
+
+  // Fill category/type if catalog arrived after open — never clobber typed fields.
+  useEffect(() => {
+    if (!open || editingTarget) return;
+    setForm((prev) => {
+      if (prev.categoryId) return prev;
+      const next = formFromCatalog(defaultCategoryId, categories, types);
+      if (!next.categoryId) return prev;
+      return {
+        ...prev,
+        categoryId: next.categoryId,
+        typeId: next.typeId || prev.typeId,
+        unit: next.unit || prev.unit,
+      };
+    });
   }, [open, editingTarget, defaultCategoryId, categories, types]);
 
   const typesForCategory = useMemo(

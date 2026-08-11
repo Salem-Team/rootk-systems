@@ -37,6 +37,7 @@ const SheetContent = React.forwardRef<
       <SheetOverlay />
       <DialogPrimitive.Content
         ref={ref}
+        data-ui-overlay=""
         className={cn(
           "fixed inset-y-0 end-0 z-50 flex h-full w-full max-w-xl flex-col gap-0 overflow-y-auto border-s border-border bg-card px-6 pb-6 pt-6 shadow-[var(--shadow-card-hover)] outline-none",
           "max-sm:inset-x-0 max-sm:end-0 max-sm:max-w-none",

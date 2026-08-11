@@ -1,5 +1,10 @@
 import { defaultTargetWindow, toDateTimeLocalValue } from "@/lib/flexible-datetime";
-import type { PerformanceTarget, TargetPriority } from "@/types/targets";
+import type {
+  PerformanceTarget,
+  TargetCategory,
+  TargetPriority,
+  TargetType,
+} from "@/types/targets";
 
 export interface TargetAssignFormState {
   title: string;
@@ -35,6 +40,29 @@ export function defaultTargetAssignForm(): TargetAssignFormState {
     department: "",
     notes: "",
     generateTasks: true,
+  };
+}
+
+export function formFromCatalog(
+  defaultCategoryId: string | undefined,
+  categories: TargetCategory[],
+  types: TargetType[]
+): TargetAssignFormState {
+  const base = defaultTargetAssignForm();
+  const preferred =
+    defaultCategoryId &&
+    categories.some((c) => c.id === defaultCategoryId && c.active)
+      ? defaultCategoryId
+      : categories.find((c) => c.active)?.id ?? "";
+  if (!preferred) return base;
+  const firstType = types.find(
+    (ty) => ty.categoryId === preferred && ty.active
+  );
+  return {
+    ...base,
+    categoryId: preferred,
+    typeId: firstType?.id ?? "",
+    unit: firstType?.unit ?? base.unit,
   };
 }
 

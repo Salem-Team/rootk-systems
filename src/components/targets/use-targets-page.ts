@@ -78,8 +78,8 @@ export function useTargetsPage() {
     if (empRes.success) setEmployees(empRes.data);
   }, []);
 
-  const loadTargets = useCallback(async () => {
-    setTargetsLoading(true);
+  const loadTargets = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setTargetsLoading(true);
     const poolFilters: TargetFilters = filters.categoryId
       ? { categoryId: filters.categoryId }
       : {};
@@ -126,7 +126,7 @@ export function useTargetsPage() {
     () => {
       void loadStatic();
       void loadDashboard();
-      void loadTargets();
+      void loadTargets({ silent: true });
     },
     [TARGETS_UPDATED_EVENT, WORK_UPDATED_EVENT],
     { intervalMs: 40_000 }

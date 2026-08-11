@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useHydrateOnOpen } from "@/hooks/use-hydrate-on-open";
 import { Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -43,14 +44,14 @@ export function SalaryProfileEditorSheet({
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!open) {
-      setDraft(null);
-      return;
-    }
+    if (!open) setDraft(null);
+  }, [open]);
+
+  useHydrateOnOpen(open, `${employeeId}:${profile?.id ?? "none"}`, () => {
     setDraft(
       profile ? salaryProfileFromDraftSource(profile) : blankSalaryProfileDraft()
     );
-  }, [open, profile]);
+  });
 
   function setNum<K extends keyof SalaryProfileDraft>(key: K, raw: string) {
     const n = Number(raw);
