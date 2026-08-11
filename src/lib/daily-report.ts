@@ -11,15 +11,21 @@ export function dayBounds(date: string): { start: Date; end: Date } {
   };
 }
 
-export function isInDay(iso: string | null | undefined, date: string): boolean {
+export function isInDateRange(
+  iso: string | null | undefined,
+  from: string,
+  to: string
+): boolean {
   if (!iso) return false;
-  if (iso.length >= 10 && iso.slice(0, 10) === date && !iso.includes("T")) {
-    return true;
-  }
+  const key = iso.slice(0, 10);
+  if (!iso.includes("T")) return key >= from && key <= to;
   const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return iso.slice(0, 10) === date;
-  const { start, end } = dayBounds(date);
-  return t >= start.getTime() && t <= end.getTime();
+  if (Number.isNaN(t)) return key >= from && key <= to;
+  return t >= dayBounds(from).start.getTime() && t <= dayBounds(to).end.getTime();
+}
+
+export function isInDay(iso: string | null | undefined, date: string): boolean {
+  return isInDateRange(iso, date, date);
 }
 
 export function formatWorkedHours(minutes: number): string {
@@ -38,6 +44,8 @@ export function buildDailyReportFacts(input: {
   adsCount: number;
   crmCount: number;
   meetingsCount: number;
+  activeCalls?: number;
+  inactiveCalls?: number;
 }): DailyReportFact[] {
   if (input.onLeave) return [{ kind: "leave" }];
   if (input.attendanceStatus === "absent") return [{ kind: "absent" }];
@@ -51,6 +59,12 @@ export function buildDailyReportFacts(input: {
     });
   }
   if (input.adsCount > 0) facts.push({ kind: "ads", count: input.adsCount });
+  if ((input.activeCalls ?? 0) > 0) {
+    facts.push({ kind: "activeCalls", count: input.activeCalls });
+  }
+  if ((input.inactiveCalls ?? 0) > 0) {
+    facts.push({ kind: "inactiveCalls", count: input.inactiveCalls });
+  }
   if (input.crmCount > 0) facts.push({ kind: "crm", count: input.crmCount });
   if (input.meetingsCount > 0) {
     facts.push({ kind: "meetings", count: input.meetingsCount });

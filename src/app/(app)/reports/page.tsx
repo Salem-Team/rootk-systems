@@ -27,6 +27,7 @@ export default function ReportsPage() {
     setFilters,
     employeeMap,
     filteredAttendance,
+    filteredActivity,
   } = useReportsData();
 
   if (loading || !stats) {
@@ -69,6 +70,7 @@ export default function ReportsPage() {
                 monthly={monthly}
                 filteredAttendance={filteredAttendance}
                 employeeMap={employeeMap}
+                filteredActivity={filteredActivity}
               />
             </div>
           </div>

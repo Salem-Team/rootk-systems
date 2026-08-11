@@ -32,7 +32,9 @@ export class EmployeesUpdateService {
       typeof body.name === "string" ? body.name.trim() : undefined;
 
     const hasManagerPatch =
-      "managerEmployeeId" in body || "manager" in body;
+      "managerEmployeeIds" in body ||
+      "managerEmployeeId" in body ||
+      "manager" in body;
     const manager = hasManagerPatch
       ? await resolveManagerAssignment(this.prisma, companyId, id, body)
       : null;
@@ -49,7 +51,7 @@ export class EmployeesUpdateService {
         ...(manager
           ? {
               managerName: manager.managerName,
-              managerEmployeeId: manager.managerEmployeeId,
+              managerEmployeeIds: manager.managerEmployeeIds,
             }
           : {}),
         employeeCode: body.employeeId as string | undefined,

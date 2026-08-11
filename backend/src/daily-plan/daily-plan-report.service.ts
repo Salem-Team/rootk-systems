@@ -12,9 +12,15 @@ type Actor = { userId: string; role: string; employeeId: string };
 export class DailyPlanReportService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getReport(companyId: string, actor: Actor, dateRaw: string) {
-    const date = dateRaw.trim();
-    if (!isValidReportDate(date)) {
+  async getReport(
+    companyId: string,
+    actor: Actor,
+    query: { date?: string; from?: string; to?: string }
+  ) {
+    const date = (query.date ?? "").trim();
+    const from = (query.from ?? date).trim();
+    const to = (query.to ?? date).trim();
+    if (!isValidReportDate(from) || !isValidReportDate(to) || from > to) {
       throw new BadRequestException("date must be YYYY-MM-DD");
     }
 
@@ -22,23 +28,29 @@ export class DailyPlanReportService {
     const ids = employees.map((e) => e.id);
     const idSet = new Set(ids);
     if (ids.length === 0) {
-      return { date, rows: [] };
+      return { date: from === to ? from : `${from}…${to}`, from, to, rows: [] };
     }
 
-    const day = parseDate(date);
-    const dayEnd = parseDateEnd(date);
+    const start = parseDate(from);
+    const end = parseDateEnd(to);
+    const singleDay = from === to;
 
-    const [attendance, completedTasks, openTasks, ads, crm, leaves, meetings] =
+    const [attendance, completedTasks, openTasks, ads, crm, feedback, leaves, meetings] =
       await Promise.all([
         this.prisma.attendanceRecord.findMany({
-          where: { companyId, deletedAt: null, date: day, employeeId: { in: ids } },
+          where: {
+            companyId,
+            deletedAt: null,
+            date: { gte: start, lte: parseDate(to) },
+            employeeId: { in: ids },
+          },
         }),
         this.prisma.workTask.findMany({
           where: {
             companyId,
             deletedAt: null,
             status: TaskStatus.completed,
-            completedAt: { gte: day, lte: dayEnd },
+            completedAt: { gte: start, lte: end },
             assigneeIds: { hasSome: ids },
           },
           select: { title: true, assigneeIds: true },
@@ -57,7 +69,7 @@ export class DailyPlanReportService {
             companyId,
             deletedAt: null,
             ownerEmployeeId: { in: ids },
-            addedAt: { gte: day, lte: dayEnd },
+            addedAt: { gte: start, lte: end },
           },
           select: { ownerEmployeeId: true },
         }),
@@ -66,9 +78,18 @@ export class DailyPlanReportService {
             companyId,
             deletedAt: null,
             actorEmployeeId: { in: ids },
-            occurredAt: { gte: day, lte: dayEnd },
+            occurredAt: { gte: start, lte: end },
           },
           select: { actorEmployeeId: true },
+        }),
+        this.prisma.crmLeadFeedback.findMany({
+          where: {
+            companyId,
+            deletedAt: null,
+            recordedByEmployeeId: { in: ids },
+            createdAt: { gte: start, lte: end },
+          },
+          select: { recordedByEmployeeId: true, callAnswered: true },
         }),
         this.prisma.leaveRequest.findMany({
           where: {
@@ -76,8 +97,8 @@ export class DailyPlanReportService {
             deletedAt: null,
             status: LeaveStatus.approved,
             employeeId: { in: ids },
-            startDate: { lte: day },
-            endDate: { gte: day },
+            startDate: { lte: parseDate(to) },
+            endDate: { gte: start },
           },
           select: { employeeId: true },
         }),
@@ -85,18 +106,48 @@ export class DailyPlanReportService {
           where: {
             companyId,
             deletedAt: null,
-            date: day,
+            date: { gte: start, lte: parseDate(to) },
             participantIds: { hasSome: ids },
           },
           select: { participantIds: true },
         }),
       ]);
 
-    const attendanceBy = new Map(attendance.map((r) => [r.employeeId, r]));
+    const workingBy = new Map<string, number>();
+    const presentBy = new Map<string, number>();
+    const lateBy = new Map<string, number>();
+    const absentBy = new Map<string, number>();
+    const attendanceBy = new Map<string, (typeof attendance)[number]>();
+    for (const row of attendance) {
+      workingBy.set(row.employeeId, (workingBy.get(row.employeeId) ?? 0) + row.workingMinutes);
+      if (row.status === "late") lateBy.set(row.employeeId, (lateBy.get(row.employeeId) ?? 0) + 1);
+      else if (row.status === "absent") {
+        absentBy.set(row.employeeId, (absentBy.get(row.employeeId) ?? 0) + 1);
+      } else if (
+        row.status === "present" ||
+        row.status === "wfh" ||
+        row.status === "early_leave" ||
+        row.status === "half_day"
+      ) {
+        presentBy.set(row.employeeId, (presentBy.get(row.employeeId) ?? 0) + 1);
+      }
+      attendanceBy.set(row.employeeId, row);
+    }
+
     const onLeave = new Set(leaves.map((l) => l.employeeId));
     const adsBy = countBy(ads.map((a) => a.ownerEmployeeId));
     const crmBy = countBy(
       crm.map((c) => c.actorEmployeeId).filter((id): id is string => !!id)
+    );
+    const activeCallsBy = countBy(
+      feedback
+        .filter((f) => f.callAnswered && f.recordedByEmployeeId)
+        .map((f) => f.recordedByEmployeeId as string)
+    );
+    const inactiveCallsBy = countBy(
+      feedback
+        .filter((f) => !f.callAnswered && f.recordedByEmployeeId)
+        .map((f) => f.recordedByEmployeeId as string)
     );
 
     const completedBy = new Map<string, string[]>();
@@ -130,9 +181,13 @@ export class DailyPlanReportService {
         const taskTitles = completedBy.get(employee.id) ?? [];
         const attendanceStatus = onLeave.has(employee.id)
           ? "on_leave"
-          : att?.status ?? null;
+          : singleDay
+            ? att?.status ?? null
+            : null;
         const adsCount = adsBy.get(employee.id) ?? 0;
         const crmCount = crmBy.get(employee.id) ?? 0;
+        const crmActiveCalls = activeCallsBy.get(employee.id) ?? 0;
+        const crmInactiveCalls = inactiveCallsBy.get(employee.id) ?? 0;
         const meetingsCount = meetingsBy.get(employee.id) ?? 0;
         return {
           employeeId: employee.id,
@@ -141,13 +196,18 @@ export class DailyPlanReportService {
           attendanceStatus,
           checkIn: isoOrNull(att?.checkIn ?? null),
           checkOut: isoOrNull(att?.checkOut ?? null),
-          workingMinutes: att?.workingMinutes ?? 0,
+          workingMinutes: workingBy.get(employee.id) ?? 0,
           tasksCompleted: taskTitles.length,
           taskTitles,
           tasksOpen: openBy.get(employee.id) ?? 0,
           adsCount,
           crmCount,
+          crmActiveCalls,
+          crmInactiveCalls,
           meetingsCount,
+          presentDays: presentBy.get(employee.id) ?? 0,
+          lateDays: lateBy.get(employee.id) ?? 0,
+          absentDays: absentBy.get(employee.id) ?? 0,
           facts: buildDailyReportFacts({
             onLeave: onLeave.has(employee.id),
             attendanceStatus,
@@ -155,11 +215,18 @@ export class DailyPlanReportService {
             adsCount,
             crmCount,
             meetingsCount,
+            activeCalls: crmActiveCalls,
+            inactiveCalls: crmInactiveCalls,
           }),
         };
       });
 
-    return { date, rows };
+    return {
+      date: singleDay ? from : `${from}…${to}`,
+      from,
+      to,
+      rows,
+    };
   }
 
   private async scopedEmployees(companyId: string, actor: Actor) {

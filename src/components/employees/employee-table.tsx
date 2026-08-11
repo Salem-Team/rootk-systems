@@ -148,9 +148,45 @@ export function EmployeeTable({
   return (
     <Card className="overflow-hidden transition-[box-shadow,border-color] duration-200 hover:border-primary/15 hover:shadow-[var(--shadow-card-hover)]">
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
+        <ul className="grid gap-2 p-3 md:hidden">
+          {employees.map((employee) => {
+            const record = attendanceByEmployee[employee.id];
+            return (
+              <li key={employee.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect?.(employee)}
+                  className="flex w-full items-start gap-3 rounded-xl border border-border/70 bg-card px-3 py-3 text-start"
+                >
+                  <Avatar className="h-10 w-10 border border-border">
+                    {employee.avatar ? (
+                      <AvatarImage src={employee.avatar} alt={employee.name} />
+                    ) : null}
+                    <AvatarFallback className="bg-primary/[0.08] text-[11px] font-semibold text-primary">
+                      {getInitials(employee.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-semibold">
+                      {employee.name}
+                    </p>
+                    <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+                      {employee.employeeId}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <DepartmentBadge department={employee.department} />
+                      <StatusBadge status={employee.status} />
+                      {record ? <StatusBadge status={record.status} /> : null}
+                    </div>
+                  </div>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="hidden overflow-x-auto md:block">
           <table
-            className="w-full min-w-[36rem] text-start text-sm sm:min-w-[640px]"
+            className="w-full min-w-[36rem] text-start text-sm md:min-w-[640px]"
             aria-label={t("employees.title")}
           >
             <thead className="border-b border-border/70 bg-muted/30">

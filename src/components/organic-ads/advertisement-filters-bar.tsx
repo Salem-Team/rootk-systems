@@ -43,8 +43,8 @@ export function AdvertisementFiltersBar({
         <h2 className="text-sm font-semibold tracking-tight">
           {t("organicAds.list.title")}
         </h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto">
+          <div className="relative min-w-0 flex-1 sm:flex-none">
             <Search className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={filters.search ?? ""}
@@ -52,7 +52,7 @@ export function AdvertisementFiltersBar({
                 onFiltersChange({ ...filters, search: e.target.value, page: 1 })
               }
               placeholder={t("organicAds.list.search")}
-              className="h-9 w-[min(100%,220px)] ps-8"
+              className="h-9 w-full ps-8 sm:w-[220px]"
             />
           </div>
           <Button
@@ -70,7 +70,7 @@ export function AdvertisementFiltersBar({
 
       <div
         className={cn(
-          "flex flex-wrap gap-2 border-b border-border/60 px-3 py-3 lg:flex",
+          "filter-toolbar border-b border-border/60 px-3 py-3 lg:flex",
           filtersOpen ? "flex" : "hidden lg:flex"
         )}
       >
@@ -85,7 +85,7 @@ export function AdvertisementFiltersBar({
               })
             }
           >
-            <SelectTrigger className="h-9 w-[160px]">
+            <SelectTrigger className="filter-control h-9 sm:w-[160px]">
               <SelectValue placeholder={t("organicAds.list.allSales")} />
             </SelectTrigger>
             <SelectContent>
@@ -109,7 +109,7 @@ export function AdvertisementFiltersBar({
             })
           }
         >
-          <SelectTrigger className="h-9 w-[150px]">
+          <SelectTrigger className="filter-control h-9 sm:w-[150px]">
             <SelectValue placeholder={t("organicAds.list.allPlatforms")} />
           </SelectTrigger>
           <SelectContent>
@@ -142,7 +142,7 @@ export function AdvertisementFiltersBar({
             })
           }
         >
-          <SelectTrigger className="h-9 w-[150px]">
+          <SelectTrigger className="filter-control h-9 sm:w-[150px]">
             <SelectValue placeholder={t("organicAds.list.allStatuses")} />
           </SelectTrigger>
           <SelectContent>
@@ -170,7 +170,7 @@ export function AdvertisementFiltersBar({
             })
           }
         >
-          <SelectTrigger className="h-9 w-[160px]">
+          <SelectTrigger className="filter-control h-9 sm:w-[160px]">
             <SelectValue placeholder={t("organicAds.list.allValidation")} />
           </SelectTrigger>
           <SelectContent>

@@ -37,7 +37,11 @@ export function useCrmLeadsPanel({
     () => (Array.isArray(employees) ? employees : []),
     [employees]
   );
-  const page = ensurePaginatedLeads(leads);
+  const page = useMemo(() => ensurePaginatedLeads(leads), [leads]);
+  const itemIdKey = useMemo(
+    () => page.items.map((lead) => lead.id).join("\0"),
+    [page]
+  );
   const stageMap = useMemo(
     () => new Map(safeStages.map((s) => [s.id, s])),
     [safeStages]
@@ -62,8 +66,16 @@ export function useCrmLeadsPanel({
   }, [searchLocal]);
 
   useEffect(() => {
-    setSelected(new Set());
-  }, [page.page, page.items]);
+    const valid = new Set(itemIdKey ? itemIdKey.split("\0") : []);
+    setSelected((prev) => {
+      if (prev.size === 0) return prev;
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (valid.has(id)) next.add(id);
+      }
+      return next.size === prev.size ? prev : next;
+    });
+  }, [itemIdKey]);
 
   const items = page.items;
   const allSelected =

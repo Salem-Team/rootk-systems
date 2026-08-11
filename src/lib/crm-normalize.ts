@@ -122,6 +122,10 @@ export function ensureSalesProfile(raw: unknown): CrmSalesProfile | null {
       pendingFollowUps: overview?.pendingFollowUps ?? 0,
     },
     pipeline: Array.isArray(row.pipeline) ? row.pipeline : [],
+    leads: (Array.isArray(row.leads) ? row.leads : []).map((lead) => ({
+      ...lead,
+      ownerEmployeeId: lead.ownerEmployeeId ?? row.employeeId ?? null,
+    })),
     recentActivities: Array.isArray(row.recentActivities)
       ? row.recentActivities
       : [],

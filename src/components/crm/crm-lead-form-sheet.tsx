@@ -43,6 +43,7 @@ export function CrmLeadFormSheet({
     stages,
     businessTypes,
     editingLead,
+    canAssign,
     defaultStageId,
     onOpenChange,
     onSaved,

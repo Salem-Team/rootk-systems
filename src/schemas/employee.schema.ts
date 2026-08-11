@@ -17,8 +17,9 @@ export const createEmployeeSchema = z.object({
   phone: z.string().max(40).optional(),
   joinDate: z.string().min(4),
   status: employeeStatusSchema.optional(),
-  manager: z.string().max(120).optional(),
+  manager: z.string().max(240).optional(),
   managerEmployeeId: z.string().max(64).optional(),
+  managerEmployeeIds: z.array(z.string().max(64)).max(12).optional(),
   employeeId: z.string().min(2).max(40).optional(),
   /** Initial login password set by admin. */
   password: z.string().min(6).max(128),

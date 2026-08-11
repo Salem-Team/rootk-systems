@@ -5,6 +5,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { toLocalInput } from "@/lib/crm/lead-form-options";
 import { createLeadSchema } from "@/schemas/crm.schema";
 import { createCrmLead, updateCrmLead } from "@/services/crm.service";
+import { getWorkEmployeeId } from "@/stores/session-store";
 import type {
   CrmBusinessType,
   CrmLead,
@@ -20,6 +21,7 @@ interface UseCrmLeadFormArgs {
   stages: CrmStage[];
   businessTypes?: CrmBusinessType[];
   editingLead?: CrmLead | null;
+  canAssign?: boolean;
   defaultStageId?: string;
   onOpenChange: (open: boolean) => void;
   onSaved?: (lead: CrmLead) => void;
@@ -30,6 +32,7 @@ export function useCrmLeadForm({
   stages,
   businessTypes = [],
   editingLead = null,
+  canAssign = false,
   defaultStageId,
   onOpenChange,
   onSaved,
@@ -90,7 +93,7 @@ export function useCrmLeadForm({
           ""
       );
       setSubStageId("none");
-      setOwnerEmployeeId("none");
+      setOwnerEmployeeId(canAssign ? "none" : getWorkEmployeeId() || "none");
       setStatus("active");
       setTags([]);
       setNextAction("none");
@@ -126,8 +129,11 @@ export function useCrmLeadForm({
       source,
       stageId,
       subStageId: subStageId === "none" ? null : subStageId || null,
-      ownerEmployeeId:
-        ownerEmployeeId === "none" ? null : ownerEmployeeId || null,
+      ownerEmployeeId: canAssign
+        ? ownerEmployeeId === "none"
+          ? null
+          : ownerEmployeeId || null
+        : getWorkEmployeeId() || null,
       status,
       tags,
       nextAction,

@@ -31,7 +31,62 @@ export function PayrollLedgerTable({
           {t("payroll.ledgerPayslipsDesc")}
         </p>
       </div>
-      <div className="panel-body overflow-x-auto">
+      <ul className="grid gap-2 p-3 md:hidden">
+        {rows.length === 0 ? (
+          <li className="px-2 py-8 text-center text-sm text-muted-foreground">
+            {t("payroll.ledgerEmpty")}
+          </li>
+        ) : (
+          rows.map(({ slip, emp, attendanceHits, leaveHits }) => (
+            <li
+              key={slip.id}
+              className="rounded-xl border border-border/70 bg-card px-3 py-3"
+            >
+              <p className="text-[13px] font-semibold">
+                {emp?.name ?? slip.employeeId}
+              </p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                {emp?.department ?? "—"}
+              </p>
+              <dl className="mt-2.5 grid grid-cols-3 gap-1.5 text-center">
+                <div className="rounded-lg bg-muted/50 px-2 py-1.5">
+                  <dt className="text-[10px] text-muted-foreground">
+                    {t("payroll.gross")}
+                  </dt>
+                  <dd className="text-[12px] tabular-nums">
+                    {formatEgp(slip.gross, loc)}
+                  </dd>
+                </div>
+                <div className="rounded-lg bg-muted/50 px-2 py-1.5">
+                  <dt className="text-[10px] text-muted-foreground">
+                    {t("payroll.deductions")}
+                  </dt>
+                  <dd className="text-[12px] tabular-nums text-rose-700 dark:text-rose-300">
+                    {formatEgp(slip.deductionsTotal, loc)}
+                  </dd>
+                </div>
+                <div className="rounded-lg bg-muted/50 px-2 py-1.5">
+                  <dt className="text-[10px] text-muted-foreground">
+                    {t("payroll.netSalary")}
+                  </dt>
+                  <dd className="text-[12px] font-semibold tabular-nums">
+                    {formatEgp(slip.net, loc)}
+                  </dd>
+                </div>
+              </dl>
+              <div className="mt-2 flex flex-wrap gap-1">
+                <Badge variant="outline">
+                  {t("payroll.attendanceCount", { count: attendanceHits })}
+                </Badge>
+                <Badge variant="secondary">
+                  {t("payroll.leaveCount", { count: leaveHits })}
+                </Badge>
+              </div>
+            </li>
+          ))
+        )}
+      </ul>
+      <div className="panel-body hidden overflow-x-auto md:block">
         <table className="w-full min-w-[720px] text-sm">
           <thead>
             <tr className="border-b border-border/70 text-start text-xs text-muted-foreground">

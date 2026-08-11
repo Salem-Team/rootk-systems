@@ -1,11 +1,14 @@
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { CrmLeadStatus, CrmStageCategory, type Prisma } from "@prisma/client";
-import { startOfDay } from "date-fns";
 import { PrismaService } from "../prisma/prisma.service";
 import { assertCap, isAdmin, type Actor } from "./crm-access";
 import { buildPipelineBreakdown, buildSalesPerformance, countBy, round1 } from "./crm-analytics";
 import { PERFORMANCE_PROFILE_RECENT_LIMIT } from "./crm-defaults";
-import { mapLeadActivity, mapLeadFeedback } from "./crm-mappers";
+import {
+  mapLeadActivity,
+  mapLeadFeedback,
+  mapSalesProfileLead,
+} from "./crm-mappers";
 import { CrmSharedService } from "./crm-shared.service";
 
 @Injectable()
@@ -117,6 +120,9 @@ export class CrmPerformanceService {
     ]);
 
     const stageById = new Map(stages.map((s) => [s.id, s]));
+    const profileLeads = leads.map((lead) =>
+      mapSalesProfileLead(lead, stageById.get(lead.stageId) ?? null)
+    );
     const won = leads.filter(
       (l) => stageById.get(l.stageId)?.category === CrmStageCategory.won
     ).length;
@@ -124,14 +130,11 @@ export class CrmPerformanceService {
       (l) => stageById.get(l.stageId)?.category === CrmStageCategory.lost
     ).length;
     const activeLeads = leads.filter(
-      (l) =>
-        l.status === CrmLeadStatus.active &&
-        stageById.get(l.stageId)?.category === CrmStageCategory.open
+      (l) => l.status === CrmLeadStatus.active
     ).length;
     const decided = won + lost;
-    const startToday = startOfDay(new Date());
     const pendingFollowUps = leads.filter(
-      (l) => l.nextFollowUpAt != null && l.nextFollowUpAt >= startToday
+      (l) => l.status === CrmLeadStatus.active && l.nextFollowUpAt != null
     ).length;
 
     const countsByStage = countBy(leads, (l) => l.stageId);
@@ -150,6 +153,7 @@ export class CrmPerformanceService {
         pendingFollowUps,
       },
       pipeline,
+      leads: profileLeads,
       recentActivities: activities.map(mapLeadActivity),
       feedback: feedback.map(mapLeadFeedback),
     };

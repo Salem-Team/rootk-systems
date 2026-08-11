@@ -78,15 +78,14 @@ export function useEmployeeForm({
   const values = form.watch();
 
   const managerOptions = useMemo(() => {
-    const currentId = values.managerEmployeeId?.trim();
+    const currentIds = new Set(values.managerEmployeeIds ?? []);
     return roster
       .filter((e) => e.id !== employee?.id)
       .filter(
-        (e) =>
-          e.status === "active" || (currentId ? e.id === currentId : false)
+        (e) => e.status === "active" || currentIds.has(e.id)
       )
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [roster, employee?.id, values.managerEmployeeId]);
+  }, [roster, employee?.id, values.managerEmployeeIds]);
 
   const locationOptions = useMemo(() => {
     const current = values.location?.trim();
@@ -102,11 +101,7 @@ export function useEmployeeForm({
 
   useHydrateOnOpen(open, employee?.id ?? "create", () => {
     if (employee) {
-      const managerEmployeeId =
-        employee.managerEmployeeId ||
-        roster.find((e) => e.name === employee.manager)?.id ||
-        "";
-      form.reset({ ...fromEmployee(employee), managerEmployeeId });
+      form.reset(fromEmployee(employee));
       return;
     }
     form.reset({
@@ -193,10 +188,12 @@ export function useEmployeeForm({
         location: data.location.trim() || undefined,
         joinDate: data.joinDate,
         status: data.status,
-        managerEmployeeId: data.managerEmployeeId?.trim() || "",
-        manager: data.managerEmployeeId
-          ? roster.find((e) => e.id === data.managerEmployeeId)?.name ?? ""
-          : "",
+        managerEmployeeIds: data.managerEmployeeIds,
+        managerEmployeeId: data.managerEmployeeIds[0] ?? "",
+        manager: data.managerEmployeeIds
+          .map((id) => roster.find((e) => e.id === id)?.name ?? "")
+          .filter(Boolean)
+          .join(" · "),
         employeeId: data.employeeId?.trim() || undefined,
         ...(password ? { password } : {}),
       };

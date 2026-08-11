@@ -19,6 +19,7 @@ import {
 import { useAttendanceStore } from "@/stores/attendance-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { computeLeaveBalance } from "@/lib/leave-balance";
+import { findManagers, managerIdsOf } from "@/lib/team";
 import type { Announcement, Employee, Holiday, LeaveRequest } from "@/types";
 
 const VALID_SECTIONS = new Set<PortalSection>([
@@ -121,19 +122,18 @@ export function useEmployeePortalWorkspace() {
     };
   }, [roster, workEmployeeId, user]);
 
-  const manager = useMemo(() => {
-    if (!me.manager) return null;
-    return roster.find((e) => e.name === me.manager) ?? null;
-  }, [me, roster]);
+  const managers = useMemo(() => findManagers(me, roster), [me, roster]);
+  const manager = managers[0] ?? null;
 
   const teammates = useMemo(() => {
-    return roster.filter(
-      (e) =>
-        e.id !== me.id &&
-        (e.manager === me.manager ||
-          e.department === me.department ||
-          e.manager === me.name)
-    );
+    const myManagerIds = new Set(managerIdsOf(me));
+    return roster.filter((e) => {
+      if (e.id === me.id) return false;
+      const theirManagers = managerIdsOf(e);
+      if (theirManagers.some((id) => myManagerIds.has(id))) return true;
+      if (theirManagers.includes(me.id)) return true;
+      return e.department === me.department;
+    });
   }, [me, roster]);
 
   const balance = useMemo(() => computeLeaveBalance(leaves), [leaves]);
@@ -168,6 +168,7 @@ export function useEmployeePortalWorkspace() {
     ready,
     me,
     manager,
+    managers,
     teammates,
     balance,
     streak,

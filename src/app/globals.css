@@ -147,6 +147,8 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: clip;
+    max-width: 100%;
   }
 
   body {
@@ -168,7 +170,9 @@
     letter-spacing: -0.014em;
     font-feature-settings: "ss01" on, "cv11" on, "kern" on, "tnum" on;
     text-rendering: optimizeLegibility;
-    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: clip;
+    max-width: 100%;
     background-color: var(--background);
     background-image:
       radial-gradient(
@@ -238,6 +242,20 @@
   textarea,
   select {
     font-family: inherit;
+  }
+
+  img,
+  video,
+  canvas {
+    max-width: 100%;
+  }
+
+  @media (max-width: 639px) {
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
   }
 
   p {
@@ -516,6 +534,30 @@
 
   .table-scroll {
     position: relative;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+
+  .filter-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .filter-control,
+  .filter-toolbar > button[role="combobox"] {
+    flex: 1 1 8.5rem;
+    width: auto !important;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  @media (min-width: 640px) {
+    .filter-control,
+    .filter-toolbar > button[role="combobox"] {
+      flex: 0 0 auto;
+    }
   }
 
   .table-scroll::after {

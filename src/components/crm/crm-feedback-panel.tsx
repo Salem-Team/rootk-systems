@@ -164,7 +164,7 @@ export function CrmFeedbackPanel({
             {t("crm.feedback.title")}
           </h2>
           <Select value={typeId} onValueChange={setTypeId}>
-            <SelectTrigger className="h-9 w-[180px]" aria-label={t("crm.feedback.filterType")}>
+            <SelectTrigger className="filter-control h-9 w-full sm:w-[180px]" aria-label={t("crm.feedback.filterType")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

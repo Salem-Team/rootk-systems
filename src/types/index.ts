@@ -60,7 +60,9 @@ export interface Employee extends BaseEntity {
   joinDate: string;
   location: string;
   manager?: string;
-  /** Employee.id of the direct manager. */
+  /** Employee.id values of direct managers. */
+  managerEmployeeIds?: string[];
+  /** First direct manager — legacy alias of `managerEmployeeIds[0]`. */
   managerEmployeeId?: string;
 }
 

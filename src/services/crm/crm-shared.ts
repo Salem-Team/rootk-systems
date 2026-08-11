@@ -39,6 +39,15 @@ export function actorEmployeeId(): string | null {
   return getWorkEmployeeId();
 }
 
+/** Non-admin CRM lists always pin owner to the signed-in sales user. */
+export function scopeCrmFiltersToActor<T extends { ownerEmployeeId?: string }>(
+  filters: T
+): T {
+  if (isAdmin()) return filters;
+  const empId = actorEmployeeId()?.trim() ?? "";
+  return { ...filters, ownerEmployeeId: empId || undefined };
+}
+
 export function assertLeadAccess(lead: CrmLead): void {
   if (isAdmin()) return;
   const empId = actorEmployeeId();

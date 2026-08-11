@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { PageSkeleton } from "@/components/shared/loading-state";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Reveal } from "@/components/shared/reveal";
+import { EmployeeCallStats } from "@/components/dashboard/employee-call-stats";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { Announcements } from "@/components/dashboard/announcements";
@@ -27,6 +28,7 @@ import {
   buildDepartmentStats,
 } from "@/components/dashboard/dashboard-mock-data";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getEmployeeActivityReport } from "@/services/daily-report.service";
 import { getDashboardSummary } from "@/services/dashboard.service";
 import { getWorkforceEmployees } from "@/services/employees.service";
 import { getTodayAttendance } from "@/services/attendance.service";
@@ -37,6 +39,7 @@ import type {
   Activity,
   Announcement,
   AttendanceRecord,
+  DailyReportRow,
   DashboardStats,
   Employee,
   Holiday,
@@ -75,17 +78,19 @@ export function AdminDashboard() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [callRows, setCallRows] = useState<DailyReportRow[]>([]);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const [dash, emp, att, leave, hol] = await Promise.all([
+        const [dash, emp, att, leave, hol, calls] = await Promise.all([
           getDashboardSummary(),
           getWorkforceEmployees(),
           getTodayAttendance(),
           getLeaveRequests(),
           getHolidays(),
+          getEmployeeActivityReport(),
         ]);
         if (!mounted) return;
         if (dash.success) {
@@ -99,6 +104,7 @@ export function AdminDashboard() {
         if (att.success) setAttendance(att.data);
         if (leave.success) setLeaves(leave.data);
         if (hol.success) setHolidays(hol.data);
+        if (calls.success) setCallRows(calls.data.rows);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -147,6 +153,10 @@ export function AdminDashboard() {
         <section aria-label={t("dashboard.executiveOverview")}>
           <KpiCards stats={stats} />
         </section>
+
+        <Reveal preset="up" delay={0.02}>
+          <EmployeeCallStats rows={callRows} />
+        </Reveal>
 
         <Reveal preset="up" delay={0.04}>
           <AdminOperationsWorkspace

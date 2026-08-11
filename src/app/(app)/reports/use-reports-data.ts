@@ -11,9 +11,12 @@ import {
   getMonthlyStats,
   getWeeklyStats,
 } from "@/services/dashboard.service";
+import { getEmployeeActivityReport } from "@/services/daily-report.service";
 import { getEmployees } from "@/services/employees.service";
+import { todayKey } from "@/lib/mock-date";
 import type {
   AttendanceRecord,
+  DailyReportRow,
   DashboardStats,
   Employee,
   MonthlyStat,
@@ -29,6 +32,7 @@ export function useReportsData() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [filters, setFilters] = useState<ReportFilterValues>(DEFAULT_FILTERS);
+  const [activityRows, setActivityRows] = useState<DailyReportRow[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -53,6 +57,26 @@ export function useReportsData() {
       mounted = false;
     };
   }, []);
+
+  const activityFrom = filters.range?.from
+    ? format(filters.range.from, "yyyy-MM-dd")
+    : todayKey();
+  const activityTo = filters.range?.to
+    ? format(filters.range.to, "yyyy-MM-dd")
+    : activityFrom;
+
+  useEffect(() => {
+    let mounted = true;
+    void getEmployeeActivityReport({ from: activityFrom, to: activityTo }).then(
+      (res) => {
+        if (!mounted) return;
+        if (res.success) setActivityRows(res.data.rows);
+      }
+    );
+    return () => {
+      mounted = false;
+    };
+  }, [activityFrom, activityTo]);
 
   const employeeMap = useMemo(
     () => new Map(employees.map((e) => [e.id, e])),
@@ -118,6 +142,18 @@ export function useReportsData() {
     });
   }, [attendance, employeeMap, filters]);
 
+  const filteredActivity = useMemo(() => {
+    return activityRows.filter((row) => {
+      if (filters.department !== "all" && row.department !== filters.department) {
+        return false;
+      }
+      if (filters.employee !== "all" && row.employeeId !== filters.employee) {
+        return false;
+      }
+      return true;
+    });
+  }, [activityRows, filters.department, filters.employee]);
+
   return {
     loading,
     section,
@@ -130,5 +166,6 @@ export function useReportsData() {
     setFilters,
     employeeMap,
     filteredAttendance,
+    filteredActivity,
   };
 }

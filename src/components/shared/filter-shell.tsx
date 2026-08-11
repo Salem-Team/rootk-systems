@@ -15,7 +15,7 @@ export function FilterShell({ children, className }: FilterShellProps) {
 
   if (reduceMotion) {
     return (
-      <div className={cn("toolbar-surface rounded-xl sm:p-4", className)}>
+      <div className={cn("toolbar-surface rounded-xl p-3 sm:p-4", className)}>
         {children}
       </div>
     );
@@ -26,7 +26,7 @@ export function FilterShell({ children, className }: FilterShellProps) {
       initial={{ y: 10, scale: 0.99 }}
       animate={{ y: 0, scale: 1 }}
       transition={softSpring}
-      className={cn("toolbar-surface rounded-xl sm:p-4", className)}
+      className={cn("toolbar-surface rounded-xl p-3 sm:p-4", className)}
     >
       {children}
     </motion.div>

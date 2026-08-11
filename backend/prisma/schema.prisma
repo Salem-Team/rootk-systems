@@ -307,10 +307,10 @@ model Employee {
   position     String
   location     String?
   phone        String?
-  managerName       String?
-  /// Employee.id of the direct manager (org hierarchy).
-  managerEmployeeId String?
-  joinDate          DateTime       @db.Date
+  managerName        String?
+  /// Employee.id values of direct managers (org hierarchy).
+  managerEmployeeIds String[]       @default([])
+  joinDate           DateTime       @db.Date
   status       EmployeeStatus @default(active)
   avatarUrl    String?
   createdAt    DateTime       @default(now())
@@ -328,7 +328,6 @@ model Employee {
   @@unique([companyId, employeeCode])
   @@index([companyId, status])
   @@index([companyId, department])
-  @@index([companyId, managerEmployeeId])
 }
 
 model CompanySettings {

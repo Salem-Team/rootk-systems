@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable } from "@nestjs/common";
 import {
   CrmActivityType,
   CrmLeadSource,
@@ -65,6 +65,9 @@ export class CrmLeadCreateService {
         ? body.ownerEmployeeId
         : null;
     if (!isAdmin(actor)) {
+      if (!actor.employeeId) {
+        throw new ForbiddenException("You can only create leads assigned to you");
+      }
       ownerEmployeeId = actor.employeeId;
     }
 

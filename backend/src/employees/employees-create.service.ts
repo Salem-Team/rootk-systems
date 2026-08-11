@@ -31,6 +31,7 @@ export class EmployeesCreateService {
       status?: string;
       manager?: string;
       managerEmployeeId?: string;
+      managerEmployeeIds?: string[];
       employeeId?: string;
       password: string;
     }
@@ -56,7 +57,7 @@ export class EmployeesCreateService {
           location: body.location ?? "",
           phone: body.phone ?? "",
           managerName: manager.managerName,
-          managerEmployeeId: manager.managerEmployeeId,
+          managerEmployeeIds: manager.managerEmployeeIds,
           joinDate: parseDate(body.joinDate),
           status: (body.status as EmployeeStatus) ?? EmployeeStatus.active,
           createdBy: actorId,

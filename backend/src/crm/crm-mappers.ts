@@ -85,6 +85,26 @@ export function mapLead(row: CrmLead) {
   };
 }
 
+export function mapSalesProfileLead(
+  row: CrmLead,
+  stage: Pick<CrmStage, "name" | "color" | "category"> | null
+) {
+  return {
+    id: row.id,
+    name: row.name,
+    companyName: row.companyName,
+    phone: row.phone,
+    source: row.source,
+    status: row.status,
+    stageId: row.stageId,
+    stageName: stage?.name ?? "",
+    stageColor: stage?.color ?? "#94a3b8",
+    stageCategory: stage?.category ?? "other",
+    nextFollowUpAt: isoOrNull(row.nextFollowUpAt),
+    ownerEmployeeId: row.ownerEmployeeId,
+  };
+}
+
 export function mapLeadActivity(row: CrmLeadActivity) {
   return {
     id: row.id,

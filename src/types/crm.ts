@@ -282,6 +282,30 @@ export interface CrmSalesPerformanceRow {
   needsAttention: boolean;
 }
 
+export interface CrmSalesProfileLead {
+  id: string;
+  name: string;
+  companyName: string;
+  phone: string;
+  source: CrmLeadSource;
+  status: CrmLeadStatus;
+  stageId: string;
+  stageName: string;
+  stageColor: string;
+  stageCategory: CrmStageCategory;
+  nextFollowUpAt: string | null;
+  ownerEmployeeId: string | null;
+}
+
+export type CrmSalesProfileCardKey =
+  | "total"
+  | "active"
+  | "won"
+  | "lost"
+  | "conversion"
+  | "pendingFollowUps"
+  | "stage";
+
 export interface CrmSalesProfile {
   employeeId: string;
   employeeName: string;
@@ -294,6 +318,7 @@ export interface CrmSalesProfile {
     pendingFollowUps: number;
   };
   pipeline: CrmStageCard[];
+  leads: CrmSalesProfileLead[];
   recentActivities: CrmLeadActivity[];
   feedback: CrmLeadFeedback[];
 }

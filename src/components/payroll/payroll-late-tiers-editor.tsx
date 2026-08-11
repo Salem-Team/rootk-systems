@@ -63,7 +63,7 @@ export function LateTiersEditor({
           {tiers.map((tier, index) => (
             <div
               key={`tier-${index}`}
-              className="grid grid-cols-[1fr_1fr_auto] items-end gap-2 rounded-lg border border-border/50 p-2.5"
+              className="grid grid-cols-1 items-end gap-2 rounded-lg border border-border/50 p-2.5 sm:grid-cols-[1fr_1fr_auto]"
             >
               <div className="space-y-1">
                 <Label htmlFor={`late-after-${index}`}>

@@ -31,8 +31,18 @@ export function putDailyPlan(
 const emptyReport: DailyReport = { date: "", rows: [] };
 
 export function fetchDailyReport(
-  date: string
+  date?: string,
+  range?: { from: string; to: string }
 ): Promise<ApiResponse<DailyReport>> {
-  const path = `${API_ROUTES.dailyPlan.report}?date=${encodeURIComponent(date)}`;
+  const params = new URLSearchParams();
+  if (range?.from && range?.to && range.from !== range.to) {
+    params.set("from", range.from);
+    params.set("to", range.to);
+  } else if (date) {
+    params.set("date", date);
+  } else if (range?.from) {
+    params.set("date", range.from);
+  }
+  const path = `${API_ROUTES.dailyPlan.report}?${params.toString()}`;
   return api.get(path, emptyReport);
 }

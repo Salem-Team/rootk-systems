@@ -4,6 +4,7 @@ import {
   employeeStatusSchema,
 } from "@/schemas/employee.schema";
 import { demoTodayKey } from "@/lib/mock-date";
+import { managerIdsOf } from "@/lib/team";
 import type { Employee } from "@/types";
 
 export const LOCATIONS = [
@@ -14,8 +15,6 @@ export const LOCATIONS = [
   "Mansoura",
   "Remote",
 ] as const;
-export const NONE_MANAGER = "__none__";
-
 export const employeeFormSchema = z
   .object({
     name: z.string().trim().min(2, "name"),
@@ -26,7 +25,7 @@ export const employeeFormSchema = z
     location: z.string().trim().min(1).max(120),
     joinDate: z.string().min(4),
     status: employeeStatusSchema,
-    managerEmployeeId: z.string().trim().max(64).optional().or(z.literal("")),
+    managerEmployeeIds: z.array(z.string().trim().max(64)).max(12),
     employeeId: z.string().trim().max(40).optional().or(z.literal("")),
     password: z.string().optional().or(z.literal("")),
     confirmPassword: z.string().optional().or(z.literal("")),
@@ -62,7 +61,7 @@ export function emptyValues(): EmployeeFormValues {
     location: "Cairo",
     joinDate: demoTodayKey(),
     status: "active",
-    managerEmployeeId: "",
+    managerEmployeeIds: [],
     employeeId: "",
     password: "",
     confirmPassword: "",
@@ -79,7 +78,7 @@ export function fromEmployee(employee: Employee): EmployeeFormValues {
     location: employee.location,
     joinDate: employee.joinDate,
     status: employee.status,
-    managerEmployeeId: employee.managerEmployeeId ?? "",
+    managerEmployeeIds: managerIdsOf(employee),
     employeeId: employee.employeeId,
     password: "",
     confirmPassword: "",

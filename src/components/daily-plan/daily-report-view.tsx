@@ -66,8 +66,17 @@ export function factLabel(
     });
   }
   if (fact.kind === "ads") return t("dailyPlan.factAds", { count: fact.count ?? 0 });
+  if (fact.kind === "activeCalls") {
+    return t("dailyPlan.factActiveCalls", { count: fact.count ?? 0 });
+  }
+  if (fact.kind === "inactiveCalls") {
+    return t("dailyPlan.factInactiveCalls", { count: fact.count ?? 0 });
+  }
   if (fact.kind === "crm") return t("dailyPlan.factCrm", { count: fact.count ?? 0 });
-  return t("dailyPlan.factMeetings", { count: fact.count ?? 0 });
+  if (fact.kind === "meetings") {
+    return t("dailyPlan.factMeetings", { count: fact.count ?? 0 });
+  }
+  return t("dailyPlan.factNone");
 }
 
 function factsText(
@@ -157,6 +166,22 @@ export function DailyReportResults({
               </div>
               <div className="rounded-xl bg-muted/50 px-2 py-2 text-center">
                 <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  {t("reports.colActiveCalls")}
+                </dt>
+                <dd className="mt-0.5 font-mono text-sm font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
+                  {row.crmActiveCalls ?? 0}
+                </dd>
+              </div>
+              <div className="rounded-xl bg-muted/50 px-2 py-2 text-center">
+                <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  {t("reports.colInactiveCalls")}
+                </dt>
+                <dd className="mt-0.5 font-mono text-sm font-semibold tabular-nums text-rose-700 dark:text-rose-300">
+                  {row.crmInactiveCalls ?? 0}
+                </dd>
+              </div>
+              <div className="rounded-xl bg-muted/50 px-2 py-2 text-center">
+                <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   {t("dailyPlan.colAds")}
                 </dt>
                 <dd className="mt-0.5 font-mono text-sm font-semibold tabular-nums">
@@ -169,6 +194,14 @@ export function DailyReportResults({
                 </dt>
                 <dd className="mt-0.5 font-mono text-sm font-semibold tabular-nums">
                   {formatWorkedHours(row.workingMinutes)}
+                </dd>
+              </div>
+              <div className="rounded-xl bg-muted/50 px-2 py-2 text-center">
+                <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  {t("reports.colCalls")}
+                </dt>
+                <dd className="mt-0.5 font-mono text-sm font-semibold tabular-nums">
+                  {(row.crmActiveCalls ?? 0) + (row.crmInactiveCalls ?? 0)}
                 </dd>
               </div>
             </dl>
@@ -189,6 +222,8 @@ export function DailyReportResults({
               <DataTableHead>{t("dailyPlan.colHours")}</DataTableHead>
               <DataTableHead>{t("dailyPlan.colTasks")}</DataTableHead>
               <DataTableHead>{t("dailyPlan.colAds")}</DataTableHead>
+              <DataTableHead>{t("reports.colActiveCalls")}</DataTableHead>
+              <DataTableHead>{t("reports.colInactiveCalls")}</DataTableHead>
               <DataTableHead>{t("dailyPlan.colSummary")}</DataTableHead>
             </DataTableHeaderRow>
           </DataTableHeader>
@@ -221,6 +256,12 @@ export function DailyReportResults({
                 </DataTableCell>
                 <DataTableCell className="py-3.5 font-mono text-[13px] tabular-nums">
                   {row.adsCount}
+                </DataTableCell>
+                <DataTableCell className="py-3.5 font-mono text-[13px] tabular-nums text-emerald-700 dark:text-emerald-300">
+                  {row.crmActiveCalls ?? 0}
+                </DataTableCell>
+                <DataTableCell className="py-3.5 font-mono text-[13px] tabular-nums text-rose-700 dark:text-rose-300">
+                  {row.crmInactiveCalls ?? 0}
                 </DataTableCell>
                 <DataTableCell className="max-w-[18rem] py-3.5 text-[13px] leading-relaxed text-muted-foreground">
                   {factsText(row, t)}

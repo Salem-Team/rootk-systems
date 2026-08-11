@@ -90,6 +90,7 @@ export interface CreateEmployeeInput {
   status?: EmployeeStatus;
   manager?: string;
   managerEmployeeId?: string;
+  managerEmployeeIds?: string[];
   /** Optional HR code; Nest may auto-generate if omitted. */
   employeeId?: string;
   /** Initial login password (required on create). */

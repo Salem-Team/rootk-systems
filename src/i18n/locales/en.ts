@@ -75,7 +75,7 @@ export const en = {
     eyebrow: "Organization",
     title: "Team management",
     adminDesc:
-      "Assign a manager to each employee. Managers can follow up and create tasks and targets for their team.",
+      "Assign one or more direct managers to each employee. Managers can follow up and create tasks and targets for their team.",
     managerDesc:
       "Follow up on your people, and assign tasks and targets to your direct reports.",
     search: "Search the team…",
@@ -85,7 +85,8 @@ export const en = {
     colTargets: "Active targets",
     assignTask: "Task",
     assignTarget: "Target",
-    managerUpdated: "Manager updated",
+    managerUpdated: "Managers updated",
+    managersSelected: "{name} +{count}",
     empty: "No team members yet",
     emptyDesc:
       "If you are an admin, assign managers from this page. Managers see their direct reports here.",
@@ -122,8 +123,8 @@ export const en = {
     report: "Daily report",
     reportTitle: "Daily report",
     reportDesc:
-      "What each person did on the selected day — attendance, completed tasks, and ads.",
-    reportDescShort: "Attendance, tasks, and ads for the selected day.",
+      "What each person did on the selected day — attendance, tasks, ads, and CRM calls.",
+    reportDescShort: "Attendance, tasks, ads, and calls for the selected day.",
     reportDate: "Date",
     reportCount: "{count} people",
     reportEmpty: "No people in this report",
@@ -144,6 +145,8 @@ export const en = {
     factAds: "{count} ads",
     factCrm: "{count} CRM activities",
     factMeetings: "{count} meetings",
+    factActiveCalls: "{count} active calls",
+    factInactiveCalls: "{count} inactive calls",
   },
   workAdmin: {
     eyebrow: "Team assignments",
@@ -643,6 +646,9 @@ export const en = {
     recentLeaveRequestsDesc: "Latest submissions across the company",
     notificationsCenter: "Notifications center",
     notificationsCenterDesc: "Unread alerts by priority and category",
+    callStatsTitle: "Calls by employee",
+    callStatsDesc: "Today’s total, active, and inactive CRM calls per person.",
+    callStatsEmpty: "No call activity recorded for today.",
   },
   attendance: {
     eyebrow: "My day",
@@ -796,6 +802,7 @@ export const en = {
     personalInfo: "Personal information",
     jobInfo: "Job information",
     manager: "Manager",
+    managers: "Direct managers",
     noManager: "No manager assigned",
     directTeam: "Direct team",
     noDirectReports: "No direct reports",
@@ -1282,7 +1289,7 @@ export const en = {
   reports: {
     title: "Executive Analytics Center",
     description:
-      "Business intelligence for attendance, leave, departments, and workforce trends.",
+      "Track every employee action — attendance, tasks, ads, CRM calls, and meetings.",
     attendanceTab: "Attendance",
     lateTab: "Late",
     absenceTab: "Absence",
@@ -1301,6 +1308,10 @@ export const en = {
     exported: "CSV downloaded",
     detailTitle: "Operational detail",
     detailDesc: "Filtered attendance rows from the current workspace data.",
+    colCalls: "Calls",
+    colActiveCalls: "Active",
+    colInactiveCalls: "Inactive",
+    colMeetings: "Meetings",
   },
   analytics: {
     executiveOverview: "Executive overview",
@@ -1407,7 +1418,7 @@ export const en = {
     leaveApprovalHint: "Pending leave decisions",
     performanceTitle: "Employee performance overview",
     performanceDesc:
-      "Illustrative scores for executive review — not linked to payroll.",
+      "Live counts from employee actions in the selected range — attendance, tasks, ads, and CRM calls.",
     perfectStreak: "{days}-day attendance streak",
     uiOnlyNote: "UI-only preview. Live scoring arrives in a later sprint.",
     sectionAttendanceDesc: "Attendance, hours, lateness, and overtime trends.",
@@ -3311,6 +3322,10 @@ export const en = {
       pipeline: "Pipeline by stage",
       recent: "Recent activity",
       feedback: "Feedback",
+      detailHint: "Leads behind this number for {name}.",
+      detailCount: "{count} leads",
+      detailEmpty: "No leads here",
+      detailEmptyDesc: "Nothing in this metric for this sales user.",
     },
     dashboard: {
       stageCards: "Pipeline stages",

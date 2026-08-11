@@ -23,12 +23,19 @@ import type {
   CrmSalesPerformanceRow,
   CrmSalesProfile,
 } from "@/types/crm";
-import { actorEmployeeId, assertCap, ensureCatalog, isAdmin } from "@/services/crm/crm-shared";
+import {
+  actorEmployeeId,
+  assertCap,
+  ensureCatalog,
+  isAdmin,
+  scopeCrmFiltersToActor,
+} from "@/services/crm/crm-shared";
 
 export async function getCrmDashboard(
   filters: CrmDashboardFilters = {}
 ): Promise<ApiResponse<CrmDashboard>> {
-  if (isApiMode()) return fetchCrmDashboard(filters);
+  const scoped = scopeCrmFiltersToActor(filters);
+  if (isApiMode()) return fetchCrmDashboard(scoped);
   try {
     await simulateDelay();
     assertCap("view_dashboard");
@@ -45,7 +52,7 @@ export async function getCrmDashboard(
         feedbackTypes,
         feedback,
         employees,
-        filters,
+        scoped,
         { actorEmployeeId: actorEmployeeId(), isAdmin: isAdmin() }
       )
     );

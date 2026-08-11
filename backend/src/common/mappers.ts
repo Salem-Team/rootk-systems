@@ -98,7 +98,7 @@ export type EmployeeRow = {
   location: string | null;
   phone: string | null;
   managerName: string | null;
-  managerEmployeeId?: string | null;
+  managerEmployeeIds?: string[];
   joinDate: Date;
   status: string;
   avatarUrl: string | null;
@@ -126,7 +126,8 @@ export function mapEmployee(row: EmployeeRow) {
     joinDate: dateOnly(row.joinDate),
     location: row.location ?? "",
     manager: row.managerName ?? undefined,
-    managerEmployeeId: row.managerEmployeeId ?? undefined,
+    managerEmployeeIds: row.managerEmployeeIds ?? [],
+    managerEmployeeId: (row.managerEmployeeIds ?? [])[0] || undefined,
     avatar: row.avatarUrl ?? undefined,
     ...auditFields(row),
   };

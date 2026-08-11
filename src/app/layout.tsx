@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import {
   Geist_Mono,
   Noto_Sans_Arabic,
@@ -46,6 +46,17 @@ export const metadata: Metadata = {
     template: `%s · ${APP_NAME}`,
   },
   description: APP_NAME,
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f2f4f8" },
+    { media: "(prefers-color-scheme: dark)", color: "#050910" },
+  ],
 };
 
 export default function RootLayout({

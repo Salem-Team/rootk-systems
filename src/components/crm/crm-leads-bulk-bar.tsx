@@ -60,7 +60,7 @@ export function CrmLeadsBulkBar({
   return (
     <>
       {selectedCount > 0 ? (
-        <div className="flex flex-wrap items-center gap-2 border-b border-border/60 bg-muted/30 px-3 py-2.5">
+        <div className="filter-toolbar items-center border-b border-border/60 bg-muted/30 px-3 py-2.5">
           <span className="text-[12px] font-medium text-muted-foreground">
             {t("crm.actions.selected", { count: String(selectedCount) })}
           </span>
@@ -71,7 +71,7 @@ export function CrmLeadsBulkBar({
               onBulkValueChange("");
             }}
           >
-            <SelectTrigger className="h-8 w-[150px]">
+            <SelectTrigger className="filter-control h-9 sm:h-8 sm:w-[150px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -91,7 +91,7 @@ export function CrmLeadsBulkBar({
 
           {bulkAction === "assign" ? (
             <Select value={bulkValue || "none"} onValueChange={onBulkValueChange}>
-              <SelectTrigger className="h-8 w-[160px]">
+              <SelectTrigger className="filter-control h-9 sm:h-8 sm:w-[160px]">
                 <SelectValue placeholder={t("crm.leadForm.selectOwner")} />
               </SelectTrigger>
               <SelectContent>
@@ -110,7 +110,7 @@ export function CrmLeadsBulkBar({
               value={bulkValue || undefined}
               onValueChange={onBulkValueChange}
             >
-              <SelectTrigger className="h-8 w-[150px]">
+              <SelectTrigger className="filter-control h-9 sm:h-8 sm:w-[150px]">
                 <SelectValue placeholder={t("crm.leadForm.selectStage")} />
               </SelectTrigger>
               <SelectContent>
@@ -130,7 +130,7 @@ export function CrmLeadsBulkBar({
               value={bulkValue || undefined}
               onValueChange={onBulkValueChange}
             >
-              <SelectTrigger className="h-8 w-[140px]">
+              <SelectTrigger className="filter-control h-9 sm:h-8 sm:w-[140px]">
                 <SelectValue placeholder={t("crm.filters.status")} />
               </SelectTrigger>
               <SelectContent>

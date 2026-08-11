@@ -31,15 +31,15 @@ export default function LoginPage() {
   }, [authenticated, hydrated, router]);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#020814] text-white">
+    <div className="relative min-h-dvh overflow-hidden bg-[#020814] text-white">
       <LoginBackground />
 
-      <div className="relative z-10 flex min-h-screen flex-col">
+      <div className="relative z-10 flex min-h-dvh flex-col">
         <motion.header
           initial={reduceMotion ? false : { opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease: easeOutExpo }}
-          className="flex items-center justify-between px-5 py-5 md:px-10 lg:px-14"
+          className="flex items-center justify-between px-4 py-4 sm:px-5 sm:py-5 md:px-10 lg:px-14"
         >
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl border border-white/25 bg-white shadow-[0_10px_30px_rgba(0,0,0,0.35)] ring-1 ring-white/10">
@@ -66,14 +66,14 @@ export default function LoginPage() {
           </div>
         </motion.header>
 
-        <main className="flex flex-1 items-center px-5 py-6 md:px-10 md:py-10 lg:px-14">
+        <main className="flex flex-1 items-center px-4 py-5 sm:px-5 sm:py-6 md:px-10 md:py-10 lg:px-14">
           <div className="mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:gap-16 xl:gap-24">
             <LoginBrandHero />
             <LoginSignInPanel />
           </div>
         </main>
 
-        <footer className="px-5 py-5 md:px-10 lg:px-14">
+        <footer className="px-4 py-4 sm:px-5 sm:py-5 md:px-10 lg:px-14">
           <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-2.5 sm:flex-row sm:gap-3">
             <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg border border-white/20 bg-white shadow-[0_6px_18px_rgba(0,0,0,0.3)]">
               <Image

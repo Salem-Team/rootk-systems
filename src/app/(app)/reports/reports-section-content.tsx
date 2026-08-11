@@ -9,6 +9,7 @@ import {
   ExecutiveInsightsPanel,
   ExportCenterPanel,
 } from "@/components/reports/insights-export-panels";
+import { EmployeeActivityTable } from "@/components/reports/employee-activity-table";
 import {
   LeaveAnalyticsPanel,
   PerformanceOverviewPanel,
@@ -43,6 +44,7 @@ import type {
   AttendanceRecord,
   DashboardStats,
   Employee,
+  DailyReportRow,
   MonthlyStat,
   WeeklyStat,
 } from "@/types";
@@ -63,6 +65,7 @@ export function ReportsSectionContent({
   monthly,
   filteredAttendance,
   employeeMap,
+  filteredActivity,
 }: {
   section: AnalyticsSection;
   stats: DashboardStats;
@@ -70,6 +73,7 @@ export function ReportsSectionContent({
   monthly: MonthlyStat[];
   filteredAttendance: AttendanceRecord[];
   employeeMap: Map<string, Employee>;
+  filteredActivity: DailyReportRow[];
 }) {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
@@ -87,6 +91,11 @@ export function ReportsSectionContent({
         {section === "overview" && (
           <>
             <ReportStats stats={stats} weekly={weekly} monthly={monthly} />
+            <SectionIntro
+              title={t("analytics.performanceTitle")}
+              description={t("analytics.performanceDesc")}
+            />
+            <EmployeeActivityTable rows={filteredActivity} compact />
             <AnalyticsChartsStudio focus="all" />
             <ExecutiveInsightsPanel />
             <AnalyticsHeatmaps />
@@ -124,7 +133,9 @@ export function ReportsSectionContent({
           </>
         )}
 
-        {section === "performance" && <PerformanceOverviewPanel />}
+        {section === "performance" && (
+          <PerformanceOverviewPanel rows={filteredActivity} />
+        )}
 
         {section === "leave" && <LeaveAnalyticsPanel />}
 

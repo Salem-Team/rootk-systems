@@ -24,10 +24,16 @@ export class DailyPlanController {
   getReport(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload | undefined,
-    @Query("date") date?: string
+    @Query("date") date?: string,
+    @Query("from") from?: string,
+    @Query("to") to?: string
   ) {
     const u = requireUser(user);
-    return this.report.getReport(companyId, toDomainActor(u, u.sub), date ?? "");
+    return this.report.getReport(companyId, toDomainActor(u, u.sub), {
+      date,
+      from,
+      to,
+    });
   }
 
   @Get()

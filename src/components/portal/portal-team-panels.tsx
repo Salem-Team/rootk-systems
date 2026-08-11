@@ -120,24 +120,32 @@ export function PortalNotificationsPanel() {
 
 export function PortalTeamPanel({
   manager,
+  managers,
   teammates,
 }: {
-  manager: Employee | null;
+  manager?: Employee | null;
+  managers?: Employee[];
   teammates: Employee[];
 }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <MyTeamCard teammates={teammates} />
-      <ManagerCard manager={manager} />
+      <ManagerCard manager={manager} managers={managers} />
     </div>
   );
 }
 
-export function PortalManagerPanel({ manager }: { manager: Employee | null }) {
+export function PortalManagerPanel({
+  manager,
+  managers,
+}: {
+  manager?: Employee | null;
+  managers?: Employee[];
+}) {
   const { t } = useTranslation();
   return (
     <div className="space-y-4">
-      <ManagerCard manager={manager} />
+      <ManagerCard manager={manager} managers={managers} />
       <section className="surface-panel p-4">
         <h3 className="text-sm font-semibold">{t("portal.managerNotes")}</h3>
         <p className="mt-2 text-sm text-muted-foreground">

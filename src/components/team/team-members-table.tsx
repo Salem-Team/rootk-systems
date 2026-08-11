@@ -12,16 +12,8 @@ import {
   DataTableHeaderRow,
   DataTableRow,
 } from "@/components/ui/data-table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { NONE_MANAGER } from "@/components/employees/employee-form.schema";
+import { TeamManagerPicker } from "@/components/team/team-manager-picker";
 import { useTranslation } from "@/hooks/use-translation";
-import { managerIdOf } from "@/lib/team";
 import type { Employee } from "@/types";
 
 export function TeamMembersTable({
@@ -31,7 +23,7 @@ export function TeamMembersTable({
   managerBusyId,
   openTaskCountByEmployee,
   targetCounts,
-  onAssignManager,
+  onAssignManagers,
   onAssignTask,
   onAssignTarget,
 }: {
@@ -41,7 +33,7 @@ export function TeamMembersTable({
   managerBusyId: string | null;
   openTaskCountByEmployee: Map<string, number>;
   targetCounts: Map<string, number>;
-  onAssignManager: (employeeId: string, managerEmployeeId: string) => void;
+  onAssignManagers: (employeeId: string, managerEmployeeIds: string[]) => void;
   onAssignTask: (employee: Employee) => void;
   onAssignTarget: (employee: Employee) => void;
 }) {
@@ -58,6 +50,71 @@ export function TeamMembersTable({
 
   return (
     <section className="surface-panel overflow-hidden">
+      <ul className="grid gap-2 p-3 md:hidden">
+        {members.map((member) => (
+          <li
+            key={member.id}
+            className="rounded-xl border border-border/70 bg-card px-3 py-3"
+          >
+            <p className="text-[13px] font-semibold">{member.name}</p>
+            <p className="mt-0.5 text-[12px] text-muted-foreground">
+              {member.position}
+              {member.department ? ` · ${member.department}` : ""}
+            </p>
+            {isAdmin ? (
+              <div className="mt-2.5">
+                <TeamManagerPicker
+                  member={member}
+                  options={managerOptions.filter((m) => m.id !== member.id)}
+                  disabled={managerBusyId === member.id}
+                  onSave={(ids) => onAssignManagers(member.id, ids)}
+                />
+              </div>
+            ) : null}
+            <dl className="mt-2.5 grid grid-cols-2 gap-2 text-[12px]">
+              <div className="rounded-lg bg-muted/50 px-2 py-1.5">
+                <dt className="text-[10px] text-muted-foreground">
+                  {t("team.colOpenTasks")}
+                </dt>
+                <dd className="font-mono font-semibold">
+                  {openTaskCountByEmployee.get(member.id) ?? 0}
+                </dd>
+              </div>
+              <div className="rounded-lg bg-muted/50 px-2 py-1.5">
+                <dt className="text-[10px] text-muted-foreground">
+                  {t("team.colTargets")}
+                </dt>
+                <dd className="font-mono font-semibold">
+                  {targetCounts.get(member.id) ?? 0}
+                </dd>
+              </div>
+            </dl>
+            <div className="mt-2.5 grid grid-cols-2 gap-1.5">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={() => onAssignTask(member)}
+              >
+                <ListTodo className="h-3.5 w-3.5" />
+                {t("team.assignTask")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={() => onAssignTarget(member)}
+              >
+                <Target className="h-3.5 w-3.5" />
+                {t("team.assignTarget")}
+              </Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className="hidden md:block">
       <DataTable embedded className="min-w-[44rem]">
         <DataTableHeader>
           <DataTableHeaderRow>
@@ -66,7 +123,9 @@ export function TeamMembersTable({
               {t("common.department")}
             </DataTableHead>
             {isAdmin ? (
-              <DataTableHead className="h-11">{t("employees.manager")}</DataTableHead>
+              <DataTableHead className="h-11">
+                {t("employees.managers")}
+              </DataTableHead>
             ) : null}
             <DataTableHead className="h-11">{t("team.colOpenTasks")}</DataTableHead>
             <DataTableHead className="hidden h-11 sm:table-cell">
@@ -97,32 +156,12 @@ export function TeamMembersTable({
                   className="py-4"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Select
-                    value={managerIdOf(member) || NONE_MANAGER}
+                  <TeamManagerPicker
+                    member={member}
+                    options={managerOptions.filter((m) => m.id !== member.id)}
                     disabled={managerBusyId === member.id}
-                    onValueChange={(v) =>
-                      onAssignManager(
-                        member.id,
-                        v === NONE_MANAGER ? "" : v
-                      )
-                    }
-                  >
-                    <SelectTrigger className="h-9 w-[min(100%,220px)]">
-                      <SelectValue placeholder={t("employees.noManager")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE_MANAGER}>
-                        {t("employees.noManager")}
-                      </SelectItem>
-                      {managerOptions
-                        .filter((m) => m.id !== member.id)
-                        .map((m) => (
-                          <SelectItem key={m.id} value={m.id}>
-                            {m.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                    onSave={(ids) => onAssignManagers(member.id, ids)}
+                  />
                 </DataTableCell>
               ) : null}
               <DataTableCell className="py-4 font-mono text-[13px]">
@@ -157,6 +196,7 @@ export function TeamMembersTable({
           ))}
         </DataTableBody>
       </DataTable>
+      </div>
     </section>
   );
 }

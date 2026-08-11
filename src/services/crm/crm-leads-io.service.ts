@@ -22,6 +22,7 @@ import {
   assertCap,
   ensureCatalog,
   isAdmin,
+  scopeCrmFiltersToActor,
 } from "@/services/crm/crm-shared";
 import type { ApiResponse } from "@/types";
 import type { CrmLeadFilters, CrmNextAction } from "@/types/crm";
@@ -105,7 +106,7 @@ export async function importCrmLeads(
             ownerByKey.get(row.owner.toLowerCase()) ||
             null;
         }
-        if (!isAdmin()) ownerEmployeeId = null;
+        if (!isAdmin()) ownerEmployeeId = actorEmployeeId();
         const businessTypeId = row.businessType
           ? businessTypeByKey.get(row.businessType) ||
             businessTypeByKey.get(row.businessType.toLowerCase()) ||
@@ -158,7 +159,7 @@ export async function importCrmLeads(
 export async function exportCrmLeadRows(
   filters: CrmLeadFilters = {}
 ): Promise<ApiResponse<Array<Record<string, string>>>> {
-  if (isApiMode()) return fetchCrmLeadsExport(filters);
+  if (isApiMode()) return fetchCrmLeadsExport(scopeCrmFiltersToActor(filters));
 
   try {
     assertCap("view");
@@ -168,7 +169,7 @@ export async function exportCrmLeadRows(
       crmLeadRepository.findAll(),
       employeeRepository.findAll(),
     ]);
-    const filtered = filterLeads(all, filters, {
+    const filtered = filterLeads(all, scopeCrmFiltersToActor(filters), {
       actorEmployeeId: actorEmployeeId(),
       isAdmin: isAdmin(),
     });

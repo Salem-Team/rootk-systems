@@ -44,7 +44,7 @@ export function NotificationsPopover() {
       </PopoverTrigger>
       <PopoverContent
         align={isRtl ? "start" : "end"}
-        className="w-[min(100vw-1.5rem,380px)] overflow-hidden p-0 shadow-[var(--shadow-float)]"
+        className="w-[min(calc(100dvw-1.5rem),380px)] overflow-hidden p-0 shadow-[var(--shadow-float)]"
       >
         <NotificationFeed
           items={items.slice(0, 12)}

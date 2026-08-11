@@ -88,11 +88,15 @@ export function EmployeePortalWorkspace() {
               {section === "team" && (
                 <PortalTeamPanel
                   manager={workspace.manager}
+                  managers={workspace.managers}
                   teammates={workspace.teammates}
                 />
               )}
               {section === "manager" && (
-                <PortalManagerPanel manager={workspace.manager} />
+                <PortalManagerPanel
+                  manager={workspace.manager}
+                  managers={workspace.managers}
+                />
               )}
               {section === "timeline" && <PortalTimelinePanel />}
               {section === "events" && <PortalEventsPanel />}

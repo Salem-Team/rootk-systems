@@ -408,8 +408,11 @@ function main() {
   for (const f of [
     "src/lib/daily-plan.ts",
     "src/lib/daily-report.ts",
+    "src/lib/employee-activity.ts",
     "src/services/daily-plan.service.ts",
     "src/services/daily-report.service.ts",
+    "src/components/reports/employee-activity-table.tsx",
+    "src/components/dashboard/employee-call-stats.tsx",
     "src/app/(app)/daily-plan/page.tsx",
     "src/components/daily-plan/daily-report-sheet.tsx",
     "src/app/(app)/team/page.tsx",
@@ -417,6 +420,7 @@ function main() {
     "backend/src/daily-plan/daily-plan-report.service.ts",
     "backend/prisma/migrations/20260811140000_daily_plan/migration.sql",
     "backend/prisma/migrations/20260811120000_employee_manager_id/migration.sql",
+    "backend/prisma/migrations/20260811150000_employee_manager_ids/migration.sql",
   ]) {
     assert(existsSync(join(root, f)), `exists ${f}`);
   }
@@ -434,13 +438,21 @@ function main() {
     "daily plan/report dual-mode"
   );
   assert(
+    fileContains("src/services/daily-report.service.ts", "getEmployeeActivityReport") &&
+      fileContains("src/lib/employee-activity.ts", "crmActiveCalls") &&
+      fileContains("backend/src/daily-plan/daily-plan-report.service.ts", "crmLeadFeedback") &&
+      fileContains("src/components/dashboard/admin-dashboard.tsx", "EmployeeCallStats"),
+    "employee activity + call stats wiring"
+  );
+  assert(
     fileContains("backend/prisma/schema.prisma", "model DailyPlan") &&
       fileContains("docs/prisma/schema.prisma", "model DailyPlan"),
     "prisma DailyPlan FE docs + backend"
   );
   assert(
-    fileContains("backend/prisma/schema.prisma", "managerEmployeeId") &&
-      fileContains("src/lib/team.ts", "directReportIds"),
+    fileContains("backend/prisma/schema.prisma", "managerEmployeeIds") &&
+      fileContains("src/lib/team.ts", "directReportIds") &&
+      fileContains("src/components/team/team-manager-picker.tsx", "EmployeeMultiPicker"),
     "manager hierarchy wiring"
   );
   assert(
@@ -457,6 +469,38 @@ function main() {
     fileContains("src/lib/organic-ads-task-match.ts", "isOrganicAdsLinkableTask") &&
       fileContains("backend/src/lib/organic-ads-task-match.ts", "isOrganicAdsLinkableTask"),
     "organic ads task match FE+BE"
+  );
+
+  // CRM: each sales user only sees assigned leads
+  for (const f of [
+    "src/lib/crm/lead-filters.ts",
+    "src/lib/crm/sales-profile.ts",
+    "src/components/crm/crm-sales-profile-leads-dialog.tsx",
+    "src/components/crm/crm-sales-profile-sheet.tsx",
+    "backend/src/crm/crm-shared.service.ts",
+  ]) {
+    assert(existsSync(join(root, f)), `exists ${f}`);
+  }
+  assert(
+    fileContains("src/lib/crm/lead-filters.ts", "isLeadOwnedByActor") &&
+      fileContains("src/services/crm/crm-shared.ts", "scopeCrmFiltersToActor") &&
+      fileContains("backend/src/crm/crm-shared.service.ts", "id: { in: [] }"),
+    "CRM owner scope fail-closed FE+BE"
+  );
+  assert(
+    fileContains("src/components/crm/crm-dashboard-filters.tsx", "canAssign") &&
+      fileContains("src/components/crm/crm-leads-filters.tsx", "canAssign"),
+    "CRM owner pickers gated on assign"
+  );
+  assert(
+    fileContains("src/services/crm/crm-leads-io.service.ts", "ownerEmployeeId = actorEmployeeId()") &&
+      fileContains("backend/src/crm/crm-lead-create.service.ts", "ownerEmployeeId = actor.employeeId"),
+    "non-admin create/import assigns to self"
+  );
+  assert(
+    fileContains("src/lib/crm/sales-profile.ts", "ownedSalesProfileLeads") &&
+      fileContains("src/types/crm.ts", "ownerEmployeeId: string | null"),
+    "sales profile leads are owner-scoped"
   );
 
   assert(fileContains("tsconfig.json", '"backend"'), "tsconfig excludes backend");

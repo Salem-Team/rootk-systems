@@ -77,7 +77,7 @@ export const ar: TranslationKeys = {
     eyebrow: "التنظيم",
     title: "إدارة الفرق",
     adminDesc:
-      "عيّن مدير لكل موظف. المدير يقدر يتابع ويعمل مهام وأهداف لفريقه.",
+      "عيّن مدير مباشر أو أكتر لكل موظف. المدير يقدر يتابع ويعمل مهام وأهداف لفريقه.",
     managerDesc:
       "تابع موظفينك، وعيّن لهم مهام وأهداف من هنا.",
     search: "ابحث في الفريق…",
@@ -87,7 +87,8 @@ export const ar: TranslationKeys = {
     colTargets: "أهداف نشطة",
     assignTask: "مهمة",
     assignTarget: "هدف",
-    managerUpdated: "اتعيّن المدير",
+    managerUpdated: "اتحدّث المديرين المباشرين",
+    managersSelected: "{name} +{count}",
     empty: "مفيش أعضاء في الفريق لسه",
     emptyDesc:
       "لو إنت أدمن، عيّن مديرين من الصفحة دي. المدير بيشوف موظفينه المباشرين هنا.",
@@ -124,8 +125,8 @@ export const ar: TranslationKeys = {
     report: "تقرير اليوم",
     reportTitle: "تقرير اليوم",
     reportDesc:
-      "كل موظف عمل إيه في التاريخ المختار — حضور ومهام مكتملة وإعلانات.",
-    reportDescShort: "حضور ومهام وإعلانات لليوم المختار.",
+      "كل موظف عمل إيه في التاريخ المختار — حضور ومهام وإعلانات ومكالمات CRM.",
+    reportDescShort: "حضور ومهام وإعلانات ومكالمات لليوم المختار.",
     reportDate: "التاريخ",
     reportCount: "{count} موظفين",
     reportEmpty: "مفيش ناس في التقرير ده",
@@ -146,6 +147,8 @@ export const ar: TranslationKeys = {
     factTasks: "{count} مهام: {sample}",
     factCrm: "{count} نشاط CRM",
     factMeetings: "{count} اجتماع",
+    factActiveCalls: "{count} مكالمة نشطة",
+    factInactiveCalls: "{count} مكالمة غير نشطة",
   },
   workAdmin: {
     eyebrow: "تكليفات الفريق",
@@ -637,6 +640,9 @@ export const ar: TranslationKeys = {
     recentLeaveRequestsDesc: "أحدث الطلبات عبر الشركة",
     notificationsCenter: "مركز الإشعارات",
     notificationsCenterDesc: "تنبيهات غير مقروءة حسب الأولوية والفئة",
+    callStatsTitle: "المكالمات لكل موظف",
+    callStatsDesc: "إجمالي مكالمات اليوم، النشطة وغير النشطة، لكل شخص.",
+    callStatsEmpty: "مفيش مكالمات متسجلة لليوم.",
   },
   attendance: {
     eyebrow: "يومي",
@@ -790,6 +796,7 @@ export const ar: TranslationKeys = {
     personalInfo: "المعلومات الشخصية",
     jobInfo: "معلومات الوظيفة",
     manager: "المدير المباشر",
+    managers: "المديرون المباشرون",
     noManager: "لا يوجد مدير معيّن",
     directTeam: "الفريق المباشر",
     noDirectReports: "لا يوجد مرؤوسون مباشرون",
@@ -1556,7 +1563,7 @@ export const ar: TranslationKeys = {
   reports: {
     title: "مركز التحليلات التنفيذي",
     description:
-      "ذكاء أعمال للحضور والإجازات والإدارات واتجاهات القوى العاملة.",
+      "تتبّع كل أكشن للموظفين — حضور ومهام وإعلانات ومكالمات CRM واجتماعات.",
     attendanceTab: "الحضور",
     lateTab: "التأخير",
     absenceTab: "الغياب",
@@ -1575,6 +1582,10 @@ export const ar: TranslationKeys = {
     exported: "تم تنزيل ملف CSV",
     detailTitle: "التفاصيل التشغيلية",
     detailDesc: "صفوف الحضور المصفّاة من بيانات مساحة العمل الحالية.",
+    colCalls: "المكالمات",
+    colActiveCalls: "نشطة",
+    colInactiveCalls: "غير نشطة",
+    colMeetings: "اجتماعات",
   },
   analytics: {
     executiveOverview: "نظرة تنفيذية",
@@ -1681,7 +1692,7 @@ export const ar: TranslationKeys = {
     leaveApprovalHint: "طلبات إجازة قيد الانتظار",
     performanceTitle: "نظرة عامة على أداء الموظفين",
     performanceDesc:
-      "درجات توضيحية للمراجعة التنفيذية — غير مرتبطة بالرواتب.",
+      "أرقام حية من أكشن الموظفين في الفترة المختارة — حضور ومهام وإعلانات ومكالمات CRM.",
     perfectStreak: "سلسلة حضور {days} يوماً",
     uiOnlyNote: "معاينة واجهة فقط. التقييم الحي في سبرنت لاحق.",
     sectionAttendanceDesc: "اتجاهات الحضور والساعات والتأخير والوقت الإضافي.",
@@ -3021,7 +3032,7 @@ export const ar: TranslationKeys = {
       stagesDesc: "أنشئ مراحل المسار لتنظيم عملية البيع.",
       subStages: "لا توجد صب-مراحل بعد",
       performance: "لا توجد بيانات أداء",
-      performanceDesc: "عيّن عملاء لمندوبي المبيعات لعرض الأداء.",
+      performanceDesc: "عيّن عملاء للسيلز لعرض الأداء.",
       pipeline: "لا يوجد عملاء في هذه المرحلة",
       attention: "مفيش حاجة تحتاج انتباه",
       attentionDesc: "المتابعات والمتأخرين هيظهروا هنا.",
@@ -3157,7 +3168,7 @@ export const ar: TranslationKeys = {
       noBusinessType: "غير محدد",
       source: "المصدر",
       stage: "المرحلة",
-      owner: "مندوب المبيعات",
+      owner: "السيلز",
       status: "الحالة",
       tags: "الوسوم",
       nextAction: "الخطوة الجاية",
@@ -3167,7 +3178,7 @@ export const ar: TranslationKeys = {
       subStage: "الصب-مرحلة",
       selectSubStage: "اختر الصب-مرحلة",
       noSubStage: "بدون صب-مرحلة",
-      selectOwner: "اختر مندوب المبيعات",
+      selectOwner: "اختر السيلز",
       validation: "الاسم والهاتف والمرحلة مطلوبين.",
     },
     leadSheet: {
@@ -3273,7 +3284,7 @@ export const ar: TranslationKeys = {
     },
     performance: {
       title: "أداء المبيعات",
-      description: "مكالمات Active و Inactive ومعدّل التحويل لكل مندوب.",
+      description: "مكالمات Active و Inactive ومعدّل التحويل لكل سيلز.",
       colSales: "المبيعات",
       colLeads: "العملاء",
       colActive: "نشط",
@@ -3287,7 +3298,7 @@ export const ar: TranslationKeys = {
       colNoAction: "بدون إجراء",
       needsAttention: "يحتاج انتباه",
       chartTitle: "أداء المبيعات",
-      chartDesc: "حجم العملاء لكل مندوب.",
+      chartDesc: "حجم العملاء لكل سيلز.",
     },
     salesProfile: {
       title: "ملف المبيعات",
@@ -3300,6 +3311,10 @@ export const ar: TranslationKeys = {
       pipeline: "المسار حسب المرحلة",
       recent: "النشاط الأخير",
       feedback: "الملاحظات",
+      detailHint: "العملاء ورا الرقم ده لـ {name}.",
+      detailCount: "{count} عملاء",
+      detailEmpty: "مفيش عملاء هنا",
+      detailEmptyDesc: "المؤشر ده فاضي للسيلز ده.",
     },
     dashboard: {
       stageCards: "مراحل المسار",
@@ -3310,7 +3325,7 @@ export const ar: TranslationKeys = {
       feedbackReasons: "أسباب الملاحظات",
       feedbackReasonsDesc: "لماذا بيسيب العملاء ملاحظات أو بيتوقفوا.",
       salesPerformance: "أداء المبيعات",
-      salesPerformanceDesc: "حجم العملاء حسب المندوب.",
+      salesPerformanceDesc: "حجم العملاء حسب السيلز.",
       needsAttention: "يحتاج انتباه",
       insights: "رؤى",
       ofPipeline: "% من المسار",
@@ -3321,7 +3336,7 @@ export const ar: TranslationKeys = {
       overdue_followups: "متابعات متأخرة",
       no_next_action: "بدون خطوة جاية",
       inactive_leads: "عملاء غير نشطين",
-      sales_attention: "مندوبون يحتاجون انتباه",
+      sales_attention: "سيلز يحتاجون انتباه",
     },
     reports: {
       title: "تقارير إدارة العملاء",

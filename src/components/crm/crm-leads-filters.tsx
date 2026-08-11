@@ -60,7 +60,7 @@ export function CrmLeadsFilters({
   return (
     <div
       className={cn(
-        "flex flex-wrap gap-2 border-b border-border/60 px-3 py-3 lg:flex",
+        "filter-toolbar border-b border-border/60 px-3 py-3 lg:flex",
         open ? "flex" : "hidden lg:flex"
       )}
     >
@@ -74,7 +74,7 @@ export function CrmLeadsFilters({
           })
         }
       >
-        <SelectTrigger className="h-9 w-[150px]">
+        <SelectTrigger className="filter-control h-9 sm:w-[150px]">
           <SelectValue placeholder={t("crm.filters.allStages")} />
         </SelectTrigger>
         <SelectContent>
@@ -97,7 +97,7 @@ export function CrmLeadsFilters({
           })
         }
       >
-        <SelectTrigger className="h-9 w-[140px]">
+        <SelectTrigger className="filter-control h-9 sm:w-[140px]">
           <SelectValue placeholder={t("crm.filters.allStatuses")} />
         </SelectTrigger>
         <SelectContent>
@@ -120,7 +120,7 @@ export function CrmLeadsFilters({
           })
         }
       >
-        <SelectTrigger className="h-9 w-[140px]">
+        <SelectTrigger className="filter-control h-9 sm:w-[140px]">
           <SelectValue placeholder={t("crm.filters.allSources")} />
         </SelectTrigger>
         <SelectContent>
@@ -144,7 +144,7 @@ export function CrmLeadsFilters({
             })
           }
         >
-          <SelectTrigger className="h-9 w-[160px]">
+          <SelectTrigger className="filter-control h-9 sm:w-[160px]">
             <SelectValue placeholder={t("crm.filters.allSales")} />
           </SelectTrigger>
           <SelectContent>
@@ -168,7 +168,7 @@ export function CrmLeadsFilters({
           })
         }
       >
-        <SelectTrigger className="h-9 w-[150px]">
+        <SelectTrigger className="filter-control h-9 sm:w-[150px]">
           <SelectValue placeholder={t("crm.filters.allFollowUps")} />
         </SelectTrigger>
         <SelectContent>
@@ -194,7 +194,7 @@ export function CrmLeadsFilters({
           })
         }
       >
-        <SelectTrigger className="h-9 w-[150px]">
+        <SelectTrigger className="filter-control h-9 sm:w-[150px]">
           <SelectValue placeholder={t("crm.filters.sort")} />
         </SelectTrigger>
         <SelectContent>
@@ -220,7 +220,7 @@ export function CrmLeadsFilters({
           })
         }
       >
-        <SelectTrigger className="h-9 w-[130px]">
+        <SelectTrigger className="filter-control h-9 sm:w-[130px]">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

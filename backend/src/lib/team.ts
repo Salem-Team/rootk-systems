@@ -12,7 +12,7 @@ export async function listDirectReportIds(
     where: {
       companyId,
       deletedAt: null,
-      managerEmployeeId,
+      managerEmployeeIds: { has: managerEmployeeId },
     },
     select: { id: true },
   });

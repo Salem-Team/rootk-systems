@@ -14,7 +14,7 @@ export function DataTable({
     >
       <table
         className={cn(
-          "w-full min-w-[36rem] text-start text-sm sm:min-w-[640px]",
+          "w-full min-w-[20rem] text-start text-sm sm:min-w-[36rem] md:min-w-[640px]",
           className
         )}
         {...props}
@@ -60,7 +60,7 @@ export function DataTableHead({
   return (
     <th
       className={cn(
-        "h-10 px-3.5 text-start font-medium first:ps-4 last:pe-4",
+        "h-10 px-2.5 text-start font-medium first:ps-3 last:pe-3 sm:px-3.5 sm:first:ps-4 sm:last:pe-4",
         className
       )}
       {...props}
@@ -96,7 +96,10 @@ export function DataTableCell({
 }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
     <td
-      className={cn("px-3.5 py-3 first:ps-4 last:pe-4", className)}
+      className={cn(
+        "px-2.5 py-2.5 first:ps-3 last:pe-3 sm:px-3.5 sm:py-3 sm:first:ps-4 sm:last:pe-4",
+        className
+      )}
       {...props}
     />
   );

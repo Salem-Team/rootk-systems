@@ -78,14 +78,14 @@ export function CrmLeadsPanel({
         <h2 className="text-sm font-semibold tracking-tight">
           {t("crm.leads.title")}
         </h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto">
+          <div className="relative min-w-0 flex-1 sm:flex-none">
             <Search className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={panel.searchLocal}
               onChange={(e) => panel.setSearchLocal(e.target.value)}
               placeholder={t("crm.filters.search")}
-              className="h-9 w-[min(100%,220px)] ps-8"
+              className="h-9 w-full ps-8 sm:w-[220px]"
               aria-label={t("crm.filters.search")}
             />
           </div>

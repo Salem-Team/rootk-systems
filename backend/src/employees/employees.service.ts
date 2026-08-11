@@ -47,6 +47,7 @@ export class EmployeesService {
       status?: string;
       manager?: string;
       managerEmployeeId?: string;
+      managerEmployeeIds?: string[];
       employeeId?: string;
       password: string;
     }

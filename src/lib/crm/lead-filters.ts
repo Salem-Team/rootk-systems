@@ -2,6 +2,15 @@ import { endOfDay, isAfter, isBefore, isSameDay, startOfDay } from "date-fns";
 import type { CrmLead, CrmLeadFilters } from "@/types/crm";
 import { leadInRange, parseMaybe, resolveCrmRange } from "@/lib/crm/date-range";
 
+export function isLeadOwnedByActor(
+  ownerEmployeeId: string | null | undefined,
+  opts?: { actorEmployeeId?: string | null; isAdmin?: boolean }
+): boolean {
+  if (opts?.isAdmin) return true;
+  const actorId = opts?.actorEmployeeId?.trim() ?? "";
+  return Boolean(actorId) && ownerEmployeeId === actorId;
+}
+
 export function filterLeads(
   leads: CrmLead[],
   filters: CrmLeadFilters,
@@ -13,10 +22,12 @@ export function filterLeads(
   const q = filters.search?.trim().toLowerCase() ?? "";
 
   return leads.filter((lead) => {
-    if (!opts?.isAdmin && opts?.actorEmployeeId) {
-      if (lead.ownerEmployeeId !== opts.actorEmployeeId) return false;
-    }
-    if (filters.ownerEmployeeId && lead.ownerEmployeeId !== filters.ownerEmployeeId)
+    if (!isLeadOwnedByActor(lead.ownerEmployeeId, opts)) return false;
+    if (
+      opts?.isAdmin &&
+      filters.ownerEmployeeId &&
+      lead.ownerEmployeeId !== filters.ownerEmployeeId
+    )
       return false;
     if (filters.stageId && lead.stageId !== filters.stageId) return false;
     if (filters.subStageId && lead.subStageId !== filters.subStageId)

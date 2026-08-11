@@ -10,9 +10,16 @@ import { fadeInUp, staggerContainer } from "@/lib/animations";
 import { getInitials } from "@/lib/utils";
 import type { Employee } from "@/types";
 
-export function ManagerCard({ manager }: { manager: Employee | null }) {
+export function ManagerCard({
+  manager,
+  managers,
+}: {
+  manager?: Employee | null;
+  managers?: Employee[];
+}) {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
+  const list = managers ?? (manager ? [manager] : []);
 
   return (
     <motion.section
@@ -31,31 +38,33 @@ export function ManagerCard({ manager }: { manager: Employee | null }) {
           {t("employeeHome.managerCard")}
         </h3>
       </div>
-      <div className="panel-body">
-        {!manager ? (
+      <div className="panel-body space-y-3">
+        {list.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             {t("employees.noManager")}
           </p>
         ) : (
-          <div className="flex items-center gap-3">
-            <Avatar className="h-12 w-12 border border-border">
-              {manager.avatar ? (
-                <AvatarImage src={manager.avatar} alt="" />
-              ) : null}
-              <AvatarFallback className="bg-primary/[0.08] font-semibold text-primary">
-                {getInitials(manager.name)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <p className="truncate font-semibold">{manager.name}</p>
-              <p className="truncate text-xs text-muted-foreground">
-                {manager.position}
-              </p>
-              <div className="mt-1.5">
-                <DepartmentBadge department={manager.department} />
+          list.map((person) => (
+            <div key={person.id} className="flex items-center gap-3">
+              <Avatar className="h-12 w-12 border border-border">
+                {person.avatar ? (
+                  <AvatarImage src={person.avatar} alt="" />
+                ) : null}
+                <AvatarFallback className="bg-primary/[0.08] font-semibold text-primary">
+                  {getInitials(person.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="truncate font-semibold">{person.name}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {person.position}
+                </p>
+                <div className="mt-1.5">
+                  <DepartmentBadge department={person.department} />
+                </div>
               </div>
             </div>
-          </div>
+          ))
         )}
       </div>
     </motion.section>

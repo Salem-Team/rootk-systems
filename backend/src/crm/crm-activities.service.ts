@@ -263,7 +263,7 @@ export class CrmActivitiesService {
       deletedAt: null,
       ...(isAdmin(actor)
         ? {}
-        : { lead: { ownerEmployeeId: actor.employeeId, deletedAt: null } }),
+        : { lead: { deletedAt: null, ...this.shared.scopeOwnerFilter(actor) } }),
     };
 
     const rows = await this.prisma.crmLeadActivity.findMany({

@@ -6,6 +6,9 @@ function withManagerIds(rows: SeedOf<Employee>[]): SeedOf<Employee>[] {
   return rows.map((row) => ({
     ...row,
     managerEmployeeId: row.manager ? byName.get(row.manager) : undefined,
+    managerEmployeeIds: row.manager
+      ? [byName.get(row.manager)].filter((id): id is string => Boolean(id))
+      : [],
   }));
 }
 

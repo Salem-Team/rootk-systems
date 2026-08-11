@@ -10,7 +10,6 @@ import {
   Phone,
   RefreshCw,
   UserRound,
-  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,8 +25,8 @@ import {
   FieldError,
   FormSection,
 } from "@/components/employees/employee-form-section";
-import { NONE_MANAGER } from "@/components/employees/employee-form.schema";
 import type { EmployeeFormValues } from "@/components/employees/employee-form.schema";
+import { EmployeeMultiPicker } from "@/components/work/employee-multi-picker";
 import type { Employee } from "@/types";
 import type { useTranslation } from "@/hooks/use-translation";
 
@@ -144,7 +143,7 @@ export function EmployeeOrgFields({
   t: ReturnType<typeof useTranslation>["t"];
   activeNames: string[];
   locationOptions: string[];
-  managerOptions: Pick<Employee, "id" | "name">[];
+  managerOptions: Employee[];
   fieldMessage: (code?: string) => string | undefined;
 }) {
   return (
@@ -218,38 +217,18 @@ export function EmployeeOrgFields({
         />
       </div>
 
-      <div className="space-y-1.5">
-        <Label>{t("employees.manager")}</Label>
-        <Controller
-          control={form.control}
-          name="managerEmployeeId"
-          render={({ field }) => (
-            <Select
-              value={field.value || NONE_MANAGER}
-              onValueChange={(v) =>
-                field.onChange(v === NONE_MANAGER ? "" : v)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t("employees.managerPlaceholder")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NONE_MANAGER}>
-                  {t("employees.noManager")}
-                </SelectItem>
-                {managerOptions.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    <span className="inline-flex items-center gap-2">
-                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                      {m.name}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        />
-      </div>
+      <Controller
+        control={form.control}
+        name="managerEmployeeIds"
+        render={({ field }) => (
+          <EmployeeMultiPicker
+            employees={managerOptions}
+            selectedIds={field.value}
+            onChange={field.onChange}
+            label={t("employees.managers")}
+          />
+        )}
+      />
     </FormSection>
   );
 }

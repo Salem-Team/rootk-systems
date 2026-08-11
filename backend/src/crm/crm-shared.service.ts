@@ -164,7 +164,9 @@ export class CrmSharedService {
 
   scopeOwnerFilter(actor: Actor): Prisma.CrmLeadWhereInput {
     if (isAdmin(actor)) return {};
-    return { ownerEmployeeId: actor.employeeId };
+    const employeeId = actor.employeeId?.trim();
+    if (!employeeId) return { id: { in: [] } };
+    return { ownerEmployeeId: employeeId };
   }
 
   async requireLead(companyId: string, actor: Actor, id: string) {

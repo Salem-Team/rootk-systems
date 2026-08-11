@@ -49,9 +49,12 @@ export async function createCrmLead(
       }
     }
     const actorId = getSessionUserId() || "system";
-    const empId = actorEmployeeId();
+    const empId = actorEmployeeId()?.trim() || null;
     let ownerEmployeeId = parsed.ownerEmployeeId ?? empId;
     if (!isAdmin()) {
+      if (!empId) {
+        throw new ForbiddenError("You can only create leads assigned to you");
+      }
       ownerEmployeeId = empId;
     }
     const now = new Date().toISOString();

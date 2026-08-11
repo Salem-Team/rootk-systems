@@ -1,6 +1,7 @@
 import {
   fetchCrmActivities,
   fetchCrmFeedbackList,
+  fetchCrmLead,
   fetchCrmLeadTimeline,
   postCrmLeadActivity,
   postCrmLeadFeedback,
@@ -89,6 +90,15 @@ export async function getCrmLeadTimeline(
   leadId: string
 ): Promise<ApiResponse<CrmLeadActivity[]>> {
   if (isApiMode()) {
+    const leadRes = await fetchCrmLead(leadId);
+    if (!leadRes.success || !leadRes.data) {
+      return { ...leadRes, data: [] };
+    }
+    try {
+      assertLeadAccess(leadRes.data);
+    } catch (error) {
+      return fromError(error, []);
+    }
     const res = await fetchCrmLeadTimeline(leadId);
     return { ...res, data: ensureLeadTimeline(res.data) };
   }
@@ -198,7 +208,8 @@ export async function getCrmFeedbackList(
     assertCap("view");
     let items = await crmLeadFeedbackRepository.findAll();
     if (!isAdmin()) {
-      const empId = actorEmployeeId();
+      const empId = actorEmployeeId()?.trim() ?? "";
+      if (!empId) return ok([]);
       const leads = await crmLeadRepository.findAll();
       const mine = new Set(
         leads.filter((l) => l.ownerEmployeeId === empId).map((l) => l.id)
@@ -227,7 +238,8 @@ export async function getCrmActivities(
     assertCap("view");
     let items = await crmLeadActivityRepository.findAll();
     if (!isAdmin()) {
-      const empId = actorEmployeeId();
+      const empId = actorEmployeeId()?.trim() ?? "";
+      if (!empId) return ok([]);
       const leads = await crmLeadRepository.findAll();
       const mine = new Set(
         leads.filter((l) => l.ownerEmployeeId === empId).map((l) => l.id)

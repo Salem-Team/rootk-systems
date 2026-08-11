@@ -25,6 +25,7 @@ import {
   assertLeadAccess,
   ensureCatalog,
   isAdmin,
+  scopeCrmFiltersToActor,
   writeHistory,
 } from "@/services/crm/crm-shared";
 import { updateCrmLead } from "@/services/crm/crm-lead-mutations.service";
@@ -34,16 +35,30 @@ export { createCrmLead, updateCrmLead } from "@/services/crm/crm-lead-mutations.
 export async function getCrmLeads(
   filters: CrmLeadFilters = {}
 ): Promise<ApiResponse<PaginatedLeads>> {
+  const scoped = scopeCrmFiltersToActor(filters);
   if (isApiMode()) {
-    const res = await fetchCrmLeads(filters);
-    return { ...res, data: ensurePaginatedLeads(res.data) };
+    const res = await fetchCrmLeads(scoped);
+    const data = ensurePaginatedLeads(res.data);
+    if (isAdmin()) return { ...res, data };
+    const empId = actorEmployeeId()?.trim() ?? "";
+    const items = empId
+      ? data.items.filter((lead) => lead.ownerEmployeeId === empId)
+      : [];
+    return {
+      ...res,
+      data: {
+        ...data,
+        items,
+        total: items.length === data.items.length ? data.total : items.length,
+      },
+    };
   }
   try {
     await simulateDelay();
     assertCap("view");
     await ensureCatalog();
     const all = await crmLeadRepository.findAll();
-    let filtered = filterLeads(all, filters, {
+    let filtered = filterLeads(all, scoped, {
       actorEmployeeId: actorEmployeeId(),
       isAdmin: isAdmin(),
     });
@@ -80,7 +95,17 @@ export async function getCrmLeads(
 export async function getCrmLead(
   id: string
 ): Promise<ApiResponse<CrmLead | null>> {
-  if (isApiMode()) return fetchCrmLead(id);
+  if (isApiMode()) {
+    const res = await fetchCrmLead(id);
+    if (res.data) {
+      try {
+        assertLeadAccess(res.data);
+      } catch (error) {
+        return fromError(error, null);
+      }
+    }
+    return res;
+  }
   try {
     await simulateDelay();
     assertCap("view");
@@ -102,6 +127,7 @@ export async function removeCrmLead(
     await simulateDelay();
     const existing = await crmLeadRepository.findById(id);
     if (!existing) throw new NotFoundError("Lead not found");
+    assertLeadAccess(existing);
     await crmLeadRepository.delete(id);
     await writeHistory({
       leadId: id,

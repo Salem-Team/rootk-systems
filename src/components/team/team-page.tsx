@@ -47,7 +47,9 @@ export function TeamPage() {
         managerBusyId={page.managerBusyId}
         openTaskCountByEmployee={page.openTaskCountByEmployee}
         targetCounts={page.targetCounts}
-        onAssignManager={(id, managerId) => void page.assignManager(id, managerId)}
+        onAssignManagers={(id, managerIds) =>
+          void page.assignManagers(id, managerIds)
+        }
         onAssignTask={page.openAssignTask}
         onAssignTarget={page.openAssignTarget}
       />

@@ -66,7 +66,10 @@ export async function createEmployee(
       joinDate: data.joinDate,
       location: data.location ?? "",
       manager: data.manager,
-      managerEmployeeId: data.managerEmployeeId,
+      managerEmployeeId: (data.managerEmployeeIds ?? []).filter(Boolean)[0] ?? data.managerEmployeeId,
+      managerEmployeeIds:
+        data.managerEmployeeIds ??
+        (data.managerEmployeeId ? [data.managerEmployeeId] : []),
       ...createAuditFields(actor),
     };
     const created = await employeeRepository.create(employee);
@@ -123,8 +126,22 @@ export async function updateEmployee(
     const { password, ...rest } = parsed.data;
     const previous = await employeeRepository.findById(id);
     if (!previous) throw new NotFoundError("Employee not found");
-    const nextManagerId = (rest.managerEmployeeId ?? "").trim();
-    if (nextManagerId && nextManagerId === id) {
+    const hasManagerPatch =
+      rest.managerEmployeeIds !== undefined ||
+      rest.managerEmployeeId !== undefined ||
+      rest.manager !== undefined;
+    const nextManagerIds = hasManagerPatch
+      ? [
+          ...new Set(
+            (rest.managerEmployeeIds ??
+              (rest.managerEmployeeId ? [rest.managerEmployeeId] : [])
+            )
+              .map((item) => item.trim())
+              .filter(Boolean)
+          ),
+        ]
+      : undefined;
+    if (nextManagerIds?.includes(id)) {
       throw new ValidationError("An employee cannot be their own manager");
     }
     const updated = await employeeRepository.mutate(id, (current) =>
@@ -132,6 +149,12 @@ export async function updateEmployee(
         ...rest,
         phone: rest.phone ?? current.phone,
         location: rest.location ?? current.location,
+        ...(nextManagerIds
+          ? {
+              managerEmployeeIds: nextManagerIds,
+              managerEmployeeId: nextManagerIds[0],
+            }
+          : {}),
       })
     );
     if (!updated) throw new NotFoundError("Employee not found");

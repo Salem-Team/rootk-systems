@@ -72,7 +72,7 @@ export function Navbar() {
       transition={{ duration: reduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
       className="sticky top-0 z-30 chrome-bar"
     >
-      <div className="flex h-[3.4rem] min-w-0 items-center gap-1.5 px-3 sm:gap-2.5 sm:px-4 md:px-6 lg:px-8">
+      <div className="flex h-[3.25rem] min-w-0 items-center gap-1 px-2.5 sm:h-[3.4rem] sm:gap-2.5 sm:px-4 md:px-6 lg:px-8">
         <Button
           variant="ghost"
           size="icon-sm"

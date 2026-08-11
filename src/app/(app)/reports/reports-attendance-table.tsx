@@ -110,19 +110,59 @@ export function AttendanceTable({
 
   return (
     <Card className="surface-panel overflow-hidden border-0 shadow-none">
-      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+      <CardHeader className="flex flex-col items-stretch gap-3 space-y-0 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <CardTitle>{t("reports.detailTitle")}</CardTitle>
           <CardDescription>
             {records.length} · {t("reports.detailDesc")}
           </CardDescription>
         </div>
-        <Button variant="outline" size="sm" onClick={handleExport}>
+        <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExport}>
           <Download />
           {t("common.exportCsv")}
         </Button>
       </CardHeader>
       <CardContent>
+        <ul className="grid gap-2 md:hidden">
+          {records.slice(0, 40).map((record) => {
+            const employee = employees.get(record.employeeId);
+            return (
+              <li
+                key={record.id}
+                className="rounded-xl border border-border/70 bg-card px-3 py-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] font-semibold">
+                      {employee?.name ?? record.employeeId}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      {employee?.department
+                        ? departmentLabel(employee.department, t)
+                        : "—"}{" "}
+                      · {record.date}
+                    </p>
+                  </div>
+                  <StatusBadge status={record.status} />
+                </div>
+                <p className="mt-2 text-[12px] text-muted-foreground">
+                  {record.checkIn
+                    ? format(new Date(record.checkIn), "h:mm a", {
+                        locale: dateLocale,
+                      })
+                    : "—"}
+                  {" · "}
+                  {showHours
+                    ? formatHours(record.workingMinutes)
+                    : record.lateMinutes > 0
+                      ? formatHmDuration(record.lateMinutes, t)
+                      : "—"}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="hidden md:block">
         <DataTable className="min-w-[36rem] sm:min-w-[640px]">
           <DataTableHeader>
             <DataTableHeaderRow>
@@ -178,6 +218,7 @@ export function AttendanceTable({
             })}
           </DataTableBody>
         </DataTable>
+        </div>
       </CardContent>
     </Card>
   );

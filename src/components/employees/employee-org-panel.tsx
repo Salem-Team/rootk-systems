@@ -44,12 +44,12 @@ function OrgPersonCard({
 }
 
 export function EmployeeOrgPanel({
-  manager,
+  managers,
   directReports,
   departmentPeers,
   onSelect,
 }: {
-  manager: Employee | null;
+  managers: Employee[];
   directReports: Employee[];
   departmentPeers: Employee[];
   onSelect?: (employee: Employee) => void;
@@ -66,12 +66,17 @@ export function EmployeeOrgPanel({
     >
       <motion.section variants={fadeInUp} className="space-y-2">
         <p className="section-label">{t("employees.manager")}</p>
-        {manager ? (
-          <OrgPersonCard
-            employee={manager}
-            roleLabel={manager.position}
-            onSelect={onSelect}
-          />
+        {managers.length > 0 ? (
+          <div className="space-y-2">
+            {managers.map((person) => (
+              <OrgPersonCard
+                key={person.id}
+                employee={person}
+                roleLabel={person.position}
+                onSelect={onSelect}
+              />
+            ))}
+          </div>
         ) : (
           <div className="rounded-xl border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
             {t("employees.noManager")}

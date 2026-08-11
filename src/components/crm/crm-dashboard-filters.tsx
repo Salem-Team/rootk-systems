@@ -26,6 +26,7 @@ const SOURCES: CrmLeadSource[] = [
 interface CrmDashboardFiltersBarProps {
   filters: CrmDashboardFilters;
   employees: Employee[];
+  canAssign?: boolean;
   onFiltersChange: (filters: CrmDashboardFilters) => void;
 }
 
@@ -33,12 +34,13 @@ interface CrmDashboardFiltersBarProps {
 export function CrmDashboardFiltersBar({
   filters,
   employees,
+  canAssign = false,
   onFiltersChange,
 }: CrmDashboardFiltersBarProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="filter-toolbar">
       <Select
         value={filters.range ?? "this_month"}
         onValueChange={(v) =>
@@ -48,7 +50,7 @@ export function CrmDashboardFiltersBar({
           })
         }
       >
-        <SelectTrigger className="h-9 w-[160px]" aria-label={t("crm.filters.range")}>
+        <SelectTrigger className="filter-control h-9 sm:w-[160px]" aria-label={t("crm.filters.range")}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -59,27 +61,29 @@ export function CrmDashboardFiltersBar({
         </SelectContent>
       </Select>
 
-      <Select
-        value={filters.ownerEmployeeId || "all"}
-        onValueChange={(v) =>
-          onFiltersChange({
-            ...filters,
-            ownerEmployeeId: v === "all" ? undefined : v,
-          })
-        }
-      >
-        <SelectTrigger className="h-9 w-[170px]" aria-label={t("crm.filters.sales")}>
-          <SelectValue placeholder={t("crm.filters.allSales")} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">{t("crm.filters.allSales")}</SelectItem>
-          {(Array.isArray(employees) ? employees : []).map((e) => (
-            <SelectItem key={e.id} value={e.id}>
-              {e.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {canAssign ? (
+        <Select
+          value={filters.ownerEmployeeId || "all"}
+          onValueChange={(v) =>
+            onFiltersChange({
+              ...filters,
+              ownerEmployeeId: v === "all" ? undefined : v,
+            })
+          }
+        >
+          <SelectTrigger className="filter-control h-9 sm:w-[170px]" aria-label={t("crm.filters.sales")}>
+            <SelectValue placeholder={t("crm.filters.allSales")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("crm.filters.allSales")}</SelectItem>
+            {(Array.isArray(employees) ? employees : []).map((e) => (
+              <SelectItem key={e.id} value={e.id}>
+                {e.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : null}
 
       <Select
         value={filters.source || "all"}
@@ -90,7 +94,7 @@ export function CrmDashboardFiltersBar({
           })
         }
       >
-        <SelectTrigger className="h-9 w-[150px]" aria-label={t("crm.filters.source")}>
+        <SelectTrigger className="filter-control h-9 sm:w-[150px]" aria-label={t("crm.filters.source")}>
           <SelectValue placeholder={t("crm.filters.allSources")} />
         </SelectTrigger>
         <SelectContent>

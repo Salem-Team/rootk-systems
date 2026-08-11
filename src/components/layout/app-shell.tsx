@@ -27,7 +27,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <AuthGate>
       <PreferenceSync />
-      <div className="min-h-screen overflow-x-clip bg-background">
+      <div className="min-h-dvh overflow-x-clip bg-background">
         <a href="#main-content" className="skip-link">
           {t("a11y.skipToContent")}
         </a>
@@ -37,7 +37,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <MobileDrawer />
         <div
           className={cn(
-            "min-h-screen transition-[padding] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
+            "min-h-dvh transition-[padding] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
             sidebarCollapsed ? "lg:ps-[72px]" : "lg:ps-[252px]"
           )}
         >

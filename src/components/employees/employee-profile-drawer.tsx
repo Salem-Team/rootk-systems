@@ -20,7 +20,7 @@ import { EmployeeProfileOverviewTab } from "@/components/employees/employee-prof
 import {
   findDepartmentPeers,
   findDirectReports,
-  findManager,
+  findManagers,
 } from "@/components/employees/profile-data";
 import { useEmployeeProfileExtras } from "@/hooks/use-employee-profile-extras";
 import { useTranslation } from "@/hooks/use-translation";
@@ -60,8 +60,8 @@ export function EmployeeProfileDrawer({
 
   const extras = useEmployeeProfileExtras(employee);
 
-  const manager = useMemo(
-    () => (employee ? findManager(employee, roster) : null),
+  const managers = useMemo(
+    () => (employee ? findManagers(employee, roster) : []),
     [employee, roster]
   );
   const directReports = useMemo(
@@ -201,7 +201,7 @@ export function EmployeeProfileDrawer({
 
                       <TabsContent value="organization" className="mt-5">
                         <EmployeeOrgPanel
-                          manager={manager}
+                          managers={managers}
                           directReports={directReports}
                           departmentPeers={departmentPeers}
                           onSelect={onSelectEmployee}

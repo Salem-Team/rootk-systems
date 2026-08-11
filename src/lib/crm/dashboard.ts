@@ -24,10 +24,13 @@ export function buildCrmDashboard(
 ): CrmDashboard {
   const { from, to } = resolveCrmRange(filters);
   let leads = allLeads.filter((l) => l.status !== "archived");
-  if (!scoped?.isAdmin && scoped?.actorEmployeeId) {
-    leads = leads.filter((l) => l.ownerEmployeeId === scoped.actorEmployeeId);
+  if (!scoped?.isAdmin) {
+    const actorId = scoped?.actorEmployeeId?.trim() ?? "";
+    leads = actorId
+      ? leads.filter((l) => l.ownerEmployeeId === actorId)
+      : [];
   }
-  if (filters.ownerEmployeeId) {
+  if (scoped?.isAdmin && filters.ownerEmployeeId) {
     leads = leads.filter((l) => l.ownerEmployeeId === filters.ownerEmployeeId);
   }
   if (filters.source) {
@@ -63,10 +66,13 @@ export function buildCrmDashboard(
     .sort((a, b) => b.value - a.value)
     .slice(0, 8);
 
+  const salesRoster = scoped?.isAdmin
+    ? employees
+    : employees.filter((e) => e.id === scoped?.actorEmployeeId);
   const salesPerformance = buildSalesPerformance(
     leads,
     stages,
-    employees,
+    salesRoster,
     scopedFeedback
   );
   const needsAttention = buildNeedsAttention(leads, salesPerformance);

@@ -13,16 +13,18 @@ import {
 import {
   buildDailyReportFacts,
   formatWorkedHours,
+  isInDateRange,
   isInDay,
   isValidReportDate,
 } from "../src/lib/daily-report";
+import { assembleEmployeeActivityRows } from "../src/lib/employee-activity";
 import {
   clampOrganicAdsQuantity,
   isOrganicAdsLinkableTask,
   isOrganicAdsType,
   ORGANIC_ADS_LOCAL_TYPE_ID,
 } from "../src/lib/organic-ads-task-match";
-import { canAssignToTeam, directReportIds } from "../src/lib/team";
+import { canAssignToTeam, directReportIds, findDirectReports } from "../src/lib/team";
 import { dailyPlanSeed } from "../src/mocks/daily-plan";
 import { saveDailyPlanSchema } from "../src/schemas/daily-plan.schema";
 import type { DailyPlanSlot } from "../src/types/daily-plan";
@@ -73,8 +75,13 @@ function at(hours: number, minutes = 0): Date {
 function emp(
   id: string,
   name: string,
-  managerEmployeeId?: string
+  managerEmployeeId?: string | string[]
 ): Employee {
+  const managerEmployeeIds = Array.isArray(managerEmployeeId)
+    ? managerEmployeeId
+    : managerEmployeeId
+      ? [managerEmployeeId]
+      : [];
   return {
     id,
     employeeId: id,
@@ -86,7 +93,8 @@ function emp(
     status: "active",
     joinDate: "2026-01-01",
     location: "Cairo",
-    managerEmployeeId,
+    managerEmployeeId: managerEmployeeIds[0],
+    managerEmployeeIds,
     companyId: "c1",
     createdAt: "",
     updatedAt: "",
@@ -181,6 +189,14 @@ function main() {
   assert(!isInDay("2026-08-01T10:00:00.000", "2026-08-02"), "ISO timestamp other day");
   assert(isInDay("2026-08-02", "2026-08-02"), "date-only in day");
   assert(!isInDay(null, "2026-08-02"), "null not in day");
+  assert(
+    isInDateRange("2026-08-03T09:00:00.000", "2026-08-02", "2026-08-04"),
+    "timestamp in range"
+  );
+  assert(
+    !isInDateRange("2026-08-01T09:00:00.000", "2026-08-02", "2026-08-04"),
+    "timestamp before range"
+  );
 
   assert(formatWorkedHours(0) === "—", "zero hours dash");
   assert(formatWorkedHours(45) === "45m", "minutes only");
@@ -222,6 +238,54 @@ function main() {
       mixed.some((f) => f.kind === "ads" && f.count === 3),
     "tasks + ads facts"
   );
+  const withCalls = buildDailyReportFacts({
+    onLeave: false,
+    attendanceStatus: "present",
+    taskTitles: [],
+    adsCount: 0,
+    crmCount: 0,
+    meetingsCount: 0,
+    activeCalls: 4,
+    inactiveCalls: 2,
+  });
+  assert(
+    withCalls.some((f) => f.kind === "activeCalls" && f.count === 4) &&
+      withCalls.some((f) => f.kind === "inactiveCalls" && f.count === 2),
+    "active + inactive call facts"
+  );
+
+  const activity = assembleEmployeeActivityRows({
+    employees: [{ id: "e1", name: "Ali", department: "Sales" }],
+    from: "2026-08-11",
+    to: "2026-08-11",
+    attendance: [],
+    tasks: [],
+    ads: [],
+    crm: [{ actorEmployeeId: "e1", occurredAt: "2026-08-11T08:00:00.000" }],
+    feedback: [
+      {
+        recordedByEmployeeId: "e1",
+        callAnswered: true,
+        createdAt: "2026-08-11T10:00:00.000",
+      },
+      {
+        recordedByEmployeeId: "e1",
+        callAnswered: false,
+        createdAt: "2026-08-11T11:00:00.000",
+      },
+      {
+        recordedByEmployeeId: "e1",
+        callAnswered: true,
+        createdAt: "2026-08-10T10:00:00.000",
+      },
+    ],
+    leaves: [],
+    meetings: [],
+  });
+  assert(activity.length === 1, "activity one employee");
+  assert(activity[0]?.crmActiveCalls === 1, "today active calls only");
+  assert(activity[0]?.crmInactiveCalls === 1, "today inactive calls only");
+  assert(activity[0]?.crmCount === 1, "today CRM activities");
   assert(
     buildDailyReportFacts({
       onLeave: false,
@@ -236,12 +300,18 @@ function main() {
 
   const roster = [
     emp("mgr", "Mona"),
-    emp("a", "Ali", "mgr"),
+    emp("lead", "Layla"),
+    emp("a", "Ali", ["mgr", "lead"]),
     emp("b", "Basma", "mgr"),
     emp("c", "Cyrus"),
   ];
   const reports = directReportIds("mgr", roster);
   assert(reports.includes("a") && reports.includes("b") && !reports.includes("c"), "direct reports");
+  assert(
+    findDirectReports("lead", roster).some((e) => e.id === "a") &&
+      !findDirectReports("lead", roster).some((e) => e.id === "b"),
+    "shared employee appears under both managers"
+  );
   assert(
     canAssignToTeam({ role: "admin", employeeId: "c" }, ["a", "c"], roster),
     "admin can assign anyone"

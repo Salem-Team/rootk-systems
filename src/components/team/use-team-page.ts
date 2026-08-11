@@ -182,12 +182,18 @@ export function useTeamPage() {
     await reload();
   }
 
-  async function assignManager(employeeId: string, managerEmployeeId: string) {
+  async function assignManagers(
+    employeeId: string,
+    managerEmployeeIds: string[]
+  ) {
     setManagerBusyId(employeeId);
-    const manager = employees.find((e) => e.id === managerEmployeeId);
+    const names = managerEmployeeIds
+      .map((id) => employees.find((e) => e.id === id)?.name ?? "")
+      .filter(Boolean);
     const res = await updateEmployee(employeeId, {
-      managerEmployeeId: managerEmployeeId || "",
-      manager: manager?.name ?? "",
+      managerEmployeeIds,
+      managerEmployeeId: managerEmployeeIds[0] ?? "",
+      manager: names.join(" · "),
     });
     setManagerBusyId(null);
     if (!res.success) {
@@ -224,7 +230,7 @@ export function useTeamPage() {
     openAssignTask,
     openAssignTarget,
     saveTask,
-    assignManager,
+    assignManagers,
     reload,
   };
 }

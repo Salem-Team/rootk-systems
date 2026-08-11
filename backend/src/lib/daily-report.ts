@@ -26,7 +26,9 @@ export type DailyReportFact =
   | { kind: "tasks"; count: number; sample: string }
   | { kind: "ads"; count: number }
   | { kind: "crm"; count: number }
-  | { kind: "meetings"; count: number };
+  | { kind: "meetings"; count: number }
+  | { kind: "activeCalls"; count: number }
+  | { kind: "inactiveCalls"; count: number };
 
 export function buildDailyReportFacts(input: {
   onLeave: boolean;
@@ -35,6 +37,8 @@ export function buildDailyReportFacts(input: {
   adsCount: number;
   crmCount: number;
   meetingsCount: number;
+  activeCalls?: number;
+  inactiveCalls?: number;
 }): DailyReportFact[] {
   if (input.onLeave) return [{ kind: "leave" }];
   if (input.attendanceStatus === "absent") return [{ kind: "absent" }];
@@ -48,6 +52,12 @@ export function buildDailyReportFacts(input: {
     });
   }
   if (input.adsCount > 0) facts.push({ kind: "ads", count: input.adsCount });
+  if ((input.activeCalls ?? 0) > 0) {
+    facts.push({ kind: "activeCalls", count: input.activeCalls ?? 0 });
+  }
+  if ((input.inactiveCalls ?? 0) > 0) {
+    facts.push({ kind: "inactiveCalls", count: input.inactiveCalls ?? 0 });
+  }
   if (input.crmCount > 0) facts.push({ kind: "crm", count: input.crmCount });
   if (input.meetingsCount > 0) {
     facts.push({ kind: "meetings", count: input.meetingsCount });

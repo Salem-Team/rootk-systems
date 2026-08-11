@@ -6,7 +6,9 @@ export type DailyReportFactKind =
   | "tasks"
   | "ads"
   | "crm"
-  | "meetings";
+  | "meetings"
+  | "activeCalls"
+  | "inactiveCalls";
 
 export interface DailyReportFact {
   kind: DailyReportFactKind;
@@ -27,11 +29,18 @@ export interface DailyReportRow {
   tasksOpen: number;
   adsCount: number;
   crmCount: number;
+  crmActiveCalls: number;
+  crmInactiveCalls: number;
   meetingsCount: number;
+  presentDays: number;
+  lateDays: number;
+  absentDays: number;
   facts: DailyReportFact[];
 }
 
 export interface DailyReport {
   date: string;
+  from?: string;
+  to?: string;
   rows: DailyReportRow[];
 }

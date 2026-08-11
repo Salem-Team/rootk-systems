@@ -39,7 +39,7 @@ const SheetContent = React.forwardRef<
         ref={ref}
         data-ui-overlay=""
         className={cn(
-          "fixed inset-y-0 end-0 z-50 flex h-full w-full max-w-xl flex-col gap-0 overflow-y-auto border-s border-border bg-card px-6 pb-6 pt-6 shadow-[var(--shadow-card-hover)] outline-none",
+          "fixed inset-y-0 end-0 z-50 flex h-full w-full max-w-xl flex-col gap-0 overflow-y-auto border-s border-border bg-card px-4 pb-6 pt-6 shadow-[var(--shadow-card-hover)] outline-none sm:px-6",
           "max-sm:inset-x-0 max-sm:end-0 max-sm:max-w-none",
           "pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]",
           "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-220 data-[state=open]:duration-380",

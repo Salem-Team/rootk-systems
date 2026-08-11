@@ -1,10 +1,11 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { EmptyState } from "@/components/shared/empty-state";
 import { AnalyticsChartsStudio } from "@/components/reports/analytics-charts-studio";
+import { EmployeeActivityTable } from "@/components/reports/employee-activity-table";
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
+import type { DailyReportRow } from "@/types";
 
 export function LeaveAnalyticsPanel() {
   const { t } = useTranslation();
@@ -62,7 +63,7 @@ export function LeaveAnalyticsPanel() {
   );
 }
 
-export function PerformanceOverviewPanel() {
+export function PerformanceOverviewPanel({ rows }: { rows: DailyReportRow[] }) {
   const { t } = useTranslation();
 
   return (
@@ -75,10 +76,7 @@ export function PerformanceOverviewPanel() {
           {t("analytics.performanceDesc")}
         </p>
       </div>
-      <EmptyState
-        title={t("common.noResults")}
-        description={t("analytics.uiOnlyNote")}
-      />
+      <EmployeeActivityTable rows={rows} />
     </div>
   );
 }

@@ -68,6 +68,7 @@ export default function CrmPage() {
                 hub.canViewPerformance ? () => hub.setTab("performance") : undefined
               }
               employees={hub.safeEmployees}
+              canAssign={hub.canAssign}
             />
           ) : null}
 
