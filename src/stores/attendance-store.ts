@@ -54,6 +54,7 @@ export const useAttendanceStore = create<AttendanceState>((set) => ({
     try {
       let location: PunchLocation | undefined;
       try {
+        // Office days require company geofence GPS; remote/WFH skips it.
         location = await resolveOfficeLocation(!wfh);
       } catch (geoError) {
         const message =
@@ -91,9 +92,10 @@ export const useAttendanceStore = create<AttendanceState>((set) => ({
       const message = err instanceof Error ? err.message : undefined;
       const mapped = mapPunchError(undefined, message);
       set({
-        error: mapped.error === "errors.checkInFailed"
-          ? "errors.checkInFailed"
-          : mapped.error,
+        error:
+          mapped.error === "errors.checkInFailed"
+            ? "errors.checkInFailed"
+            : mapped.error,
         errorDetail: mapped.detail ?? message ?? null,
         isCheckingIn: false,
       });

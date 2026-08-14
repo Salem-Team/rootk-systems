@@ -53,6 +53,10 @@ export async function loadWorkClock(): Promise<WorkClockSchedule> {
   };
 }
 
+/**
+ * Office-day punches must be inside company geofence.
+ * Remote / WFH punches skip this (callers pass null snapshot instead).
+ */
 export async function assertOfficeGeofence(
   location: PunchLocation | undefined,
   action: "check-in" | "check-out"

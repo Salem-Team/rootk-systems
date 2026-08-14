@@ -69,7 +69,7 @@ export class AttendanceSharedService {
 
   /**
    * Office-day punches must happen inside an active company office geofence.
-   * WFH punches skip this check. GPS accuracy is padded into the radius.
+   * WFH / remote punches skip this check. GPS accuracy is padded into the radius.
    */
   async assertOfficeGeofence(
     companyId: string,

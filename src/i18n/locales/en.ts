@@ -685,7 +685,7 @@ export const en = {
     officeGeoHint:
       "Office days require your current location inside the company geofence",
     officeGeoHintDetail:
-      "Your browser will ask for location permission automatically — you do not paste any link.",
+      "Your browser will ask for location permission automatically — you do not paste any link. Remote / WFH days skip location.",
     locating: "Getting your location...",
     notCheckedIn: "Not checked in yet",
     checkedInAt: "Checked in at",
