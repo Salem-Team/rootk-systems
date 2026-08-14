@@ -68,6 +68,10 @@ export function useCrmHub() {
     sort: "updatedAt",
     order: "desc",
   });
+  /** Owner filter for leads stage cards — local only so counts update without reload. */
+  const [overviewOwnerEmployeeId, setOverviewOwnerEmployeeId] = useState<
+    string | undefined
+  >();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<CrmLead | null>(null);
@@ -243,11 +247,7 @@ export function useCrmHub() {
   }
 
   function setOverviewOwner(ownerEmployeeId: string | undefined) {
-    setLeadFilters((prev) => ({
-      ...prev,
-      page: 1,
-      ownerEmployeeId,
-    }));
+    setOverviewOwnerEmployeeId(ownerEmployeeId || undefined);
   }
 
   function openAllLeads() {
@@ -256,7 +256,7 @@ export function useCrmHub() {
       pageSize: prev.pageSize ?? 20,
       sort: prev.sort ?? "updatedAt",
       order: prev.order ?? "desc",
-      ownerEmployeeId: prev.ownerEmployeeId,
+      ownerEmployeeId: overviewOwnerEmployeeId,
     }));
     setLeadsView("table");
   }
@@ -267,7 +267,7 @@ export function useCrmHub() {
       pageSize: prev.pageSize ?? 20,
       sort: prev.sort ?? "updatedAt",
       order: prev.order ?? "desc",
-      ownerEmployeeId: prev.ownerEmployeeId,
+      ownerEmployeeId: overviewOwnerEmployeeId,
       stageId,
     }));
     setLeadsView("table");
@@ -275,6 +275,7 @@ export function useCrmHub() {
 
   function backToLeadsCards() {
     setLeadsView("cards");
+    setOverviewOwnerEmployeeId(leadFilters.ownerEmployeeId);
     setLeadFilters((prev) => ({
       page: 1,
       pageSize: prev.pageSize ?? 20,
@@ -306,10 +307,10 @@ export function useCrmHub() {
   }
 
   const overviewLeads = useMemo(() => {
-    const ownerId = leadFilters.ownerEmployeeId?.trim();
+    const ownerId = overviewOwnerEmployeeId?.trim();
     if (!ownerId) return safePipelineLeads;
     return safePipelineLeads.filter((lead) => lead.ownerEmployeeId === ownerId);
-  }, [safePipelineLeads, leadFilters.ownerEmployeeId]);
+  }, [safePipelineLeads, overviewOwnerEmployeeId]);
 
   const stageCounts = useMemo(() => {
     const map = new Map<string, number>();
@@ -319,12 +320,7 @@ export function useCrmHub() {
     return [...map.entries()].map(([stageId, count]) => ({ stageId, count }));
   }, [overviewLeads]);
 
-  const overviewTotal = useMemo(() => {
-    if (safeLeadsPage.total > 0 && leadsView === "table") {
-      return safeLeadsPage.total;
-    }
-    return overviewLeads.length;
-  }, [safeLeadsPage.total, overviewLeads.length, leadsView]);
+  const overviewTotal = useMemo(() => overviewLeads.length, [overviewLeads]);
 
   return {
     canCreate,
@@ -343,6 +339,7 @@ export function useCrmHub() {
     setDashFilters,
     leadFilters,
     setLeadFilters,
+    overviewOwnerEmployeeId,
     formOpen,
     setFormOpen,
     editingLead,

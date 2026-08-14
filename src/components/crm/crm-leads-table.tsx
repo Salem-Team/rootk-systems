@@ -106,7 +106,7 @@ export function CrmLeadsTable({
                 onClick={() => onRowClick(lead)}
               >
                 <div
-                  className="pt-0.5"
+                  className="flex min-h-11 min-w-11 items-start justify-center pt-0.5"
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
                 >

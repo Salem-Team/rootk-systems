@@ -196,14 +196,14 @@ export function CrmInteractionBreakdownPanel({
         />
       ) : (
         <>
-          <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid gap-4 lg:grid-cols-2">
             <section className="surface-panel overflow-hidden">
               <div className="panel-header">
                 <h3 className="text-[0.95rem] font-semibold tracking-tight">
                   {t("crm.interactions.byDayTitle")}
                 </h3>
               </div>
-              <div className="panel-body h-[260px]">
+              <div className="panel-body h-[220px] sm:h-[260px]">
                 {dayChart.length === 0 ? (
                   <EmptyState compact title={t("crm.empty.chart")} />
                 ) : (
@@ -263,7 +263,7 @@ export function CrmInteractionBreakdownPanel({
                   {t("crm.interactions.byHourTitle")}
                 </h3>
               </div>
-              <div className="panel-body h-[260px]">
+              <div className="panel-body h-[220px] sm:h-[260px]">
                 {hourChart.length === 0 ? (
                   <EmptyState compact title={t("crm.empty.chart")} />
                 ) : (
@@ -332,32 +332,14 @@ export function CrmInteractionBreakdownPanel({
                 <EmptyState compact title={t("crm.interactions.empty")} />
               </div>
             ) : (
-              <DataTable>
-                <DataTableHeader>
-                  <DataTableHeaderRow>
-                    <DataTableHead>{t("crm.interactions.colClient")}</DataTableHead>
-                    <DataTableHead>{t("crm.interactions.colDate")}</DataTableHead>
-                    <DataTableHead className="text-end">
-                      {t("crm.interactions.colThatDay")}
-                    </DataTableHead>
-                    <DataTableHead className="text-end">
-                      {t("crm.interactions.colTotal")}
-                    </DataTableHead>
-                    <DataTableHead className="text-end">
-                      {t("crm.performance.colActiveCalls")}
-                    </DataTableHead>
-                    <DataTableHead className="text-end">
-                      {t("crm.performance.colInactiveCalls")}
-                    </DataTableHead>
-                    <DataTableHead className="text-end">
-                      {t("crm.interactions.meetings")}
-                    </DataTableHead>
-                  </DataTableHeaderRow>
-                </DataTableHeader>
-                <DataTableBody>
+              <>
+                <ul className="grid gap-2 p-3 md:hidden">
                   {breakdown.byClient.slice(0, 50).map((row) => (
-                    <DataTableRow key={`${row.leadId}-${row.date}-${row.ownerEmployeeId}`}>
-                      <DataTableCell>
+                    <li
+                      key={`${row.leadId}-${row.date}-${row.ownerEmployeeId}`}
+                      className="rounded-xl border border-border/70 bg-card px-3 py-3"
+                    >
+                      <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="truncate text-[13px] font-semibold">
                             {row.leadName}
@@ -368,55 +350,154 @@ export function CrmInteractionBreakdownPanel({
                             </p>
                           ) : null}
                         </div>
-                      </DataTableCell>
-                      <DataTableCell className="font-mono text-[12px] tabular-nums">
-                        {row.date}
-                      </DataTableCell>
-                      <DataTableCell className="text-end font-mono tabular-nums">
-                        {row.contactsThatDay}
-                      </DataTableCell>
-                      <DataTableCell className="text-end font-mono tabular-nums">
-                        {row.contactsTotal}
-                      </DataTableCell>
-                      <DataTableCell className="text-end">
-                        {row.activeCalls > 0 ? (
-                          <button
-                            type="button"
-                            onClick={() => openClientCalls(row, true)}
-                            className="font-mono tabular-nums text-emerald-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-emerald-400"
-                            aria-label={`${t("crm.performance.colActiveCalls")}: ${row.activeCalls}`}
-                          >
-                            {row.activeCalls}
-                          </button>
-                        ) : (
-                          <span className="font-mono tabular-nums text-emerald-700/50 dark:text-emerald-400/50">
-                            0
-                          </span>
-                        )}
-                      </DataTableCell>
-                      <DataTableCell className="text-end">
-                        {row.inactiveCalls > 0 ? (
-                          <button
-                            type="button"
-                            onClick={() => openClientCalls(row, false)}
-                            className="font-mono tabular-nums text-rose-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-rose-400"
-                            aria-label={`${t("crm.performance.colInactiveCalls")}: ${row.inactiveCalls}`}
-                          >
-                            {row.inactiveCalls}
-                          </button>
-                        ) : (
-                          <span className="font-mono tabular-nums text-rose-700/50 dark:text-rose-400/50">
-                            0
-                          </span>
-                        )}
-                      </DataTableCell>
-                      <DataTableCell className="text-end font-mono tabular-nums">
-                        {row.meetings}
-                      </DataTableCell>
-                    </DataTableRow>
+                        <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
+                          {row.date}
+                        </span>
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
+                        <div>
+                          <p>{t("crm.interactions.colThatDay")}</p>
+                          <p className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
+                            {row.contactsThatDay}
+                          </p>
+                        </div>
+                        <div>
+                          <p>{t("crm.interactions.colTotal")}</p>
+                          <p className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
+                            {row.contactsTotal}
+                          </p>
+                        </div>
+                        <div>
+                          <p>{t("crm.performance.colActiveCalls")}</p>
+                          {row.activeCalls > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => openClientCalls(row, true)}
+                              className="min-h-9 min-w-9 font-mono text-[13px] font-semibold tabular-nums text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-400"
+                            >
+                              {row.activeCalls}
+                            </button>
+                          ) : (
+                            <p className="font-mono text-[13px] font-semibold tabular-nums text-emerald-700/50">
+                              0
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <p>{t("crm.performance.colInactiveCalls")}</p>
+                          {row.inactiveCalls > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => openClientCalls(row, false)}
+                              className="min-h-9 min-w-9 font-mono text-[13px] font-semibold tabular-nums text-rose-700 underline-offset-2 hover:underline dark:text-rose-400"
+                            >
+                              {row.inactiveCalls}
+                            </button>
+                          ) : (
+                            <p className="font-mono text-[13px] font-semibold tabular-nums text-rose-700/50">
+                              0
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </li>
                   ))}
-                </DataTableBody>
-              </DataTable>
+                </ul>
+
+                <div className="hidden md:block">
+                  <DataTable>
+                    <DataTableHeader>
+                      <DataTableHeaderRow>
+                        <DataTableHead>
+                          {t("crm.interactions.colClient")}
+                        </DataTableHead>
+                        <DataTableHead>
+                          {t("crm.interactions.colDate")}
+                        </DataTableHead>
+                        <DataTableHead className="text-end">
+                          {t("crm.interactions.colThatDay")}
+                        </DataTableHead>
+                        <DataTableHead className="text-end">
+                          {t("crm.interactions.colTotal")}
+                        </DataTableHead>
+                        <DataTableHead className="text-end">
+                          {t("crm.performance.colActiveCalls")}
+                        </DataTableHead>
+                        <DataTableHead className="text-end">
+                          {t("crm.performance.colInactiveCalls")}
+                        </DataTableHead>
+                        <DataTableHead className="text-end">
+                          {t("crm.interactions.meetings")}
+                        </DataTableHead>
+                      </DataTableHeaderRow>
+                    </DataTableHeader>
+                    <DataTableBody>
+                      {breakdown.byClient.slice(0, 50).map((row) => (
+                        <DataTableRow
+                          key={`${row.leadId}-${row.date}-${row.ownerEmployeeId}`}
+                        >
+                          <DataTableCell>
+                            <div className="min-w-0">
+                              <p className="truncate text-[13px] font-semibold">
+                                {row.leadName}
+                              </p>
+                              {row.ownerEmployeeName ? (
+                                <p className="truncate text-[11px] text-muted-foreground">
+                                  {row.ownerEmployeeName}
+                                </p>
+                              ) : null}
+                            </div>
+                          </DataTableCell>
+                          <DataTableCell className="font-mono text-[12px] tabular-nums">
+                            {row.date}
+                          </DataTableCell>
+                          <DataTableCell className="text-end font-mono tabular-nums">
+                            {row.contactsThatDay}
+                          </DataTableCell>
+                          <DataTableCell className="text-end font-mono tabular-nums">
+                            {row.contactsTotal}
+                          </DataTableCell>
+                          <DataTableCell className="text-end">
+                            {row.activeCalls > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => openClientCalls(row, true)}
+                                className="min-h-9 min-w-9 px-1 font-mono tabular-nums text-emerald-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-emerald-400"
+                                aria-label={`${t("crm.performance.colActiveCalls")}: ${row.activeCalls}`}
+                              >
+                                {row.activeCalls}
+                              </button>
+                            ) : (
+                              <span className="font-mono tabular-nums text-emerald-700/50 dark:text-emerald-400/50">
+                                0
+                              </span>
+                            )}
+                          </DataTableCell>
+                          <DataTableCell className="text-end">
+                            {row.inactiveCalls > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => openClientCalls(row, false)}
+                                className="min-h-9 min-w-9 px-1 font-mono tabular-nums text-rose-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-rose-400"
+                                aria-label={`${t("crm.performance.colInactiveCalls")}: ${row.inactiveCalls}`}
+                              >
+                                {row.inactiveCalls}
+                              </button>
+                            ) : (
+                              <span className="font-mono tabular-nums text-rose-700/50 dark:text-rose-400/50">
+                                0
+                              </span>
+                            )}
+                          </DataTableCell>
+                          <DataTableCell className="text-end font-mono tabular-nums">
+                            {row.meetings}
+                          </DataTableCell>
+                        </DataTableRow>
+                      ))}
+                    </DataTableBody>
+                  </DataTable>
+                </div>
+              </>
             )}
           </section>
         </>

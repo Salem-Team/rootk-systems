@@ -14,9 +14,11 @@ import type {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-2">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 break-words font-medium text-foreground">{value}</dd>
+    <div className="grid gap-0.5 sm:grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)] sm:gap-2">
+      <dt className="text-[11px] text-muted-foreground sm:text-[13px]">{label}</dt>
+      <dd className="min-w-0 break-words text-[13px] font-medium text-foreground">
+        {value}
+      </dd>
     </div>
   );
 }

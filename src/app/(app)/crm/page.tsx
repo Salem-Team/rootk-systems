@@ -45,8 +45,8 @@ export default function CrmPage() {
         }
       />
 
-      <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-6">
-        <aside className="lg:sticky lg:top-20 lg:self-start">
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-6">
+        <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start">
           <CrmHubSidebar
             tab={hub.tab}
             onTabChange={hub.onTabChange}
@@ -57,7 +57,7 @@ export default function CrmPage() {
           />
         </aside>
 
-        <div className="min-w-0 space-y-4 sm:space-y-5">
+        <div className="min-w-0 space-y-3 sm:space-y-4 md:space-y-5">
           {hub.tab === "dashboard" && hub.canViewDashboard ? (
             <CrmDashboardPanel
               dashboard={hub.safeDashboard}
@@ -78,10 +78,10 @@ export default function CrmPage() {
               stages={hub.safeStages}
               stageCounts={hub.stageCounts}
               totalLeads={hub.overviewTotal}
-              loading={hub.loading}
+              loading={hub.loading && hub.safePipelineLeads.length === 0}
               employees={hub.safeEmployees}
               canAssign={hub.canAssign}
-              ownerEmployeeId={hub.leadFilters.ownerEmployeeId}
+              ownerEmployeeId={hub.overviewOwnerEmployeeId}
               onOwnerChange={hub.setOverviewOwner}
               onOpenAllLeads={hub.openAllLeads}
               onOpenStage={hub.openStageLeads}

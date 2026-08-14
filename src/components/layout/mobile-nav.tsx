@@ -103,10 +103,14 @@ export function MobileBottomNav() {
                 >
                   <Icon className="h-4 w-4" />
                 </motion.span>
-                <span className="relative z-10 max-w-full truncate text-[11px]">
+                <span className="relative z-10 max-w-full truncate px-0.5 text-[10px] leading-tight sm:text-[11px]">
                   {item.key === "tasks" && showTasksAdminLabel
-                    ? t("nav.tasksAdmin")
-                    : t(`nav.${item.key}`)}
+                    ? t("nav.tasksAdminShort")
+                    : item.key === "tasks"
+                      ? t("nav.tasksShort")
+                      : item.key === "crm"
+                        ? t("nav.crmShort")
+                        : t(`nav.${item.key}`)}
                 </span>
               </Link>
             </li>

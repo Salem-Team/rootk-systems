@@ -95,9 +95,10 @@ export function CrmLeadsPanel({
             variant="outline"
             disabled={exporting}
             onClick={() => void onExport()}
+            aria-label={t("crm.actions.export")}
           >
-            <Download className="me-1.5 h-3.5 w-3.5" />
-            {t("crm.actions.export")}
+            <Download className="h-3.5 w-3.5 sm:me-1.5" />
+            <span className="hidden sm:inline">{t("crm.actions.export")}</span>
           </Button>
           {canImport ? (
             <Button
@@ -105,9 +106,10 @@ export function CrmLeadsPanel({
               size="sm"
               variant="outline"
               onClick={() => setImportOpen(true)}
+              aria-label={t("crm.actions.import")}
             >
-              <Upload className="me-1.5 h-3.5 w-3.5" />
-              {t("crm.actions.import")}
+              <Upload className="h-3.5 w-3.5 sm:me-1.5" />
+              <span className="hidden sm:inline">{t("crm.actions.import")}</span>
             </Button>
           ) : null}
           <Button
@@ -118,7 +120,7 @@ export function CrmLeadsPanel({
             onClick={() => panel.setFiltersOpen((v) => !v)}
           >
             <SlidersHorizontal className="me-1.5 h-3.5 w-3.5" />
-            {t("crm.filters.stage")}
+            {t("crm.filters.title")}
           </Button>
         </div>
       </div>

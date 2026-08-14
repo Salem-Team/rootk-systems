@@ -187,18 +187,18 @@ export const MOBILE_NAV: AppNavItem[] = [
     anyOf: ["attendance.viewOwn", "attendance.viewTeam", "attendance.viewAll"],
   },
   {
+    key: "crm",
+    href: "/crm",
+    icon: ContactRound,
+    roles: [AppRole.admin, AppRole.employee],
+    anyOf: ["crm.viewLeads"],
+  },
+  {
     key: "tasks",
     href: "/tasks",
     icon: ListTodo,
     roles: [AppRole.admin, AppRole.employee],
     anyOf: ["tasks.viewOwn", "tasks.viewTeam", "tasks.viewAll"],
-  },
-  {
-    key: "schedule",
-    href: "/schedule",
-    icon: CalendarDays,
-    roles: [AppRole.admin],
-    anyOf: ["schedule.view"],
   },
   {
     key: "more",

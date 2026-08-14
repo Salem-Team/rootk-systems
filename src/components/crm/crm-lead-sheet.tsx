@@ -123,7 +123,7 @@ export function CrmLeadSheet({
                   </Button>
                 ) : null}
                 <Select value={lead.stageId} onValueChange={sheet.changeStage}>
-                  <SelectTrigger className="h-8 w-[150px]">
+                  <SelectTrigger className="h-8 w-full min-w-0 sm:w-[150px]">
                     <SelectValue placeholder={t("crm.actions.changeStage")} />
                   </SelectTrigger>
                   <SelectContent>

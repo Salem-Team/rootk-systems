@@ -98,7 +98,7 @@ export function useCrmHubLoaders({
   const loadPipeline = useCallback(async () => {
     const res = await getCrmLeads({
       page: 1,
-      pageSize: 100,
+      pageSize: 500,
       status: "active",
       sort: "updatedAt",
       order: "desc",

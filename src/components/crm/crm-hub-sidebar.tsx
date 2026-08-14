@@ -124,12 +124,12 @@ export function CrmHubSidebar({
         </p>
       </div>
 
-      <ul className="scroll-x flex gap-1 p-2 [scrollbar-width:none] lg:grid lg:gap-0.5 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
+      <ul className="scroll-x flex snap-x snap-mandatory gap-1 p-2 [scrollbar-width:thin] lg:grid lg:snap-none lg:gap-0.5 lg:overflow-visible">
         {views.map((item) => {
           const Icon = item.icon;
           const isActive = tab === item.id;
           return (
-            <li key={item.id} className="shrink-0 lg:w-full">
+            <li key={item.id} className="shrink-0 snap-start lg:w-full">
               <button
                 type="button"
                 onClick={() => onTabChange(item.id)}
