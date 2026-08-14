@@ -173,6 +173,7 @@ export const PERMISSION_CATALOG = [
   { id: "settings.manageNotifications", module: "settings", employeeDefault: false },
   { id: "settings.manageApprovals", module: "settings", employeeDefault: false },
   { id: "settings.managePermissions", module: "settings", employeeDefault: false },
+  { id: "settings.impersonateUsers", module: "settings", employeeDefault: false },
   { id: "settings.manageDemoData", module: "settings", employeeDefault: false },
   { id: "settings.viewEmployeePreferences", module: "settings", employeeDefault: false },
 

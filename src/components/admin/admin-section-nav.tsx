@@ -9,6 +9,7 @@ import {
   ClipboardCheck,
   Database,
   Home,
+  KeyRound,
   LayoutGrid,
   MapPin,
   Briefcase,
@@ -53,6 +54,7 @@ const ITEMS: {
   { id: "calendar", labelKey: "admin.navCalendar", icon: CalendarDays },
   { id: "notifications", labelKey: "admin.navNotifications", icon: Bell },
   { id: "approvals", labelKey: "admin.navApprovals", icon: ClipboardCheck },
+  { id: "accounts", labelKey: "admin.navAccounts", icon: KeyRound },
   {
     id: "employeePrefs",
     labelKey: "admin.navEmployeePrefs",
@@ -81,7 +83,7 @@ const GROUPS: {
   },
   {
     labelKey: "admin.groupPeople",
-    ids: ["notifications", "approvals", "employeePrefs"],
+    ids: ["notifications", "approvals", "accounts", "employeePrefs"],
   },
   {
     labelKey: "admin.groupPersonal",

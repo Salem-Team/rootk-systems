@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { NotificationsPopover } from "@/components/layout/notifications-popover";
+import { UserViewSwitcher } from "@/components/layout/user-view-switcher";
 import { useUiStore } from "@/stores/ui-store";
 import { useSessionStore } from "@/stores/session-store";
 import { useAttendanceStore } from "@/stores/attendance-store";
@@ -105,6 +106,8 @@ export function Navbar() {
           </div>
 
           <LanguageSwitcher />
+
+          <UserViewSwitcher />
 
           <Button
             variant="ghost"

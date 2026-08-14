@@ -4,7 +4,10 @@ import {
   loginWithCredentials,
   logoutRemote,
   refreshSession,
+  startImpersonationRemote,
+  stopImpersonationRemote,
   updateMyProfile,
+  type AuthImpersonationInfo,
   type AuthSessionPayload,
   type ProfileUpdatePayload,
 } from "@/api/auth.api";
@@ -32,6 +35,7 @@ import { employeeRepository, userRepository } from "@/repositories";
 import {
   getWorkEmployeeIdFromUser,
   useSessionStore,
+  type ImpersonationState,
   type SessionUser,
 } from "@/stores/session-store";
 import type { ApiResponse, AppUser, UserRole } from "@/types";
@@ -58,6 +62,18 @@ function emptyAuthPayload(): AuthSessionPayload {
     user: seedUserToAppUser(usersSeed[1] ?? usersSeed[0]),
     role: AppRole.employee,
     tokens: { accessToken: "" },
+    impersonation: null,
+  };
+}
+
+function toImpersonationState(
+  info?: AuthImpersonationInfo | null
+): ImpersonationState | null {
+  if (!info?.active || !info.impersonatorId) return null;
+  return {
+    impersonatorId: info.impersonatorId,
+    impersonatorName: info.impersonatorName || info.impersonatorEmail,
+    impersonatorEmail: info.impersonatorEmail || "",
   };
 }
 
@@ -68,6 +84,7 @@ function applyPayload(payload: AuthSessionPayload): void {
     accessToken: payload.tokens.accessToken,
     refreshToken: payload.tokens.refreshToken ?? null,
     permissions: payload.permissions,
+    impersonation: toImpersonationState(payload.impersonation),
   });
 }
 
@@ -198,6 +215,7 @@ export async function updateOwnProfile(input: {
           accessToken: current.accessToken ?? "",
           refreshToken: current.refreshToken,
           permissions: current.permissions,
+          impersonation: current.impersonation,
         });
       }
       return res;
@@ -269,6 +287,7 @@ export async function updateOwnProfile(input: {
       accessToken: session.accessToken ?? "",
       refreshToken: session.refreshToken,
       permissions: session.permissions,
+      impersonation: session.impersonation,
     });
 
     return ok({ user: saved, phone: phoneOut }, "Profile updated");
@@ -283,6 +302,13 @@ export async function changeOwnPassword(input: {
   newPassword: string;
 }): Promise<ApiResponse<boolean>> {
   try {
+    if (useSessionStore.getState().impersonation) {
+      return fail(
+        false,
+        "Cannot change password while viewing as another user",
+        "FORBIDDEN"
+      );
+    }
     if (input.newPassword.trim().length < 6) {
       return fail(false, "Password must be at least 6 characters", "VALIDATION");
     }
@@ -368,18 +394,114 @@ export async function hydrateCurrentUser(): Promise<ApiResponse<AppUser | null>>
     const res = await fetchMe();
     if (res.success && res.data) {
       const current = useSessionStore.getState();
-      const payload = res.data as AppUser & { permissions?: PermissionId[] };
+      const payload = res.data;
       current.applyAuthSession({
         user: payload,
         role: payload.role,
         accessToken: current.accessToken ?? "",
         refreshToken: current.refreshToken,
         permissions: payload.permissions,
+        impersonation: toImpersonationState(payload.impersonation),
       });
     }
     return res;
   } catch (error) {
     return fromError(error, null);
+  }
+}
+
+/** Enter another user's account (admin user-view). */
+export async function startUserView(
+  userId: string
+): Promise<ApiResponse<AuthSessionPayload>> {
+  try {
+    const session = useSessionStore.getState();
+    if (!session.authenticated) {
+      return fail(emptyAuthPayload(), "Not authenticated", "UNAUTHORIZED");
+    }
+    if (session.impersonation) {
+      return fail(
+        emptyAuthPayload(),
+        "Already viewing as another user — exit first",
+        "VALIDATION"
+      );
+    }
+    if (session.user.id === userId) {
+      return fail(
+        emptyAuthPayload(),
+        "You are already signed in as this user",
+        "VALIDATION"
+      );
+    }
+
+    if (!isApiMode()) {
+      await simulateDelay(180);
+      const target = await userRepository.findById(userId);
+      if (!target || !target.isActive || target.deletedAt) {
+        return fail(emptyAuthPayload(), "User not found", "NOT_FOUND");
+      }
+      const payload: AuthSessionPayload = {
+        ...toSessionPayload(target, await localPermissionsFor(target)),
+        impersonation: {
+          active: true,
+          impersonatorId: session.user.id,
+          impersonatorEmail: session.user.email,
+          impersonatorName: session.user.displayName || session.user.email,
+        },
+      };
+      applyPayload(payload);
+      return ok(payload, "Now viewing as user");
+    }
+
+    const res = await startImpersonationRemote({ userId });
+    if (res.success && res.data?.tokens?.accessToken) {
+      applyPayload(res.data);
+    }
+    return res;
+  } catch (error) {
+    return fromError(error, emptyAuthPayload());
+  }
+}
+
+/** Exit user-view and restore the real admin session. */
+export async function stopUserView(): Promise<ApiResponse<AuthSessionPayload>> {
+  try {
+    const session = useSessionStore.getState();
+    if (!session.impersonation) {
+      return fail(
+        emptyAuthPayload(),
+        "Not currently viewing as another user",
+        "VALIDATION"
+      );
+    }
+
+    if (!isApiMode()) {
+      await simulateDelay(160);
+      const admin = await userRepository.findById(
+        session.impersonation.impersonatorId
+      );
+      if (!admin || !admin.isActive || admin.deletedAt) {
+        return fail(
+          emptyAuthPayload(),
+          "Original admin session is no longer valid",
+          "UNAUTHORIZED"
+        );
+      }
+      const payload: AuthSessionPayload = {
+        ...toSessionPayload(admin, await localPermissionsFor(admin)),
+        impersonation: null,
+      };
+      applyPayload(payload);
+      return ok(payload, "Returned to admin");
+    }
+
+    const res = await stopImpersonationRemote();
+    if (res.success && res.data?.tokens?.accessToken) {
+      applyPayload(res.data);
+    }
+    return res;
+  } catch (error) {
+    return fromError(error, emptyAuthPayload());
   }
 }
 

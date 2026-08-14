@@ -35,6 +35,12 @@ export interface AuthTokens {
   refreshToken: string | null;
 }
 
+export interface ImpersonationState {
+  impersonatorId: string;
+  impersonatorName: string;
+  impersonatorEmail: string;
+}
+
 function toSessionUser(role: UserRole): SessionUser {
   const seed = usersSeed.find((u) => u.role === role) ?? usersSeed[0];
   const displayName =
@@ -92,6 +98,8 @@ interface SessionState {
   accessToken: string | null;
   refreshToken: string | null;
   permissions: PermissionId[];
+  /** Present while admin is viewing as another user. */
+  impersonation: ImpersonationState | null;
   /** Apply auth payload (JWT or local session). */
   applyAuthSession: (input: {
     user: AppUser | SessionUser;
@@ -99,17 +107,20 @@ interface SessionState {
     accessToken: string;
     refreshToken?: string | null;
     permissions?: PermissionId[] | string[] | null;
+    impersonation?: ImpersonationState | null;
   }) => void;
   setPermissions: (permissions: PermissionId[]) => void;
   setTokens: (tokens: AuthTokens) => void;
+  setImpersonation: (impersonation: ImpersonationState | null) => void;
   signOut: () => void;
   isAdmin: () => boolean;
   isEmployee: () => boolean;
+  isImpersonating: () => boolean;
 }
 
 /**
  * UI + auth session.
- * Role comes only from the authenticated account — no view switching.
+ * Role comes from the active account; impersonation keeps the real admin id for exit.
  */
 export const useSessionStore = create<SessionState>()(
   persist(
@@ -120,7 +131,15 @@ export const useSessionStore = create<SessionState>()(
       accessToken: null,
       refreshToken: null,
       permissions: permissionsForRole(AppRole.admin),
-      applyAuthSession: ({ user, role, accessToken, refreshToken, permissions }) =>
+      impersonation: null,
+      applyAuthSession: ({
+        user,
+        role,
+        accessToken,
+        refreshToken,
+        permissions,
+        impersonation,
+      }) =>
         set({
           authenticated: true,
           role,
@@ -130,10 +149,12 @@ export const useSessionStore = create<SessionState>()(
           permissions: Array.isArray(permissions)
             ? (permissions.filter(Boolean) as PermissionId[])
             : permissionsForRole(role),
+          impersonation: impersonation ?? null,
         }),
       setPermissions: (permissions) => set({ permissions }),
       setTokens: ({ accessToken, refreshToken }) =>
         set({ accessToken, refreshToken }),
+      setImpersonation: (impersonation) => set({ impersonation }),
       signOut: () =>
         set({
           authenticated: false,
@@ -142,9 +163,11 @@ export const useSessionStore = create<SessionState>()(
           accessToken: null,
           refreshToken: null,
           permissions: permissionsForRole(AppRole.admin),
+          impersonation: null,
         }),
       isAdmin: () => get().role === AppRole.admin,
       isEmployee: () => get().role === AppRole.employee,
+      isImpersonating: () => Boolean(get().impersonation),
     }),
     {
       name: "rootk-session",
@@ -155,6 +178,7 @@ export const useSessionStore = create<SessionState>()(
         refreshToken: state.refreshToken,
         user: state.user,
         permissions: state.permissions,
+        impersonation: state.impersonation,
       }),
       merge: (persisted, current) => {
         const p = persisted as
@@ -167,6 +191,7 @@ export const useSessionStore = create<SessionState>()(
                 | "refreshToken"
                 | "user"
                 | "permissions"
+                | "impersonation"
               >
             >
           | undefined;
@@ -176,6 +201,12 @@ export const useSessionStore = create<SessionState>()(
             ? fromAppUser(rawUser as AppUser)
             : current.user;
         const role = p?.role ?? current.role;
+        const impersonation =
+          p?.impersonation &&
+          typeof p.impersonation === "object" &&
+          typeof p.impersonation.impersonatorId === "string"
+            ? p.impersonation
+            : null;
         return {
           ...current,
           role,
@@ -186,6 +217,7 @@ export const useSessionStore = create<SessionState>()(
           permissions: Array.isArray(p?.permissions)
             ? p.permissions
             : permissionsForRole(role),
+          impersonation,
         };
       },
     }
@@ -243,4 +275,8 @@ export function getAccessToken(): string | null {
 
 export function getRefreshToken(): string | null {
   return useSessionStore.getState().refreshToken;
+}
+
+export function isImpersonatingSession(): boolean {
+  return Boolean(useSessionStore.getState().impersonation);
 }

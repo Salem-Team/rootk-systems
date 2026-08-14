@@ -12,6 +12,8 @@ export const API_ROUTES = {
     logout: "/auth/logout",
     me: "/auth/me",
     profile: "/auth/profile",
+    impersonate: "/auth/impersonate",
+    stopImpersonate: "/auth/stop-impersonate",
   },
   employees: {
     root: "/employees",
@@ -52,7 +54,9 @@ export const API_ROUTES = {
   },
   users: {
     root: "/users",
+    accounts: "/users/accounts",
     byId: (id: string) => `/users/${id}`,
+    loginPassword: (id: string) => `/users/${id}/login-password`,
     preferences: (id: string) => `/users/${id}/preferences`,
   },
   permissions: {

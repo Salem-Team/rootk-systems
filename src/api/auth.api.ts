@@ -9,11 +9,19 @@ export interface AuthTokens {
   expiresIn?: number;
 }
 
+export interface AuthImpersonationInfo {
+  active: boolean;
+  impersonatorId: string;
+  impersonatorEmail: string;
+  impersonatorName: string;
+}
+
 export interface AuthSessionPayload {
   user: AppUser;
   role: UserRole;
   tokens: AuthTokens;
   permissions?: PermissionId[];
+  impersonation?: AuthImpersonationInfo | null;
 }
 
 /** POST /auth/login */
@@ -27,6 +35,20 @@ export function loginWithCredentials(input: {
     emptySession(),
     { skipAuth: true }
   );
+}
+
+/** POST /auth/impersonate */
+export function startImpersonationRemote(input: {
+  userId: string;
+}): Promise<ApiResponse<AuthSessionPayload>> {
+  return api.post(API_ROUTES.auth.impersonate, input, emptySession());
+}
+
+/** POST /auth/stop-impersonate */
+export function stopImpersonationRemote(): Promise<
+  ApiResponse<AuthSessionPayload>
+> {
+  return api.post(API_ROUTES.auth.stopImpersonate, {}, emptySession());
 }
 
 /** POST /auth/change-password */
@@ -60,8 +82,13 @@ export function logoutRemote(
   );
 }
 
+export type MePayload = AppUser & {
+  permissions?: PermissionId[];
+  impersonation?: AuthImpersonationInfo | null;
+};
+
 /** GET /auth/me */
-export function fetchMe(): Promise<ApiResponse<AppUser | null>> {
+export function fetchMe(): Promise<ApiResponse<MePayload | null>> {
   return api.get(API_ROUTES.auth.me, null);
 }
 
@@ -105,5 +132,6 @@ function emptySession(): AuthSessionPayload {
     },
     role: "employee",
     tokens: { accessToken: "" },
+    impersonation: null,
   };
 }

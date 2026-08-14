@@ -16,6 +16,7 @@ import { PositionsAdminPanel } from "@/components/admin/positions-admin-panel";
 import { LocationsAdminPanel } from "@/components/admin/locations-admin-panel";
 import { CompanyCalendarAdminPanel } from "@/components/admin/company-calendar-admin-panel";
 import { EmployeePreferencesPanel } from "@/components/admin/employee-preferences-panel";
+import { UserAccountsPanel } from "@/components/admin/user-accounts-panel";
 import {
   ApprovalsPanel,
   NotificationSettingsPanel,
@@ -180,6 +181,7 @@ export function CompanyAdminWorkspace() {
               />
             ) : null}
             {section === "approvals" ? <ApprovalsPanel /> : null}
+            {section === "accounts" ? <UserAccountsPanel /> : null}
             {section === "employeePrefs" ? <EmployeePreferencesPanel /> : null}
             {section === "myPrefs" ? (
               <SettingsForm hideCompanyPolicy />

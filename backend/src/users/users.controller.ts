@@ -1,7 +1,17 @@
-import { Controller, UseGuards, Get, Post, Put, Body, Param, Query } from "@nestjs/common";
+import {
+  Controller,
+  UseGuards,
+  Get,
+  Post,
+  Put,
+  Body,
+  Param,
+  Query,
+} from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import { UsersService } from "./users.service";
 import { ActorId, CompanyId } from "../common/tenant";
+import { RequirePermission } from "../common/permissions.decorator";
 
 @Controller("users")
 @UseGuards(AuthGuard("jwt"))
@@ -11,6 +21,28 @@ export class UsersController {
   @Get()
   list(@CompanyId() companyId: string, @Query("role") role?: string) {
     return this.service.list(companyId, role);
+  }
+
+  @Get("accounts")
+  @RequirePermission("employees.view")
+  listAccounts(@CompanyId() companyId: string) {
+    return this.service.listAccounts(companyId);
+  }
+
+  @Put(":id/login-password")
+  @RequirePermission("employees.resetPassword")
+  setLoginPassword(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @Param("id") id: string,
+    @Body() body: { password?: string }
+  ) {
+    return this.service.setLoginPassword(
+      companyId,
+      actorId,
+      id,
+      typeof body.password === "string" ? body.password : ""
+    );
   }
 
   @Get(":id")

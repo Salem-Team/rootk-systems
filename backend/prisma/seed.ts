@@ -1,5 +1,6 @@
 import { PrismaClient, UserRole, EmployeeStatus } from "@prisma/client";
-import { hashDemoPassword } from "../src/auth/password.util";
+import { DEMO_PASSWORD, hashDemoPassword } from "../src/auth/password.util";
+import { ADMIN_VISIBLE_PASSWORD_KEY } from "../src/common/user-password-preview";
 import { DEFAULT_COMPANY_NOTIFICATIONS } from "../src/lib/notification-policy";
 import {
   DEFAULT_PAYROLL_RULES,
@@ -218,6 +219,7 @@ async function main() {
         nameKey: "user.adminFullName",
         firstNameKey: "user.adminFirstName",
         protected: true,
+        [ADMIN_VISIBLE_PASSWORD_KEY]: DEMO_PASSWORD,
       },
     },
     {
@@ -233,6 +235,7 @@ async function main() {
       metadata: {
         nameKey: "user.employeeFullName",
         firstNameKey: "user.employeeFirstName",
+        [ADMIN_VISIBLE_PASSWORD_KEY]: DEMO_PASSWORD,
       },
     },
   ];

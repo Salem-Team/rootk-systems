@@ -6,6 +6,7 @@ import { NotificationsService } from "../notifications/notifications.service";
 import { writeActivity } from "../common/activity-writer";
 import { hashPassword } from "../auth/password.util";
 import { AppRole } from "../common/roles";
+import { withAdminVisiblePassword } from "../common/user-password-preview";
 import { requireCreateFields } from "./employees-validators";
 import { resolveManagerAssignment } from "./employees-manager";
 
@@ -110,6 +111,14 @@ export class EmployeesCreateService {
         .map((p) => p[0]?.toUpperCase() ?? "")
         .join("");
 
+      const accountMeta = withAdminVisiblePassword(
+        {
+          nameKey: "user.employeeFullName",
+          firstNameKey: "user.employeeFirstName",
+        },
+        password
+      );
+
       if (existingUser?.deletedAt) {
         await this.prisma.user.update({
           where: { id: existingUser.id },
@@ -125,10 +134,7 @@ export class EmployeesCreateService {
             isArchived: false,
             updatedBy: actorId,
             version: { increment: 1 },
-            metadata: {
-              nameKey: "user.employeeFullName",
-              firstNameKey: "user.employeeFirstName",
-            },
+            metadata: accountMeta,
           },
         });
       } else {
@@ -144,10 +150,7 @@ export class EmployeesCreateService {
             isActive: true,
             createdBy: actorId,
             updatedBy: actorId,
-            metadata: {
-              nameKey: "user.employeeFullName",
-              firstNameKey: "user.employeeFirstName",
-            },
+            metadata: accountMeta,
           },
         });
         await this.prisma.userPreferences.create({

@@ -174,6 +174,7 @@ export const PERMISSION_CATALOG = [
   { id: "settings.manageNotifications", module: "settings", employeeDefault: false },
   { id: "settings.manageApprovals", module: "settings", employeeDefault: false },
   { id: "settings.managePermissions", module: "settings", employeeDefault: false },
+  { id: "settings.impersonateUsers", module: "settings", employeeDefault: false },
   { id: "settings.manageDemoData", module: "settings", employeeDefault: false },
   { id: "settings.viewEmployeePreferences", module: "settings", employeeDefault: false },
 
@@ -411,6 +412,7 @@ export const ADMIN_SECTION_PERMISSION: Record<string, PermissionId | null> = {
   calendar: "schedule.manageHolidays",
   notifications: "settings.manageNotifications",
   approvals: "settings.manageApprovals",
+  accounts: "employees.view",
   employeePrefs: "settings.viewEmployeePreferences",
   myPrefs: null,
   appearance: "settings.editCompanyProfile",

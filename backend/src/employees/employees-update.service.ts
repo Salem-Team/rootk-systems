@@ -3,6 +3,7 @@ import { EmployeeStatus, Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { mapEmployee, parseDate } from "../common/mappers";
 import { hashPassword } from "../auth/password.util";
+import { withAdminVisiblePassword } from "../common/user-password-preview";
 import { assertOptionalPassword } from "./employees-validators";
 import { resolveManagerAssignment } from "./employees-manager";
 
@@ -87,6 +88,10 @@ export class EmployeesUpdateService {
       }
       if (password) {
         userPatch.passwordHash = hashPassword(password);
+        userPatch.metadata = withAdminVisiblePassword(
+          linkedUser.metadata,
+          password
+        );
       }
       await this.prisma.user.update({
         where: { id: linkedUser.id },

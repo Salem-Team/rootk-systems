@@ -13,6 +13,7 @@ import { IsEmail, IsOptional, IsString, MinLength } from "class-validator";
 import { AuthService } from "./auth.service";
 import { CurrentUser, type JwtPayload } from "../common/decorators/current-user";
 import { Public } from "../common/public.decorator";
+import { RequirePermission } from "../common/permissions.decorator";
 
 class LoginDto {
   @Transform(({ value }) =>
@@ -62,6 +63,12 @@ class UpdateProfileDto {
   phone?: string;
 }
 
+class ImpersonateDto {
+  @IsString()
+  @MinLength(1)
+  userId!: string;
+}
+
 @Controller("auth")
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
@@ -71,6 +78,27 @@ export class AuthController {
   @HttpCode(200)
   login(@Body() body: LoginDto) {
     return this.auth.login(body.email, body.password);
+  }
+
+  @Post("impersonate")
+  @HttpCode(200)
+  @UseGuards(AuthGuard("jwt"))
+  @RequirePermission("settings.impersonateUsers")
+  impersonate(
+    @CurrentUser() user: JwtPayload,
+    @Body() body: ImpersonateDto
+  ) {
+    if (!user) throw new UnauthorizedException();
+    return this.auth.startImpersonation(user, body.userId);
+  }
+
+  /** Exit user-view — allowed whenever the JWT carries impersonatorId. */
+  @Post("stop-impersonate")
+  @HttpCode(200)
+  @UseGuards(AuthGuard("jwt"))
+  stopImpersonate(@CurrentUser() user: JwtPayload) {
+    if (!user) throw new UnauthorizedException();
+    return this.auth.stopImpersonation(user);
   }
 
   @Post("change-password")
@@ -84,7 +112,8 @@ export class AuthController {
     return this.auth.changePassword(
       user.sub,
       body.currentPassword,
-      body.newPassword
+      body.newPassword,
+      { impersonatorId: user.impersonatorId }
     );
   }
 

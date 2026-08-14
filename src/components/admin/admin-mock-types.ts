@@ -11,6 +11,7 @@ export type AdminSection =
   | "calendar"
   | "notifications"
   | "approvals"
+  | "accounts"
   | "employeePrefs"
   | "myPrefs"
   | "appearance"

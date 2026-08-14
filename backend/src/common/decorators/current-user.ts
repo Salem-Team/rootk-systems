@@ -6,6 +6,8 @@ export type JwtPayload = {
   companyId: string;
   employeeId?: string;
   permissions?: string[];
+  /** Real admin user id when viewing as another account. */
+  impersonatorId?: string;
 };
 
 export const CurrentUser = createParamDecorator(

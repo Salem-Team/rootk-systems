@@ -247,3 +247,4 @@ export type * from "@/types/organic-ads";
 export type * from "@/types/daily-plan";
 export type * from "@/types/daily-report";
 export type * from "@/types/crm";
+export type * from "@/types/user-accounts";

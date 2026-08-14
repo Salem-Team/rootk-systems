@@ -9,6 +9,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const authenticated = useSessionStore((s) => s.authenticated);
+  const userId = useSessionStore((s) => s.user.id);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -29,7 +30,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         useSessionStore.getState().setPermissions(res.data);
       }
     });
-  }, [authenticated, ready]);
+  }, [authenticated, ready, userId]);
 
   if (!ready || !authenticated) {
     return (

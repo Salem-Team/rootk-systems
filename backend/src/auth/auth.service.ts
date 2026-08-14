@@ -1,6 +1,8 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
@@ -12,6 +14,7 @@ import { mapUser } from "../common/mappers";
 import type { JwtPayload } from "../common/decorators/current-user";
 import { loadEffectivePermissions } from "../common/permissions";
 import { hashPassword, verifyPassword } from "./password.util";
+import { withAdminVisiblePassword } from "../common/user-password-preview";
 import {
   resolveLoginEmails,
   isSystemAdminEmail,
@@ -21,6 +24,19 @@ import {
 function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
+
+type SessionBundle = {
+  user: ReturnType<typeof mapUser>;
+  role: "admin" | "employee";
+  tokens: { accessToken: string; refreshToken: string };
+  permissions: string[];
+  impersonation: {
+    active: boolean;
+    impersonatorId: string;
+    impersonatorEmail: string;
+    impersonatorName: string;
+  } | null;
+};
 
 @Injectable()
 export class AuthService {
@@ -35,9 +51,18 @@ export class AuthService {
   }
 
   private async issueTokens(payload: JwtPayload) {
-    const accessToken = this.jwt.sign({ ...payload });
+    const tokenPayload: JwtPayload = {
+      sub: payload.sub,
+      role: payload.role,
+      companyId: payload.companyId,
+      employeeId: payload.employeeId,
+      ...(payload.impersonatorId
+        ? { impersonatorId: payload.impersonatorId }
+        : {}),
+    };
+    const accessToken = this.jwt.sign({ ...tokenPayload });
     const refreshToken = this.jwt.sign(
-      { ...payload, jti: randomUUID() },
+      { ...tokenPayload, jti: randomUUID() },
       {
         secret: this.config.get<string>("JWT_SECRET", "rootk-dev-secret"),
         expiresIn: "7d",
@@ -46,12 +71,78 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     await this.prisma.refreshToken.create({
       data: {
-        userId: payload.sub,
+        userId: tokenPayload.sub,
         tokenHash: hashToken(refreshToken),
         expiresAt,
       },
     });
     return { accessToken, refreshToken };
+  }
+
+  private async buildSession(
+    row: {
+      id: string;
+      role: "admin" | "employee";
+      companyId: string;
+      employeeId: string | null;
+      email: string;
+      displayName: string | null;
+      firstName: string | null;
+      lastName: string | null;
+      initials: string;
+      isActive: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+      createdBy: string | null;
+      updatedBy: string | null;
+      deletedAt: Date | null;
+      isArchived: boolean;
+      version: number;
+      metadata: unknown;
+    },
+    impersonatorId?: string
+  ): Promise<SessionBundle> {
+    const permissions = await loadEffectivePermissions(this.prisma, row);
+    const tokens = await this.issueTokens({
+      sub: row.id,
+      role: row.role,
+      companyId: row.companyId,
+      employeeId: row.employeeId ?? undefined,
+      ...(impersonatorId ? { impersonatorId } : {}),
+    });
+
+    let impersonation: SessionBundle["impersonation"] = null;
+    if (impersonatorId) {
+      const actor = await this.prisma.user.findFirst({
+        where: { id: impersonatorId, deletedAt: null },
+        select: {
+          id: true,
+          email: true,
+          displayName: true,
+          firstName: true,
+          lastName: true,
+        },
+      });
+      const name = [actor?.firstName, actor?.lastName]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      impersonation = {
+        active: true,
+        impersonatorId,
+        impersonatorEmail: actor?.email ?? "",
+        impersonatorName:
+          name || actor?.displayName?.trim() || actor?.email || impersonatorId,
+      };
+    }
+
+    return {
+      user: mapUser(row),
+      role: row.role,
+      tokens,
+      permissions,
+      impersonation,
+    };
   }
 
   async login(email: string, password: string) {
@@ -81,22 +172,69 @@ export class AuthService {
     if (!row || !verifyPassword(password, row.passwordHash)) {
       throw new UnauthorizedException("Invalid email or password");
     }
-    const user = mapUser(row);
-    const permissions = await loadEffectivePermissions(this.prisma, row);
-    const tokens = await this.issueTokens({
-      sub: row.id,
-      role: row.role,
-      companyId: row.companyId,
-      employeeId: row.employeeId ?? undefined,
+    return this.buildSession(row);
+  }
+
+  /** Enter another user's session while keeping the real admin id on the JWT. */
+  async startImpersonation(actor: JwtPayload, targetUserId: string) {
+    if (actor.impersonatorId) {
+      throw new BadRequestException("Already viewing as another user — exit first");
+    }
+    if (actor.role !== "admin") {
+      throw new ForbiddenException("Only admins can use user view");
+    }
+    if (actor.sub === targetUserId) {
+      throw new BadRequestException("You are already signed in as this user");
+    }
+
+    const target = await this.prisma.user.findFirst({
+      where: {
+        id: targetUserId,
+        companyId: actor.companyId,
+        deletedAt: null,
+        isActive: true,
+      },
     });
-    return { user, role: row.role, tokens, permissions };
+    if (!target) throw new NotFoundException("User not found");
+
+    return this.buildSession(target, actor.sub);
+  }
+
+  /** Leave user-view and restore the real admin session. */
+  async stopImpersonation(actor: JwtPayload) {
+    if (!actor.impersonatorId) {
+      throw new BadRequestException("Not currently viewing as another user");
+    }
+
+    const admin = await this.prisma.user.findFirst({
+      where: {
+        id: actor.impersonatorId,
+        companyId: actor.companyId,
+        deletedAt: null,
+        isActive: true,
+      },
+    });
+    if (!admin) {
+      throw new UnauthorizedException("Original admin session is no longer valid");
+    }
+    if (admin.role !== "admin") {
+      throw new ForbiddenException("Original account cannot resume admin session");
+    }
+
+    return this.buildSession(admin);
   }
 
   async changePassword(
     userId: string,
     currentPassword: string,
-    newPassword: string
+    newPassword: string,
+    opts?: { impersonatorId?: string }
   ) {
+    if (opts?.impersonatorId) {
+      throw new ForbiddenException(
+        "Cannot change password while viewing as another user"
+      );
+    }
     if (newPassword.length < 6) {
       throw new BadRequestException("Password must be at least 6 characters");
     }
@@ -117,12 +255,12 @@ export class AuthService {
       where: { id: userId },
       data: {
         passwordHash: hashPassword(newPassword),
+        metadata: withAdminVisiblePassword(row.metadata, null),
         updatedBy: userId,
         version: { increment: 1 },
       },
     });
 
-    // Force re-login on other devices.
     await this.prisma.refreshToken.updateMany({
       where: { userId, revokedAt: null },
       data: { revokedAt: new Date() },
@@ -158,12 +296,14 @@ export class AuthService {
       data: { revokedAt: new Date() },
     });
 
-    // Frontend expects AuthTokens at data root (not nested under `tokens`).
     return this.issueTokens({
       sub: payload.sub,
       role: payload.role,
       companyId: payload.companyId,
       employeeId: payload.employeeId,
+      ...(payload.impersonatorId
+        ? { impersonatorId: payload.impersonatorId }
+        : {}),
     });
   }
 
@@ -196,10 +336,38 @@ export class AuthService {
     });
     if (!row) throw new UnauthorizedException("User not found");
     const permissions = await loadEffectivePermissions(this.prisma, row);
-    return { ...mapUser(row), permissions };
+
+    let impersonation: SessionBundle["impersonation"] = null;
+    if (payload.impersonatorId) {
+      const actor = await this.prisma.user.findFirst({
+        where: { id: payload.impersonatorId, deletedAt: null },
+        select: {
+          id: true,
+          email: true,
+          displayName: true,
+          firstName: true,
+          lastName: true,
+        },
+      });
+      const name = [actor?.firstName, actor?.lastName]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      impersonation = {
+        active: true,
+        impersonatorId: payload.impersonatorId,
+        impersonatorEmail: actor?.email ?? "",
+        impersonatorName:
+          name ||
+          actor?.displayName?.trim() ||
+          actor?.email ||
+          payload.impersonatorId,
+      };
+    }
+
+    return { ...mapUser(row), permissions, impersonation };
   }
 
-  /** POST /auth/profile — update signed-in name (+ linked employee contact). */
   async updateProfile(
     userId: string,
     companyId: string,

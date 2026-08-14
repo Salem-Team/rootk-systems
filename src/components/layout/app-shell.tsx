@@ -2,6 +2,7 @@
 
 import { Sidebar } from "@/components/layout/sidebar";
 import { Navbar } from "@/components/layout/navbar";
+import { UserViewBanner } from "@/components/layout/user-view-banner";
 import {
   MobileBottomNav,
   MobileDrawer,
@@ -42,6 +43,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
         >
           <Navbar />
+          <UserViewBanner />
           <main
             id="main-content"
             tabIndex={-1}

@@ -1,8 +1,17 @@
-import { Injectable } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { Prisma, UserRole } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { mapUser } from "../common/mappers";
 import { DEFAULT_COMPANY_NOTIFICATIONS } from "../lib/notification-policy";
+import { hashPassword } from "../auth/password.util";
+import {
+  readAdminVisiblePassword,
+  withAdminVisiblePassword,
+} from "../common/user-password-preview";
 
 const DEFAULT_NOTIFICATIONS = {
   ...DEFAULT_COMPANY_NOTIFICATIONS,
@@ -23,6 +32,58 @@ export class UsersService {
       orderBy: { email: "asc" },
     });
     return rows.map(mapUser);
+  }
+
+  /** Admin accounts list — includes last admin-set plaintext password when available. */
+  async listAccounts(companyId: string) {
+    const rows = await this.prisma.user.findMany({
+      where: { companyId, deletedAt: null },
+      orderBy: [{ role: "asc" }, { email: "asc" }],
+    });
+    return rows.map((row) => {
+      const user = mapUser(row);
+      return {
+        ...user,
+        loginPassword: readAdminVisiblePassword(row.metadata),
+      };
+    });
+  }
+
+  async setLoginPassword(
+    companyId: string,
+    actorId: string,
+    userId: string,
+    password: string
+  ) {
+    const next = password.trim();
+    if (next.length < 6) {
+      throw new BadRequestException("Password must be at least 6 characters");
+    }
+
+    const row = await this.prisma.user.findFirst({
+      where: { id: userId, companyId, deletedAt: null },
+    });
+    if (!row) throw new NotFoundException("User not found");
+
+    const updated = await this.prisma.user.update({
+      where: { id: row.id },
+      data: {
+        passwordHash: hashPassword(next),
+        metadata: withAdminVisiblePassword(row.metadata, next),
+        updatedBy: actorId,
+        version: { increment: 1 },
+      },
+    });
+
+    await this.prisma.refreshToken.updateMany({
+      where: { userId: row.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+
+    return {
+      ...mapUser(updated),
+      loginPassword: next,
+    };
   }
 
   async byId(companyId: string, id: string) {
