@@ -3,6 +3,7 @@
 import { Loader2, Pencil } from "lucide-react";
 import { CrmFeedbackForm } from "@/components/crm/crm-feedback-form";
 import { CrmLeadSheetTabs } from "@/components/crm/crm-lead-sheet-tabs";
+import { CrmPhoneActions } from "@/components/crm/crm-phone-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,8 +72,13 @@ export function CrmLeadSheet({
             <div className="flex items-start justify-between gap-3 pe-6">
               <div className="min-w-0">
                 <SheetTitle className="truncate">{lead?.name ?? "…"}</SheetTitle>
-                <SheetDescription className="mt-1 font-mono text-[12px]">
-                  {lead?.phone}
+                <SheetDescription asChild>
+                  <div className="mt-1">
+                    <CrmPhoneActions
+                      phone={lead?.phone ?? ""}
+                      className="text-[12px]"
+                    />
+                  </div>
                 </SheetDescription>
               </div>
               {sheet.stage ? (

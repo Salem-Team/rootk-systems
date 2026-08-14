@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
 import { useReducedMotion } from "framer-motion";
@@ -13,6 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { CrmCallFeedbackDialog } from "@/components/crm/crm-call-feedback-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import {
   DataTable,
@@ -27,12 +28,40 @@ import { CHART } from "@/constants/chart-colors";
 import { chartTooltipStyle } from "@/constants/chart-tooltip";
 import { useTranslation } from "@/hooks/use-translation";
 import { ensureInteractionBreakdown } from "@/lib/crm-dashboard-normalize";
+import { formatClockHm } from "@/lib/format-time";
 import { cn } from "@/lib/utils";
-import type { CrmInteractionBreakdown } from "@/types/crm";
+import type {
+  CrmClientCallRow,
+  CrmInteractionBreakdown,
+  CrmInteractionCallDetail,
+} from "@/types/crm";
 
 interface CrmInteractionBreakdownPanelProps {
   breakdown: CrmInteractionBreakdown | null | undefined;
   className?: string;
+}
+
+type CallDrilldown = {
+  answered: boolean;
+  leadName: string;
+  date: string;
+  calls: CrmInteractionCallDetail[];
+};
+
+function filterClientCalls(
+  calls: CrmInteractionCallDetail[],
+  row: CrmClientCallRow,
+  answered: boolean
+): CrmInteractionCallDetail[] {
+  return calls.filter(
+    (call) =>
+      call.leadId === row.leadId &&
+      call.date === row.date &&
+      call.callAnswered === answered &&
+      (row.ownerEmployeeId
+        ? call.ownerEmployeeId === row.ownerEmployeeId
+        : true)
+  );
 }
 
 /** Day / hour / client call+meeting breakdown for Performance & Reports. */
@@ -44,6 +73,7 @@ export function CrmInteractionBreakdownPanel({
   const reduceMotion = useReducedMotion();
   const dateLocale = locale === "ar" ? arLocale : enUS;
   const breakdown = ensureInteractionBreakdown(raw);
+  const [drilldown, setDrilldown] = useState<CallDrilldown | null>(null);
 
   const dayChart = useMemo(
     () =>
@@ -62,11 +92,19 @@ export function CrmInteractionBreakdownPanel({
 
   const hourChart = useMemo(
     () =>
-      breakdown.byHour.filter(
-        (row) =>
-          row.activeCalls > 0 || row.inactiveCalls > 0 || row.meetings > 0
-      ),
-    [breakdown.byHour]
+      breakdown.byHour
+        .filter(
+          (row) =>
+            row.activeCalls > 0 || row.inactiveCalls > 0 || row.meetings > 0
+        )
+        .map((row) => ({
+          ...row,
+          label: formatClockHm(
+            `${String(row.hour).padStart(2, "0")}:00`,
+            locale
+          ),
+        })),
+    [breakdown.byHour, locale]
   );
 
   const totals = breakdown.totals;
@@ -75,6 +113,17 @@ export function CrmInteractionBreakdownPanel({
     totals.inactiveCalls > 0 ||
     totals.meetings > 0 ||
     breakdown.byClient.length > 0;
+
+  function openClientCalls(row: CrmClientCallRow, answered: boolean) {
+    const count = answered ? row.activeCalls : row.inactiveCalls;
+    if (count <= 0) return;
+    setDrilldown({
+      answered,
+      leadName: row.leadName,
+      date: row.date,
+      calls: filterClientCalls(breakdown.calls, row, answered),
+    });
+  }
 
   return (
     <div className={cn("space-y-4", className)}>
@@ -294,10 +343,10 @@ export function CrmInteractionBreakdownPanel({
                     <DataTableHead className="text-end">
                       {t("crm.interactions.colTotal")}
                     </DataTableHead>
-                    <DataTableHead className="hidden text-end md:table-cell">
+                    <DataTableHead className="text-end">
                       {t("crm.performance.colActiveCalls")}
                     </DataTableHead>
-                    <DataTableHead className="hidden text-end md:table-cell">
+                    <DataTableHead className="text-end">
                       {t("crm.performance.colInactiveCalls")}
                     </DataTableHead>
                     <DataTableHead className="text-end">
@@ -329,11 +378,37 @@ export function CrmInteractionBreakdownPanel({
                       <DataTableCell className="text-end font-mono tabular-nums">
                         {row.contactsTotal}
                       </DataTableCell>
-                      <DataTableCell className="hidden text-end font-mono tabular-nums text-emerald-700 dark:text-emerald-400 md:table-cell">
-                        {row.activeCalls}
+                      <DataTableCell className="text-end">
+                        {row.activeCalls > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => openClientCalls(row, true)}
+                            className="font-mono tabular-nums text-emerald-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-emerald-400"
+                            aria-label={`${t("crm.performance.colActiveCalls")}: ${row.activeCalls}`}
+                          >
+                            {row.activeCalls}
+                          </button>
+                        ) : (
+                          <span className="font-mono tabular-nums text-emerald-700/50 dark:text-emerald-400/50">
+                            0
+                          </span>
+                        )}
                       </DataTableCell>
-                      <DataTableCell className="hidden text-end font-mono tabular-nums text-rose-700 dark:text-rose-400 md:table-cell">
-                        {row.inactiveCalls}
+                      <DataTableCell className="text-end">
+                        {row.inactiveCalls > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => openClientCalls(row, false)}
+                            className="font-mono tabular-nums text-rose-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-rose-400"
+                            aria-label={`${t("crm.performance.colInactiveCalls")}: ${row.inactiveCalls}`}
+                          >
+                            {row.inactiveCalls}
+                          </button>
+                        ) : (
+                          <span className="font-mono tabular-nums text-rose-700/50 dark:text-rose-400/50">
+                            0
+                          </span>
+                        )}
                       </DataTableCell>
                       <DataTableCell className="text-end font-mono tabular-nums">
                         {row.meetings}
@@ -346,6 +421,32 @@ export function CrmInteractionBreakdownPanel({
           </section>
         </>
       )}
+
+      <CrmCallFeedbackDialog
+        open={Boolean(drilldown)}
+        onOpenChange={(open) => {
+          if (!open) setDrilldown(null);
+        }}
+        title={
+          drilldown
+            ? t("crm.interactions.callDetailsTitle", {
+                status: drilldown.answered
+                  ? t("crm.feedback.activeCall")
+                  : t("crm.feedback.inactiveCall"),
+              })
+            : ""
+        }
+        description={
+          drilldown
+            ? t("crm.interactions.callDetailsDesc", {
+                lead: drilldown.leadName,
+                date: drilldown.date,
+                count: String(drilldown.calls.length),
+              })
+            : undefined
+        }
+        calls={drilldown?.calls ?? []}
+      />
     </div>
   );
 }

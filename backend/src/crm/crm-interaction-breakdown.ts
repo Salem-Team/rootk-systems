@@ -8,7 +8,12 @@ import {
 } from "date-fns";
 
 export type InteractionFeedbackRow = {
+  id: string;
   leadId: string;
+  feedbackTypeId?: string;
+  customerFeedback?: string;
+  notes?: string;
+  nextAction?: string;
   recordedByEmployeeId?: string | null;
   callAnswered: boolean;
   meetingMode: "online" | "offline" | null;
@@ -31,6 +36,25 @@ type CallMeetingBucket = {
   meetingsOffline: number;
   meetingsOurCompany: number;
   meetingsClientCompany: number;
+};
+
+type CallDetail = {
+  id: string;
+  leadId: string;
+  leadName: string;
+  companyName: string;
+  date: string;
+  createdAt: string;
+  callAnswered: boolean;
+  customerFeedback: string;
+  notes: string;
+  nextAction: string;
+  meetingMode: "online" | "offline" | null;
+  meetingLocation: "our_company" | "client_company" | null;
+  recordedByEmployeeId: string | null;
+  recordedByEmployeeName: string;
+  ownerEmployeeId: string | null;
+  feedbackTypeId: string;
 };
 
 function emptyBucket(): CallMeetingBucket {
@@ -106,6 +130,7 @@ export function emptyInteractionBreakdown() {
       contactsThatDay: number;
       contactsTotal: number;
     } & CallMeetingBucket>,
+    calls: [] as CallDetail[],
   };
 }
 
@@ -130,6 +155,7 @@ export function buildInteractionBreakdown(
   const clientDayMap = new Map<string, CallMeetingBucket>();
   const lifetimeByLead = new Map<string, number>();
   const totals = emptyBucket();
+  const calls: CallDetail[] = [];
 
   for (const row of feedback) {
     lifetimeByLead.set(row.leadId, (lifetimeByLead.get(row.leadId) ?? 0) + 1);
@@ -168,6 +194,28 @@ export function buildInteractionBreakdown(
     dayMap.set(day, dayBucket);
     hourMap.set(hourKey, hourBucket);
     clientDayMap.set(clientKey, clientBucket);
+
+    const recorderId = row.recordedByEmployeeId ?? null;
+    calls.push({
+      id: row.id,
+      leadId: row.leadId,
+      leadName: lead?.name ?? row.leadId,
+      companyName: lead?.companyName ?? "",
+      date: day,
+      createdAt: row.createdAt.toISOString(),
+      callAnswered: row.callAnswered,
+      customerFeedback: row.customerFeedback ?? "",
+      notes: row.notes ?? "",
+      nextAction: row.nextAction ?? "none",
+      meetingMode: row.meetingMode,
+      meetingLocation: row.meetingLocation,
+      recordedByEmployeeId: recorderId,
+      recordedByEmployeeName: recorderId
+        ? (nameById.get(recorderId) ?? recorderId)
+        : "",
+      ownerEmployeeId: ownerId === "__none__" ? null : ownerId,
+      feedbackTypeId: row.feedbackTypeId ?? "",
+    });
   }
 
   const byDay = [...dayMap.entries()]
@@ -190,7 +238,12 @@ export function buildInteractionBreakdown(
     .sort(([a], [b]) => a - b)
     .map(([hour, bucket]) => ({
       hour,
-      label: `${String(hour).padStart(2, "0")}:00`,
+      label: (() => {
+        const h = ((Math.trunc(hour) % 24) + 24) % 24;
+        const period = h >= 12 ? "PM" : "AM";
+        const h12 = h % 12 === 0 ? 12 : h % 12;
+        return `${h12}:00 ${period}`;
+      })(),
       ...bucket,
     }))
     .filter(
@@ -224,5 +277,7 @@ export function buildInteractionBreakdown(
         a.leadName.localeCompare(b.leadName)
     );
 
-  return { totals, byDay, byHour, byClient };
+  calls.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  return { totals, byDay, byHour, byClient, calls };
 }

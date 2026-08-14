@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { CrmPhoneActions } from "@/components/crm/crm-phone-actions";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import { useTranslation } from "@/hooks/use-translation";
@@ -130,9 +131,16 @@ export function CrmPipelinePanel({
                         <p className="truncate text-[13px] font-semibold">
                           {lead.name}
                         </p>
-                        <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
-                          {lead.phone}
-                        </p>
+                        <div
+                          className="mt-0.5"
+                          onClick={(e) => e.stopPropagation()}
+                          onPointerDown={(e) => e.stopPropagation()}
+                        >
+                          <CrmPhoneActions
+                            phone={lead.phone}
+                            className="text-[11px]"
+                          />
+                        </div>
                         <p className="mt-1 truncate text-[11px] text-muted-foreground">
                           {lead.ownerEmployeeId
                             ? (employeeMap.get(lead.ownerEmployeeId) ??

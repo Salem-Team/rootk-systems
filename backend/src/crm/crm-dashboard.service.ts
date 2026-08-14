@@ -172,8 +172,12 @@ export class CrmDashboardService {
         },
       },
       select: {
+        id: true,
         feedbackTypeId: true,
         leadId: true,
+        customerFeedback: true,
+        notes: true,
+        nextAction: true,
         recordedByEmployeeId: true,
         callAnswered: true,
         meetingMode: true,
@@ -194,7 +198,12 @@ export class CrmDashboardService {
         },
       },
       select: {
+        id: true,
+        feedbackTypeId: true,
         leadId: true,
+        customerFeedback: true,
+        notes: true,
+        nextAction: true,
         recordedByEmployeeId: true,
         callAnswered: true,
         meetingMode: true,
@@ -217,9 +226,14 @@ export class CrmDashboardService {
 
     const ownerIds = [
       ...new Set(
-        allActiveLeads
-          .map((l) => l.ownerEmployeeId)
-          .filter((v): v is string => Boolean(v))
+        [
+          ...allActiveLeads
+            .map((l) => l.ownerEmployeeId)
+            .filter((v): v is string => Boolean(v)),
+          ...allFeedbackRows
+            .map((f) => f.recordedByEmployeeId)
+            .filter((v): v is string => Boolean(v)),
+        ]
       ),
     ];
     const employees = ownerIds.length
@@ -236,7 +250,12 @@ export class CrmDashboardService {
     );
     const interactionBreakdown = buildInteractionBreakdown(
       allFeedbackRows.map((f) => ({
+        id: f.id,
         leadId: f.leadId,
+        feedbackTypeId: f.feedbackTypeId,
+        customerFeedback: f.customerFeedback,
+        notes: f.notes,
+        nextAction: f.nextAction,
         recordedByEmployeeId: f.recordedByEmployeeId,
         callAnswered: f.callAnswered,
         meetingMode: f.meetingMode,

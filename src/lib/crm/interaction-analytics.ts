@@ -5,12 +5,14 @@ import type {
   CrmDayInteractionRow,
   CrmHourInteractionRow,
   CrmInteractionBreakdown,
+  CrmInteractionCallDetail,
   CrmLead,
   CrmLeadFeedback,
   CrmMeetingLocation,
   CrmMeetingMode,
 } from "@/types/crm";
 import { parseMaybe } from "@/lib/crm/date-range";
+import { formatHour12Label } from "@/lib/crm/format";
 
 function emptyBucket(): CrmCallMeetingBucket {
   return {
@@ -30,6 +32,7 @@ export function emptyInteractionBreakdown(): CrmInteractionBreakdown {
     byDay: [],
     byHour: [],
     byClient: [],
+    calls: [],
   };
 }
 
@@ -105,6 +108,7 @@ export function buildInteractionBreakdown(
   const clientDayMap = new Map<string, CrmCallMeetingBucket>();
   const lifetimeByLead = new Map<string, number>();
   const totals = emptyBucket();
+  const calls: CrmInteractionCallDetail[] = [];
 
   for (const row of feedback) {
     lifetimeByLead.set(
@@ -149,6 +153,31 @@ export function buildInteractionBreakdown(
     dayMap.set(day, dayBucket);
     hourMap.set(hourKey, hourBucket);
     clientDayMap.set(clientKey, clientBucket);
+
+    const recorderId = row.recordedByEmployeeId ?? null;
+    calls.push({
+      id: row.id,
+      leadId: row.leadId,
+      leadName: lead?.name ?? row.leadId,
+      companyName: lead?.companyName ?? "",
+      date: day,
+      createdAt:
+        typeof row.createdAt === "string"
+          ? row.createdAt
+          : created.toISOString(),
+      callAnswered: row.callAnswered !== false,
+      customerFeedback: row.customerFeedback ?? "",
+      notes: row.notes ?? "",
+      nextAction: row.nextAction ?? "none",
+      meetingMode: row.meetingMode ?? null,
+      meetingLocation: row.meetingLocation ?? null,
+      recordedByEmployeeId: recorderId,
+      recordedByEmployeeName: recorderId
+        ? (nameById.get(recorderId) ?? recorderId)
+        : "",
+      ownerEmployeeId: ownerId === "__none__" ? null : ownerId,
+      feedbackTypeId: row.feedbackTypeId ?? "",
+    });
   }
 
   const byDay: CrmDayInteractionRow[] = [...dayMap.entries()]
@@ -171,7 +200,7 @@ export function buildInteractionBreakdown(
     .sort(([a], [b]) => a - b)
     .map(([hour, bucket]) => ({
       hour,
-      label: `${String(hour).padStart(2, "0")}:00`,
+      label: formatHour12Label(hour),
       ...bucket,
     }))
     .filter(
@@ -206,5 +235,7 @@ export function buildInteractionBreakdown(
         a.leadName.localeCompare(b.leadName)
     );
 
-  return { totals, byDay, byHour, byClient };
+  calls.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  return { totals, byDay, byHour, byClient, calls };
 }

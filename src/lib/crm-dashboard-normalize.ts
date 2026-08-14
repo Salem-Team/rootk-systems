@@ -2,9 +2,11 @@ import type {
   CrmCallMeetingBucket,
   CrmDashboard,
   CrmInteractionBreakdown,
+  CrmInteractionCallDetail,
   CrmKpis,
   CrmSalesPerformanceRow,
 } from "@/types/crm";
+import { formatHour12Label } from "@/lib/crm/format";
 import { emptyInteractionBreakdown } from "@/lib/crm/interaction-analytics";
 
 const EMPTY_KPIS: CrmKpis = {
@@ -28,6 +30,32 @@ function ensureBucket(raw: unknown): CrmCallMeetingBucket {
   };
 }
 
+function ensureCallDetail(raw: unknown): CrmInteractionCallDetail | null {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as Partial<CrmInteractionCallDetail>;
+  const id = String(row.id ?? "").trim();
+  const leadId = String(row.leadId ?? "").trim();
+  if (!id || !leadId) return null;
+  return {
+    id,
+    leadId,
+    leadName: String(row.leadName ?? ""),
+    companyName: String(row.companyName ?? ""),
+    date: String(row.date ?? ""),
+    createdAt: String(row.createdAt ?? ""),
+    callAnswered: row.callAnswered !== false,
+    customerFeedback: String(row.customerFeedback ?? ""),
+    notes: String(row.notes ?? ""),
+    nextAction: (row.nextAction as CrmInteractionCallDetail["nextAction"]) ?? "none",
+    meetingMode: row.meetingMode ?? null,
+    meetingLocation: row.meetingLocation ?? null,
+    recordedByEmployeeId: row.recordedByEmployeeId ?? null,
+    recordedByEmployeeName: String(row.recordedByEmployeeName ?? ""),
+    ownerEmployeeId: row.ownerEmployeeId ?? null,
+    feedbackTypeId: String(row.feedbackTypeId ?? ""),
+  };
+}
+
 export function ensureInteractionBreakdown(
   raw: unknown
 ): CrmInteractionBreakdown {
@@ -44,13 +72,18 @@ export function ensureInteractionBreakdown(
         }))
       : [],
     byHour: Array.isArray(row.byHour)
-      ? row.byHour.map((h) => ({
-          hour: Number(h.hour ?? 0),
-          label: String(
-            h.label ?? `${String(h.hour ?? 0).padStart(2, "0")}:00`
-          ),
-          ...ensureBucket(h),
-        }))
+      ? row.byHour.map((h) => {
+          const hour = Number(h.hour ?? 0);
+          return {
+            hour,
+            label: String(
+              h.label && !/^\d{2}:00$/.test(String(h.label))
+                ? h.label
+                : formatHour12Label(hour)
+            ),
+            ...ensureBucket(h),
+          };
+        })
       : [],
     byClient: Array.isArray(row.byClient)
       ? row.byClient.map((c) => ({
@@ -64,6 +97,11 @@ export function ensureInteractionBreakdown(
           contactsTotal: Number(c.contactsTotal ?? 0),
           ...ensureBucket(c),
         }))
+      : [],
+    calls: Array.isArray(row.calls)
+      ? row.calls
+          .map((c) => ensureCallDetail(c))
+          .filter((c): c is CrmInteractionCallDetail => Boolean(c))
       : [],
   };
 }

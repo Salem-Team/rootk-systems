@@ -320,11 +320,34 @@ export interface CrmClientCallRow {
   meetingsClientCompany: number;
 }
 
+/** Single feedback/call row for drill-down popups in Performance/Reports. */
+export interface CrmInteractionCallDetail {
+  id: string;
+  leadId: string;
+  leadName: string;
+  companyName: string;
+  /** yyyy-MM-dd */
+  date: string;
+  createdAt: string;
+  callAnswered: boolean;
+  customerFeedback: string;
+  notes: string;
+  nextAction: CrmNextAction | string;
+  meetingMode: CrmMeetingMode | null;
+  meetingLocation: CrmMeetingLocation | null;
+  recordedByEmployeeId: string | null;
+  recordedByEmployeeName: string;
+  ownerEmployeeId: string | null;
+  feedbackTypeId: string;
+}
+
 export interface CrmInteractionBreakdown {
   totals: CrmCallMeetingBucket;
   byDay: CrmDayInteractionRow[];
   byHour: CrmHourInteractionRow[];
   byClient: CrmClientCallRow[];
+  /** Filtered call/feedback rows for the same period (popup drill-down). */
+  calls: CrmInteractionCallDetail[];
 }
 
 export interface CrmSalesPerformanceRow {

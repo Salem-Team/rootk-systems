@@ -2,6 +2,7 @@
 
 import { format, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CrmPhoneActions } from "@/components/crm/crm-phone-actions";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import { Badge } from "@/components/ui/badge";
@@ -123,9 +124,16 @@ export function CrmLeadsTable({
                       <p className="truncate text-[13px] font-semibold">
                         {lead.name}
                       </p>
-                      <p className="mt-0.5 font-mono text-[12px] text-muted-foreground">
-                        {lead.phone}
-                      </p>
+                      <div
+                        className="mt-0.5"
+                        onClick={(e) => e.stopPropagation()}
+                        onPointerDown={(e) => e.stopPropagation()}
+                      >
+                        <CrmPhoneActions
+                          phone={lead.phone}
+                          className="text-[12px]"
+                        />
+                      </div>
                     </div>
                     <Badge
                       variant="outline"
@@ -234,8 +242,12 @@ export function CrmLeadsTable({
                     ) : null}
                   </div>
                 </DataTableCell>
-                <DataTableCell className="hidden font-mono text-[12px] sm:table-cell">
-                  {lead.phone}
+                <DataTableCell
+                  className="hidden sm:table-cell"
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <CrmPhoneActions phone={lead.phone} className="text-[12px]" />
                 </DataTableCell>
                 <DataTableCell className="hidden text-[12px] md:table-cell">
                   {t(`crm.source.${lead.source}`)}

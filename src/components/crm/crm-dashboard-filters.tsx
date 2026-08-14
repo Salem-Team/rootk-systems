@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTranslation } from "@/hooks/use-translation";
+import { formatClockHm } from "@/lib/format-time";
 import type { Employee } from "@/types";
 import type { CrmDashboardFilters, CrmDateRangePreset, CrmLeadSource } from "@/types/crm";
 
@@ -43,7 +44,7 @@ export function CrmDashboardFiltersBar({
   onFiltersChange,
   showInteractionFilters = false,
 }: CrmDashboardFiltersBarProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
 
   return (
     <div className="filter-toolbar">
@@ -110,7 +111,7 @@ export function CrmDashboardFiltersBar({
             }
           >
             <SelectTrigger
-              className="filter-control h-9 sm:w-[120px]"
+              className="filter-control h-9 sm:w-[140px]"
               aria-label={t("crm.filters.hour")}
             >
               <SelectValue placeholder={t("crm.filters.allHours")} />
@@ -119,7 +120,7 @@ export function CrmDashboardFiltersBar({
               <SelectItem value="all">{t("crm.filters.allHours")}</SelectItem>
               {HOURS.map((h) => (
                 <SelectItem key={h} value={String(h)}>
-                  {`${String(h).padStart(2, "0")}:00`}
+                  {formatClockHm(`${String(h).padStart(2, "0")}:00`, locale)}
                 </SelectItem>
               ))}
             </SelectContent>

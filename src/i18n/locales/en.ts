@@ -642,7 +642,7 @@ export const en = {
     priorityMedium: "medium",
     priorityLow: "low",
     executiveEyebrow: "Executive",
-    executiveTitle: "Operations hub",
+    executiveTitle: "Dashboard",
     executiveDesc:
       "Company-wide attendance, workforce health, and what needs attention today.",
     executiveOverview: "Executive overview",
@@ -3224,6 +3224,7 @@ export const en = {
       subStageCount: "{count} sub-stages",
       colLead: "Lead",
       colPhone: "Phone",
+      phoneActions: "Call or WhatsApp",
       colSource: "Source",
       colSales: "Sales",
       colStage: "Stage",
@@ -3357,6 +3358,10 @@ export const en = {
       colThatDay: "That day",
       colTotal: "All time",
       empty: "No calls or meetings in this period",
+      emptyCalls: "No call feedback for this selection",
+      noFeedbackText: "No feedback text recorded",
+      callDetailsTitle: "{status} calls",
+      callDetailsDesc: "{lead} · {date} · {count} calls",
     },
     stages: {
       title: "Pipeline stages",

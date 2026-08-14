@@ -1,5 +1,6 @@
 "use client";
 
+import { CrmPhoneActions } from "@/components/crm/crm-phone-actions";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -84,7 +85,7 @@ export function CrmSalesProfileLeadsDialog({
                     />
                     {lead.stageName || "—"}
                   </span>
-                  <span className="font-mono tabular-nums">{lead.phone}</span>
+                  <CrmPhoneActions phone={lead.phone} className="text-[11px]" />
                   <span>
                     {t(`crm.source.${lead.source}` as TranslationPath)}
                   </span>

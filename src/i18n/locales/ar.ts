@@ -636,7 +636,7 @@ export const ar: TranslationKeys = {
     priorityMedium: "متوسط",
     priorityLow: "منخفض",
     executiveEyebrow: "تنفيذي",
-    executiveTitle: "مركز العمليات",
+    executiveTitle: "لوحة التحكم",
     executiveDesc:
       "حضور الشركة وصحة القوى العاملة وما يحتاج انتباهك اليوم.",
     executiveOverview: "نظرة تنفيذية",
@@ -3214,6 +3214,7 @@ export const ar: TranslationKeys = {
       subStageCount: "{count} صب-مرحلة",
       colLead: "العميل",
       colPhone: "الهاتف",
+      phoneActions: "اتصال أو واتساب",
       colSource: "المصدر",
       colSales: "المبيعات",
       colStage: "المرحلة",
@@ -3347,6 +3348,10 @@ export const ar: TranslationKeys = {
       colThatDay: "في اليوم ده",
       colTotal: "عمومًا",
       empty: "مفيش مكالمات أو ميتينجز في الفترة دي",
+      emptyCalls: "مفيش فيدباك مكالمات للاختيار ده",
+      noFeedbackText: "مفيش نص فيدباك مسجّل",
+      callDetailsTitle: "مكالمات {status}",
+      callDetailsDesc: "{lead} · {date} · {count} مكالمات",
     },
     stages: {
       title: "مراحل المسار",
