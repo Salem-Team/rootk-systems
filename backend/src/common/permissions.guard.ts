@@ -3,6 +3,7 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import type { JwtPayload } from "./decorators/current-user";
@@ -24,7 +25,7 @@ export class PermissionsGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<{ user?: JwtPayload }>();
     const user = request.user;
     if (!user) {
-      throw new ForbiddenException("You do not have permission for this action");
+      throw new UnauthorizedException("Authentication required");
     }
     if (!hasAnyPermissionId(required, user.permissions, user.role)) {
       throw new ForbiddenException("You do not have permission for this action");

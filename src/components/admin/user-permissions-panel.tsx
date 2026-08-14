@@ -53,13 +53,18 @@ export function UserPermissionsPanel() {
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
   const loadUsers = useCallback(async () => {
+    setLoading(true);
     const res = await listPermissionUsers();
     if (res.success) {
       setUsers(res.data);
       setSelectedId((current) => current ?? res.data[0]?.user.id ?? null);
+    } else {
+      setUsers([]);
+      setSelectedId(null);
+      toast.error(res.message || t("permissions.loadUsersFailed"));
     }
     setLoading(false);
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadUsers();
@@ -233,7 +238,9 @@ export function UserPermissionsPanel() {
         <ul className="max-h-none space-y-0.5 p-2 lg:max-h-[70vh] lg:overflow-y-auto">
           {filteredUsers.length === 0 ? (
             <li className="px-3 py-10 text-center text-sm text-muted-foreground">
-              {t("permissions.noUsers")}
+              {users.length === 0
+                ? t("permissions.noUsersLoaded")
+                : t("permissions.noUsers")}
             </li>
           ) : (
             filteredUsers.map((row) => {

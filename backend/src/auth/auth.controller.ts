@@ -12,6 +12,7 @@ import { Transform } from "class-transformer";
 import { IsEmail, IsOptional, IsString, MinLength } from "class-validator";
 import { AuthService } from "./auth.service";
 import { CurrentUser, type JwtPayload } from "../common/decorators/current-user";
+import { Public } from "../common/public.decorator";
 
 class LoginDto {
   @Transform(({ value }) =>
@@ -65,6 +66,7 @@ class UpdateProfileDto {
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
+  @Public()
   @Post("login")
   @HttpCode(200)
   login(@Body() body: LoginDto) {
@@ -86,6 +88,7 @@ export class AuthController {
     );
   }
 
+  @Public()
   @Post("refresh")
   @HttpCode(200)
   refresh(@Body() body: RefreshDto) {

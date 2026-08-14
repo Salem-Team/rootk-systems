@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { ConfigModule } from "@nestjs/config";
+import { JwtAuthGuard } from "./common/jwt-auth.guard";
 import { PermissionsGuard } from "./common/permissions.guard";
 import { PermissionsModule } from "./permissions/permissions.module";
 import { PrismaModule } from "./prisma/prisma.module";
@@ -50,6 +51,11 @@ import { DailyPlanModule } from "./daily-plan/daily-plan.module";
     DailyPlanModule,
   ],
   providers: [
+    /** Order matters: JWT must hydrate `request.user` before permission checks. */
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: PermissionsGuard,

@@ -3404,6 +3404,8 @@ export const ar: TranslationKeys = {
     filterDisabled: "الموقوف",
     filterCustom: "المخصص",
     noUsers: "مفيش مستخدم مطابق للبحث.",
+    noUsersLoaded: "مفيش مستخدمين متاحين — تأكد من صلاحية إدارة الصلاحيات والاتصال بالخادم.",
+    loadUsersFailed: "فشل تحميل قائمة المستخدمين.",
     overridesHint: "{count} تعديل مخصص",
     dataAccessHint:
       "لو قفلت «عرض بيانات المستخدمين الآخرين» المستخدم مش هيشوف سجلات غيره، حتى لو الصلاحيات تحت لسه مفتوحة.",

@@ -3415,6 +3415,9 @@ export const en = {
     filterDisabled: "Off",
     filterCustom: "Custom",
     noUsers: "No users match this search.",
+    noUsersLoaded:
+      "No users available — check manage-permissions access and API connectivity.",
+    loadUsersFailed: "Failed to load users.",
     overridesHint: "{count} custom changes",
     dataAccessHint:
       "Turn off View Other Users' Data to hide everyone else's records, even if a module below still allows it.",
