@@ -18,6 +18,7 @@ import {
   NEXT_ACTIONS,
 } from "./crm-input";
 import { mapLead } from "./crm-mappers";
+import { clearFollowUpReminderMeta } from "./crm-follow-up-meta";
 import { CrmSharedService } from "./crm-shared.service";
 
 @Injectable()
@@ -85,6 +86,7 @@ export class CrmLeadUpdateService {
     }
     if (body.nextFollowUpAt !== undefined) {
       data.nextFollowUpAt = asOptionalDate(body.nextFollowUpAt) ?? null;
+      data.metadata = clearFollowUpReminderMeta(current.metadata);
     }
     if (body.notes !== undefined) data.notes = String(body.notes ?? "");
     if (body.lossReasonTypeId !== undefined) {

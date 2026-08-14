@@ -32,6 +32,7 @@ import {
   isAdmin,
   writeHistory,
 } from "@/services/crm/crm-shared";
+import { clearLocalCrmFollowUpReminders } from "@/services/crm/crm-follow-up-reminders.service";
 
 export async function createCrmLead(
   input: CreateLeadInput
@@ -240,6 +241,12 @@ export async function updateCrmLead(
       lossReasonTypeId,
       lastActivityAt: new Date().toISOString(),
     });
+    if (
+      parsed.nextFollowUpAt !== undefined &&
+      parsed.nextFollowUpAt !== existing.nextFollowUpAt
+    ) {
+      clearLocalCrmFollowUpReminders(id);
+    }
     await crmLeadRepository.update(updated.id, updated);
     emitCrmUpdated();
     return ok(updated);

@@ -6,7 +6,7 @@ import {
   type CrmLead,
   type CrmStage,
 } from "@prisma/client";
-import { startOfDay, subDays } from "date-fns";
+import { subDays } from "date-fns";
 import { INACTIVE_DAYS_THRESHOLD, round1 } from "./crm-analytics";
 
 export function buildDashboardKpis(
@@ -44,10 +44,12 @@ export function computeAttentionCounts(
   salesPerformance: Array<{ needsAttention: boolean }>
 ) {
   const now = new Date();
-  const startToday = startOfDay(now);
   const inactiveCutoff = subDays(now, INACTIVE_DAYS_THRESHOLD);
   const overdue = allActiveLeads.filter(
-    (l) => l.nextFollowUpAt != null && l.nextFollowUpAt < startToday
+    (l) =>
+      l.status === CrmLeadStatus.active &&
+      l.nextFollowUpAt != null &&
+      l.nextFollowUpAt.getTime() <= now.getTime()
   ).length;
   const noNext = allActiveLeads.filter(
     (l) =>

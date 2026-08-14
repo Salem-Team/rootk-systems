@@ -127,6 +127,8 @@ export function mapLeadFeedback(row: CrmLeadFeedback) {
     callAnswered: row.callAnswered,
     nextAction: row.nextAction,
     nextFollowUpAt: isoOrNull(row.nextFollowUpAt),
+    meetingMode: row.meetingMode ?? null,
+    meetingLocation: row.meetingLocation ?? null,
     notes: row.notes,
     recordedByEmployeeId: row.recordedByEmployeeId,
     ...auditFields(row),

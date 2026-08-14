@@ -1,6 +1,5 @@
 "use client";
 
-import { format, parseISO } from "date-fns";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -11,16 +10,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useTranslation } from "@/hooks/use-translation";
+import { formatIsoDateTime } from "@/lib/format-time";
 import type { TranslationPath } from "@/i18n";
 import type { CrmSalesProfileLead } from "@/types/crm";
 
 function formatWhen(iso: string | null): string {
-  if (!iso) return "—";
-  try {
-    return format(parseISO(iso), "d MMM · HH:mm");
-  } catch {
-    return iso;
-  }
+  return formatIsoDateTime(iso, "en", "d MMM · h:mm a");
 }
 
 export function CrmSalesProfileLeadsDialog({

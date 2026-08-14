@@ -11,6 +11,7 @@ import {
 } from "./crm-defaults";
 import { ACTIVITY_TYPES, asEnum, asOptionalDate, NEXT_ACTIONS } from "./crm-input";
 import { mapLeadActivity, mapLeadFeedback } from "./crm-mappers";
+import { clearFollowUpReminderMeta } from "./crm-follow-up-meta";
 import { CrmSharedService } from "./crm-shared.service";
 
 @Injectable()
@@ -146,6 +147,24 @@ export class CrmActivitiesService {
       ? body.tags.map((v) => String(v).trim()).filter(Boolean)
       : undefined;
 
+    let meetingMode: import("@prisma/client").CrmMeetingMode | null = null;
+    let meetingLocation: import("@prisma/client").CrmMeetingLocation | null =
+      null;
+    if (nextAction === CrmNextAction.meeting) {
+      const mode =
+        body.meetingMode === "online" || body.meetingMode === "offline"
+          ? body.meetingMode
+          : null;
+      meetingMode = mode;
+      if (mode === "offline") {
+        meetingLocation =
+          body.meetingLocation === "our_company" ||
+          body.meetingLocation === "client_company"
+            ? body.meetingLocation
+            : null;
+      }
+    }
+
     if (stageId) {
       const stage = await this.prisma.crmStage.findFirst({
         where: { id: stageId, companyId, deletedAt: null },
@@ -175,6 +194,8 @@ export class CrmActivitiesService {
         callAnswered,
         nextAction,
         nextFollowUpAt: nextFollowUpAt === undefined ? null : nextFollowUpAt,
+        meetingMode,
+        meetingLocation,
         notes: String(body.notes ?? ""),
         recordedByEmployeeId: recordedByEmployeeId ?? null,
         createdBy: actor.userId,
@@ -190,6 +211,7 @@ export class CrmActivitiesService {
     };
     if (nextFollowUpAt !== undefined) {
       leadPatch.nextFollowUpAt = nextFollowUpAt;
+      leadPatch.metadata = clearFollowUpReminderMeta(lead.metadata);
     }
     if (tags) leadPatch.tags = tags;
     if (ft.isLossReason && !lead.lossReasonTypeId) {

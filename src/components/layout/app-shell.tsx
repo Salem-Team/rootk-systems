@@ -11,6 +11,7 @@ import { AuthGate } from "@/components/layout/auth-gate";
 import { RoleRedirect } from "@/components/layout/role-redirect";
 import { RouteProgress } from "@/components/layout/route-progress";
 import { PreferenceSync } from "@/components/shared/preference-sync";
+import { useCrmFollowUpReminders } from "@/hooks/use-crm-follow-up-reminders";
 import { useUiStore } from "@/stores/ui-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ import { cn } from "@/lib/utils";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { sidebarCollapsed } = useUiStore();
   const { t } = useTranslation();
+  useCrmFollowUpReminders();
 
   return (
     <AuthGate>

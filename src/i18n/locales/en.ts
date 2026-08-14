@@ -1946,6 +1946,9 @@ export const en = {
     targetWarningTitle: "Performance warning",
     targetWarningBody:
       "Warning on “{title}” (deadline {deadline}): {reason}",
+    crmFollowUpSoonTitle: "Follow-up coming up",
+    crmFollowUpSoonBody:
+      "Follow-up with {name} is in about 15 minutes ({action}).",
     payrollRunTitle: "Payroll calculated",
     payrollRunBody: "Period {period} — net payroll: {net}.",
     payrollCancelledTitle: "Payroll run cancelled",
@@ -3023,6 +3026,7 @@ export const en = {
     nav: {
       dashboard: "Dashboard",
       leads: "Leads",
+      delay: "Delay",
       pipeline: "Pipeline",
       activities: "Activities",
       feedback: "Feedback",
@@ -3030,6 +3034,14 @@ export const en = {
       stages: "Stages",
       businessTypes: "Business types",
       reports: "Reports",
+    },
+    delay: {
+      title: "Delayed follow-ups",
+      description:
+        "Active leads whose scheduled next-action time has already passed.",
+      count: "{count} delayed",
+      empty: "No delayed leads",
+      emptyDesc: "When a next-action time passes, the lead appears here.",
     },
     sidebar: {
       label: "CRM navigation",
@@ -3139,6 +3151,11 @@ export const en = {
       sales: "Sales",
       followUp: "Follow-up",
       range: "Period",
+      dateFrom: "From date",
+      dateTo: "To date",
+      hour: "Hour",
+      allHours: "All hours",
+      today: "Today",
       allStages: "All stages",
       allStatuses: "All statuses",
       allSources: "All sources",
@@ -3284,9 +3301,9 @@ export const en = {
     feedback: {
       title: "Feedback",
       formTitle: "Record feedback",
-      formDesc: "Update the lead, choose the next stage, and log the call.",
+      formDesc: "Update the lead, choose the next stage and action, and log the call.",
       sectionLead: "1. Lead & tags",
-      sectionAction: "2. Next stage",
+      sectionAction: "2. Next stage & action",
       sectionFeedback: "3. Feedback",
       newStage: "New stage",
       callStatus: "Call status",
@@ -3298,7 +3315,15 @@ export const en = {
       type: "Feedback type",
       customerFeedback: "Feedback",
       nextAction: "Next action",
-      nextFollowUp: "Next follow-up",
+      nextFollowUp: "Next action time",
+      nextActionHint:
+        "If this time passes without follow-up, the lead becomes delayed (overdue).",
+      meetingMode: "Meeting type",
+      meetingOnline: "Online",
+      meetingOffline: "Offline",
+      meetingLocation: "Meeting location",
+      locationOurCompany: "Our company",
+      locationClientCompany: "Client company",
       notes: "Notes",
       selectType: "Select type",
       reasonsChart: "Top feedback reasons",
@@ -3308,6 +3333,30 @@ export const en = {
       recordedAt: "Recorded",
       recordedBy: "Recorded by",
       lead: "Lead",
+    },
+    interactions: {
+      summaryTitle: "Calls & meetings summary",
+      summaryDesc:
+        "Active vs inactive calls and meetings for the selected period.",
+      meetings: "Meetings",
+      meetingsSplit: "Online / Offline",
+      online: "Online",
+      offline: "Offline",
+      ourCompany: "Our company",
+      clientCompany: "Client company",
+      byDayTitle: "By day",
+      byDayDesc: "Call and meeting counts for each day in the range.",
+      byHourTitle: "By hour",
+      byHourDesc: "When calls and meetings happened during the day.",
+      byClientTitle: "By client",
+      byClientDesc:
+        "How many times each client was contacted that day vs lifetime total.",
+      colDate: "Date",
+      colHour: "Hour",
+      colClient: "Client",
+      colThatDay: "That day",
+      colTotal: "All time",
+      empty: "No calls or meetings in this period",
     },
     stages: {
       title: "Pipeline stages",
@@ -3353,7 +3402,8 @@ export const en = {
     },
     performance: {
       title: "Sales performance",
-      description: "Active vs inactive calls and conversion by sales user.",
+      description:
+        "Active vs inactive calls, meetings, and conversion by sales user — filterable by date and hour.",
       colSales: "Sales",
       colLeads: "Leads",
       colActive: "Active",
@@ -3409,12 +3459,13 @@ export const en = {
     },
     reports: {
       title: "CRM reports",
-      description: "Conversion summary and pipeline analytics for admins.",
+      description:
+        "Conversion, call outcomes, and meeting analytics for the selected period.",
       conversionSummary: "Conversion summary",
       conversionSummaryDesc: "Key conversion metrics for the selected period.",
-      callsSummary: "Call outcomes",
+      callsSummary: "Call & meeting outcomes",
       callsSummaryDesc:
-        "Active vs inactive calls from CRM feedback actions, by sales owner.",
+        "Active vs inactive calls and meetings from CRM feedback, by sales owner.",
       callsChartDesc: "Active and inactive calls logged from CRM actions.",
     },
   },

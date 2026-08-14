@@ -1,6 +1,11 @@
-import { endOfDay, isAfter, isBefore, isSameDay, startOfDay } from "date-fns";
+import { endOfDay, isAfter, isSameDay } from "date-fns";
 import type { CrmLead, CrmLeadFilters } from "@/types/crm";
-import { leadInRange, parseMaybe, resolveCrmRange } from "@/lib/crm/date-range";
+import {
+  isFollowUpOverdue,
+  leadInRange,
+  parseMaybe,
+  resolveCrmRange,
+} from "@/lib/crm/date-range";
 
 export function isLeadOwnedByActor(
   ownerEmployeeId: string | null | undefined,
@@ -17,7 +22,6 @@ export function filterLeads(
   opts?: { actorEmployeeId?: string | null; isAdmin?: boolean }
 ): CrmLead[] {
   const now = new Date();
-  const todayStart = startOfDay(now);
   const todayEnd = endOfDay(now);
   const q = filters.search?.trim().toLowerCase() ?? "";
 
@@ -40,12 +44,17 @@ export function filterLeads(
       if (lead.status !== "active") return false;
       if (!(lead.nextAction === "none" || !lead.nextFollowUpAt)) return false;
     } else if (filters.followUp === "overdue") {
-      const due = parseMaybe(lead.nextFollowUpAt);
-      if (!due || !isBefore(due, todayStart) || lead.status !== "active")
+      if (lead.status !== "active" || !isFollowUpOverdue(lead.nextFollowUpAt, now))
         return false;
     } else if (filters.followUp === "today") {
       const due = parseMaybe(lead.nextFollowUpAt);
-      if (!due || !isSameDay(due, now) || lead.status !== "active") return false;
+      if (
+        !due ||
+        lead.status !== "active" ||
+        !isSameDay(due, now) ||
+        isFollowUpOverdue(due, now)
+      )
+        return false;
     } else if (filters.followUp === "upcoming") {
       const due = parseMaybe(lead.nextFollowUpAt);
       if (!due || !isAfter(due, todayEnd) || lead.status !== "active")

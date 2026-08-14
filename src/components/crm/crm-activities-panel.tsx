@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import { format, parseISO } from "date-fns";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import { useTranslation } from "@/hooks/use-translation";
+import { formatIsoDateTime } from "@/lib/format-time";
 import { ensureCrmList } from "@/lib/crm-normalize";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
@@ -20,11 +20,7 @@ interface CrmActivitiesPanelProps {
 }
 
 function formatWhen(iso: string): string {
-  try {
-    return format(parseISO(iso), "d MMM yyyy · HH:mm");
-  } catch {
-    return iso;
-  }
+  return formatIsoDateTime(iso, "en", "d MMM yyyy · h:mm a");
 }
 
 /** Recent CRM activities feed. */

@@ -211,6 +211,16 @@ enum CrmActivityType {
   other
 }
 
+enum CrmMeetingMode {
+  online
+  offline
+}
+
+enum CrmMeetingLocation {
+  our_company
+  client_company
+}
+
 /// Shared audit / soft-delete / multi-tenant columns (map to BaseEntity).
 /// Apply as mixins conceptually on every tenant-owned model.
 
@@ -1370,25 +1380,29 @@ model CrmLeadActivity {
 }
 
 model CrmLeadFeedback {
-  id                    String        @id @default(cuid())
+  id                    String              @id @default(cuid())
   companyId             String
   leadId                String
   feedbackTypeId        String
-  customerFeedback      String        @default("")
+  customerFeedback      String              @default("")
   /** true = answered call (Active), false = no answer (Inactive). */
-  callAnswered          Boolean       @default(true)
-  nextAction            CrmNextAction @default(none)
+  callAnswered          Boolean             @default(true)
+  nextAction            CrmNextAction       @default(none)
   nextFollowUpAt        DateTime?
-  notes                 String        @default("")
+  /** Set when a meeting was logged with this feedback. */
+  meetingMode           CrmMeetingMode?
+  /** Venue for offline meetings; null for online. */
+  meetingLocation       CrmMeetingLocation?
+  notes                 String              @default("")
   recordedByEmployeeId  String?
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
   createdBy             String?
   updatedBy             String?
   deletedAt             DateTime?
-  isArchived            Boolean       @default(false)
-  version               Int           @default(1)
-  metadata              Json          @default("{}")
+  isArchived            Boolean             @default(false)
+  version               Int                 @default(1)
+  metadata              Json                @default("{}")
 
   company      Company         @relation(fields: [companyId], references: [id])
   lead         CrmLead         @relation(fields: [leadId], references: [id])

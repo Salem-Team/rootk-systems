@@ -3,8 +3,16 @@
 import { LayoutList } from "lucide-react";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
+import type { Employee } from "@/types";
 import type { CrmStage } from "@/types/crm";
 
 export interface CrmLeadsStageCount {
@@ -17,6 +25,10 @@ interface CrmLeadsOverviewProps {
   stageCounts: CrmLeadsStageCount[];
   totalLeads: number;
   loading?: boolean;
+  employees?: Employee[];
+  canAssign?: boolean;
+  ownerEmployeeId?: string;
+  onOwnerChange?: (ownerEmployeeId: string | undefined) => void;
   onOpenAllLeads: () => void;
   onOpenStage: (stageId: string) => void;
   onAddLead?: () => void;
@@ -29,6 +41,10 @@ export function CrmLeadsOverview({
   stageCounts,
   totalLeads,
   loading = false,
+  employees = [],
+  canAssign = false,
+  ownerEmployeeId,
+  onOwnerChange,
   onOpenAllLeads,
   onOpenStage,
   onAddLead,
@@ -39,6 +55,7 @@ export function CrmLeadsOverview({
   const activeStages = [...stages]
     .filter((s) => s.active)
     .sort((a, b) => a.sortOrder - b.sortOrder);
+  const ownerOptions = Array.isArray(employees) ? employees : [];
 
   if (loading) {
     return (
@@ -64,6 +81,29 @@ export function CrmLeadsOverview({
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {canAssign && onOwnerChange ? (
+              <Select
+                value={ownerEmployeeId || "all"}
+                onValueChange={(v) =>
+                  onOwnerChange(v === "all" ? undefined : v)
+                }
+              >
+                <SelectTrigger
+                  className="h-8 w-[170px]"
+                  aria-label={t("crm.filters.sales")}
+                >
+                  <SelectValue placeholder={t("crm.filters.allSales")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("crm.filters.allSales")}</SelectItem>
+                  {ownerOptions.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
             {onAddLead ? (
               <Button type="button" size="sm" onClick={onAddLead}>
                 {t("crm.actions.addLead")}

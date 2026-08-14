@@ -2,7 +2,13 @@ import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/commo
 import { CrmLeadStatus, CrmStageCategory, type Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { assertCap, canViewOthersLeads, type Actor } from "./crm-access";
-import { buildPipelineBreakdown, buildSalesPerformance, countBy, round1 } from "./crm-analytics";
+import {
+  buildPipelineBreakdown,
+  buildSalesPerformance,
+  countBy,
+  resolveDateBounds,
+  round1,
+} from "./crm-analytics";
 import { PERFORMANCE_PROFILE_RECENT_LIMIT } from "./crm-defaults";
 import {
   mapLeadActivity,
@@ -33,6 +39,12 @@ export class CrmPerformanceService {
     const stages = await this.prisma.crmStage.findMany({
       where: { companyId, deletedAt: null },
     });
+    const { from, to } = resolveDateBounds(query);
+    const hourFilter =
+      query.hour !== undefined && query.hour !== ""
+        ? Number(query.hour)
+        : undefined;
+
     const where: Prisma.CrmLeadWhereInput = {
       companyId,
       deletedAt: null,
@@ -47,6 +59,7 @@ export class CrmPerformanceService {
         where: {
           companyId,
           deletedAt: null,
+          ...(from ? { createdAt: { gte: from, lte: to } } : {}),
           lead: {
             deletedAt: null,
             ...this.shared.scopeOwnerFilter(actor),
@@ -59,9 +72,18 @@ export class CrmPerformanceService {
           leadId: true,
           recordedByEmployeeId: true,
           callAnswered: true,
+          meetingMode: true,
+          meetingLocation: true,
+          createdAt: true,
         },
       }),
     ]);
+
+    const periodFeedback =
+      hourFilter !== undefined && !Number.isNaN(hourFilter)
+        ? feedback.filter((f) => f.createdAt.getHours() === hourFilter)
+        : feedback;
+
     const ownerIds = [
       ...new Set(
         leads.map((l) => l.ownerEmployeeId).filter((v): v is string => Boolean(v))
@@ -75,7 +97,8 @@ export class CrmPerformanceService {
       : [];
 
     // Flat array — matches frontend `CrmSalesPerformanceRow[]`.
-    return buildSalesPerformance(leads, stages, employees, feedback);
+    // Interaction day/hour breakdown is available via dashboard/reports.
+    return buildSalesPerformance(leads, stages, employees, periodFeedback);
   }
 
   async performanceProfile(companyId: string, actor: Actor, employeeId: string) {

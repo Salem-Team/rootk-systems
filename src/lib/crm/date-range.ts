@@ -27,6 +27,7 @@ export function resolveCrmRange(
   }
   const range: CrmDateRangePreset = filters.range ?? "this_month";
   if (range === "all") return { from: null, to };
+  if (range === "today") return { from: startOfDay(now), to };
   if (range === "last_7_days") return { from: startOfDay(subDays(now, 6)), to };
   if (range === "this_week")
     return { from: startOfWeek(now, { weekStartsOn: 0 }), to };
@@ -59,17 +60,31 @@ export function previousPeriod(from: Date | null, to: Date): { from: Date; to: D
   return { from: prevFrom, to: prevTo };
 }
 
-/** Days until follow-up relative helpers for UI badges. */
+/** Follow-up urgency relative to the exact scheduled datetime. */
 export function followUpBucket(
-  nextFollowUpAt: string | null
+  nextFollowUpAt: string | null,
+  now = new Date()
 ): "overdue" | "today" | "upcoming" | "none" {
   if (!nextFollowUpAt) return "none";
   const due = parseMaybe(nextFollowUpAt);
   if (!due) return "none";
-  const now = new Date();
-  if (isBefore(due, startOfDay(now))) return "overdue";
+  if (isBefore(due, now) || due.getTime() === now.getTime()) return "overdue";
   if (isSameDay(due, now)) return "today";
   return "upcoming";
+}
+
+/** True when the scheduled next-action time has already passed. */
+export function isFollowUpOverdue(
+  nextFollowUpAt: string | Date | null | undefined,
+  now = new Date()
+): boolean {
+  if (!nextFollowUpAt) return false;
+  const due =
+    typeof nextFollowUpAt === "string"
+      ? parseMaybe(nextFollowUpAt)
+      : nextFollowUpAt;
+  if (!due) return false;
+  return due.getTime() <= now.getTime();
 }
 
 export function addBusinessDays(from: Date, days: number): Date {

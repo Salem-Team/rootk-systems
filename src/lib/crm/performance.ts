@@ -1,4 +1,4 @@
-import { isBefore, startOfDay, subDays } from "date-fns";
+import { isBefore, subDays } from "date-fns";
 import type { Employee } from "@/types";
 import type {
   CrmAttentionItem,
@@ -11,7 +11,7 @@ import type {
   CrmStage,
   CrmStageCard,
 } from "@/types/crm";
-import { parseMaybe } from "@/lib/crm/date-range";
+import { isFollowUpOverdue, parseMaybe } from "@/lib/crm/date-range";
 import { isLost, isWon, stageMap } from "@/lib/crm/stage-metrics";
 
 export function buildSalesPerformance(
@@ -22,7 +22,6 @@ export function buildSalesPerformance(
 ): CrmSalesPerformanceRow[] {
   const map = stageMap(stages);
   const now = new Date();
-  const todayStart = startOfDay(now);
   const inactiveCutoff = subDays(now, 7);
 
   const ownerIds = new Set(
@@ -46,15 +45,13 @@ export function buildSalesPerformance(
           leadOwnerById.get(f.leadId) ?? f.recordedByEmployeeId ?? null;
         return owner === emp.id;
       });
+      const meetings = mineCalls.filter((f) => Boolean(f.meetingMode));
       const won = mine.filter((l) => isWon(map.get(l.stageId))).length;
       const lost = mine.filter((l) => isLost(map.get(l.stageId))).length;
       const closed = won + lost;
-      const overdue = mine.filter((l) => {
-        const due = parseMaybe(l.nextFollowUpAt);
-        return (
-          l.status === "active" && due !== null && isBefore(due, todayStart)
-        );
-      }).length;
+      const overdue = mine.filter(
+        (l) => l.status === "active" && isFollowUpOverdue(l.nextFollowUpAt, now)
+      ).length;
       const withoutNextAction = mine.filter(
         (l) =>
           l.status === "active" &&
@@ -86,6 +83,11 @@ export function buildSalesPerformance(
         inactive,
         activeCalls: mineCalls.filter((f) => f.callAnswered !== false).length,
         inactiveCalls: mineCalls.filter((f) => f.callAnswered === false).length,
+        meetings: meetings.length,
+        meetingsOnline: meetings.filter((f) => f.meetingMode === "online")
+          .length,
+        meetingsOffline: meetings.filter((f) => f.meetingMode === "offline")
+          .length,
         needsAttention,
       };
     })
@@ -97,13 +99,11 @@ export function buildNeedsAttention(
   performance: CrmSalesPerformanceRow[]
 ): CrmAttentionItem[] {
   const now = new Date();
-  const todayStart = startOfDay(now);
   const inactiveCutoff = subDays(now, 7);
 
-  const overdue = leads.filter((l) => {
-    const due = parseMaybe(l.nextFollowUpAt);
-    return l.status === "active" && due && isBefore(due, todayStart);
-  }).length;
+  const overdue = leads.filter(
+    (l) => l.status === "active" && isFollowUpOverdue(l.nextFollowUpAt, now)
+  ).length;
 
   const noNext = leads.filter(
     (l) =>

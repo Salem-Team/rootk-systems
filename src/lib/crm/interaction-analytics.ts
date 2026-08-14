@@ -1,0 +1,210 @@
+import { eachDayOfInterval, format, isAfter, isBefore, startOfDay } from "date-fns";
+import type {
+  CrmCallMeetingBucket,
+  CrmClientCallRow,
+  CrmDayInteractionRow,
+  CrmHourInteractionRow,
+  CrmInteractionBreakdown,
+  CrmLead,
+  CrmLeadFeedback,
+  CrmMeetingLocation,
+  CrmMeetingMode,
+} from "@/types/crm";
+import { parseMaybe } from "@/lib/crm/date-range";
+
+function emptyBucket(): CrmCallMeetingBucket {
+  return {
+    activeCalls: 0,
+    inactiveCalls: 0,
+    meetings: 0,
+    meetingsOnline: 0,
+    meetingsOffline: 0,
+    meetingsOurCompany: 0,
+    meetingsClientCompany: 0,
+  };
+}
+
+export function emptyInteractionBreakdown(): CrmInteractionBreakdown {
+  return {
+    totals: emptyBucket(),
+    byDay: [],
+    byHour: [],
+    byClient: [],
+  };
+}
+
+function inBounds(d: Date, from: Date | null, to: Date): boolean {
+  if (from && isBefore(d, from)) return false;
+  if (isAfter(d, to)) return false;
+  return true;
+}
+
+function applyCall(bucket: CrmCallMeetingBucket, answered: boolean) {
+  if (answered) bucket.activeCalls += 1;
+  else bucket.inactiveCalls += 1;
+}
+
+function applyMeeting(
+  bucket: CrmCallMeetingBucket,
+  mode: CrmMeetingMode | null | undefined,
+  location: CrmMeetingLocation | null | undefined
+) {
+  if (!mode) return;
+  bucket.meetings += 1;
+  if (mode === "online") bucket.meetingsOnline += 1;
+  else {
+    bucket.meetingsOffline += 1;
+    if (location === "our_company") bucket.meetingsOurCompany += 1;
+    if (location === "client_company") bucket.meetingsClientCompany += 1;
+  }
+}
+
+function mergeBucket(
+  target: CrmCallMeetingBucket,
+  source: CrmCallMeetingBucket
+): CrmCallMeetingBucket {
+  return {
+    activeCalls: target.activeCalls + source.activeCalls,
+    inactiveCalls: target.inactiveCalls + source.inactiveCalls,
+    meetings: target.meetings + source.meetings,
+    meetingsOnline: target.meetingsOnline + source.meetingsOnline,
+    meetingsOffline: target.meetingsOffline + source.meetingsOffline,
+    meetingsOurCompany: target.meetingsOurCompany + source.meetingsOurCompany,
+    meetingsClientCompany:
+      target.meetingsClientCompany + source.meetingsClientCompany,
+  };
+}
+
+function contactsInBucket(b: CrmCallMeetingBucket): number {
+  return b.activeCalls + b.inactiveCalls + b.meetings;
+}
+
+/**
+ * Build day / hour / per-client call+meeting breakdown from CRM feedback.
+ * Signature matches `buildCrmDashboard` usage.
+ */
+export function buildInteractionBreakdown(
+  feedback: CrmLeadFeedback[],
+  leads: CrmLead[],
+  employees: Array<{ id: string; name: string }>,
+  from: Date | null,
+  to: Date,
+  hourFilter?: number | null
+): CrmInteractionBreakdown {
+  const leadById = new Map(leads.map((l) => [l.id, l]));
+  const nameById = new Map(employees.map((e) => [e.id, e.name]));
+  const rangeStart = from ?? startOfDay(to);
+  const days = eachDayOfInterval({ start: rangeStart, end: to });
+
+  const dayMap = new Map<string, CrmCallMeetingBucket>();
+  for (const day of days) {
+    dayMap.set(format(day, "yyyy-MM-dd"), emptyBucket());
+  }
+
+  const hourMap = new Map<string, CrmCallMeetingBucket>();
+  const clientDayMap = new Map<string, CrmCallMeetingBucket>();
+  const lifetimeByLead = new Map<string, number>();
+  const totals = emptyBucket();
+
+  for (const row of feedback) {
+    lifetimeByLead.set(
+      row.leadId,
+      (lifetimeByLead.get(row.leadId) ?? 0) + 1 + (row.meetingMode ? 1 : 0)
+    );
+
+    const created = parseMaybe(row.createdAt);
+    if (!created) continue;
+    if (!inBounds(created, from, to)) continue;
+    if (
+      hourFilter != null &&
+      Number.isFinite(hourFilter) &&
+      created.getHours() !== hourFilter
+    ) {
+      continue;
+    }
+
+    const lead = leadById.get(row.leadId);
+    const day = format(created, "yyyy-MM-dd");
+    const hour = created.getHours();
+    const dayBucket = dayMap.get(day) ?? emptyBucket();
+    const hourKey = `${day}|${hour}`;
+    const hourBucket = hourMap.get(hourKey) ?? emptyBucket();
+    const ownerId =
+      lead?.ownerEmployeeId ?? row.recordedByEmployeeId ?? "__none__";
+    const clientKey = `${row.leadId}|${day}|${ownerId}`;
+    const clientBucket = clientDayMap.get(clientKey) ?? emptyBucket();
+
+    applyCall(dayBucket, row.callAnswered !== false);
+    applyCall(hourBucket, row.callAnswered !== false);
+    applyCall(clientBucket, row.callAnswered !== false);
+    applyCall(totals, row.callAnswered !== false);
+
+    if (row.meetingMode) {
+      applyMeeting(dayBucket, row.meetingMode, row.meetingLocation);
+      applyMeeting(hourBucket, row.meetingMode, row.meetingLocation);
+      applyMeeting(clientBucket, row.meetingMode, row.meetingLocation);
+      applyMeeting(totals, row.meetingMode, row.meetingLocation);
+    }
+
+    dayMap.set(day, dayBucket);
+    hourMap.set(hourKey, hourBucket);
+    clientDayMap.set(clientKey, clientBucket);
+  }
+
+  const byDay: CrmDayInteractionRow[] = [...dayMap.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, bucket]) => ({ date, label: date, ...bucket }))
+    .filter(
+      (row) =>
+        row.activeCalls > 0 || row.inactiveCalls > 0 || row.meetings > 0
+    );
+
+  const hourTotals = new Map<number, CrmCallMeetingBucket>();
+  for (const [key, bucket] of hourMap.entries()) {
+    const hour = Number(key.split("|")[1]);
+    hourTotals.set(
+      hour,
+      mergeBucket(hourTotals.get(hour) ?? emptyBucket(), bucket)
+    );
+  }
+  const byHour: CrmHourInteractionRow[] = [...hourTotals.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([hour, bucket]) => ({
+      hour,
+      label: `${String(hour).padStart(2, "0")}:00`,
+      ...bucket,
+    }))
+    .filter(
+      (row) =>
+        row.activeCalls > 0 || row.inactiveCalls > 0 || row.meetings > 0
+    );
+
+  const byClient: CrmClientCallRow[] = [...clientDayMap.entries()]
+    .map(([key, bucket]) => {
+      const [leadId, date, ownerId] = key.split("|");
+      const lead = leadById.get(leadId!);
+      return {
+        leadId: leadId!,
+        leadName: lead?.name ?? leadId!,
+        companyName: lead?.companyName ?? "",
+        ownerEmployeeId: ownerId === "__none__" ? null : (ownerId ?? null),
+        ownerEmployeeName:
+          !ownerId || ownerId === "__none__"
+            ? ""
+            : (nameById.get(ownerId) ?? ownerId),
+        date: date!,
+        contactsThatDay: contactsInBucket(bucket),
+        contactsTotal:
+          lifetimeByLead.get(leadId!) ?? contactsInBucket(bucket),
+        ...bucket,
+      };
+    })
+    .sort(
+      (a, b) =>
+        b.date.localeCompare(a.date) ||
+        b.contactsThatDay - a.contactsThatDay ||
+        a.leadName.localeCompare(b.leadName)
+    );
+
+  return { totals, byDay, byHour, byClient };
+}

@@ -19,6 +19,9 @@ import {
   resolvePreviousPeriod,
 } from "./crm-analytics";
 import {
+  buildInteractionBreakdown,
+} from "./crm-interaction-breakdown";
+import {
   buildDashboardKpis,
   buildInsights,
   buildNeedsAttentionItems,
@@ -173,10 +176,42 @@ export class CrmDashboardService {
         leadId: true,
         recordedByEmployeeId: true,
         callAnswered: true,
+        meetingMode: true,
+        meetingLocation: true,
+        createdAt: true,
       },
     });
+    const allFeedbackRows = await this.prisma.crmLeadFeedback.findMany({
+      where: {
+        companyId,
+        deletedAt: null,
+        lead: {
+          deletedAt: null,
+          ...this.shared.scopeOwnerFilter(actor),
+          ...(query.ownerEmployeeId && canViewOthersLeads(actor)
+            ? { ownerEmployeeId: query.ownerEmployeeId }
+            : {}),
+        },
+      },
+      select: {
+        leadId: true,
+        recordedByEmployeeId: true,
+        callAnswered: true,
+        meetingMode: true,
+        meetingLocation: true,
+        createdAt: true,
+      },
+    });
+    const hourFilter =
+      query.hour !== undefined && query.hour !== ""
+        ? Number(query.hour)
+        : undefined;
+    const periodFeedback =
+      hourFilter !== undefined && !Number.isNaN(hourFilter)
+        ? feedbackRows.filter((f) => f.createdAt.getHours() === hourFilter)
+        : feedbackRows;
     const feedbackReasons = buildFeedbackReasons(
-      countBy(feedbackRows, (f) => f.feedbackTypeId),
+      countBy(periodFeedback, (f) => f.feedbackTypeId),
       feedbackTypes
     );
 
@@ -197,7 +232,27 @@ export class CrmDashboardService {
       allActiveLeads,
       stages,
       employees,
-      feedbackRows
+      periodFeedback
+    );
+    const interactionBreakdown = buildInteractionBreakdown(
+      allFeedbackRows.map((f) => ({
+        leadId: f.leadId,
+        recordedByEmployeeId: f.recordedByEmployeeId,
+        callAnswered: f.callAnswered,
+        meetingMode: f.meetingMode,
+        meetingLocation: f.meetingLocation,
+        createdAt: f.createdAt,
+      })),
+      allActiveLeads.map((l) => ({
+        id: l.id,
+        name: l.name,
+        companyName: l.companyName,
+        ownerEmployeeId: l.ownerEmployeeId,
+      })),
+      employees,
+      from,
+      to,
+      hourFilter
     );
 
     const attentionCounts = computeAttentionCounts(
@@ -224,6 +279,7 @@ export class CrmDashboardService {
       conversionTrend,
       feedbackReasons,
       salesPerformance,
+      interactionBreakdown,
       needsAttention,
       insights,
     };

@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -24,10 +25,17 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/hooks/use-translation";
-import { TAGS } from "@/lib/crm/lead-form-options";
+import { NEXT_ACTIONS, TAGS, toLocalInput } from "@/lib/crm/lead-form-options";
 import { cn } from "@/lib/utils";
 import { addCrmLeadFeedback } from "@/services/crm.service";
-import type { CrmLead, CrmLeadTag, CrmStage } from "@/types/crm";
+import type {
+  CrmLead,
+  CrmLeadTag,
+  CrmMeetingLocation,
+  CrmMeetingMode,
+  CrmNextAction,
+  CrmStage,
+} from "@/types/crm";
 
 interface CrmFeedbackFormProps {
   open: boolean;
@@ -37,7 +45,7 @@ interface CrmFeedbackFormProps {
   onSaved?: () => void;
 }
 
-/** Primary feedback dialog: lead+tags → stage → feedback + answered toggle. */
+/** Primary feedback dialog: lead+tags → stage/next-action → feedback. */
 export function CrmFeedbackForm({
   open,
   onOpenChange,
@@ -48,8 +56,13 @@ export function CrmFeedbackForm({
   const { t } = useTranslation();
   const [tags, setTags] = useState<CrmLeadTag[]>([]);
   const [stageId, setStageId] = useState("");
+  const [nextAction, setNextAction] = useState<CrmNextAction>("follow_up");
+  const [nextFollowUpAt, setNextFollowUpAt] = useState("");
   const [customerFeedback, setCustomerFeedback] = useState("");
   const [callAnswered, setCallAnswered] = useState(true);
+  const [meetingMode, setMeetingMode] = useState<CrmMeetingMode>("online");
+  const [meetingLocation, setMeetingLocation] =
+    useState<CrmMeetingLocation>("our_company");
   const [saving, setSaving] = useState(false);
 
   const activeStages = useMemo(
@@ -64,8 +77,12 @@ export function CrmFeedbackForm({
     if (!lead) return;
     setTags([...(lead.tags ?? [])]);
     setStageId(lead.stageId);
+    setNextAction(lead.nextAction === "none" ? "follow_up" : lead.nextAction);
+    setNextFollowUpAt(toLocalInput(lead.nextFollowUpAt));
     setCustomerFeedback("");
     setCallAnswered(true);
+    setMeetingMode("online");
+    setMeetingLocation("our_company");
     setSaving(false);
   });
 
@@ -87,7 +104,15 @@ export function CrmFeedbackForm({
       callAnswered,
       stageId,
       tags,
-      nextAction: callAnswered ? "follow_up" : "call",
+      nextAction,
+      nextFollowUpAt: nextFollowUpAt
+        ? new Date(nextFollowUpAt).toISOString()
+        : null,
+      meetingMode: nextAction === "meeting" ? meetingMode : null,
+      meetingLocation:
+        nextAction === "meeting" && meetingMode === "offline"
+          ? meetingLocation
+          : null,
       notes: "",
     });
     setSaving(false);
@@ -179,6 +204,88 @@ export function CrmFeedbackForm({
                 </SelectContent>
               </Select>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-1.5">
+                <Label htmlFor="crm-fb-next-action">
+                  {t("crm.feedback.nextAction")}
+                </Label>
+                <Select
+                  value={nextAction}
+                  onValueChange={(v) => setNextAction(v as CrmNextAction)}
+                >
+                  <SelectTrigger id="crm-fb-next-action">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {NEXT_ACTIONS.map((a) => (
+                      <SelectItem key={a} value={a}>
+                        {t(`crm.nextAction.${a}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="crm-fb-next-at">
+                  {t("crm.feedback.nextFollowUp")}
+                </Label>
+                <Input
+                  id="crm-fb-next-at"
+                  type="datetime-local"
+                  value={nextFollowUpAt}
+                  onChange={(e) => setNextFollowUpAt(e.target.value)}
+                />
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              {t("crm.feedback.nextActionHint")}
+            </p>
+            {nextAction === "meeting" ? (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
+                  <Label>{t("crm.feedback.meetingMode")}</Label>
+                  <Select
+                    value={meetingMode}
+                    onValueChange={(v) => setMeetingMode(v as CrmMeetingMode)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="online">
+                        {t("crm.feedback.meetingOnline")}
+                      </SelectItem>
+                      <SelectItem value="offline">
+                        {t("crm.feedback.meetingOffline")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {meetingMode === "offline" ? (
+                  <div className="grid gap-1.5">
+                    <Label>{t("crm.feedback.meetingLocation")}</Label>
+                    <Select
+                      value={meetingLocation}
+                      onValueChange={(v) =>
+                        setMeetingLocation(v as CrmMeetingLocation)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="our_company">
+                          {t("crm.feedback.locationOurCompany")}
+                        </SelectItem>
+                        <SelectItem value="client_company">
+                          {t("crm.feedback.locationClientCompany")}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </section>
 
           <section className="grid gap-2.5">

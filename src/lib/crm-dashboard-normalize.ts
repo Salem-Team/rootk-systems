@@ -1,4 +1,11 @@
-import type { CrmDashboard, CrmKpis, CrmSalesPerformanceRow } from "@/types/crm";
+import type {
+  CrmCallMeetingBucket,
+  CrmDashboard,
+  CrmInteractionBreakdown,
+  CrmKpis,
+  CrmSalesPerformanceRow,
+} from "@/types/crm";
+import { emptyInteractionBreakdown } from "@/lib/crm/interaction-analytics";
 
 const EMPTY_KPIS: CrmKpis = {
   totalLeads: 0,
@@ -7,6 +14,59 @@ const EMPTY_KPIS: CrmKpis = {
   converted: 0,
   conversionRate: 0,
 };
+
+function ensureBucket(raw: unknown): CrmCallMeetingBucket {
+  const row = (raw && typeof raw === "object" ? raw : {}) as Partial<CrmCallMeetingBucket>;
+  return {
+    activeCalls: Number(row.activeCalls ?? 0),
+    inactiveCalls: Number(row.inactiveCalls ?? 0),
+    meetings: Number(row.meetings ?? 0),
+    meetingsOnline: Number(row.meetingsOnline ?? 0),
+    meetingsOffline: Number(row.meetingsOffline ?? 0),
+    meetingsOurCompany: Number(row.meetingsOurCompany ?? 0),
+    meetingsClientCompany: Number(row.meetingsClientCompany ?? 0),
+  };
+}
+
+export function ensureInteractionBreakdown(
+  raw: unknown
+): CrmInteractionBreakdown {
+  const base = emptyInteractionBreakdown();
+  if (!raw || typeof raw !== "object") return base;
+  const row = raw as Partial<CrmInteractionBreakdown>;
+  return {
+    totals: ensureBucket(row.totals),
+    byDay: Array.isArray(row.byDay)
+      ? row.byDay.map((d) => ({
+          date: String(d.date ?? ""),
+          label: String(d.label ?? d.date ?? ""),
+          ...ensureBucket(d),
+        }))
+      : [],
+    byHour: Array.isArray(row.byHour)
+      ? row.byHour.map((h) => ({
+          hour: Number(h.hour ?? 0),
+          label: String(
+            h.label ?? `${String(h.hour ?? 0).padStart(2, "0")}:00`
+          ),
+          ...ensureBucket(h),
+        }))
+      : [],
+    byClient: Array.isArray(row.byClient)
+      ? row.byClient.map((c) => ({
+          leadId: String(c.leadId ?? ""),
+          leadName: String(c.leadName ?? ""),
+          companyName: String(c.companyName ?? ""),
+          ownerEmployeeId: c.ownerEmployeeId ?? null,
+          ownerEmployeeName: String(c.ownerEmployeeName ?? ""),
+          date: String(c.date ?? ""),
+          contactsThatDay: Number(c.contactsThatDay ?? 0),
+          contactsTotal: Number(c.contactsTotal ?? 0),
+          ...ensureBucket(c),
+        }))
+      : [],
+  };
+}
 
 export function emptyCrmDashboard(): CrmDashboard {
   return {
@@ -17,6 +77,7 @@ export function emptyCrmDashboard(): CrmDashboard {
     conversionTrend: [],
     feedbackReasons: [],
     salesPerformance: [],
+    interactionBreakdown: emptyInteractionBreakdown(),
     needsAttention: [],
     insights: [],
   };
@@ -86,8 +147,12 @@ export function ensureCrmDashboard(raw: unknown): CrmDashboard {
         ...item,
         activeCalls: Number(item.activeCalls ?? 0),
         inactiveCalls: Number(item.inactiveCalls ?? 0),
+        meetings: Number(item.meetings ?? 0),
+        meetingsOnline: Number(item.meetingsOnline ?? 0),
+        meetingsOffline: Number(item.meetingsOffline ?? 0),
       };
     }),
+    interactionBreakdown: ensureInteractionBreakdown(row.interactionBreakdown),
     needsAttention: Array.isArray(row.needsAttention) ? row.needsAttention : [],
     insights: Array.isArray(row.insights) ? row.insights : [],
   };

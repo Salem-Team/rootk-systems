@@ -1,5 +1,6 @@
 "use client";
 
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -23,11 +24,15 @@ const SOURCES: CrmLeadSource[] = [
   "other",
 ];
 
+const HOURS = Array.from({ length: 24 }, (_, h) => h);
+
 interface CrmDashboardFiltersBarProps {
   filters: CrmDashboardFilters;
   employees: Employee[];
   canAssign?: boolean;
   onFiltersChange: (filters: CrmDashboardFilters) => void;
+  /** Show hour + custom date inputs (Performance / Reports). */
+  showInteractionFilters?: boolean;
 }
 
 /** Range / sales owner / source filter controls for the CRM dashboard. */
@@ -36,6 +41,7 @@ export function CrmDashboardFiltersBar({
   employees,
   canAssign = false,
   onFiltersChange,
+  showInteractionFilters = false,
 }: CrmDashboardFiltersBarProps) {
   const { t } = useTranslation();
 
@@ -47,6 +53,8 @@ export function CrmDashboardFiltersBar({
           onFiltersChange({
             ...filters,
             range: v as CrmDateRangePreset,
+            dateFrom: undefined,
+            dateTo: undefined,
           })
         }
       >
@@ -54,12 +62,70 @@ export function CrmDashboardFiltersBar({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="today">{t("crm.filters.today")}</SelectItem>
           <SelectItem value="this_week">{t("crm.filters.thisWeek")}</SelectItem>
           <SelectItem value="last_7_days">{t("crm.filters.last7Days")}</SelectItem>
           <SelectItem value="this_month">{t("crm.filters.thisMonth")}</SelectItem>
           <SelectItem value="all">{t("crm.filters.all")}</SelectItem>
         </SelectContent>
       </Select>
+
+      {showInteractionFilters ? (
+        <>
+          <Input
+            type="date"
+            className="filter-control h-9 sm:w-[150px]"
+            value={filters.dateFrom ?? ""}
+            aria-label={t("crm.filters.dateFrom")}
+            onChange={(e) =>
+              onFiltersChange({
+                ...filters,
+                dateFrom: e.target.value || undefined,
+              })
+            }
+          />
+          <Input
+            type="date"
+            className="filter-control h-9 sm:w-[150px]"
+            value={filters.dateTo ?? ""}
+            aria-label={t("crm.filters.dateTo")}
+            onChange={(e) =>
+              onFiltersChange({
+                ...filters,
+                dateTo: e.target.value || undefined,
+              })
+            }
+          />
+          <Select
+            value={
+              filters.hour === undefined || filters.hour === null
+                ? "all"
+                : String(filters.hour)
+            }
+            onValueChange={(v) =>
+              onFiltersChange({
+                ...filters,
+                hour: v === "all" ? undefined : Number(v),
+              })
+            }
+          >
+            <SelectTrigger
+              className="filter-control h-9 sm:w-[120px]"
+              aria-label={t("crm.filters.hour")}
+            >
+              <SelectValue placeholder={t("crm.filters.allHours")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("crm.filters.allHours")}</SelectItem>
+              {HOURS.map((h) => (
+                <SelectItem key={h} value={String(h)}>
+                  {`${String(h).padStart(2, "0")}:00`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </>
+      ) : null}
 
       {canAssign ? (
         <Select

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { format, parseISO } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { CrmSalesProfileLeadsDialog } from "@/components/crm/crm-sales-profile-leads-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -18,6 +17,7 @@ import {
   mergeOwnedProfileLeads,
   ownedSalesProfileLeads,
 } from "@/lib/crm/sales-profile";
+import { formatIsoDateTime } from "@/lib/format-time";
 import {
   ensureCrmList,
   ensurePaginatedLeads,
@@ -42,11 +42,7 @@ interface CrmSalesProfileSheetProps {
 }
 
 function formatWhen(iso: string): string {
-  try {
-    return format(parseISO(iso), "d MMM · HH:mm");
-  } catch {
-    return iso;
-  }
+  return formatIsoDateTime(iso, "en", "d MMM · h:mm a");
 }
 
 /** Sales user profile: KPIs, pipeline, recent activity, feedback. */

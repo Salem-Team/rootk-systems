@@ -38,6 +38,12 @@ export type CrmActivityType =
   | "created"
   | "other";
 
+/** Meeting channel when logging a CRM meeting activity. */
+export type CrmMeetingMode = "online" | "offline";
+
+/** Physical meeting place (offline meetings). */
+export type CrmMeetingLocation = "our_company" | "client_company";
+
 export type CrmLeadTag =
   | "hot"
   | "warm"
@@ -65,6 +71,7 @@ export type CrmCapability =
 export type CrmFollowUpFilter = "today" | "upcoming" | "overdue" | "none";
 
 export type CrmDateRangePreset =
+  | "today"
   | "this_week"
   | "last_7_days"
   | "this_month"
@@ -156,6 +163,10 @@ export interface CrmLeadActivity extends BaseEntity {
   description: string;
   actorEmployeeId: string | null;
   occurredAt: string;
+  /** Present when type is meeting. */
+  meetingMode?: CrmMeetingMode | null;
+  /** Venue for offline meetings. */
+  meetingLocation?: CrmMeetingLocation | null;
 }
 
 export interface CrmLeadFeedback extends BaseEntity {
@@ -167,6 +178,10 @@ export interface CrmLeadFeedback extends BaseEntity {
   callAnswered: boolean;
   nextAction: CrmNextAction;
   nextFollowUpAt: string | null;
+  /** Present when a meeting was logged with this feedback. */
+  meetingMode: CrmMeetingMode | null;
+  /** Offline venue; null when online or no meeting. */
+  meetingLocation: CrmMeetingLocation | null;
   notes: string;
   recordedByEmployeeId: string | null;
 }
@@ -259,8 +274,57 @@ export interface CrmDashboard {
   conversionTrend: CrmTrendPoint[];
   feedbackReasons: CrmChartPoint[];
   salesPerformance: CrmSalesPerformanceRow[];
+  interactionBreakdown: CrmInteractionBreakdown;
   needsAttention: CrmAttentionItem[];
   insights: CrmInsight[];
+}
+
+export interface CrmCallMeetingBucket {
+  activeCalls: number;
+  inactiveCalls: number;
+  meetings: number;
+  meetingsOnline: number;
+  meetingsOffline: number;
+  meetingsOurCompany: number;
+  meetingsClientCompany: number;
+}
+
+export interface CrmDayInteractionRow extends CrmCallMeetingBucket {
+  date: string;
+  label: string;
+}
+
+export interface CrmHourInteractionRow extends CrmCallMeetingBucket {
+  hour: number;
+  label: string;
+}
+
+export interface CrmClientCallRow {
+  leadId: string;
+  leadName: string;
+  companyName: string;
+  ownerEmployeeId: string | null;
+  ownerEmployeeName: string;
+  /** yyyy-MM-dd for this row's day. */
+  date: string;
+  /** Contacts (calls + meetings) on `date`. */
+  contactsThatDay: number;
+  /** Lifetime contacts for this client. */
+  contactsTotal: number;
+  activeCalls: number;
+  inactiveCalls: number;
+  meetings: number;
+  meetingsOnline: number;
+  meetingsOffline: number;
+  meetingsOurCompany: number;
+  meetingsClientCompany: number;
+}
+
+export interface CrmInteractionBreakdown {
+  totals: CrmCallMeetingBucket;
+  byDay: CrmDayInteractionRow[];
+  byHour: CrmHourInteractionRow[];
+  byClient: CrmClientCallRow[];
 }
 
 export interface CrmSalesPerformanceRow {
@@ -279,6 +343,9 @@ export interface CrmSalesPerformanceRow {
   activeCalls: number;
   /** Feedback calls marked no-answer (مردش). */
   inactiveCalls: number;
+  meetings: number;
+  meetingsOnline: number;
+  meetingsOffline: number;
   needsAttention: boolean;
 }
 
@@ -327,6 +394,8 @@ export interface CrmDashboardFilters {
   dateFrom?: string;
   dateTo?: string;
   range?: CrmDateRangePreset;
+  /** Optional hour-of-day filter (0–23). */
+  hour?: number;
   ownerEmployeeId?: string;
   source?: CrmLeadSource | "";
   stageId?: string;

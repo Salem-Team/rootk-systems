@@ -92,7 +92,11 @@ export function ensureLeadTimeline(raw: unknown): CrmLeadActivity[] {
 }
 
 export function ensureLeadFeedbackList(raw: unknown): CrmLeadFeedback[] {
-  return ensureCrmList<CrmLeadFeedback>(raw);
+  return ensureCrmList<CrmLeadFeedback>(raw).map((row) => ({
+    ...row,
+    meetingMode: row.meetingMode ?? null,
+    meetingLocation: row.meetingLocation ?? null,
+  }));
 }
 
 export function ensureSalesPerformance(
@@ -102,6 +106,9 @@ export function ensureSalesPerformance(
     ...row,
     activeCalls: Number(row.activeCalls ?? 0),
     inactiveCalls: Number(row.inactiveCalls ?? 0),
+    meetings: Number(row.meetings ?? 0),
+    meetingsOnline: Number(row.meetingsOnline ?? 0),
+    meetingsOffline: Number(row.meetingsOffline ?? 0),
   }));
 }
 

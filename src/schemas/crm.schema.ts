@@ -126,6 +126,11 @@ export const leadFeedbackSchema = z.object({
   tags: z.array(leadTag).optional(),
   nextAction: nextAction.optional().default("follow_up"),
   nextFollowUpAt: z.string().nullable().optional(),
+  meetingMode: z.enum(["online", "offline"]).nullable().optional(),
+  meetingLocation: z
+    .enum(["our_company", "client_company"])
+    .nullable()
+    .optional(),
   notes: z.string().optional().default(""),
 });
 

@@ -5,6 +5,7 @@ import { CrmActivitiesService } from "./crm-activities.service";
 import { CrmBusinessTypesService } from "./crm-business-types.service";
 import { CrmDashboardService } from "./crm-dashboard.service";
 import { CrmFeedbackTypesService } from "./crm-feedback-types.service";
+import { CrmFollowUpRemindersService } from "./crm-follow-up-reminders.service";
 import { CrmLeadCreateService } from "./crm-lead-create.service";
 import { CrmLeadUpdateService } from "./crm-lead-update.service";
 import { CrmLeadsImportService } from "./crm-leads-import.service";
@@ -16,8 +17,10 @@ import { CrmStagesService } from "./crm-stages.service";
 import { CrmSubStagesService } from "./crm-sub-stages.service";
 import { CrmService } from "./crm.service";
 import { RolesGuard } from "../common/roles.guard";
+import { NotificationsModule } from "../notifications/notifications.module";
 
 @Module({
+  imports: [NotificationsModule],
   controllers: [CrmController, CrmCatalogController],
   providers: [
     RolesGuard,
@@ -34,6 +37,7 @@ import { RolesGuard } from "../common/roles.guard";
     CrmDashboardService,
     CrmPerformanceService,
     CrmReportsService,
+    CrmFollowUpRemindersService,
     CrmService,
   ],
   exports: [CrmService],

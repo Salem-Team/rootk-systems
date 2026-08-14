@@ -40,6 +40,7 @@ import {
   isAdmin,
   writeHistory,
 } from "@/services/crm/crm-shared";
+import { clearLocalCrmFollowUpReminders } from "@/services/crm/crm-follow-up-reminders.service";
 
 export async function addCrmLeadActivity(
   leadId: string,
@@ -141,6 +142,10 @@ export async function addCrmLeadFeedback(
       throw new ValidationError("No feedback type available");
     }
     const callAnswered = parsed.callAnswered ?? true;
+    const meetingMode =
+      parsed.nextAction === "meeting" ? (parsed.meetingMode ?? null) : null;
+    const meetingLocation =
+      meetingMode === "offline" ? (parsed.meetingLocation ?? null) : null;
     const row = enrichWithAudit(
       {
         id: createId("crm-fb"),
@@ -150,12 +155,20 @@ export async function addCrmLeadFeedback(
         callAnswered,
         nextAction: parsed.nextAction ?? "follow_up",
         nextFollowUpAt: parsed.nextFollowUpAt ?? null,
+        meetingMode,
+        meetingLocation,
         notes: parsed.notes ?? "",
         recordedByEmployeeId: actorEmployeeId(),
       },
       actorId
     );
     await crmLeadFeedbackRepository.create(row);
+    if (
+      parsed.nextFollowUpAt !== undefined &&
+      parsed.nextFollowUpAt !== lead.nextFollowUpAt
+    ) {
+      clearLocalCrmFollowUpReminders(leadId);
+    }
     await crmLeadRepository.update(
       lead.id,
       touchEntity(lead, actorId, {

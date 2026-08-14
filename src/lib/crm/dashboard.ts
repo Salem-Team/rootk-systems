@@ -8,8 +8,21 @@ import type {
   CrmLeadFeedback,
   CrmStage,
 } from "@/types/crm";
-import { leadInRange, previousPeriod, resolveCrmRange } from "@/lib/crm/date-range";
-import { buildInsights, buildNeedsAttention, buildSalesPerformance } from "@/lib/crm/performance";
+import {
+  leadInRange,
+  parseMaybe,
+  previousPeriod,
+  resolveCrmRange,
+} from "@/lib/crm/date-range";
+import {
+  buildInteractionBreakdown,
+  emptyInteractionBreakdown,
+} from "@/lib/crm/interaction-analytics";
+import {
+  buildInsights,
+  buildNeedsAttention,
+  buildSalesPerformance,
+} from "@/lib/crm/performance";
 import { buildKpis, buildStageCards } from "@/lib/crm/stage-metrics";
 import { buildConversionTrend, buildLeadsTrend } from "@/lib/crm/trends";
 
@@ -56,8 +69,23 @@ export function buildCrmDashboard(
   const scopedFeedback = feedback.filter((f) =>
     leads.some((l) => l.id === f.leadId)
   );
+  const periodFeedback = scopedFeedback.filter((f) => {
+    const created = parseMaybe(f.createdAt);
+    if (!created) return false;
+    if (from && created < from) return false;
+    if (created > to) return false;
+    if (
+      filters.hour !== undefined &&
+      filters.hour !== null &&
+      !Number.isNaN(filters.hour) &&
+      created.getHours() !== filters.hour
+    ) {
+      return false;
+    }
+    return true;
+  });
   const reasonCounts = new Map<string, number>();
-  for (const f of scopedFeedback) {
+  for (const f of periodFeedback) {
     const name = typeMap.get(f.feedbackTypeId)?.name ?? "Other";
     reasonCounts.set(name, (reasonCounts.get(name) ?? 0) + 1);
   }
@@ -73,7 +101,7 @@ export function buildCrmDashboard(
     leads,
     stages,
     salesRoster,
-    scopedFeedback
+    periodFeedback
   );
   const needsAttention = buildNeedsAttention(leads, salesPerformance);
   const insights = buildInsights(
@@ -83,6 +111,17 @@ export function buildCrmDashboard(
     salesPerformance,
     needsAttention
   );
+  const interactionBreakdown =
+    leads.length === 0
+      ? emptyInteractionBreakdown()
+      : buildInteractionBreakdown(
+          scopedFeedback,
+          leads,
+          salesRoster,
+          from,
+          to,
+          filters.hour
+        );
 
   return {
     kpis,
@@ -97,6 +136,7 @@ export function buildCrmDashboard(
     conversionTrend: buildConversionTrend(leads, stages, from, to),
     feedbackReasons,
     salesPerformance,
+    interactionBreakdown,
     needsAttention,
     insights,
   };

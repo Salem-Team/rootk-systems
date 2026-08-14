@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   ListChecks,
   MessageSquareText,
+  TimerReset,
   Workflow,
   type LucideIcon,
 } from "lucide-react";
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 export type CrmHubTab =
   | "dashboard"
   | "leads"
+  | "delay"
   | "pipeline"
   | "activities"
   | "feedback"
@@ -43,6 +45,7 @@ const VIEW_ITEMS: {
   labelKey:
     | "crm.nav.dashboard"
     | "crm.nav.leads"
+    | "crm.nav.delay"
     | "crm.nav.pipeline"
     | "crm.nav.activities"
     | "crm.nav.feedback"
@@ -57,6 +60,7 @@ const VIEW_ITEMS: {
 }[] = [
   { id: "dashboard", icon: LayoutDashboard, labelKey: "crm.nav.dashboard" },
   { id: "leads", icon: ListChecks, labelKey: "crm.nav.leads" },
+  { id: "delay", icon: TimerReset, labelKey: "crm.nav.delay" },
   { id: "pipeline", icon: Columns3, labelKey: "crm.nav.pipeline" },
   { id: "activities", icon: Activity, labelKey: "crm.nav.activities" },
   { id: "feedback", icon: MessageSquareText, labelKey: "crm.nav.feedback" },
@@ -85,6 +89,7 @@ const VIEW_ITEMS: {
     reportsOnly: true,
   },
 ];
+
 
 /** In-module rail for CRM hub views. */
 export function CrmHubSidebar({

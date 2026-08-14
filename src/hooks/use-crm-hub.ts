@@ -106,11 +106,14 @@ export function useCrmHub() {
     if (!opts?.silent) setLoading(true);
     await loadCore();
     const jobs: Promise<void>[] = [];
-    if (tab === "dashboard" || tab === "reports") jobs.push(loadDashboard());
+    if (tab === "dashboard" || tab === "reports" || tab === "performance") {
+      jobs.push(loadDashboard());
+    }
     if (tab === "leads") {
       if (leadsView === "table") jobs.push(loadLeads());
       jobs.push(loadPipeline());
     }
+    if (tab === "delay") jobs.push(loadLeads());
     if (tab === "pipeline") jobs.push(loadPipeline());
     if (tab === "activities") jobs.push(loadActivities());
     if (tab === "feedback") {
@@ -180,8 +183,13 @@ export function useCrmHub() {
     [feedback]
   );
   const safePerformance = useMemo(
-    () => ensureSalesPerformance(performance),
-    [performance]
+    () =>
+      ensureSalesPerformance(
+        performance.length
+          ? performance
+          : (safeDashboard?.salesPerformance ?? [])
+      ),
+    [performance, safeDashboard]
   );
   const safeActivityLeads = useMemo(
     () => ensureCrmList<CrmLead>(activityLeads),
@@ -207,6 +215,10 @@ export function useCrmHub() {
   }
 
   function navigateLeads(filters?: Partial<CrmLeadFilters>) {
+    if (filters?.followUp === "overdue") {
+      navigateDelay();
+      return;
+    }
     setLeadFilters((prev) => ({
       page: 1,
       pageSize: prev.pageSize ?? 20,
@@ -218,12 +230,33 @@ export function useCrmHub() {
     setTab("leads");
   }
 
+  function navigateDelay() {
+    setLeadFilters((prev) => ({
+      page: 1,
+      pageSize: prev.pageSize ?? 20,
+      sort: "nextFollowUpAt",
+      order: "asc",
+      followUp: "overdue",
+      status: "active",
+    }));
+    setTab("delay");
+  }
+
+  function setOverviewOwner(ownerEmployeeId: string | undefined) {
+    setLeadFilters((prev) => ({
+      ...prev,
+      page: 1,
+      ownerEmployeeId,
+    }));
+  }
+
   function openAllLeads() {
     setLeadFilters((prev) => ({
       page: 1,
       pageSize: prev.pageSize ?? 20,
       sort: prev.sort ?? "updatedAt",
       order: prev.order ?? "desc",
+      ownerEmployeeId: prev.ownerEmployeeId,
     }));
     setLeadsView("table");
   }
@@ -234,6 +267,7 @@ export function useCrmHub() {
       pageSize: prev.pageSize ?? 20,
       sort: prev.sort ?? "updatedAt",
       order: prev.order ?? "desc",
+      ownerEmployeeId: prev.ownerEmployeeId,
       stageId,
     }));
     setLeadsView("table");
@@ -246,6 +280,7 @@ export function useCrmHub() {
       pageSize: prev.pageSize ?? 20,
       sort: prev.sort ?? "updatedAt",
       order: prev.order ?? "desc",
+      ownerEmployeeId: prev.ownerEmployeeId,
     }));
   }
 
@@ -255,23 +290,41 @@ export function useCrmHub() {
     if (next === "reports" && !canViewReports) return;
     if (next === "performance" && !canViewPerformance) return;
     if (next === "leads") setLeadsView("cards");
+    if (next === "delay") {
+      setLeadFilters((prev) => ({
+        page: 1,
+        pageSize: prev.pageSize ?? 20,
+        sort: "nextFollowUpAt",
+        order: "asc",
+        followUp: "overdue",
+        status: "active",
+        ownerEmployeeId: prev.ownerEmployeeId,
+        search: prev.search,
+      }));
+    }
     setTab(next);
   }
 
+  const overviewLeads = useMemo(() => {
+    const ownerId = leadFilters.ownerEmployeeId?.trim();
+    if (!ownerId) return safePipelineLeads;
+    return safePipelineLeads.filter((lead) => lead.ownerEmployeeId === ownerId);
+  }, [safePipelineLeads, leadFilters.ownerEmployeeId]);
+
   const stageCounts = useMemo(() => {
     const map = new Map<string, number>();
-    for (const lead of safePipelineLeads) {
+    for (const lead of overviewLeads) {
       map.set(lead.stageId, (map.get(lead.stageId) ?? 0) + 1);
     }
     return [...map.entries()].map(([stageId, count]) => ({ stageId, count }));
-  }, [safePipelineLeads]);
+  }, [overviewLeads]);
 
   const overviewTotal = useMemo(() => {
     if (safeLeadsPage.total > 0 && leadsView === "table") {
       return safeLeadsPage.total;
     }
-    return safePipelineLeads.length;
-  }, [safeLeadsPage.total, safePipelineLeads.length, leadsView]);
+    return overviewLeads.length;
+  }, [safeLeadsPage.total, overviewLeads.length, leadsView]);
 
   return {
     canCreate,
@@ -315,8 +368,10 @@ export function useCrmHub() {
     openCreate,
     openEdit,
     navigateLeads,
+    navigateDelay,
     openAllLeads,
     openStageLeads,
+    setOverviewOwner,
     backToLeadsCards,
     onTabChange,
   };

@@ -1,6 +1,6 @@
 /** Pure Prisma where-clause builder for lead listing/filtering. */
 import { CrmLeadSource, CrmLeadStatus, type Prisma } from "@prisma/client";
-import { endOfDay, startOfDay } from "date-fns";
+import { endOfDay } from "date-fns";
 import { canViewOthersLeads, type Actor } from "./crm-access";
 import { LEAD_SOURCES, LEAD_STATUSES } from "./crm-input";
 import { CrmSharedService } from "./crm-shared.service";
@@ -40,14 +40,16 @@ export function buildLeadWhere(
   if (query.tag) where.tags = { has: query.tag };
 
   const now = new Date();
-  const startToday = startOfDay(now);
   const endToday = endOfDay(now);
   if (query.followUp === "today") {
-    where.nextFollowUpAt = { gte: startToday, lte: endToday };
+    // Still due later today (not yet past the scheduled minute).
+    where.nextFollowUpAt = { gt: now, lte: endToday };
   } else if (query.followUp === "upcoming") {
     where.nextFollowUpAt = { gt: endToday };
   } else if (query.followUp === "overdue") {
-    where.nextFollowUpAt = { lt: startToday };
+    // Delay face: scheduled next-action time has already passed.
+    where.nextFollowUpAt = { lte: now };
+    if (!query.status) where.status = CrmLeadStatus.active;
   } else if (query.followUp === "none") {
     where.nextFollowUpAt = null;
   }

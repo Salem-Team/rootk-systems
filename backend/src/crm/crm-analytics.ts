@@ -7,7 +7,7 @@ import {
   type CrmLead,
   type CrmStage,
 } from "@prisma/client";
-import { endOfDay, startOfDay, subDays } from "date-fns";
+import { endOfDay, startOfDay, startOfWeek, subDays } from "date-fns";
 import { parseDate, parseDateEnd } from "../common/mappers";
 
 export const INACTIVE_DAYS_THRESHOLD = 14;
@@ -45,7 +45,20 @@ export function resolveDateBounds(
   if (query.dateTo) to = parseDateEnd(query.dateTo);
 
   if (!from && !query.dateTo) {
-    from = startOfDay(subDays(now, DEFAULT_TREND_DAYS));
+    const range = query.range ?? "this_month";
+    if (range === "all") {
+      from = null;
+    } else if (range === "today") {
+      from = startOfDay(now);
+    } else if (range === "last_7_days") {
+      from = startOfDay(subDays(now, 6));
+    } else if (range === "this_week") {
+      from = startOfWeek(now, { weekStartsOn: 0 });
+    } else if (range === "this_month") {
+      from = startOfDay(new Date(now.getFullYear(), now.getMonth(), 1));
+    } else {
+      from = startOfDay(subDays(now, DEFAULT_TREND_DAYS));
+    }
   }
   return { from, to };
 }
@@ -64,6 +77,8 @@ export type CallFeedbackRow = {
   leadId?: string | null;
   recordedByEmployeeId: string | null;
   callAnswered: boolean;
+  meetingMode?: "online" | "offline" | null;
+  meetingLocation?: "our_company" | "client_company" | null;
 };
 
 /**
@@ -89,7 +104,6 @@ export function buildSalesPerformance(
 ) {
   const stageById = new Map(stages.map((s) => [s.id, s]));
   const now = new Date();
-  const startToday = startOfDay(now);
   const inactiveCutoff = subDays(now, INACTIVE_DAYS_THRESHOLD);
 
   const byOwner = new Map<string, CrmLead[]>();
@@ -102,13 +116,33 @@ export function buildSalesPerformance(
     byOwner.set(key, list);
   }
 
-  const callsByOwner = new Map<string, { active: number; inactive: number }>();
+  const callsByOwner = new Map<
+    string,
+    {
+      active: number;
+      inactive: number;
+      meetings: number;
+      meetingsOnline: number;
+      meetingsOffline: number;
+    }
+  >();
   for (const row of feedback) {
     const ownerId = resolveCallOwnerId(row, leadOwnerById);
     if (!ownerId) continue;
-    const bucket = callsByOwner.get(ownerId) ?? { active: 0, inactive: 0 };
+    const bucket = callsByOwner.get(ownerId) ?? {
+      active: 0,
+      inactive: 0,
+      meetings: 0,
+      meetingsOnline: 0,
+      meetingsOffline: 0,
+    };
     if (row.callAnswered) bucket.active += 1;
     else bucket.inactive += 1;
+    if (row.meetingMode) {
+      bucket.meetings += 1;
+      if (row.meetingMode === "online") bucket.meetingsOnline += 1;
+      else bucket.meetingsOffline += 1;
+    }
     callsByOwner.set(ownerId, bucket);
   }
 
@@ -129,7 +163,10 @@ export function buildSalesPerformance(
       ).length;
       const followUps = list.filter((l) => l.nextFollowUpAt != null).length;
       const overdue = list.filter(
-        (l) => l.nextFollowUpAt != null && l.nextFollowUpAt < startToday
+        (l) =>
+          l.status === CrmLeadStatus.active &&
+          l.nextFollowUpAt != null &&
+          l.nextFollowUpAt.getTime() <= now.getTime()
       ).length;
       const withoutNextAction = list.filter(
         (l) => l.nextAction === CrmNextAction.none
@@ -140,7 +177,13 @@ export function buildSalesPerformance(
           (!l.lastActivityAt || l.lastActivityAt < inactiveCutoff)
       ).length;
       const decided = won + lost;
-      const calls = callsByOwner.get(employeeId) ?? { active: 0, inactive: 0 };
+      const calls = callsByOwner.get(employeeId) ?? {
+        active: 0,
+        inactive: 0,
+        meetings: 0,
+        meetingsOnline: 0,
+        meetingsOffline: 0,
+      };
       return {
         employeeId,
         employeeName: nameById.get(employeeId) ?? employeeId,
@@ -155,6 +198,9 @@ export function buildSalesPerformance(
         inactive,
         activeCalls: calls.active,
         inactiveCalls: calls.inactive,
+        meetings: calls.meetings,
+        meetingsOnline: calls.meetingsOnline,
+        meetingsOffline: calls.meetingsOffline,
         needsAttention:
           overdue >= OVERDUE_ATTENTION_THRESHOLD ||
           inactive >= INACTIVE_ATTENTION_THRESHOLD ||

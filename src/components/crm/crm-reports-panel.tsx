@@ -15,6 +15,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { CrmDashboardFiltersBar } from "@/components/crm/crm-dashboard-filters";
+import { CrmInteractionBreakdownPanel } from "@/components/crm/crm-interaction-breakdown-panel";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import {
@@ -31,10 +33,15 @@ import { chartTooltipStyle } from "@/constants/chart-tooltip";
 import { useTranslation } from "@/hooks/use-translation";
 import { ensureCrmDashboard } from "@/lib/crm-dashboard-normalize";
 import { cn } from "@/lib/utils";
-import type { CrmDashboard } from "@/types/crm";
+import type { Employee } from "@/types";
+import type { CrmDashboard, CrmDashboardFilters } from "@/types/crm";
 
 interface CrmReportsPanelProps {
   dashboard: CrmDashboard | null;
+  filters: CrmDashboardFilters;
+  onFiltersChange: (filters: CrmDashboardFilters) => void;
+  employees: Employee[];
+  canAssign?: boolean;
   loading?: boolean;
   className?: string;
 }
@@ -42,6 +49,10 @@ interface CrmReportsPanelProps {
 /** Lightweight admin reports reusing dashboard analytics. */
 export function CrmReportsPanel({
   dashboard,
+  filters,
+  onFiltersChange,
+  employees,
+  canAssign = false,
   loading = false,
   className,
 }: CrmReportsPanelProps) {
@@ -69,17 +80,6 @@ export function CrmReportsPanel({
     [safe?.leadsTrend, dateLocale]
   );
 
-  const callTotals = useMemo(() => {
-    const rows = safe?.salesPerformance ?? [];
-    return {
-      active: rows.reduce((sum, row) => sum + Number(row.activeCalls ?? 0), 0),
-      inactive: rows.reduce(
-        (sum, row) => sum + Number(row.inactiveCalls ?? 0),
-        0
-      ),
-    };
-  }, [safe?.salesPerformance]);
-
   if (loading && !safe) return <TableSkeleton rows={5} />;
 
   if (!safe) {
@@ -100,6 +100,14 @@ export function CrmReportsPanel({
           {t("crm.reports.description")}
         </p>
       </div>
+
+      <CrmDashboardFiltersBar
+        filters={filters}
+        employees={employees}
+        canAssign={canAssign}
+        onFiltersChange={onFiltersChange}
+        showInteractionFilters
+      />
 
       <section className="surface-panel">
         <div className="panel-header">
@@ -134,34 +142,7 @@ export function CrmReportsPanel({
         </div>
       </section>
 
-      <section className="surface-panel">
-        <div className="panel-header">
-          <h3 className="text-[0.95rem] font-semibold tracking-tight">
-            {t("crm.reports.callsSummary")}
-          </h3>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            {t("crm.reports.callsSummaryDesc")}
-          </p>
-        </div>
-        <div className="grid gap-2 p-4 sm:grid-cols-2">
-          <div className="rounded-lg border border-border/70 px-3 py-2.5">
-            <p className="text-[11px] text-muted-foreground">
-              {t("crm.performance.colActiveCalls")}
-            </p>
-            <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
-              {callTotals.active}
-            </p>
-          </div>
-          <div className="rounded-lg border border-border/70 px-3 py-2.5">
-            <p className="text-[11px] text-muted-foreground">
-              {t("crm.performance.colInactiveCalls")}
-            </p>
-            <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-rose-700 dark:text-rose-400">
-              {callTotals.inactive}
-            </p>
-          </div>
-        </div>
-      </section>
+      <CrmInteractionBreakdownPanel breakdown={safe.interactionBreakdown} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="surface-panel overflow-hidden">
@@ -276,6 +257,7 @@ export function CrmReportsPanel({
                     name: r.employeeName,
                     activeCalls: Number(r.activeCalls ?? 0),
                     inactiveCalls: Number(r.inactiveCalls ?? 0),
+                    meetings: Number(r.meetings ?? 0),
                     leads: r.leads,
                     won: r.won,
                   }))}
@@ -310,6 +292,13 @@ export function CrmReportsPanel({
                     dataKey="inactiveCalls"
                     name={t("crm.performance.colInactiveCalls")}
                     fill={CHART.absent}
+                    radius={[6, 6, 0, 0]}
+                    animationDuration={reduceMotion ? 0 : 900}
+                  />
+                  <Bar
+                    dataKey="meetings"
+                    name={t("crm.interactions.meetings")}
+                    fill={CHART.rate}
                     radius={[6, 6, 0, 0]}
                     animationDuration={reduceMotion ? 0 : 900}
                   />
@@ -348,7 +337,7 @@ export function CrmReportsPanel({
                   {t("crm.performance.colInactiveCalls")}
                 </DataTableHead>
                 <DataTableHead className="hidden text-end md:table-cell">
-                  {t("crm.performance.colWon")}
+                  {t("crm.interactions.meetings")}
                 </DataTableHead>
                 <DataTableHead className="text-end">
                   {t("crm.performance.colRate")}
@@ -373,7 +362,7 @@ export function CrmReportsPanel({
                     {row.inactiveCalls}
                   </DataTableCell>
                   <DataTableCell className="hidden text-end font-mono tabular-nums md:table-cell">
-                    {row.won}
+                    {Number(row.meetings ?? 0)}
                   </DataTableCell>
                   <DataTableCell className="text-end font-mono tabular-nums">
                     {Number(row.conversionRate ?? 0).toFixed(1)}%

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CrmActivitiesPanel } from "@/components/crm/crm-activities-panel";
 import { CrmBusinessTypesPanel } from "@/components/crm/crm-business-types-panel";
 import { CrmDashboardPanel } from "@/components/crm/crm-dashboard-panel";
+import { CrmDelayPanel } from "@/components/crm/crm-delay-panel";
 import { CrmFeedbackPanel } from "@/components/crm/crm-feedback-panel";
 import { CrmHubSidebar } from "@/components/crm/crm-hub-sidebar";
 import { CrmLeadFormSheet } from "@/components/crm/crm-lead-form-sheet";
@@ -78,6 +79,10 @@ export default function CrmPage() {
               stageCounts={hub.stageCounts}
               totalLeads={hub.overviewTotal}
               loading={hub.loading}
+              employees={hub.safeEmployees}
+              canAssign={hub.canAssign}
+              ownerEmployeeId={hub.leadFilters.ownerEmployeeId}
+              onOwnerChange={hub.setOverviewOwner}
               onOpenAllLeads={hub.openAllLeads}
               onOpenStage={hub.openStageLeads}
               onAddLead={hub.canCreate ? hub.openCreate : undefined}
@@ -113,6 +118,25 @@ export default function CrmPage() {
             </div>
           ) : null}
 
+          {hub.tab === "delay" ? (
+            <CrmDelayPanel
+              leads={hub.safeLeadsPage}
+              stages={hub.safeStages}
+              employees={hub.safeEmployees}
+              filters={hub.leadFilters}
+              onFiltersChange={(next) =>
+                hub.setLeadFilters({
+                  ...next,
+                  followUp: "overdue",
+                  status: next.status || "active",
+                })
+              }
+              loading={hub.loading}
+              onRowClick={(lead) => hub.setViewLeadId(lead.id)}
+              canAssign={hub.canAssign}
+            />
+          ) : null}
+
           {hub.tab === "pipeline" ? (
             <CrmPipelinePanel
               stages={hub.safeStages}
@@ -146,7 +170,16 @@ export default function CrmPage() {
 
           {hub.tab === "performance" && hub.canViewPerformance ? (
             <CrmPerformancePanel
-              rows={hub.safePerformance}
+              rows={
+                hub.safeDashboard?.salesPerformance?.length
+                  ? hub.safeDashboard.salesPerformance
+                  : hub.safePerformance
+              }
+              breakdown={hub.safeDashboard?.interactionBreakdown}
+              filters={hub.dashFilters}
+              onFiltersChange={hub.setDashFilters}
+              employees={hub.safeEmployees}
+              canAssign={hub.canAssign}
               loading={hub.loading}
               onSelectEmployee={(id) => hub.setProfileEmployeeId(id)}
             />
@@ -159,7 +192,14 @@ export default function CrmPage() {
           ) : null}
 
           {hub.tab === "reports" && hub.canViewReports ? (
-            <CrmReportsPanel dashboard={hub.safeDashboard} loading={hub.loading} />
+            <CrmReportsPanel
+              dashboard={hub.safeDashboard}
+              loading={hub.loading}
+              filters={hub.dashFilters}
+              onFiltersChange={hub.setDashFilters}
+              employees={hub.safeEmployees}
+              canAssign={hub.canAssign}
+            />
           ) : null}
         </div>
       </div>

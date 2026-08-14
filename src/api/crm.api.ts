@@ -244,6 +244,10 @@ export async function fetchCrmDashboard(
       dateFrom: filters.dateFrom,
       dateTo: filters.dateTo,
       range: filters.range,
+      hour:
+        filters.hour === undefined || filters.hour === null
+          ? undefined
+          : String(filters.hour),
       ownerEmployeeId: filters.ownerEmployeeId,
       source: filters.source || undefined,
       stageId: filters.stageId,
