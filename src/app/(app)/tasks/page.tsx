@@ -5,11 +5,15 @@ import { PageTransition } from "@/components/shared/page-transition";
 import { PageSkeleton } from "@/components/shared/loading-state";
 import { AdminWorkAssignPanel } from "@/components/work/admin-work-assign-panel";
 import { EmployeeWorkHub } from "@/components/work/employee-work-hub";
-import { useSessionStore } from "@/stores/session-store";
+import { useHasAnyPermission } from "@/hooks/use-permission";
 
 function TasksPageContent() {
-  const role = useSessionStore((s) => s.role);
-  if (role === "admin") return <AdminWorkAssignPanel />;
+  const showAssignPanel = useHasAnyPermission([
+    "tasks.viewAll",
+    "tasks.assign",
+    "tasks.editOthers",
+  ]);
+  if (showAssignPanel) return <AdminWorkAssignPanel />;
   return <EmployeeWorkHub />;
 }
 

@@ -30,6 +30,7 @@ import { assertCap, notifyQuietly, withMetrics, writeHistory } from "./targets-s
 import { assertEmployeeCanAssignToTeam } from "@/services/team-access";
 import { AppRole } from "@/constants/roles";
 import { getSessionRole } from "@/stores/session-store";
+import { syncAssigneeProgress } from "@/lib/task-assignee-progress";
 
 async function generateTasksForTarget(
   target: PerformanceTarget,
@@ -56,6 +57,9 @@ async function generateTasksForTarget(
         tag: taskTagForTargetType(type),
         estimateMin: 0,
         assigneeIds: target.assigneeIds,
+        assigneeProgress: syncAssigneeProgress(target.assigneeIds, [], {
+          status: "todo",
+        }),
         targetId: target.id,
         subItems: [],
         origin: "assigned",

@@ -13,9 +13,8 @@ import { AuthGuard } from "@nestjs/passport";
 import { LeaveService } from "./leave.service";
 import { ActorId, CompanyId } from "../common/tenant";
 import { CurrentUser, type JwtPayload } from "../common/decorators/current-user";
-import { Roles } from "../common/roles.decorator";
 import { RolesGuard } from "../common/roles.guard";
-import { AppRole, isEmployeeRole } from "../common/roles";
+import { isEmployeeRole } from "../common/roles";
 import { resolveScopedEmployeeId } from "../common/scoped-employee";
 import { RequirePermission } from "../common/permissions.decorator";
 
@@ -25,6 +24,7 @@ export class LeaveController {
   constructor(private readonly service: LeaveService) {}
 
   @Get()
+  @RequirePermission("leave.viewOwn", "leave.viewTeam", "leave.viewAll")
   list(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload,
@@ -43,6 +43,7 @@ export class LeaveController {
   }
 
   @Get(":id")
+  @RequirePermission("leave.viewOwn", "leave.viewTeam", "leave.viewAll")
   async byId(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload,
@@ -60,6 +61,7 @@ export class LeaveController {
   }
 
   @Post()
+  @RequirePermission("leave.request")
   create(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -78,7 +80,6 @@ export class LeaveController {
   }
 
   @Patch(":id/approve")
-  @Roles(AppRole.admin)
   @RequirePermission("leave.approve")
   approve(
     @CompanyId() companyId: string,
@@ -96,7 +97,6 @@ export class LeaveController {
   }
 
   @Patch(":id/reject")
-  @Roles(AppRole.admin)
   @RequirePermission("leave.reject")
   reject(
     @CompanyId() companyId: string,

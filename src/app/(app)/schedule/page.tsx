@@ -9,14 +9,17 @@ import { WeeklyPlanner } from "@/components/schedule/weekly-planner";
 import { ScheduleForm } from "@/components/schedule/schedule-form";
 import { HolidaysList } from "@/components/schedule/holidays-list";
 import { getWorkSchedule } from "@/services/schedule.service";
-import { useSessionStore } from "@/stores/session-store";
+import { useHasAnyPermission } from "@/hooks/use-permission";
 import { useTranslation } from "@/hooks/use-translation";
 import type { Holiday, WorkSchedule } from "@/types";
 
 export default function SchedulePage() {
   const { t } = useTranslation();
-  const role = useSessionStore((s) => s.role);
-  const isAdmin = role === "admin";
+  const canEditSchedule = useHasAnyPermission([
+    "schedule.editPolicies",
+    "schedule.manageHolidays",
+    "schedule.manageShifts",
+  ]);
   const [loading, setLoading] = useState(true);
   const [schedule, setSchedule] = useState<WorkSchedule | null>(null);
 
@@ -69,14 +72,14 @@ export default function SchedulePage() {
         eyebrow={t("schedule.eyebrow")}
         title={t("schedule.title")}
         description={
-          isAdmin
+          canEditSchedule
             ? t("schedule.description")
             : t("employeeHome.scheduleDesc")
         }
       />
       <div className="space-y-4 sm:space-y-6">
         <WeeklyPlanner schedule={schedule} />
-        {isAdmin ? (
+        {canEditSchedule ? (
           <div className="grid gap-4 sm:gap-6 xl:grid-cols-5">
             <div className="xl:col-span-3">
               <ScheduleForm schedule={schedule} onSaved={handleSaved} />

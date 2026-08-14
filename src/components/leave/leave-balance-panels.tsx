@@ -67,12 +67,12 @@ export function LeaveApprovalTimeline({
 }
 
 export function LeaveWorkflowSidebar({
-  isAdmin,
+  canManage,
   requests,
   employees,
   balance,
 }: {
-  isAdmin: boolean;
+  canManage: boolean;
   requests: LeaveRequest[];
   employees: Employee[];
   balance: { remaining: number; used: number; pending: number };
@@ -80,10 +80,10 @@ export function LeaveWorkflowSidebar({
   return (
     <div className="space-y-4">
       <LeaveBalanceVisualization {...balance} />
-      {!isAdmin ? (
+      {!canManage ? (
         <LeaveApprovalTimeline requests={requests} employees={employees} />
       ) : null}
-      {isAdmin ? (
+      {canManage ? (
         <>
           <DepartmentLeaveCalendar />
           <LeaveCoverageOverview />

@@ -3,13 +3,16 @@ import { AuthGuard } from "@nestjs/passport";
 import { NotificationsService } from "./notifications.service";
 import { ActorId, CompanyId } from "../common/tenant";
 import { CurrentUser, type JwtPayload } from "../common/decorators/current-user";
+import { RequirePermission } from "../common/permissions.decorator";
+import { RolesGuard } from "../common/roles.guard";
 
 @Controller("notifications")
-@UseGuards(AuthGuard("jwt"))
+@UseGuards(AuthGuard("jwt"), RolesGuard)
 export class NotificationsController {
   constructor(private readonly service: NotificationsService) {}
 
   @Get()
+  @RequirePermission("notifications.viewOwn")
   list(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload,
@@ -20,6 +23,7 @@ export class NotificationsController {
   }
 
   @Post()
+  @RequirePermission("notifications.sendCompany")
   create(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -29,6 +33,7 @@ export class NotificationsController {
   }
 
   @Patch(":id/read")
+  @RequirePermission("notifications.viewOwn")
   markRead(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload,
@@ -38,6 +43,7 @@ export class NotificationsController {
   }
 
   @Post("read-all")
+  @RequirePermission("notifications.viewOwn")
   markAll(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload

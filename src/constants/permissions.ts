@@ -384,6 +384,7 @@ export const ROUTE_PERMISSIONS: Array<{
       "payroll.viewDashboard",
     ],
   },
+  { prefix: "/permissions", anyOf: ["settings.managePermissions"] },
 ];
 
 export const COMPANY_ADMIN_PERMISSIONS: PermissionId[] = [
@@ -392,7 +393,6 @@ export const COMPANY_ADMIN_PERMISSIONS: PermissionId[] = [
   "settings.manageOrganization",
   "settings.manageNotifications",
   "settings.manageApprovals",
-  "settings.managePermissions",
   "settings.manageDemoData",
   "settings.viewEmployeePreferences",
   "schedule.editPolicies",
@@ -415,5 +415,4 @@ export const ADMIN_SECTION_PERMISSION: Record<string, PermissionId | null> = {
   myPrefs: null,
   appearance: "settings.editCompanyProfile",
   demo: "settings.manageDemoData",
-  permissions: "settings.managePermissions",
 };

@@ -1,11 +1,17 @@
 import { ForbiddenError } from "@/lib/errors";
+import { hasPermissionId } from "@/constants/permissions";
 import { AppRole } from "@/constants/roles";
-import { getSessionRole, getSessionUserId, getWorkEmployeeId } from "@/stores/session-store";
+import {
+  getSessionPermissions,
+  getSessionRole,
+  getSessionUserId,
+  getWorkEmployeeId,
+} from "@/stores/session-store";
+import { presentAssigneeProgressForEmployee } from "@/lib/task-assignee-progress";
 import {
   employeeOwnsPersonalMeeting,
   employeeOwnsPersonalTask,
   isAssignedTo,
-  scopeWorkTaskAssigneesForEmployee,
 } from "@/lib/work-utils";
 import type { UserRole } from "@/types";
 import type { WorkMeeting, WorkTask } from "@/types/work";
@@ -22,6 +28,7 @@ export function emptyTask(id: string): WorkTask {
     tag: "",
     estimateMin: 30,
     assigneeIds: [],
+    assigneeProgress: [],
     subItems: [],
     origin: "assigned",
     requireEvidenceLinks: false,
@@ -79,11 +86,23 @@ export function actorContext(): {
   };
 }
 
-/** Hide co-assignees when the signed-in viewer is an employee. */
+function canManageOthersWork(): boolean {
+  const permissions = getSessionPermissions();
+  const role = getSessionRole();
+  return (
+    hasPermissionId("tasks.editOthers", permissions, role) ||
+    hasPermissionId("tasks.viewAll", permissions, role) ||
+    hasPermissionId("tasks.assign", permissions, role)
+  );
+}
+
+/** Hide co-assignees and overlay personal progress when viewer lacks company scope. */
 export function presentWorkTaskForActor(task: WorkTask): WorkTask {
   const { role, employeeId } = actorContext();
-  if (role !== AppRole.employee || !employeeId) return task;
-  return scopeWorkTaskAssigneesForEmployee(task, employeeId);
+  if (canManageOthersWork() || role !== AppRole.employee || !employeeId) {
+    return task;
+  }
+  return presentAssigneeProgressForEmployee(task, employeeId);
 }
 
 export function presentWorkTasksForActor(tasks: WorkTask[]): WorkTask[] {
@@ -91,22 +110,32 @@ export function presentWorkTasksForActor(tasks: WorkTask[]): WorkTask[] {
 }
 
 export function assertEmployeeCanEditTask(task: WorkTask): void {
-  const { role, userId, employeeId } = actorContext();
-  if (role === AppRole.admin) return;
-  if (employeeOwnsPersonalTask(task, employeeId, userId)) return;
+  const { userId, employeeId } = actorContext();
+  if (canManageOthersWork()) return;
+  if (
+    hasPermissionId("tasks.editOwn", getSessionPermissions(), getSessionRole()) &&
+    employeeOwnsPersonalTask(task, employeeId, userId)
+  ) {
+    return;
+  }
   throw new ForbiddenError("You can only edit your personal tasks");
 }
 
 export function assertEmployeeCanEditMeeting(meeting: WorkMeeting): void {
-  const { role, userId, employeeId } = actorContext();
-  if (role === AppRole.admin) return;
+  const { userId, employeeId } = actorContext();
+  const permissions = getSessionPermissions();
+  const role = getSessionRole();
+  if (!hasPermissionId("tasks.manageMeetings", permissions, role)) {
+    throw new ForbiddenError("You can only edit your personal meetings");
+  }
+  if (canManageOthersWork()) return;
   if (employeeOwnsPersonalMeeting(meeting, employeeId, userId)) return;
   throw new ForbiddenError("You can only edit your personal meetings");
 }
 
 export function assertEmployeeCanTouchTaskProgress(task: WorkTask): void {
-  const { role, employeeId } = actorContext();
-  if (role === AppRole.admin) return;
+  const { employeeId } = actorContext();
+  if (canManageOthersWork()) return;
   if (isAssignedTo(task.assigneeIds, employeeId)) return;
   throw new ForbiddenError("You can only update tasks assigned to you");
 }

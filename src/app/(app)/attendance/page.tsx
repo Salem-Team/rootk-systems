@@ -19,6 +19,7 @@ import {
   getWorkEmployeeIdFromUser,
   useSessionStore,
 } from "@/stores/session-store";
+import { useHasAnyPermission } from "@/hooks/use-permission";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import type { AttendanceRecord } from "@/types";
@@ -28,8 +29,10 @@ export default function AttendancePage() {
   const workEmployeeId = useSessionStore((s) =>
     getWorkEmployeeIdFromUser(s.user)
   );
-  const role = useSessionStore((s) => s.role);
-  const isAdmin = role === "admin";
+  const canViewTeamBoard = useHasAnyPermission([
+    "attendance.viewAll",
+    "attendance.viewTeam",
+  ]);
   const fetchTodayRecord = useAttendanceStore((s) => s.fetchTodayRecord);
   const todayRecord = useAttendanceStore((s) => s.todayRecord);
   const isLoadingToday = useAttendanceStore((s) => s.isLoading);
@@ -107,17 +110,19 @@ export default function AttendancePage() {
         className="mb-4 sm:mb-7"
         eyebrow={t("attendance.eyebrow")}
         title={
-          isAdmin ? t("attendance.teamBoard") : t("attendance.myAttendance")
+          canViewTeamBoard
+            ? t("attendance.teamBoard")
+            : t("attendance.myAttendance")
         }
         description={
-          isAdmin
+          canViewTeamBoard
             ? t("attendance.teamBoardDesc")
             : t("attendance.description")
         }
       />
 
       {/* Employee mobile: sectioned tabs */}
-      {!isAdmin ? (
+      {!canViewTeamBoard ? (
         <div className="lg:hidden">
           <Tabs
             value={mobileTab}
@@ -164,13 +169,13 @@ export default function AttendancePage() {
       <div
         className={cn(
           "space-y-6 sm:space-y-8",
-          !isAdmin && "hidden lg:block"
+          !canViewTeamBoard && "hidden lg:block"
         )}
       >
         {todaySection}
         {weekSection}
         {analyticsSection}
-        {isAdmin ? <TeamAttendanceBoard /> : null}
+        {canViewTeamBoard ? <TeamAttendanceBoard /> : null}
         {historySection}
       </div>
     </PageTransition>

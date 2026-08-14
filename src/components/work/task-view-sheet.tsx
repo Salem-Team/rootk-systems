@@ -19,11 +19,21 @@ import {
 } from "@/components/targets/target-progress-ring";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
+import {
+  ensureTaskAssigneeProgress,
+  taskAssigneeCompletionSummary,
+} from "@/lib/task-assignee-progress";
 import type { Employee } from "@/types";
 import type { WorkTask } from "@/types/work";
 
-/** Progress % for a work task (status + optional subtasks). */
+/** Progress % for a work task (multi-assignee rollup, else status + subtasks). */
 export function workTaskProgress(task: WorkTask): number {
+  const progress = ensureTaskAssigneeProgress(task).assigneeProgress;
+  if (progress.length > 1) {
+    const { completedCount, total } = taskAssigneeCompletionSummary(progress);
+    if (total === 0) return 0;
+    return Math.round((completedCount / total) * 100);
+  }
   if (task.status === "completed") return 100;
   if (task.subItems.length > 0) {
     const done = task.subItems.filter((s) => s.done).length;
@@ -121,11 +131,51 @@ export function TaskViewSheet({
                   ids={task.assigneeIds}
                   max={8}
                 />
-                <p className="mt-2 text-[12px] text-muted-foreground">
-                  {task.assigneeIds
-                    .map((id) => employees.get(id)?.name ?? id)
-                    .join(" · ")}
-                </p>
+                {task.assigneeIds.length > 1 ? (
+                  <p className="mt-2 text-[12px] font-medium text-foreground">
+                    {t("workAdmin.assigneeCompletionSummary", {
+                      done: String(
+                        taskAssigneeCompletionSummary(
+                          ensureTaskAssigneeProgress(task).assigneeProgress
+                        ).completedCount
+                      ),
+                      pending: String(
+                        taskAssigneeCompletionSummary(
+                          ensureTaskAssigneeProgress(task).assigneeProgress
+                        ).pendingCount
+                      ),
+                    })}
+                  </p>
+                ) : null}
+                <ul className="mt-2 space-y-1.5">
+                  {ensureTaskAssigneeProgress(task).assigneeProgress.map(
+                    (row) => {
+                      const name =
+                        employees.get(row.employeeId)?.name ?? row.employeeId;
+                      const done = row.status === "completed";
+                      return (
+                        <li
+                          key={row.employeeId}
+                          className="flex items-center justify-between gap-2 rounded-lg border border-border/60 px-2.5 py-2 text-[13px]"
+                        >
+                          <span className="min-w-0 truncate">{name}</span>
+                          <span
+                            className={cn(
+                              "shrink-0 text-[11px] font-medium",
+                              done
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : "text-muted-foreground"
+                            )}
+                          >
+                            {done
+                              ? t("workTable.assigneeDone")
+                              : t("workTable.assigneePending")}
+                          </span>
+                        </li>
+                      );
+                    }
+                  )}
+                </ul>
               </div>
 
               {task.subItems.length > 0 ? (

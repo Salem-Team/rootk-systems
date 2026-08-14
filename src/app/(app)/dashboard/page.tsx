@@ -3,14 +3,14 @@
 import { PageTransition } from "@/components/shared/page-transition";
 import { AdminDashboard } from "@/components/dashboard/admin-dashboard";
 import { EmployeeDashboard } from "@/components/dashboard/employee-dashboard";
-import { useSessionStore } from "@/stores/session-store";
+import { useHasPermission } from "@/hooks/use-permission";
 
 export default function DashboardPage() {
-  const role = useSessionStore((s) => s.role);
+  const showCompanyDashboard = useHasPermission("dashboard.viewCompanyStats");
 
   return (
     <PageTransition cascade={false}>
-      {role === "admin" ? <AdminDashboard /> : <EmployeeDashboard />}
+      {showCompanyDashboard ? <AdminDashboard /> : <EmployeeDashboard />}
     </PageTransition>
   );
 }

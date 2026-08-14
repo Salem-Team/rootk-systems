@@ -16,8 +16,12 @@ import {
 } from "@/schemas/daily-plan.schema";
 import { fromError, ok } from "@/services/api-result";
 import { simulateDelay } from "@/services/fake-api";
-import { getSessionRole, getSessionUserId } from "@/stores/session-store";
-import { AppRole } from "@/constants/roles";
+import {
+  getSessionPermissions,
+  getSessionRole,
+  getSessionUserId,
+} from "@/stores/session-store";
+import { hasPermissionId } from "@/constants/permissions";
 import type { ApiResponse, DailyPlan } from "@/types";
 import { dailyPlanSeed } from "@/mocks/daily-plan";
 
@@ -64,8 +68,14 @@ export async function saveDailyPlan(
   input: SaveDailyPlanDto
 ): Promise<ApiResponse<DailyPlan>> {
   try {
-    if (getSessionRole() !== AppRole.admin) {
-      throw new ForbiddenError("Only admins can edit the daily plan");
+    if (
+      !hasPermissionId(
+        "dailyPlan.editCompanyPlan",
+        getSessionPermissions(),
+        getSessionRole()
+      )
+    ) {
+      throw new ForbiddenError("You do not have permission to edit the daily plan");
     }
     const parsed = saveDailyPlanSchema.parse(input);
     for (const slot of parsed.slots) {

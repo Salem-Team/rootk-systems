@@ -20,6 +20,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Search } from "lucide-react";
 
+type StatusFilter = "all" | "enabled" | "disabled" | "custom";
+
 export function UserPermissionsEditor({
   effective,
   defaults,
@@ -34,11 +36,17 @@ export function UserPermissionsEditor({
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [moduleId, setModuleId] = useState<PermissionModuleId | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return PERMISSION_CATALOG.filter((item) => {
       if (moduleId !== "all" && item.module !== moduleId) return false;
+      const granted = effective.has(item.id);
+      const isDefault = defaults.has(item.id) === granted;
+      if (statusFilter === "enabled" && !granted) return false;
+      if (statusFilter === "disabled" && granted) return false;
+      if (statusFilter === "custom" && isDefault) return false;
       if (!q) return true;
       const label = t(permissionLabelKey(item.id)).toLowerCase();
       const desc = t(permissionDescKey(item.id)).toLowerCase();
@@ -50,7 +58,7 @@ export function UserPermissionsEditor({
         item.id.toLowerCase().includes(q)
       );
     });
-  }, [moduleId, query, t]);
+  }, [defaults, effective, moduleId, query, statusFilter, t]);
 
   const grouped = useMemo(() => {
     const map = new Map<PermissionModuleId, typeof filtered>();
@@ -83,7 +91,25 @@ export function UserPermissionsEditor({
         />
       </div>
 
-      <div className="-mx-1">
+      <div className="-mx-1 space-y-1.5">
+        <div className="scroll-x flex snap-x snap-mandatory gap-1.5 px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {(
+            [
+              ["all", "permissions.filterAll"],
+              ["enabled", "permissions.filterEnabled"],
+              ["disabled", "permissions.filterDisabled"],
+              ["custom", "permissions.filterCustom"],
+            ] as const
+          ).map(([value, label]) => (
+            <ModuleChip
+              key={value}
+              active={statusFilter === value}
+              onClick={() => setStatusFilter(value)}
+            >
+              {t(label)}
+            </ModuleChip>
+          ))}
+        </div>
         <div className="scroll-x flex snap-x snap-mandatory gap-1.5 px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <ModuleChip
             active={moduleId === "all"}

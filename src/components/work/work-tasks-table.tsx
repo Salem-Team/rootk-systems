@@ -217,6 +217,7 @@ export function WorkTasksTable({
                           employees={employees}
                           selectedId={assigneeFilter}
                           onSelect={onSelectAssignee}
+                          task={task}
                         />
                       </DataTableCell>
                     ) : null}

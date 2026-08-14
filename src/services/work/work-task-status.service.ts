@@ -12,8 +12,21 @@ import {
   type TaskEvidenceDto,
 } from "@/schemas/work.schema";
 import { isValidEvidenceUrl, validateTaskEvidence } from "@/lib/task-evidence";
+import {
+  applyAssigneeStatusChange,
+  applyStatusToAllAssignees,
+  ensureTaskAssigneeProgress,
+  findAssigneeProgress,
+  rollupCompletedAt,
+  rollupTaskStatus,
+  taskAssigneeCompletionSummary,
+} from "@/lib/task-assignee-progress";
 import { fromError, ok } from "@/services/api-result";
-import { getSessionRole, getSessionUserId } from "@/stores/session-store";
+import {
+  getSessionRole,
+  getSessionUserId,
+  getWorkEmployeeId,
+} from "@/stores/session-store";
 import { emitWorkUpdated } from "@/lib/events";
 import { isPersonalWork } from "@/lib/work-utils";
 import { AppRole } from "@/constants/roles";
@@ -48,14 +61,19 @@ export async function updateWorkTaskStatus(
     if (!current) throw new NotFoundError("Task not found");
     assertEmployeeCanTouchTaskProgress(current);
 
+    const role = getSessionRole();
+    const employeeId = getWorkEmployeeId();
+    const ensured = ensureTaskAssigneeProgress(current);
+    const mine = findAssigneeProgress(ensured.assigneeProgress, employeeId);
+
     if (
       parsed.data.status === "completed" &&
-      current.status !== "completed" &&
-      getSessionRole() === AppRole.employee
+      mine?.status !== "completed" &&
+      role === AppRole.employee
     ) {
       const check = validateTaskEvidence(current, {
-        links: parsed.data.evidence?.links ?? current.evidenceLinks,
-        notes: parsed.data.evidence?.notes ?? current.evidenceNotes,
+        links: parsed.data.evidence?.links ?? mine?.evidenceLinks ?? current.evidenceLinks,
+        notes: parsed.data.evidence?.notes ?? mine?.evidenceNotes ?? current.evidenceNotes,
       });
       if (!check.ok) {
         throw new ValidationError(
@@ -68,41 +86,71 @@ export async function updateWorkTaskStatus(
       }
     }
 
-    const completedAtPatch =
-      parsed.data.status === "completed" && current.status !== "completed"
-        ? { completedAt: new Date().toISOString() }
-        : parsed.data.status !== "completed" && current.status === "completed"
-          ? { completedAt: null }
-          : {};
-
     if (isPersonalWork(current)) {
       return updateWorkTask(id, {
         status: parsed.data.status,
         evidenceLinks: parsed.data.evidence?.links,
         evidenceNotes: parsed.data.evidence?.notes,
-        ...completedAtPatch,
       });
     }
+
     const actor = getSessionUserId();
+    const evidencePatch = {
+      links:
+        parsed.data.evidence?.links !== undefined
+          ? parsed.data.evidence.links.filter(isValidEvidenceUrl)
+          : undefined,
+      notes: parsed.data.evidence?.notes,
+    };
+
+    const nextProgress =
+      role === AppRole.admin
+        ? applyStatusToAllAssignees(
+            ensured.assigneeProgress,
+            parsed.data.status,
+            evidencePatch
+          )
+        : applyAssigneeStatusChange(
+            ensured.assigneeProgress,
+            employeeId,
+            parsed.data.status,
+            evidencePatch
+          );
+
+    const rolledStatus = rollupTaskStatus(nextProgress);
+    const rolledCompletedAt = rollupCompletedAt(nextProgress);
+    const actorProgress = findAssigneeProgress(nextProgress, employeeId);
+    const primaryEvidence =
+      actorProgress ??
+      nextProgress.find((p) => p.status === "completed") ??
+      nextProgress[0];
+    const summary = taskAssigneeCompletionSummary(nextProgress);
+
     const next = touchEntity(current, actor, {
-      status: parsed.data.status,
-      ...(parsed.data.evidence?.links !== undefined
-        ? {
-            evidenceLinks: parsed.data.evidence.links.filter(isValidEvidenceUrl),
-          }
-        : {}),
-      ...(parsed.data.evidence?.notes !== undefined
-        ? { evidenceNotes: parsed.data.evidence.notes }
-        : {}),
-      ...completedAtPatch,
+      status: rolledStatus,
+      assigneeProgress: nextProgress,
+      completedAt: rolledCompletedAt,
+      evidenceLinks:
+        evidencePatch.links !== undefined
+          ? evidencePatch.links
+          : (primaryEvidence?.evidenceLinks ?? current.evidenceLinks),
+      evidenceNotes:
+        evidencePatch.notes !== undefined
+          ? evidencePatch.notes
+          : (primaryEvidence?.evidenceNotes ?? current.evidenceNotes),
     });
     const saved = await workTaskRepository.update(id, next);
     if (!saved) throw new NotFoundError("Task not found");
     emitWorkUpdated();
-    if (
+
+    const justCompletedSelf =
+      role === AppRole.employee &&
       parsed.data.status === "completed" &&
-      current.status !== "completed"
-    ) {
+      mine?.status !== "completed";
+    const becameFullyComplete =
+      rolledStatus === "completed" && current.status !== "completed";
+
+    if (justCompletedSelf || becameFullyComplete) {
       const { notifyTaskCompleted } = await import(
         "@/services/notification.service"
       );
@@ -110,9 +158,17 @@ export async function updateWorkTaskStatus(
         taskId: saved.id,
         title: saved.title,
         actorId: actor,
+        completedCount: summary.completedCount,
+        pendingCount: summary.pendingCount,
+        total: summary.total,
+        fullyComplete: becameFullyComplete && summary.total <= 1
+          ? true
+          : becameFullyComplete && !justCompletedSelf
+            ? true
+            : becameFullyComplete && summary.pendingCount === 0,
       });
     }
-    if (saved.targetId && parsed.data.status !== current.status) {
+    if (saved.targetId && rolledStatus !== current.status) {
       const { recalculateTargetProgress } = await import(
         "@/services/targets.service"
       );
@@ -133,7 +189,7 @@ export async function toggleWorkTaskSubItem(
     const res = await patchWorkTaskSubItemToggle(id, subId);
     if (res.success) emitWorkUpdated();
     if (!res.success || !res.data) return res;
-    return ok(presentWorkTaskForActor(res.data), res.message);
+    return ok(presentWorkTaskForActor(res.data));
   }
   try {
     const current = await workTaskRepository.findById(id);

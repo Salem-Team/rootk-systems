@@ -3,6 +3,7 @@ import { TaskPriority, TaskStatus, WorkOrigin, Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { parseDate } from "../common/mappers";
 import { NotificationsService } from "../notifications/notifications.service";
+import { syncAssigneeProgress } from "../lib/task-assignee-progress";
 import {
   mapTask,
   ownsPersonalTask,
@@ -65,6 +66,15 @@ export class WorkTasksWriteService {
         : Boolean(body.requireEvidenceNotes);
     const now = new Date();
     const initialStatus = (body.status as TaskStatus) ?? TaskStatus.todo;
+    const evidenceLinks = sanitizeEvidenceLinks(body.evidenceLinks);
+    const evidenceNotes = String(body.evidenceNotes ?? "");
+    const assigneeProgress = syncAssigneeProgress(assigneeIds, [], {
+      status: initialStatus,
+      completedAt:
+        initialStatus === TaskStatus.completed ? now.toISOString() : null,
+      evidenceLinks,
+      evidenceNotes,
+    });
     const row = await this.prisma.workTask.create({
       data: {
         companyId,
@@ -76,14 +86,15 @@ export class WorkTasksWriteService {
         tag: String(body.tag ?? ""),
         estimateMin: Number(body.estimateMin ?? 0),
         assigneeIds,
+        assigneeProgress: assigneeProgress as unknown as Prisma.InputJsonValue,
         relatedMeetingId: (body.relatedMeetingId as string) ?? undefined,
         targetId: (body.targetId as string) ?? undefined,
         subItems: (body.subItems as object) ?? [],
         origin,
         requireEvidenceLinks,
         requireEvidenceNotes,
-        evidenceLinks: sanitizeEvidenceLinks(body.evidenceLinks),
-        evidenceNotes: String(body.evidenceNotes ?? ""),
+        evidenceLinks,
+        evidenceNotes,
         assignedAt: now,
         completedAt: initialStatus === TaskStatus.completed ? now : null,
         createdBy: actor.userId,

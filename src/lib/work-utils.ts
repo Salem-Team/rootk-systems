@@ -1,6 +1,7 @@
 import { isBefore, isSameDay, parseISO, startOfDay } from "date-fns";
 import { demoNow, demoTodayKey } from "@/lib/mock-date";
 import { tryParseFlexibleDateTime } from "@/lib/flexible-datetime";
+import { presentAssigneeProgressForEmployee } from "@/lib/task-assignee-progress";
 import type {
   MeetingWhen,
   TaskDueBucket,
@@ -47,11 +48,16 @@ export function isAssignedTo(ids: string[], employeeId: string): boolean {
 
 /** Employees only see themselves on a task — never co-assignees. */
 export function scopeWorkTaskAssigneesForEmployee<
-  T extends { assigneeIds: string[] },
+  T extends { assigneeIds: string[]; assigneeProgress?: WorkTask["assigneeProgress"] },
 >(task: T, employeeId: string): T {
   if (!employeeId || !isAssignedTo(task.assigneeIds, employeeId)) return task;
-  if (task.assigneeIds.length === 1) return task;
-  return { ...task, assigneeIds: [employeeId] };
+  if (task.assigneeIds.length === 1 && (task.assigneeProgress?.length ?? 0) <= 1) {
+    return task;
+  }
+  return presentAssigneeProgressForEmployee(
+    task as T & WorkTask,
+    employeeId
+  ) as T;
 }
 
 export function filterTasksForEmployee(

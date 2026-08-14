@@ -20,7 +20,9 @@ export function TeamPage() {
         eyebrow={page.t("team.eyebrow")}
         title={page.t("team.title")}
         description={
-          page.isAdmin ? page.t("team.adminDesc") : page.t("team.managerDesc")
+          page.canViewAllTeam
+            ? page.t("team.adminDesc")
+            : page.t("team.managerDesc")
         }
       />
 
@@ -43,7 +45,7 @@ export function TeamPage() {
       <TeamMembersTable
         members={page.visible}
         managerOptions={page.managerOptions}
-        isAdmin={page.isAdmin}
+        canReassignManagers={page.canReassignManagers}
         managerBusyId={page.managerBusyId}
         openTaskCountByEmployee={page.openTaskCountByEmployee}
         targetCounts={page.targetCounts}
@@ -61,7 +63,7 @@ export function TeamPage() {
         busy={page.taskBusy}
         taskForm={page.taskForm}
         setTaskForm={page.setTaskForm}
-        employees={page.isAdmin ? page.employees : page.reports}
+        employees={page.canViewAllTeam ? page.employees : page.reports}
         meetings={[]}
         onSave={() => void page.saveTask()}
       />
@@ -71,7 +73,7 @@ export function TeamPage() {
         onOpenChange={page.setTargetOpen}
         categories={page.categories}
         types={page.types}
-        employees={page.isAdmin ? page.employees : page.reports}
+        employees={page.canViewAllTeam ? page.employees : page.reports}
         defaultAssigneeIds={page.targetAssignees}
         onSaved={() => {
           page.setTargetOpen(false);

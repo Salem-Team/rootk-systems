@@ -64,7 +64,7 @@ export default function TargetsPage() {
             filters={page.filters}
             setFilters={page.setFilters}
             assigneeCounts={page.assigneeCounts}
-            isAdmin={page.isAdmin}
+            canManageCompanyTargets={page.canManageCompanyTargets}
             canAssign={page.canAssign}
             canViewReports={page.canViewReports}
             canManageCatalog={page.canManageCatalog}
@@ -86,7 +86,7 @@ export default function TargetsPage() {
         }}
         categories={page.categoryMap}
         employees={page.employeeMap}
-        onEdit={page.isAdmin ? page.openEdit : undefined}
+        onEdit={page.canEdit ? page.openEdit : undefined}
       />
 
       <TargetAssignSheet

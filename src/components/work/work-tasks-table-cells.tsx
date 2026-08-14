@@ -28,6 +28,10 @@ import { initials } from "@/components/work/employee-avatar-initials";
 import { statusLabelKey } from "@/components/work/employee-work-hub-types";
 import { useTranslation } from "@/hooks/use-translation";
 import { completionNeedsEvidenceDialog } from "@/lib/task-evidence";
+import {
+  ensureTaskAssigneeProgress,
+  taskAssigneeCompletionSummary,
+} from "@/lib/task-assignee-progress";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
 import type { TaskPriority, TaskStatus, WorkTask } from "@/types/work";
@@ -165,13 +169,23 @@ export function TaskAssigneeCell({
   employees,
   selectedId,
   onSelect,
+  task,
 }: {
   ids: string[];
   employees?: Map<string, Employee>;
   selectedId?: string;
   onSelect?: (id: string) => void;
+  task?: WorkTask;
 }) {
   const { t } = useTranslation();
+  const progress = task
+    ? ensureTaskAssigneeProgress(task).assigneeProgress
+    : undefined;
+  const summary = taskAssigneeCompletionSummary(progress);
+  const statusById = new Map(
+    (progress ?? []).map((row) => [row.employeeId, row.status])
+  );
+
   if (!employees || ids.length === 0) {
     return (
       <span className="text-[12px] text-muted-foreground">
@@ -190,25 +204,45 @@ export function TaskAssigneeCell({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="inline-flex max-w-[11.5rem] items-center gap-1.5 rounded-lg border border-border/80 bg-background px-2.5 py-1 text-[12px] text-foreground/85 transition-colors hover:bg-muted/50"
+          className="inline-flex max-w-[12.5rem] flex-col items-start gap-0.5 rounded-lg border border-border/80 bg-background px-2.5 py-1 text-start text-[12px] text-foreground/85 transition-colors hover:bg-muted/50"
         >
-          <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <span className="truncate">
-            {ids.length === 1
-              ? first
-              : t("workTable.viewAssignees", { count: String(ids.length) })}
+          <span className="inline-flex max-w-full items-center gap-1.5">
+            <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="truncate">
+              {ids.length === 1
+                ? first
+                : t("workTable.viewAssignees", { count: String(ids.length) })}
+            </span>
           </span>
+          {ids.length > 1 ? (
+            <span className="ps-5 text-[11px] font-medium text-muted-foreground">
+              {t("workTable.assigneeProgressShort", {
+                done: String(summary.completedCount),
+                total: String(summary.total),
+              })}
+            </span>
+          ) : null}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-64 p-2">
+      <PopoverContent align="start" className="w-72 p-2">
         <p className="mb-1.5 px-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
           {t("workTable.colAssignee")}
         </p>
+        {ids.length > 1 ? (
+          <p className="mb-2 px-1.5 text-[12px] text-muted-foreground">
+            {t("workTable.assigneeProgress", {
+              done: String(summary.completedCount),
+              pending: String(summary.pendingCount),
+            })}
+          </p>
+        ) : null}
         <ul className="max-h-56 space-y-0.5 overflow-y-auto">
           {ids.map((id) => {
             const emp = employees.get(id);
             const name = emp?.name ?? id;
             const active = selectedId === id;
+            const rowStatus = statusById.get(id);
+            const done = rowStatus === "completed";
             return (
               <li key={id}>
                 {onSelect ? (
@@ -224,10 +258,38 @@ export function TaskAssigneeCell({
                     aria-pressed={active}
                   >
                     <AssigneeRow name={name} department={emp?.department} />
+                    {rowStatus ? (
+                      <span
+                        className={cn(
+                          "shrink-0 text-[11px] font-medium",
+                          done
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        {done
+                          ? t("workTable.assigneeDone")
+                          : t("workTable.assigneePending")}
+                      </span>
+                    ) : null}
                   </button>
                 ) : (
                   <div className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[13px]">
                     <AssigneeRow name={name} department={emp?.department} />
+                    {rowStatus ? (
+                      <span
+                        className={cn(
+                          "shrink-0 text-[11px] font-medium",
+                          done
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        {done
+                          ? t("workTable.assigneeDone")
+                          : t("workTable.assigneePending")}
+                      </span>
+                    ) : null}
                   </div>
                 )}
               </li>

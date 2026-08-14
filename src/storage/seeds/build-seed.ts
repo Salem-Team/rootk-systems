@@ -294,6 +294,13 @@ function buildTargetLinkedTasks(): WorkTask[] {
             tag: type.name,
             estimateMin: 0,
             assigneeIds: target.assigneeIds,
+            assigneeProgress: target.assigneeIds.map((employeeId) => ({
+              employeeId,
+              status: done ? ("completed" as const) : ("todo" as const),
+              completedAt: done ? new Date().toISOString() : null,
+              evidenceLinks: [],
+              evidenceNotes: "",
+            })),
             targetId: target.id,
             subItems: [],
             origin: "assigned",

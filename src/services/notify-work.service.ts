@@ -86,21 +86,37 @@ export async function notifyTaskCompleted(opts: {
   title: string;
   actorId: string;
   notifyAdmin?: boolean;
+  completedCount?: number;
+  pendingCount?: number;
+  total?: number;
+  fullyComplete?: boolean;
 }): Promise<void> {
-  if (opts.notifyAdmin !== false) {
-    await notifyQuietly({
-      titleKey: "notifications.taskCompletedAdminTitle",
-      bodyKey: "notifications.taskCompletedAdminBody",
-      vars: { title: opts.title },
-      category: "work",
-      priority: "normal",
-      audience: "admin",
-      href: `/tasks?task=${opts.taskId}`,
-      entityType: "task",
-      entityId: opts.taskId,
-      actorId: opts.actorId,
-    });
-  }
+  if (opts.notifyAdmin === false) return;
+  const multi =
+    typeof opts.total === "number" &&
+    opts.total > 1 &&
+    opts.fullyComplete !== true;
+  await notifyQuietly({
+    titleKey: multi
+      ? "notifications.taskAssigneeCompletedTitle"
+      : "notifications.taskCompletedAdminTitle",
+    bodyKey: multi
+      ? "notifications.taskAssigneeCompletedBody"
+      : "notifications.taskCompletedAdminBody",
+    vars: {
+      title: opts.title,
+      completedCount: String(opts.completedCount ?? 0),
+      pendingCount: String(opts.pendingCount ?? 0),
+      total: String(opts.total ?? 0),
+    },
+    category: "work",
+    priority: "normal",
+    audience: "admin",
+    href: `/tasks?task=${opts.taskId}`,
+    entityType: "task",
+    entityId: opts.taskId,
+    actorId: opts.actorId,
+  });
 }
 
 export async function notifyPayrollAdvanced(opts: {

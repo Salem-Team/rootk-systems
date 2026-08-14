@@ -14,8 +14,7 @@ export type AdminSection =
   | "employeePrefs"
   | "myPrefs"
   | "appearance"
-  | "demo"
-  | "permissions";
+  | "demo";
 
 export interface OfficeBranch {
   id: string;

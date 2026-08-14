@@ -19,7 +19,7 @@ import type { Employee } from "@/types";
 export function TeamMembersTable({
   members,
   managerOptions,
-  isAdmin,
+  canReassignManagers,
   managerBusyId,
   openTaskCountByEmployee,
   targetCounts,
@@ -29,7 +29,7 @@ export function TeamMembersTable({
 }: {
   members: Employee[];
   managerOptions: Employee[];
-  isAdmin: boolean;
+  canReassignManagers: boolean;
   managerBusyId: string | null;
   openTaskCountByEmployee: Map<string, number>;
   targetCounts: Map<string, number>;
@@ -61,7 +61,7 @@ export function TeamMembersTable({
               {member.position}
               {member.department ? ` · ${member.department}` : ""}
             </p>
-            {isAdmin ? (
+            {canReassignManagers ? (
               <div className="mt-2.5">
                 <TeamManagerPicker
                   member={member}
@@ -122,7 +122,7 @@ export function TeamMembersTable({
             <DataTableHead className="hidden h-11 md:table-cell">
               {t("common.department")}
             </DataTableHead>
-            {isAdmin ? (
+            {canReassignManagers ? (
               <DataTableHead className="h-11">
                 {t("employees.managers")}
               </DataTableHead>
@@ -151,7 +151,7 @@ export function TeamMembersTable({
               <DataTableCell className="hidden py-4 text-[13px] md:table-cell">
                 {member.department}
               </DataTableCell>
-              {isAdmin ? (
+              {canReassignManagers ? (
                 <DataTableCell
                   className="py-4"
                   onClick={(e) => e.stopPropagation()}

@@ -19,6 +19,7 @@ import {
   computeTargetProgress,
   MAX_AUTO_TASKS_PER_TARGET,
 } from "../lib/target-progress";
+import { syncAssigneeProgress } from "../lib/task-assignee-progress";
 import { assertCap, mapTaskPriority, type Actor } from "./targets-access";
 import { mapTarget } from "./targets-mappers";
 import { TargetsNotifyService } from "./targets-notify.service";
@@ -180,6 +181,9 @@ export class TargetsProgressService {
       tag: taskTagForTargetType(type),
       estimateMin: 0,
       assigneeIds: target.assigneeIds,
+      assigneeProgress: syncAssigneeProgress(target.assigneeIds, [], {
+        status: TaskStatus.todo,
+      }),
       targetId: target.id,
       origin: WorkOrigin.assigned,
       assignedAt,

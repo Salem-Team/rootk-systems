@@ -6,6 +6,14 @@ import {
   type WorkTask,
 } from "@prisma/client";
 import { auditFields, dateOnly, iso, isoOrNull } from "../common/mappers";
+import {
+  findAssigneeProgress,
+  progressFromTaskFields,
+  rollupCompletedAtDate,
+  rollupTaskStatus,
+  taskAssigneeCompletionSummary,
+  type TaskAssigneeProgress,
+} from "../lib/task-assignee-progress";
 
 export type Actor = {
   userId: string;
@@ -41,7 +49,11 @@ export function sanitizeEvidenceLinks(links: unknown): string[] {
 
 /** Employees must always leave notes; links stay optional unless the admin requires them. */
 export function assertCompletionEvidence(
-  task: WorkTask,
+  task: {
+    requireEvidenceLinks?: boolean | null;
+    evidenceLinks?: string[] | null;
+    evidenceNotes?: string | null;
+  },
   evidence: { links?: string[]; notes?: string } | undefined,
   actorRole: Actor["role"]
 ) {
@@ -83,6 +95,27 @@ export function completionTimestampPatch(
   return {};
 }
 
+export function resolveTaskAssigneeProgress(
+  row: Pick<
+    WorkTask,
+    | "assigneeIds"
+    | "assigneeProgress"
+    | "status"
+    | "completedAt"
+    | "evidenceLinks"
+    | "evidenceNotes"
+  >
+): TaskAssigneeProgress[] {
+  return progressFromTaskFields({
+    assigneeIds: row.assigneeIds,
+    assigneeProgress: row.assigneeProgress,
+    status: row.status,
+    completedAt: row.completedAt,
+    evidenceLinks: row.evidenceLinks,
+    evidenceNotes: row.evidenceNotes,
+  });
+}
+
 /** Employees only see themselves on a shared assignment — never co-assignees. */
 function assigneeIdsForActor(ids: string[], actor?: Actor): string[] {
   if (!actor || actor.role !== "employee" || !actor.employeeId) return ids;
@@ -91,26 +124,46 @@ function assigneeIdsForActor(ids: string[], actor?: Actor): string[] {
 }
 
 export function mapTask(row: WorkTask, actor?: Actor) {
+  const fullProgress = resolveTaskAssigneeProgress(row);
+  const isEmployeeSelf =
+    actor?.role === "employee" &&
+    Boolean(actor.employeeId) &&
+    row.assigneeIds.includes(actor.employeeId);
+  const mine = isEmployeeSelf
+    ? findAssigneeProgress(fullProgress, actor!.employeeId)
+    : undefined;
+
+  const status = (mine?.status as TaskStatus | undefined) ?? row.status;
+  const evidenceLinks = mine?.evidenceLinks ?? row.evidenceLinks ?? [];
+  const evidenceNotes = mine?.evidenceNotes ?? row.evidenceNotes ?? "";
+  const completedAt = mine
+    ? mine.completedAt ?? null
+    : isoOrNull(row.completedAt);
+  const progressForActor = isEmployeeSelf && mine ? [mine] : fullProgress;
+  const summary = taskAssigneeCompletionSummary(fullProgress);
+
   return {
     id: row.id,
     title: row.title,
     description: row.description,
-    status: row.status,
+    status,
     priority: row.priority,
     dueDate: row.dueDate ? iso(row.dueDate) : "",
     tag: row.tag,
     estimateMin: row.estimateMin,
     assigneeIds: assigneeIdsForActor(row.assigneeIds, actor),
+    assigneeProgress: progressForActor,
+    assigneeCompletion: actor?.role === "employee" ? undefined : summary,
     relatedMeetingId: row.relatedMeetingId ?? undefined,
     targetId: row.targetId ?? undefined,
     subItems: row.subItems ?? [],
     origin: row.origin,
     requireEvidenceLinks: row.requireEvidenceLinks,
     requireEvidenceNotes: row.requireEvidenceNotes,
-    evidenceLinks: row.evidenceLinks ?? [],
-    evidenceNotes: row.evidenceNotes ?? "",
+    evidenceLinks,
+    evidenceNotes,
     assignedAt: iso(row.assignedAt ?? row.createdAt),
-    completedAt: isoOrNull(row.completedAt),
+    completedAt,
     ...auditFields(row),
   };
 }
@@ -157,3 +210,11 @@ export function ownsPersonalMeeting(meeting: WorkMeeting, actor: Actor) {
   }
   return false;
 }
+
+export {
+  findAssigneeProgress,
+  progressFromTaskFields,
+  rollupCompletedAtDate,
+  rollupTaskStatus,
+  taskAssigneeCompletionSummary,
+};

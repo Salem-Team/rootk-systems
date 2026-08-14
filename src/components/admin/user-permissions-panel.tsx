@@ -10,6 +10,7 @@ import {
   Save,
   Search,
   Shield,
+  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -147,6 +148,11 @@ export function UserPermissionsPanel() {
     setDraft(new Set(permissionsForRole(detail.role)));
   }
 
+  function grantAdminAll() {
+    if (!detail || detail.isProtected) return;
+    setDraft(new Set(ALL_PERMISSION_IDS));
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16 text-muted-foreground">
@@ -157,6 +163,18 @@ export function UserPermissionsPanel() {
 
   const actions = detail ? (
     <>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="min-h-11 flex-1 sm:min-h-8 sm:flex-none"
+        disabled={detail.isProtected}
+        title={t("permissions.grantAdminAllHint")}
+        onClick={grantAdminAll}
+      >
+        <ShieldCheck />
+        <span className="truncate">{t("permissions.grantAdminAll")}</span>
+      </Button>
       <Button
         type="button"
         variant="outline"
@@ -348,6 +366,39 @@ export function UserPermissionsPanel() {
                   <p className="font-medium">{t("permissions.protectedTitle")}</p>
                   <p className="mt-0.5 opacity-90">
                     {t("permissions.protectedDesc")}
+                  </p>
+                </div>
+              ) : null}
+
+              {!detail.isProtected ? (
+                <div className="rounded-xl border border-border/70 bg-muted/30 px-3 py-3 sm:rounded-lg sm:px-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t("permissions.quickActions")}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="min-h-10"
+                      onClick={grantAdminAll}
+                    >
+                      <ShieldCheck />
+                      {t("permissions.grantAdminAll")}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="min-h-10"
+                      onClick={resetDefaults}
+                    >
+                      <RotateCcw />
+                      {t("permissions.resetDefaults")}
+                    </Button>
+                  </div>
+                  <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
+                    {t("permissions.grantAdminAllHint")}
                   </p>
                 </div>
               ) : null}

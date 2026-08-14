@@ -8,6 +8,7 @@ import { BrandMark } from "@/components/layout/brand-mark";
 import { SidebarDailyPlan } from "@/components/layout/sidebar-daily-plan";
 import { SidebarEmployeeTasks } from "@/components/layout/sidebar-employee-tasks";
 import { APP_NAV, navForRole } from "@/constants/navigation";
+import { hasAnyPermissionId } from "@/constants/permissions";
 import { useUiStore } from "@/stores/ui-store";
 import { useSessionStore } from "@/stores/session-store";
 import { usePendingLeaveCount } from "@/hooks/use-pending-leave-count";
@@ -34,6 +35,16 @@ export function Sidebar() {
   const reduceMotion = useReducedMotion();
   const CollapseIcon = isRtl ? ChevronRight : ChevronLeft;
   const items = navForRole(role, APP_NAV, permissions);
+  const showTasksAdminLabel = hasAnyPermissionId(
+    ["tasks.viewAll", "tasks.assign", "tasks.editOthers"],
+    permissions,
+    role
+  );
+  const showLeaveReviewBadge = hasAnyPermissionId(
+    ["leave.approve", "leave.reject", "leave.viewAll"],
+    permissions,
+    role
+  );
 
   return (
     <aside
@@ -61,11 +72,11 @@ export function Sidebar() {
               pathname === item.href || pathname.startsWith(`${item.href}/`);
             const Icon = item.icon;
             const title =
-              item.key === "tasks" && role === "admin"
+              item.key === "tasks" && showTasksAdminLabel
                 ? t("nav.tasksAdmin")
                 : t(`nav.${item.key}`);
             const badgeCount =
-              item.badge && item.key === "leave" && role === "admin"
+              item.badge && item.key === "leave" && showLeaveReviewBadge
                 ? pendingLeave
                 : item.badge && item.key === "tasks"
                   ? openTaskCount

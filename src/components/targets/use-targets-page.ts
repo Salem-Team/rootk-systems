@@ -12,7 +12,7 @@ import { useLiveReload } from "@/hooks/use-live-reload";
 import { useTranslation } from "@/hooks/use-translation";
 import { TARGETS_UPDATED_EVENT, WORK_UPDATED_EVENT } from "@/lib/events";
 import { canTarget } from "@/lib/target-policies";
-import { AppRole } from "@/constants/roles";
+import { hasAnyPermissionId } from "@/constants/permissions";
 import { getWorkEmployeeIdFromUser, useSessionStore } from "@/stores/session-store";
 import type { Employee } from "@/types";
 import type {
@@ -33,12 +33,19 @@ export function useTargetsPage() {
   const workEmployeeId = useSessionStore((s) =>
     getWorkEmployeeIdFromUser(s.user)
   );
-  const isAdmin = role === AppRole.admin;
   const canAssign = canTarget(role, "assign", permissions);
+  const canEdit = canTarget(role, "edit", permissions);
   const canManageCatalog = canTarget(role, "manage_categories", permissions);
   const canViewReports = canTarget(role, "view_reports", permissions);
+  const canManageCompanyTargets = hasAnyPermissionId(
+    ["targets.viewAll", "targets.viewTeam", "targets.assign", "targets.edit"],
+    permissions,
+    role
+  );
 
-  const [tab, setTab] = useState<TargetHubTab>(isAdmin ? "dashboard" : "targets");
+  const [tab, setTab] = useState<TargetHubTab>(
+    canManageCompanyTargets ? "dashboard" : "targets"
+  );
   const [categories, setCategories] = useState<TargetCategory[]>([]);
   const [types, setTypes] = useState<TargetType[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -197,8 +204,9 @@ export function useTargetsPage() {
   }
 
   return {
-    isAdmin,
+    canManageCompanyTargets,
     canAssign,
+    canEdit,
     canManageCatalog,
     canViewReports,
     workEmployeeId,

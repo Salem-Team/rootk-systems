@@ -27,7 +27,7 @@ export function TargetsTabContent({
   filters,
   setFilters,
   assigneeCounts,
-  isAdmin,
+  canManageCompanyTargets,
   canAssign,
   canViewReports,
   canManageCatalog,
@@ -48,7 +48,7 @@ export function TargetsTabContent({
   filters: TargetFilters;
   setFilters: (updater: TargetFilters | ((prev: TargetFilters) => TargetFilters)) => void;
   assigneeCounts: Map<string, number>;
-  isAdmin: boolean;
+  canManageCompanyTargets: boolean;
   canAssign: boolean;
   canViewReports: boolean;
   canManageCatalog: boolean;
@@ -73,7 +73,7 @@ export function TargetsTabContent({
       ) : null}
 
       {tab === "targets" ? (
-        isAdmin ? (
+        canManageCompanyTargets ? (
           <>
             <TargetFiltersBar
               value={filters}
@@ -109,7 +109,7 @@ export function TargetsTabContent({
           employees={employeeMap}
           categoryId={filters.categoryId}
           onView={onView}
-          onEdit={isAdmin ? onEdit : undefined}
+          onEdit={canManageCompanyTargets ? onEdit : undefined}
         />
       ) : null}
 
@@ -125,7 +125,7 @@ export function TargetsTabContent({
           employees={employeeMap}
           categoryId={filters.categoryId}
           onView={onView}
-          onEdit={isAdmin ? onEdit : undefined}
+          onEdit={canManageCompanyTargets ? onEdit : undefined}
         />
       ) : null}
     </>

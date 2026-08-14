@@ -14,6 +14,15 @@ import { isValidEvidenceUrl, validateTaskEvidence } from "@/lib/task-evidence";
 import { fromError, ok } from "@/services/api-result";
 import { emitWorkUpdated } from "@/lib/events";
 import { forcePersonalTaskPayload, isPersonalWork } from "@/lib/work-utils";
+import {
+  applyAssigneeStatusChange,
+  applyStatusToAllAssignees,
+  ensureTaskAssigneeProgress,
+  findAssigneeProgress,
+  rollupCompletedAt,
+  rollupTaskStatus,
+  syncAssigneeProgress,
+} from "@/lib/task-assignee-progress";
 import { assertEmployeeCanAssignToTeam } from "@/services/team-access";
 import { AppRole } from "@/constants/roles";
 import {
@@ -63,6 +72,20 @@ export async function createWorkTask(
     const actor = userId;
     const now = new Date().toISOString();
     const status = parsed.data.status ?? "todo";
+    const evidenceLinks = (parsed.data.evidenceLinks ?? []).filter(
+      isValidEvidenceUrl
+    );
+    const evidenceNotes = parsed.data.evidenceNotes ?? "";
+    const assigneeProgress = syncAssigneeProgress(
+      parsed.data.assigneeIds,
+      [],
+      {
+        status,
+        completedAt: status === "completed" ? now : null,
+        evidenceLinks,
+        evidenceNotes,
+      }
+    );
     const task = enrichWithAudit(
       {
         id: createId("task"),
@@ -74,20 +97,19 @@ export async function createWorkTask(
         tag: parsed.data.tag ?? "",
         estimateMin: parsed.data.estimateMin ?? 0,
         assigneeIds: parsed.data.assigneeIds,
+        assigneeProgress,
         relatedMeetingId: parsed.data.relatedMeetingId,
         origin: parsed.data.origin ?? "assigned",
         requireEvidenceLinks:
-          role === AppRole.employee
+          role === AppRole.employee && !teamAssign
             ? false
             : Boolean(parsed.data.requireEvidenceLinks),
         requireEvidenceNotes:
-          role === AppRole.employee
+          role === AppRole.employee && !teamAssign
             ? false
             : Boolean(parsed.data.requireEvidenceNotes),
-        evidenceLinks: (parsed.data.evidenceLinks ?? []).filter(
-          isValidEvidenceUrl
-        ),
-        evidenceNotes: parsed.data.evidenceNotes ?? "",
+        evidenceLinks,
+        evidenceNotes,
         assignedAt: now,
         completedAt: status === "completed" ? now : null,
         subItems: (parsed.data.subItems ?? []).map((s) => ({
@@ -164,14 +186,16 @@ export async function updateWorkTask(
       current.status !== "completed" &&
       role === AppRole.employee
     ) {
+      const ensured = ensureTaskAssigneeProgress(current);
+      const mine = findAssigneeProgress(ensured.assigneeProgress, employeeId);
       const check = validateTaskEvidence(
         {
           requireEvidenceLinks: nextRequireLinks,
           requireEvidenceNotes: nextRequireNotes,
         },
         {
-          links: parsed.data.evidenceLinks ?? current.evidenceLinks,
-          notes: parsed.data.evidenceNotes ?? current.evidenceNotes,
+          links: parsed.data.evidenceLinks ?? mine?.evidenceLinks ?? current.evidenceLinks,
+          notes: parsed.data.evidenceNotes ?? mine?.evidenceNotes ?? current.evidenceNotes,
         }
       );
       if (!check.ok) {
@@ -185,33 +209,82 @@ export async function updateWorkTask(
       }
     }
 
-    const nextStatus = parsed.data.status ?? current.status;
+    const nextAssigneeIds =
+      role === AppRole.employee
+        ? [employeeId]
+        : (parsed.data.assigneeIds ?? current.assigneeIds);
+
+    let progress = syncAssigneeProgress(
+      nextAssigneeIds,
+      ensureTaskAssigneeProgress(current).assigneeProgress,
+      { status: "todo" }
+    );
+
+    const requestedStatus = parsed.data.status;
+    if (requestedStatus && requestedStatus !== current.status) {
+      const evidencePatch = {
+        links:
+          parsed.data.evidenceLinks !== undefined
+            ? parsed.data.evidenceLinks.filter(isValidEvidenceUrl)
+            : undefined,
+        notes: parsed.data.evidenceNotes,
+      };
+      progress =
+        role === AppRole.admin
+          ? applyStatusToAllAssignees(progress, requestedStatus, evidencePatch)
+          : applyAssigneeStatusChange(
+              progress,
+              employeeId,
+              requestedStatus,
+              evidencePatch
+            );
+    } else if (
+      (parsed.data.evidenceLinks !== undefined ||
+        parsed.data.evidenceNotes !== undefined) &&
+      role === AppRole.employee
+    ) {
+      const mine = findAssigneeProgress(progress, employeeId);
+      progress = applyAssigneeStatusChange(
+        progress,
+        employeeId,
+        mine?.status ?? current.status,
+        {
+          links:
+            parsed.data.evidenceLinks !== undefined
+              ? parsed.data.evidenceLinks.filter(isValidEvidenceUrl)
+              : undefined,
+          notes: parsed.data.evidenceNotes,
+        }
+      );
+    }
+
+    const nextStatus = rollupTaskStatus(progress);
     const completedAt =
       parsed.data.completedAt !== undefined
         ? parsed.data.completedAt
-        : nextStatus === "completed" && current.status !== "completed"
-          ? new Date().toISOString()
-          : nextStatus !== "completed" && current.status === "completed"
-            ? null
-            : current.completedAt;
+        : rollupCompletedAt(progress);
+
+    const primaryEvidence =
+      findAssigneeProgress(progress, employeeId) ??
+      progress.find((p) => p.status === "completed") ??
+      progress[0];
 
     const next = touchEntity(current, actor, {
       ...parsed.data,
       origin: role === AppRole.employee ? "personal" : parsed.data.origin,
-      assigneeIds:
-        role === AppRole.employee
-          ? [employeeId]
-          : (parsed.data.assigneeIds ?? current.assigneeIds),
+      assigneeIds: nextAssigneeIds,
+      assigneeProgress: progress,
+      status: nextStatus,
       requireEvidenceLinks: nextRequireLinks,
       requireEvidenceNotes: nextRequireNotes,
       evidenceLinks:
         parsed.data.evidenceLinks !== undefined
           ? parsed.data.evidenceLinks.filter(isValidEvidenceUrl)
-          : current.evidenceLinks,
+          : (primaryEvidence?.evidenceLinks ?? current.evidenceLinks),
       evidenceNotes:
         parsed.data.evidenceNotes !== undefined
           ? parsed.data.evidenceNotes
-          : current.evidenceNotes,
+          : (primaryEvidence?.evidenceNotes ?? current.evidenceNotes),
       assignedAt: current.assignedAt || current.createdAt,
       completedAt,
       subItems: parsed.data.subItems
@@ -226,7 +299,7 @@ export async function updateWorkTask(
     if (!saved) throw new NotFoundError("Task not found");
     emitWorkUpdated();
     if (
-      parsed.data.status === "completed" &&
+      nextStatus === "completed" &&
       current.status !== "completed" &&
       !isPersonalWork(saved)
     ) {
@@ -237,9 +310,10 @@ export async function updateWorkTask(
         taskId: saved.id,
         title: saved.title,
         actorId: actor,
+        fullyComplete: true,
       });
     }
-    if (saved.targetId && parsed.data.status && parsed.data.status !== current.status) {
+    if (saved.targetId && nextStatus !== current.status) {
       const { recalculateTargetProgress } = await import(
         "@/services/targets.service"
       );

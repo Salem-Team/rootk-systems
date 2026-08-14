@@ -1,6 +1,6 @@
 import { formatISO } from "date-fns";
 import { patchApproveLeave, patchRejectLeave } from "@/api/leave.api";
-import { AppRole } from "@/constants/roles";
+import { hasPermissionId } from "@/constants/permissions";
 import { isApiMode } from "@/lib/env";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { enrichWithAudit, touchEntity } from "@/lib/entity";
@@ -9,7 +9,11 @@ import { listWorkingDates } from "@/lib/working-days";
 import { attendanceRepository, leaveRepository, scheduleRepository } from "@/repositories";
 import { reviewLeaveSchema } from "@/schemas";
 import { fromError, ok } from "@/services/api-result";
-import { getSessionRole, getSessionUserId } from "@/stores/session-store";
+import {
+  getSessionPermissions,
+  getSessionRole,
+  getSessionUserId,
+} from "@/stores/session-store";
 import type { ApiResponse, LeaveRequest } from "@/types";
 import { emptyLeave } from "./leave-service-helpers";
 
@@ -126,8 +130,14 @@ export async function approveLeave(
 ): Promise<ApiResponse<LeaveRequest>> {
   if (isApiMode()) return patchApproveLeave(id, reviewerNote);
   try {
-    if (getSessionRole() !== AppRole.admin) {
-      throw new ForbiddenError("Only admins can approve leave");
+    if (
+      !hasPermissionId(
+        "leave.approve",
+        getSessionPermissions(),
+        getSessionRole()
+      )
+    ) {
+      throw new ForbiddenError("You do not have permission to approve leave");
     }
     const parsed = reviewLeaveSchema.safeParse({ reviewerNote });
     if (!parsed.success) {
@@ -151,8 +161,14 @@ export async function rejectLeave(
 ): Promise<ApiResponse<LeaveRequest>> {
   if (isApiMode()) return patchRejectLeave(id, reviewerNote);
   try {
-    if (getSessionRole() !== AppRole.admin) {
-      throw new ForbiddenError("Only admins can reject leave");
+    if (
+      !hasPermissionId(
+        "leave.reject",
+        getSessionPermissions(),
+        getSessionRole()
+      )
+    ) {
+      throw new ForbiddenError("You do not have permission to reject leave");
     }
     const parsed = reviewLeaveSchema.safeParse({ reviewerNote });
     if (!parsed.success) {

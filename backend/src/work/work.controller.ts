@@ -17,6 +17,7 @@ import {
   type JwtPayload,
 } from "../common/decorators/current-user";
 import { RolesGuard } from "../common/roles.guard";
+import { RequirePermission } from "../common/permissions.decorator";
 import { toDomainActor } from "../common/scoped-employee";
 
 function toActor(user: JwtPayload | undefined) {
@@ -30,6 +31,7 @@ export class WorkController {
   constructor(private readonly service: WorkService) {}
 
   @Get("tasks")
+  @RequirePermission("tasks.viewOwn", "tasks.viewTeam", "tasks.viewAll")
   tasks(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload | undefined,
@@ -49,6 +51,7 @@ export class WorkController {
   }
 
   @Get("tasks/:id")
+  @RequirePermission("tasks.viewOwn", "tasks.viewTeam", "tasks.viewAll")
   taskById(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload | undefined,
@@ -58,6 +61,7 @@ export class WorkController {
   }
 
   @Post("tasks")
+  @RequirePermission("tasks.create", "tasks.assign")
   createTask(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload | undefined,
@@ -67,6 +71,7 @@ export class WorkController {
   }
 
   @Patch("tasks/:id")
+  @RequirePermission("tasks.editOwn", "tasks.editOthers")
   updateTask(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload | undefined,
@@ -77,6 +82,7 @@ export class WorkController {
   }
 
   @Patch("tasks/:id/status")
+  @RequirePermission("tasks.editOwn", "tasks.editOthers")
   taskStatus(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload | undefined,
@@ -97,6 +103,7 @@ export class WorkController {
   }
 
   @Patch("tasks/:id/sub-items/:subId")
+  @RequirePermission("tasks.editOwn", "tasks.editOthers")
   toggleSub(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload | undefined,
@@ -107,6 +114,7 @@ export class WorkController {
   }
 
   @Delete("tasks/:id")
+  @RequirePermission("tasks.deleteOwn", "tasks.deleteOthers")
   deleteTask(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload | undefined,
@@ -116,6 +124,7 @@ export class WorkController {
   }
 
   @Get("meetings")
+  @RequirePermission("tasks.manageMeetings", "tasks.viewOwn", "tasks.viewAll")
   meetings(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload | undefined,
@@ -133,6 +142,7 @@ export class WorkController {
   }
 
   @Post("meetings")
+  @RequirePermission("tasks.manageMeetings")
   createMeeting(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload | undefined,
@@ -142,6 +152,7 @@ export class WorkController {
   }
 
   @Patch("meetings/:id")
+  @RequirePermission("tasks.manageMeetings")
   updateMeeting(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload | undefined,
@@ -152,6 +163,7 @@ export class WorkController {
   }
 
   @Delete("meetings/:id")
+  @RequirePermission("tasks.manageMeetings")
   deleteMeeting(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload | undefined,

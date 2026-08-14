@@ -7,6 +7,7 @@ import { Menu, X } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { SidebarDailyPlan } from "@/components/layout/sidebar-daily-plan";
 import { APP_NAV, MOBILE_NAV, navForRole } from "@/constants/navigation";
+import { hasAnyPermissionId } from "@/constants/permissions";
 import { useUiStore } from "@/stores/ui-store";
 import { useSessionStore } from "@/stores/session-store";
 import { usePendingLeaveCount } from "@/hooks/use-pending-leave-count";
@@ -24,6 +25,11 @@ export function MobileBottomNav() {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
   const items = navForRole(role, MOBILE_NAV, permissions);
+  const showTasksAdminLabel = hasAnyPermissionId(
+    ["tasks.viewAll", "tasks.assign", "tasks.editOthers"],
+    permissions,
+    role
+  );
 
   return (
     <nav
@@ -98,7 +104,7 @@ export function MobileBottomNav() {
                   <Icon className="h-4 w-4" />
                 </motion.span>
                 <span className="relative z-10 max-w-full truncate text-[11px]">
-                  {item.key === "tasks" && role === "admin"
+                  {item.key === "tasks" && showTasksAdminLabel
                     ? t("nav.tasksAdmin")
                     : t(`nav.${item.key}`)}
                 </span>
@@ -120,6 +126,16 @@ export function MobileDrawer() {
   const { t, isRtl } = useTranslation();
   const reduceMotion = useReducedMotion();
   const items = navForRole(role, APP_NAV, permissions);
+  const showTasksAdminLabel = hasAnyPermissionId(
+    ["tasks.viewAll", "tasks.assign", "tasks.editOthers"],
+    permissions,
+    role
+  );
+  const showLeaveReviewBadge = hasAnyPermissionId(
+    ["leave.approve", "leave.reject", "leave.viewAll"],
+    permissions,
+    role
+  );
 
   return (
     <AnimatePresence>
@@ -183,7 +199,7 @@ export function MobileDrawer() {
                     pathname.startsWith(`${item.href}/`);
                   const Icon = item.icon;
                   const badgeCount =
-                    item.badge && item.key === "leave" && role === "admin"
+                    item.badge && item.key === "leave" && showLeaveReviewBadge
                       ? pendingLeave
                       : 0;
                   return (
@@ -206,7 +222,7 @@ export function MobileDrawer() {
                         )}
                       />
                       <span className="relative z-10 flex flex-1 items-center justify-between gap-2">
-                        {item.key === "tasks" && role === "admin"
+                        {item.key === "tasks" && showTasksAdminLabel
                           ? t("nav.tasksAdmin")
                           : t(`nav.${item.key}`)}
                         {badgeCount > 0 ? (

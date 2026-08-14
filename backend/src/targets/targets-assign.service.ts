@@ -21,6 +21,7 @@ import {
   computeTargetProgress,
   MAX_AUTO_TASKS_PER_TARGET,
 } from "../lib/target-progress";
+import { syncAssigneeProgress } from "../lib/task-assignee-progress";
 import { assertCap, mapTaskPriority, type Actor } from "./targets-access";
 import { assertCanAssignToTeam } from "../lib/team";
 import { AppRole } from "../common/roles";
@@ -217,6 +218,9 @@ export class TargetsAssignService {
       tag: taskTagForTargetType(type),
       estimateMin: 0,
       assigneeIds: opts.assigneeIds,
+      assigneeProgress: syncAssigneeProgress(opts.assigneeIds, [], {
+        status: TaskStatus.todo,
+      }),
       targetId,
       origin: WorkOrigin.assigned,
       assignedAt,

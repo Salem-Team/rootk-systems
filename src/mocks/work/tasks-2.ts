@@ -32,6 +32,22 @@ export const workTasksSeed2: SeedOf<WorkTask>[] = [
     tag: "Engineering",
     estimateMin: 90,
     assigneeIds: ["emp-002", "emp-006"],
+    assigneeProgress: [
+      {
+        employeeId: "emp-002",
+        status: "completed",
+        completedAt: `${dayOffset(0)}T12:00:00.000Z`,
+        evidenceLinks: [],
+        evidenceNotes: "Reproduced and fixed grace window",
+      },
+      {
+        employeeId: "emp-006",
+        status: "todo",
+        completedAt: null,
+        evidenceLinks: [],
+        evidenceNotes: "",
+      },
+    ],
     origin: "assigned",
     subItems: [
       { id: "task-012-a", label: "Reproduce with sample punches", done: true },

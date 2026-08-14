@@ -23,7 +23,6 @@ import {
 import type { AdminSection } from "@/components/admin/admin-mock-data";
 import { CompanyAppearanceSection } from "@/components/admin/company-appearance-section";
 import { CompanyDemoDataSection } from "@/components/admin/company-demo-data-section";
-import { UserPermissionsPanel } from "@/components/admin/user-permissions-panel";
 import {
   ADMIN_SECTION_PERMISSION,
   hasPermissionId,
@@ -198,7 +197,6 @@ export function CompanyAdminWorkspace() {
               />
             ) : null}
             {section === "demo" ? <CompanyDemoDataSection demo={demo} /> : null}
-            {section === "permissions" ? <UserPermissionsPanel /> : null}
           </motion.div>
         </AnimatePresence>
 

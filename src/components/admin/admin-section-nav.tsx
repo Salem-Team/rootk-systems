@@ -9,7 +9,6 @@ import {
   ClipboardCheck,
   Database,
   Home,
-  KeyRound,
   LayoutGrid,
   MapPin,
   Briefcase,
@@ -62,7 +61,6 @@ const ITEMS: {
   { id: "myPrefs", labelKey: "admin.navMyPrefs", icon: UserRound },
   { id: "appearance", labelKey: "admin.navAppearance", icon: Palette },
   { id: "demo", labelKey: "admin.navDemo", icon: Database },
-  { id: "permissions", labelKey: "admin.navPermissions", icon: KeyRound },
 ];
 
 const GROUPS: {
@@ -83,7 +81,7 @@ const GROUPS: {
   },
   {
     labelKey: "admin.groupPeople",
-    ids: ["permissions", "notifications", "approvals", "employeePrefs"],
+    ids: ["notifications", "approvals", "employeePrefs"],
   },
   {
     labelKey: "admin.groupPersonal",
@@ -93,9 +91,9 @@ const GROUPS: {
 
 const MOBILE_QUICK: AdminSection[] = [
   "profile",
-  "permissions",
   "policies",
   "notifications",
+  "appearance",
 ];
 
 const ITEM_MAP = Object.fromEntries(ITEMS.map((item) => [item.id, item])) as Record<

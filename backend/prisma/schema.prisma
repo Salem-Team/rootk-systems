@@ -529,6 +529,11 @@ model WorkTask {
   tag                   String       @default("")
   estimateMin           Int          @default(0)
   assigneeIds           String[]
+  /**
+   * Per-assignee completion: [{ employeeId, status, completedAt, evidenceLinks, evidenceNotes }].
+   * Aggregate status/completedAt roll up when every assignee finishes.
+   */
+  assigneeProgress      Json         @default("[]")
   relatedMeetingId      String?
   /** When set, completing this task advances linked PerformanceTarget progress. */
   targetId              String?
@@ -542,7 +547,7 @@ model WorkTask {
   evidenceNotes         String       @default("")
   /// When the task was assigned / became actionable (defaults to create time).
   assignedAt            DateTime     @default(now())
-  /// When the assignee marked the task completed (null if open/reopened).
+  /// When all assignees marked the task completed (null if any still open).
   completedAt           DateTime?
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt

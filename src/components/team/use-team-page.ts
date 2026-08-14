@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { emptyTaskForm, type TaskFormState } from "@/components/work/admin-work-panel-types";
-import { AppRole } from "@/constants/roles";
+import { hasPermissionId } from "@/constants/permissions";
 import { useLiveReload } from "@/hooks/use-live-reload";
 import { useTranslation } from "@/hooks/use-translation";
 import { emitTargetsUpdated, TARGETS_UPDATED_EVENT, WORK_UPDATED_EVENT } from "@/lib/events";
@@ -25,10 +25,18 @@ import type { WorkTask } from "@/types/work";
 export function useTeamPage() {
   const { t } = useTranslation();
   const role = useSessionStore((s) => s.role);
+  const permissions = useSessionStore((s) =>
+    s.authenticated ? s.permissions : undefined
+  );
   const workEmployeeId = useSessionStore((s) =>
     getWorkEmployeeIdFromUser(s.user)
   );
-  const isAdmin = role === AppRole.admin;
+  const canViewAllTeam = hasPermissionId("team.viewAll", permissions, role);
+  const canReassignManagers = hasPermissionId(
+    "team.reassignManagers",
+    permissions,
+    role
+  );
 
   const [ready, setReady] = useState(false);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -47,13 +55,13 @@ export function useTeamPage() {
   const [managerBusyId, setManagerBusyId] = useState<string | null>(null);
 
   const reports = useMemo(() => {
-    if (isAdmin) {
+    if (canViewAllTeam) {
       return employees.filter((e) => e.status !== "inactive");
     }
     return findDirectReports(workEmployeeId, employees).filter(
       (e) => e.status !== "inactive"
     );
-  }, [employees, isAdmin, workEmployeeId]);
+  }, [canViewAllTeam, employees, workEmployeeId]);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -77,8 +85,8 @@ export function useTeamPage() {
   const reload = useCallback(async () => {
     const [empRes, taskRes, targetRes, catRes, typeRes] = await Promise.all([
       getWorkforceEmployees(),
-      getWorkTasks(isAdmin ? {} : { team: true }),
-      getTargets(isAdmin ? {} : { team: true }),
+      getWorkTasks(canViewAllTeam ? {} : { team: true }),
+      getTargets(canViewAllTeam ? {} : { team: true }),
       getTargetCategories(),
       getTargetTypes(),
     ]);
@@ -99,7 +107,7 @@ export function useTeamPage() {
       setTargetCounts(counts);
     }
     setReady(true);
-  }, [isAdmin]);
+  }, [canViewAllTeam]);
 
   useLiveReload(reload, [WORK_UPDATED_EVENT, TARGETS_UPDATED_EVENT]);
 
@@ -207,7 +215,8 @@ export function useTeamPage() {
   return {
     t,
     ready,
-    isAdmin,
+    canViewAllTeam,
+    canReassignManagers,
     query,
     setQuery,
     visible,

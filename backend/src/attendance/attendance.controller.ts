@@ -14,13 +14,20 @@ import {
   resolveActorEmployeeId,
   resolveScopedEmployeeId,
 } from "../common/scoped-employee";
+import { RequirePermission } from "../common/permissions.decorator";
+import { RolesGuard } from "../common/roles.guard";
 
 @Controller("attendance")
-@UseGuards(AuthGuard("jwt"))
+@UseGuards(AuthGuard("jwt"), RolesGuard)
 export class AttendanceController {
   constructor(private readonly service: AttendanceService) {}
 
   @Get()
+  @RequirePermission(
+    "attendance.viewOwn",
+    "attendance.viewTeam",
+    "attendance.viewAll"
+  )
   list(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload,
@@ -43,11 +50,13 @@ export class AttendanceController {
   }
 
   @Get("me/today")
+  @RequirePermission("attendance.viewOwn")
   meToday(@CompanyId() companyId: string, @CurrentUser() user: JwtPayload) {
     return this.service.meToday(companyId, user.employeeId);
   }
 
   @Post("check-in")
+  @RequirePermission("attendance.checkIn")
   checkIn(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
@@ -67,6 +76,7 @@ export class AttendanceController {
   }
 
   @Post("check-out")
+  @RequirePermission("attendance.checkOut")
   checkOut(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,

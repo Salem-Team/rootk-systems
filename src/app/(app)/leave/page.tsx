@@ -30,18 +30,23 @@ import {
   getWorkEmployeeIdFromUser,
   useSessionStore,
 } from "@/stores/session-store";
+import { useHasAnyPermission, useHasPermission } from "@/hooks/use-permission";
 import { useTranslation } from "@/hooks/use-translation";
 import { computeLeaveBalance } from "@/lib/leave-balance";
-import { AppRole } from "@/constants/roles";
 import type { Employee, LeaveRequest } from "@/types";
 
 export default function LeavePage() {
   const { t } = useTranslation();
-  const role = useSessionStore((s) => s.role);
   const workEmployeeId = useSessionStore((s) =>
     getWorkEmployeeIdFromUser(s.user)
   );
-  const isAdmin = role === AppRole.admin;
+  const canManageLeave = useHasAnyPermission([
+    "leave.viewAll",
+    "leave.viewTeam",
+    "leave.approve",
+    "leave.reject",
+  ]);
+  const canRequestLeave = useHasPermission("leave.request");
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -49,13 +54,13 @@ export default function LeavePage() {
 
   const load = useCallback(async () => {
     const [leaveRes, empRes] = await Promise.all([
-      getLeaveRequests(isAdmin ? {} : { employeeId: workEmployeeId }),
+      getLeaveRequests(canManageLeave ? {} : { employeeId: workEmployeeId }),
       getEmployees(),
     ]);
     if (leaveRes.success) setRequests(leaveRes.data);
     if (empRes.success) setEmployees(empRes.data);
     setLoading(false);
-  }, [isAdmin, workEmployeeId]);
+  }, [canManageLeave, workEmployeeId]);
 
   useEffect(() => {
     setLoading(true);
@@ -94,7 +99,7 @@ export default function LeavePage() {
     return <PageSkeleton />;
   }
 
-  const createDialog = (
+  const createDialog = canRequestLeave ? (
     <Dialog open={createOpen} onOpenChange={setCreateOpen}>
       <DialogTrigger asChild>
         <Button className="w-full sm:w-auto">
@@ -113,34 +118,40 @@ export default function LeavePage() {
         />
       </DialogContent>
     </Dialog>
-  );
+  ) : null;
 
   return (
     <PageTransition>
       <PageHeader
         className="mb-4 sm:mb-7"
         eyebrow={t("leave.eyebrow")}
-        title={isAdmin ? t("leave.title") : t("leave.myRequests")}
+        title={canManageLeave ? t("leave.title") : t("leave.myRequests")}
         description={
-          isAdmin ? t("leaveWorkflow.pageDesc") : t("leave.employeePageDesc")
+          canManageLeave
+            ? t("leaveWorkflow.pageDesc")
+            : t("leave.employeePageDesc")
         }
-        actions={<div className="hidden sm:block">{createDialog}</div>}
+        actions={
+          createDialog ? (
+            <div className="hidden sm:block">{createDialog}</div>
+          ) : undefined
+        }
       />
 
       <div className="mb-4 space-y-4 sm:mb-6 sm:space-y-6">
         <LeaveStatsStrip
-          requests={isAdmin ? requests : mine}
-          compact={!isAdmin}
+          requests={canManageLeave ? requests : mine}
+          compact={!canManageLeave}
         />
-        <div className="sm:hidden">{createDialog}</div>
+        {createDialog ? <div className="sm:hidden">{createDialog}</div> : null}
       </div>
 
       <Tabs
-        key={role}
-        defaultValue={isAdmin ? "workflow" : "mine"}
+        key={canManageLeave ? "manage" : "mine"}
+        defaultValue={canManageLeave ? "workflow" : "mine"}
         className="space-y-6"
       >
-        {isAdmin ? (
+        {canManageLeave ? (
           <TabsList className="scroll-x flex h-auto w-full flex-nowrap justify-start gap-1 [scrollbar-width:none] sm:w-auto sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
             <TabsTrigger value="workflow" className="shrink-0">
               {t("leaveWorkflow.reviewTab")}
@@ -157,7 +168,7 @@ export default function LeavePage() {
           </TabsList>
         ) : null}
 
-        {isAdmin ? (
+        {canManageLeave ? (
           <>
             <TabsContent value="workflow" className="space-y-6">
               <AdminLeaveReviewPanel
@@ -171,7 +182,7 @@ export default function LeavePage() {
                 </div>
                 <div className="xl:col-span-2">
                   <LeaveWorkflowSidebar
-                    isAdmin
+                    canManage
                     requests={requests}
                     employees={employees}
                     balance={balance}
@@ -190,13 +201,17 @@ export default function LeavePage() {
                     onUpdated={handleUpdated}
                     emptyTitle={t("leave.empty")}
                     emptyDescription={t("leave.emptyDesc")}
-                    emptyActionLabel={t("leave.newRequest")}
-                    onEmptyAction={() => setCreateOpen(true)}
+                    emptyActionLabel={
+                      canRequestLeave ? t("leave.newRequest") : undefined
+                    }
+                    onEmptyAction={
+                      canRequestLeave ? () => setCreateOpen(true) : undefined
+                    }
                   />
                 </div>
                 <div className="xl:col-span-2">
                   <LeaveWorkflowSidebar
-                    isAdmin
+                    canManage
                     requests={requests}
                     employees={employees}
                     balance={balance}
@@ -228,14 +243,18 @@ export default function LeavePage() {
                 onUpdated={handleUpdated}
                 emptyTitle={t("leave.empty")}
                 emptyDescription={t("leave.emptyDesc")}
-                emptyActionLabel={t("leave.newRequest")}
-                onEmptyAction={() => setCreateOpen(true)}
+                emptyActionLabel={
+                  canRequestLeave ? t("leave.newRequest") : undefined
+                }
+                onEmptyAction={
+                  canRequestLeave ? () => setCreateOpen(true) : undefined
+                }
                 className="grid gap-3 sm:grid-cols-2 sm:gap-4"
               />
             </div>
             <div className="xl:col-span-2">
               <LeaveWorkflowSidebar
-                isAdmin={false}
+                canManage={false}
                 requests={mine}
                 employees={employees}
                 balance={balance}

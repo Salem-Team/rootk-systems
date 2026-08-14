@@ -20,6 +20,7 @@ import {
   ListTodo,
   Megaphone,
   ContactRound,
+  KeyRound,
   type LucideIcon,
 } from "lucide-react";
 
@@ -32,6 +33,7 @@ export type NavKey =
   | "reports"
   | "payroll"
   | "settings"
+  | "permissions"
   | "home"
   | "people"
   | "more"
@@ -153,6 +155,13 @@ export const APP_NAV: AppNavItem[] = [
       "payroll.viewAllPayslips",
       "payroll.viewDashboard",
     ],
+  },
+  {
+    key: "permissions",
+    href: "/permissions",
+    icon: KeyRound,
+    roles: [AppRole.admin, AppRole.employee],
+    anyOf: ["settings.managePermissions"],
   },
   {
     key: "settings",

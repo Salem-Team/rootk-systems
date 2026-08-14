@@ -12,6 +12,15 @@ export interface WorkTaskSubItem {
   done: boolean;
 }
 
+/** Per-assignee progress on a shared (multi-person) work task. */
+export interface TaskAssigneeProgress {
+  employeeId: string;
+  status: TaskStatus;
+  completedAt?: string | null;
+  evidenceLinks?: string[];
+  evidenceNotes?: string;
+}
+
 /** Work item for one or more employees (admin or personal). */
 export interface WorkTask extends BaseEntity {
   id: string;
@@ -26,6 +35,11 @@ export interface WorkTask extends BaseEntity {
   estimateMin: number;
   /** Employee entity ids (e.g. emp-003) */
   assigneeIds: string[];
+  /**
+   * Independent completion state per assignee.
+   * Aggregate `status` / `completedAt` roll up from this list.
+   */
+  assigneeProgress?: TaskAssigneeProgress[];
   relatedMeetingId?: string;
   /** When set, completing this task advances linked PerformanceTarget progress. */
   targetId?: string;
