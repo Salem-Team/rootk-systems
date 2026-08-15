@@ -18,6 +18,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/hooks/use-translation";
 import { recordCrmLeadCall } from "@/services/crm.service";
 import { crmUserFacingMessage } from "@/lib/crm/client-error";
+import { formatCallClock } from "@/lib/crm/call-duration";
+import { pendingCallDurationSeconds } from "@/lib/crm/pending-call";
 import { nativePlatform } from "@/lib/native/platform";
 import type { CrmCallStatus, CrmNextAction } from "@/types/crm";
 import type { PendingCrmCall } from "@/lib/crm/pending-call";
@@ -51,15 +53,23 @@ export function CrmPostCallDialog({
   async function submit() {
     if (!pending) return;
     setSaving(true);
+    const endedAt = pending.endedAt || new Date().toISOString();
+    const durationSeconds = pendingCallDurationSeconds({
+      ...pending,
+      endedAt,
+    });
     const nextAction: CrmNextAction = followAt ? "follow_up" : "none";
+    const source =
+      pending.source === "web" ? nativePlatform() : pending.source;
     const res = await recordCrmLeadCall(pending.leadId, {
       status: status === "unknown" ? "unknown" : status,
       direction: "outgoing",
-      source: pending.source === "web" ? nativePlatform() === "web" ? "web" : nativePlatform() : pending.source,
+      source,
       externalCallId: pending.externalCallId,
       phoneNumber: pending.phone,
       startedAt: pending.startedAt,
-      endedAt: new Date().toISOString(),
+      endedAt,
+      durationSeconds,
       notes,
       nextAction,
       nextFollowUpAt: followAt ? new Date(followAt).toISOString() : null,
@@ -112,6 +122,11 @@ export function CrmPostCallDialog({
             </Button>
           ))}
         </div>
+        {pending ? (
+          <p className="font-mono text-[13px] tabular-nums text-muted-foreground">
+            {t("crm.call.duration")}: {formatCallClock(pendingCallDurationSeconds(pending))}
+          </p>
+        ) : null}
         <div className="space-y-2">
           <Label htmlFor="post-call-follow">{t("crm.call.followUp")}</Label>
           <Input

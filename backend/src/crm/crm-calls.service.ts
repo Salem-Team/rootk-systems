@@ -31,6 +31,16 @@ function isUniqueViolation(error: unknown): boolean {
   );
 }
 
+function formatCallClock(totalSeconds: number): string {
+  const seconds = Math.max(0, Math.round(totalSeconds));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const rest = seconds % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  if (hours > 0) return `${hours}:${pad(minutes)}:${pad(rest)}`;
+  return `${minutes}:${pad(rest)}`;
+}
+
 @Injectable()
 export class CrmCallsService {
   constructor(
@@ -97,7 +107,13 @@ export class CrmCallsService {
     }
 
     const startedAt = asOptionalDate(body.startedAt) ?? new Date();
-    const endedAt = asOptionalDate(body.endedAt) ?? null;
+    const endedAt = asOptionalDate(body.endedAt) ?? new Date();
+    if (durationSeconds === null && endedAt && startedAt) {
+      const diff = Math.round((endedAt.getTime() - startedAt.getTime()) / 1000);
+      if (Number.isFinite(diff) && diff >= 0 && diff <= 86_400) {
+        durationSeconds = diff;
+      }
+    }
     const notes = String(body.notes ?? "");
     const nextAction = asEnum<CrmNextAction>(
       body.nextAction,
@@ -177,18 +193,28 @@ export class CrmCallsService {
                   ? "Call failed"
                   : "Call logged";
 
+        const durationLabel =
+          durationSeconds === null ? "" : formatCallClock(durationSeconds);
+        const description = [durationLabel, notes].filter(Boolean).join(" · ");
+
         const activity = await tx.crmLeadActivity.create({
           data: {
             companyId,
             leadId,
             type: CrmActivityType.call,
             title,
-            description: notes,
+            description,
             actorEmployeeId: actor.employeeId || null,
             occurredAt: startedAt ?? new Date(),
             createdBy: actor.userId,
             updatedBy: actor.userId,
-            metadata: { callId: call.id, direction, status, source },
+            metadata: {
+              callId: call.id,
+              direction,
+              status,
+              source,
+              durationSeconds,
+            },
           },
         });
 

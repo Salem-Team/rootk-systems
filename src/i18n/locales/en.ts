@@ -3145,6 +3145,7 @@ export const en = {
       missed: "Missed",
       followUp: "Follow-up (optional)",
       notes: "Notes (optional)",
+      duration: "Call duration",
       save: "Save result",
       saved: "Call recorded",
       saveFailed: "Couldn’t save the call",

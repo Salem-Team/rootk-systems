@@ -5,8 +5,8 @@ import { App } from "@capacitor/app";
 import { CrmPostCallDialog } from "@/components/crm/crm-post-call-dialog";
 import {
   clearPendingCall,
+  markPendingCallReturned,
   pendingCallIsRipe,
-  readPendingCall,
   type PendingCrmCall,
 } from "@/lib/crm/pending-call";
 import { isNativeApp } from "@/lib/native/platform";
@@ -23,7 +23,7 @@ export function CrmPostCallHost() {
   useEffect(() => {
     function maybePrompt() {
       if (!pendingCallIsRipe()) return;
-      const next = readPendingCall();
+      const next = markPendingCallReturned();
       if (!next) return;
       setPending(next);
       setOpen(true);
