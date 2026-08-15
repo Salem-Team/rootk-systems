@@ -131,6 +131,9 @@ export function CrmLeadsTable({
                       >
                         <CrmPhoneActions
                           phone={lead.phone}
+                          phoneNormalized={lead.phoneNormalized}
+                          leadId={lead.id}
+                          leadName={lead.name}
                           className="text-[12px]"
                         />
                       </div>
@@ -247,7 +250,13 @@ export function CrmLeadsTable({
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
-                  <CrmPhoneActions phone={lead.phone} className="text-[12px]" />
+                  <CrmPhoneActions
+                    phone={lead.phone}
+                    phoneNormalized={lead.phoneNormalized}
+                    leadId={lead.id}
+                    leadName={lead.name}
+                    className="text-[12px]"
+                  />
                 </DataTableCell>
                 <DataTableCell className="hidden text-[12px] md:table-cell">
                   {t(`crm.source.${lead.source}`)}

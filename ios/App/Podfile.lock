@@ -1,0 +1,47 @@
+PODS:
+  - Capacitor (7.6.8):
+    - CapacitorCordova
+  - CapacitorApp (7.1.2):
+    - Capacitor
+  - CapacitorCommunityContacts (7.2.0):
+    - Capacitor
+  - CapacitorCordova (7.6.8)
+  - CapacitorSecureStoragePlugin (0.12.0):
+    - Capacitor
+    - SwiftKeychainWrapper
+  - SwiftKeychainWrapper (4.0.1)
+
+DEPENDENCIES:
+  - "Capacitor (from `../../node_modules/@capacitor/ios`)"
+  - "CapacitorApp (from `../../node_modules/@capacitor/app`)"
+  - "CapacitorCommunityContacts (from `../../node_modules/@capacitor-community/contacts`)"
+  - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
+  - CapacitorSecureStoragePlugin (from `../../node_modules/capacitor-secure-storage-plugin`)
+
+SPEC REPOS:
+  trunk:
+    - SwiftKeychainWrapper
+
+EXTERNAL SOURCES:
+  Capacitor:
+    :path: "../../node_modules/@capacitor/ios"
+  CapacitorApp:
+    :path: "../../node_modules/@capacitor/app"
+  CapacitorCommunityContacts:
+    :path: "../../node_modules/@capacitor-community/contacts"
+  CapacitorCordova:
+    :path: "../../node_modules/@capacitor/ios"
+  CapacitorSecureStoragePlugin:
+    :path: "../../node_modules/capacitor-secure-storage-plugin"
+
+SPEC CHECKSUMS:
+  Capacitor: ff6bf01336ac353098378828aff465095a89e459
+  CapacitorApp: f01a913211780e0718dae9750442c3e23f96e106
+  CapacitorCommunityContacts: 12008d6650ba80d7bb948a70fe31fec6813d49dc
+  CapacitorCordova: e61ee8c40101b8cd011d0224261606a290c082cf
+  CapacitorSecureStoragePlugin: 50de0808ad398aa401e00f9e58adf88c77cb3c25
+  SwiftKeychainWrapper: 807ba1d63c33a7d0613288512399cd1eda1e470c
+
+PODFILE CHECKSUM: 9dc4d4599a45f8dfabd7bbf49a7e1f6faa6e97ab
+
+COCOAPODS: 1.17.0

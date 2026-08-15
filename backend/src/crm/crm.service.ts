@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type { Actor } from "./crm-access";
 import { CrmActivitiesService } from "./crm-activities.service";
+import { CrmCallsService } from "./crm-calls.service";
 import { CrmBusinessTypesService } from "./crm-business-types.service";
 import { CrmDashboardService } from "./crm-dashboard.service";
 import { CrmFeedbackTypesService } from "./crm-feedback-types.service";
@@ -10,6 +11,7 @@ import { CrmLeadsImportService } from "./crm-leads-import.service";
 import { CrmLeadsService } from "./crm-leads.service";
 import { CrmPerformanceService } from "./crm-performance.service";
 import { CrmReportsService } from "./crm-reports.service";
+import { CrmPhoneLookupService } from "./crm-phone-lookup.service";
 import { CrmStagesService } from "./crm-stages.service";
 import { CrmSubStagesService } from "./crm-sub-stages.service";
 
@@ -33,7 +35,9 @@ export class CrmService {
     private readonly activities: CrmActivitiesService,
     private readonly dashboardService: CrmDashboardService,
     private readonly performanceService: CrmPerformanceService,
-    private readonly reportsService: CrmReportsService
+    private readonly reportsService: CrmReportsService,
+    private readonly phoneLookup: CrmPhoneLookupService,
+    private readonly calls: CrmCallsService
   ) {}
 
   // ── Stages ──────────────────────────────────────────────────────────────
@@ -175,6 +179,27 @@ export class CrmService {
     body: Record<string, unknown>
   ) {
     return this.activities.addFeedback(companyId, actor, leadId, body);
+  }
+
+  matchLeadByPhone(
+    companyId: string,
+    actor: Actor,
+    phone: string | undefined
+  ) {
+    return this.phoneLookup.matchByPhone(companyId, actor, phone);
+  }
+
+  listDuplicatePhones(companyId: string, actor: Actor) {
+    return this.phoneLookup.listDuplicateGroups(companyId, actor);
+  }
+
+  recordCall(
+    companyId: string,
+    actor: Actor,
+    leadId: string,
+    body: Record<string, unknown>
+  ) {
+    return this.calls.recordCall(companyId, actor, leadId, body);
   }
 
   // ── Analytics ───────────────────────────────────────────────────────────

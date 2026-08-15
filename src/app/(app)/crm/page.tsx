@@ -16,6 +16,8 @@ import { CrmLeadSheet } from "@/components/crm/crm-lead-sheet";
 import { CrmLeadsOverview } from "@/components/crm/crm-leads-overview";
 import { CrmLeadsPanel } from "@/components/crm/crm-leads-panel";
 import { CrmPerformancePanel } from "@/components/crm/crm-performance-panel";
+import { CrmPhoneContactImport } from "@/components/crm/crm-phone-contact-import";
+import { CrmPhoneDuplicatesBanner } from "@/components/crm/crm-phone-duplicates-banner";
 import { CrmPipelinePanel } from "@/components/crm/crm-pipeline-panel";
 import { CrmReportsPanel } from "@/components/crm/crm-reports-panel";
 import { CrmSalesProfileSheet } from "@/components/crm/crm-sales-profile-sheet";
@@ -37,10 +39,23 @@ export default function CrmPage() {
         description={t("crm.page.description")}
         actions={
           hub.canCreate ? (
-            <Button onClick={hub.openCreate}>
-              <Plus className="h-4 w-4" />
-              {t("crm.actions.addLead")}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <CrmPhoneContactImport
+                onOpenLead={(id) => hub.setViewLeadId(id)}
+                onCreate={(draft) => {
+                  hub.openCreate();
+                  // Prefill happens via sessionStorage consumed by the form if needed.
+                  window.sessionStorage.setItem(
+                    "rootk.crm.contact-draft",
+                    JSON.stringify(draft)
+                  );
+                }}
+              />
+              <Button onClick={hub.openCreate}>
+                <Plus className="h-4 w-4" />
+                {t("crm.actions.addLead")}
+              </Button>
+            </div>
           ) : undefined
         }
       />
@@ -58,6 +73,9 @@ export default function CrmPage() {
         </aside>
 
         <div className="min-w-0 space-y-3 sm:space-y-4 md:space-y-5">
+          {hub.tab === "leads" ? (
+            <CrmPhoneDuplicatesBanner onOpenLead={(id) => hub.setViewLeadId(id)} />
+          ) : null}
           {hub.tab === "dashboard" && hub.canViewDashboard ? (
             <CrmDashboardPanel
               dashboard={hub.safeDashboard}
@@ -231,6 +249,10 @@ export default function CrmPage() {
         canAssign={hub.canAssign}
         onSaved={() => {
           void hub.reloadVisible();
+        }}
+        onOpenExistingLead={(id) => {
+          hub.setFormOpen(false);
+          hub.setViewLeadId(id);
         }}
       />
 

@@ -8,6 +8,7 @@ import {
 } from "@/constants/permissions";
 import { AppRole } from "@/constants/roles";
 import { isApiMode } from "@/lib/env";
+import { crmSessionPersistStorage } from "@/lib/native/session-persist";
 import {
   resolveAccountFirstName,
   resolveAccountFullName,
@@ -171,6 +172,7 @@ export const useSessionStore = create<SessionState>()(
     }),
     {
       name: "rootk-session",
+      storage: crmSessionPersistStorage,
       partialize: (state) => ({
         role: state.role,
         authenticated: state.authenticated,

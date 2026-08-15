@@ -1,7 +1,8 @@
 import { patchCrmLead, postCrmLead } from "@/api/crm.api";
 import { isApiMode } from "@/lib/env";
 import { enrichWithAudit, touchEntity } from "@/lib/entity";
-import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
+import { canonicalPhoneOrNull } from "@/lib/phone-normalize";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { createId } from "@/lib/id";
 import { canCrm } from "@/lib/crm-policies";
 import { emitCrmUpdated } from "@/lib/events";
@@ -28,11 +29,35 @@ import {
   actorEmployeeId,
   assertCap,
   assertLeadAccess,
+  canViewOthersCrm,
   ensureCatalog,
   isAdmin,
   writeHistory,
 } from "@/services/crm/crm-shared";
 import { clearLocalCrmFollowUpReminders } from "@/services/crm/crm-follow-up-reminders.service";
+
+function throwPhoneDuplicate(existing: CrmLead): never {
+  const visible =
+    canViewOthersCrm() || existing.ownerEmployeeId === actorEmployeeId();
+  if (!visible) {
+    throw new ConflictError("A lead with this phone number already exists", {
+      code: "PHONE_DUPLICATE",
+      existingLead: null,
+      ownedByOther: true,
+    });
+  }
+  throw new ConflictError("A lead with this phone number already exists", {
+    code: "PHONE_DUPLICATE",
+    existingLead: {
+      id: existing.id,
+      name: existing.name,
+      phone: existing.phone,
+      phoneNormalized: existing.phoneNormalized ?? canonicalPhoneOrNull(existing.phone),
+      ownerEmployeeId: existing.ownerEmployeeId,
+      stageId: existing.stageId,
+    },
+  });
+}
 
 export async function createCrmLead(
   input: CreateLeadInput
@@ -42,6 +67,16 @@ export async function createCrmLead(
     assertCap("create");
     await simulateDelay();
     const parsed = createLeadSchema.parse(input);
+    const phoneNormalized = canonicalPhoneOrNull(parsed.phone);
+    if (!phoneNormalized) {
+      throw new ValidationError("Not a valid Egyptian mobile number");
+    }
+    const existing = (await crmLeadRepository.findAll()).find(
+      (lead) =>
+        (lead.phoneNormalized || canonicalPhoneOrNull(lead.phone)) ===
+        phoneNormalized
+    );
+    if (existing) throwPhoneDuplicate(existing);
     const { stages, subStages } = await ensureCatalog();
     if (!stages.some((s) => s.id === parsed.stageId)) {
       throw new ValidationError("Please select a valid stage");
@@ -68,6 +103,7 @@ export async function createCrmLead(
         id: createId("crm-lead"),
         name: parsed.name,
         phone: parsed.phone,
+        phoneNormalized,
         email: parsed.email ?? "",
         companyName: parsed.companyName ?? "",
         businessTypeId: parsed.businessTypeId ?? null,
@@ -131,6 +167,22 @@ export async function updateCrmLead(
     const actorId = getSessionUserId() || "system";
     const empId = actorEmployeeId();
     const { stages, subStages } = await ensureCatalog();
+
+    let nextPhoneNormalized = existing.phoneNormalized ?? canonicalPhoneOrNull(existing.phone);
+    if (parsed.phone !== undefined && parsed.phone !== existing.phone) {
+      const normalized = canonicalPhoneOrNull(parsed.phone);
+      if (!normalized) {
+        throw new ValidationError("Not a valid Egyptian mobile number");
+      }
+      const clash = (await crmLeadRepository.findAll()).find(
+        (lead) =>
+          lead.id !== existing.id &&
+          (lead.phoneNormalized || canonicalPhoneOrNull(lead.phone)) ===
+            normalized
+      );
+      if (clash) throwPhoneDuplicate(clash);
+      nextPhoneNormalized = normalized;
+    }
 
     if (parsed.ownerEmployeeId !== undefined && parsed.ownerEmployeeId !== existing.ownerEmployeeId) {
       if (!canCrm(getSessionRole(), "assign", authPermissionSet())) {
@@ -232,6 +284,7 @@ export async function updateCrmLead(
 
     const updated = touchEntity(existing, actorId, {
       ...parsed,
+      phoneNormalized: nextPhoneNormalized ?? existing.phoneNormalized,
       stageId: nextStageId,
       subStageId: nextSubStageId,
       email: parsed.email ?? existing.email,

@@ -8,7 +8,7 @@ import {
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { writeActivity } from "../common/activity-writer";
-import { assertCap, type Actor } from "./crm-access";
+import { assertCap, canViewOthersLeads, type Actor } from "./crm-access";
 import {
   asEnum,
   asOptionalDate,
@@ -19,6 +19,7 @@ import {
 } from "./crm-input";
 import { mapLead } from "./crm-mappers";
 import { clearFollowUpReminderMeta } from "./crm-follow-up-meta";
+import { assertPhoneAvailable, resolveStoredPhone } from "./crm-phone";
 import { CrmSharedService } from "./crm-shared.service";
 
 @Injectable()
@@ -48,9 +49,18 @@ export class CrmLeadUpdateService {
       data.name = name;
     }
     if (body.phone !== undefined) {
-      const phone = String(body.phone ?? "").trim();
-      if (!phone) throw new BadRequestException("phone is required");
-      data.phone = phone;
+      const resolved = resolveStoredPhone({
+        raw: body.phone,
+        required: true,
+        previousPhone: current.phone,
+      });
+      data.phone = resolved.phone;
+      data.phoneNormalized = resolved.phoneNormalized;
+      await assertPhoneAvailable(this.prisma, companyId, resolved.phoneNormalized, {
+        excludeLeadId: id,
+        canViewOthers: canViewOthersLeads(actor),
+        actorEmployeeId: actor.employeeId,
+      });
     }
     if (body.email !== undefined) data.email = String(body.email ?? "").trim();
     if (body.companyName !== undefined) {

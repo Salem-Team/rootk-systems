@@ -138,6 +138,8 @@ export interface CrmLead extends BaseEntity {
   id: string;
   name: string;
   phone: string;
+  /** E.164 Egyptian mobile when valid; null if the display value could not be canonicalized. */
+  phoneNormalized?: string | null;
   email: string;
   companyName: string;
   businessTypeId: string | null;
@@ -377,6 +379,7 @@ export interface CrmSalesProfileLead {
   name: string;
   companyName: string;
   phone: string;
+  phoneNormalized?: string | null;
   source: CrmLeadSource;
   status: CrmLeadStatus;
   stageId: string;
@@ -423,4 +426,53 @@ export interface CrmDashboardFilters {
   source?: CrmLeadSource | "";
   stageId?: string;
   status?: CrmLeadStatus | "";
+}
+
+export type CrmCallDirection = "incoming" | "outgoing";
+export type CrmCallStatus =
+  | "answered"
+  | "missed"
+  | "rejected"
+  | "failed"
+  | "unknown";
+export type CrmCallSource = "manual" | "web" | "android" | "ios";
+
+export interface CrmCall {
+  id: string;
+  leadId: string;
+  employeeId: string | null;
+  phoneNumber: string;
+  phoneNormalized: string | null;
+  direction: CrmCallDirection;
+  status: CrmCallStatus;
+  startedAt: string | null;
+  endedAt: string | null;
+  durationSeconds: number | null;
+  source: CrmCallSource;
+  externalCallId: string | null;
+  notes: string;
+  activityId: string | null;
+  feedbackId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CrmDuplicateLeadSummary {
+  id: string;
+  name: string;
+  phone: string;
+  phoneNormalized: string | null;
+  ownerEmployeeId: string | null;
+  stageId: string;
+}
+
+export interface CrmPhoneMatchResult {
+  lead: CrmLead | null;
+  ownedByOther: boolean;
+}
+
+export interface CrmPhoneDuplicateGroup {
+  phoneNormalized: string;
+  count: number;
+  leads: CrmDuplicateLeadSummary[];
 }

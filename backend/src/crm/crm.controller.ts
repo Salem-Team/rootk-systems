@@ -156,6 +156,32 @@ export class CrmController {
 
   // ── Leads ───────────────────────────────────────────────────────────────
 
+  @Get("leads/match")
+  matchLead(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @CurrentUser() user: JwtPayload,
+    @Query("phone") phone?: string
+  ) {
+    return this.service.matchLeadByPhone(
+      companyId,
+      toDomainActor(user, actorId),
+      phone
+    );
+  }
+
+  @Get("leads/duplicates")
+  listDuplicatePhones(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @CurrentUser() user: JwtPayload
+  ) {
+    return this.service.listDuplicatePhones(
+      companyId,
+      toDomainActor(user, actorId)
+    );
+  }
+
   @Get("leads")
   listLeads(
     @CompanyId() companyId: string,
@@ -264,6 +290,22 @@ export class CrmController {
     @Param("id") id: string
   ) {
     return this.service.getTimeline(companyId, toDomainActor(user, actorId), id);
+  }
+
+  @Post("leads/:id/calls")
+  recordCall(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.service.recordCall(
+      companyId,
+      toDomainActor(user, actorId),
+      id,
+      body
+    );
   }
 
   @Post("leads/:id/feedback")

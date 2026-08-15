@@ -221,6 +221,26 @@ enum CrmMeetingLocation {
   client_company
 }
 
+enum CrmCallDirection {
+  incoming
+  outgoing
+}
+
+enum CrmCallStatus {
+  answered
+  missed
+  rejected
+  failed
+  unknown
+}
+
+enum CrmCallSource {
+  manual
+  web
+  android
+  ios
+}
+
 /// Shared audit / soft-delete / multi-tenant columns (map to BaseEntity).
 /// Apply as mixins conceptually on every tenant-owned model.
 
@@ -256,6 +276,7 @@ model Company {
   crmLeadActivities     CrmLeadActivity[]
   crmLeadFeedback       CrmLeadFeedback[]
   crmLeadHistory        CrmLeadHistoryEvent[]
+  crmCalls              CrmCall[]
   dailyPlan             DailyPlan?
 }
 
@@ -1310,7 +1331,10 @@ model CrmLead {
   id               String         @id @default(cuid())
   companyId        String
   name             String
+  /// User-entered / display phone. Never overwritten by normalization.
   phone            String
+  /// E.164 Egyptian mobile (`+2010…`) when valid; null if unparseable.
+  phoneNormalized  String?
   email            String         @default("")
   companyName      String         @default("")
   businessTypeId   String?
@@ -1342,8 +1366,10 @@ model CrmLead {
   activities   CrmLeadActivity[]
   feedback     CrmLeadFeedback[]
   history      CrmLeadHistoryEvent[]
+  calls        CrmCall[]
 
   @@index([companyId, ownerEmployeeId])
+  @@index([companyId, phoneNormalized])
   @@index([companyId, stageId])
   @@index([companyId, subStageId])
   @@index([companyId, businessTypeId])
@@ -1437,4 +1463,43 @@ model CrmLeadHistoryEvent {
 
   @@index([companyId, leadId])
   @@index([companyId, createdAt])
+}
+
+/// Communication event (phone call). Distinct from salesperson Feedback.
+model CrmCall {
+  id               String           @id @default(cuid())
+  companyId        String
+  leadId           String
+  employeeId       String?
+  phone            String
+  phoneNormalized  String?
+  direction        CrmCallDirection @default(outgoing)
+  status           CrmCallStatus
+  startedAt        DateTime?
+  endedAt          DateTime?
+  durationSeconds  Int?
+  source           CrmCallSource    @default(web)
+  /// Client-supplied idempotency key. Unique per company when present.
+  externalCallId   String?
+  notes            String           @default("")
+  /// Linked timeline activity (type=call).
+  activityId       String?
+  /// Linked CrmLeadFeedback used for existing call KPIs (one feedback per call).
+  feedbackId       String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  createdBy        String?
+  updatedBy        String?
+  deletedAt        DateTime?
+  isArchived       Boolean          @default(false)
+  version         Int              @default(1)
+  metadata         Json             @default("{}")
+
+  company Company @relation(fields: [companyId], references: [id])
+  lead    CrmLead @relation(fields: [leadId], references: [id])
+
+  @@unique([companyId, externalCallId])
+  @@index([companyId, leadId])
+  @@index([companyId, startedAt])
+  @@index([companyId, phoneNormalized])
 }

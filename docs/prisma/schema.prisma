@@ -211,6 +211,36 @@ enum CrmActivityType {
   other
 }
 
+enum CrmMeetingMode {
+  online
+  offline
+}
+
+enum CrmMeetingLocation {
+  our_company
+  client_company
+}
+
+enum CrmCallDirection {
+  incoming
+  outgoing
+}
+
+enum CrmCallStatus {
+  answered
+  missed
+  rejected
+  failed
+  unknown
+}
+
+enum CrmCallSource {
+  manual
+  web
+  android
+  ios
+}
+
 /// Shared audit / soft-delete / multi-tenant columns (map to BaseEntity).
 /// Apply as mixins conceptually on every tenant-owned model.
 
@@ -239,12 +269,14 @@ model Company {
   organicAdHistory      OrganicAdHistoryEvent[]
   organicAdsSettings    OrganicAdsSettings[]
   crmStages             CrmStage[]
+  crmSubStages          CrmSubStage[]
   crmFeedbackTypes      CrmFeedbackType[]
   crmBusinessTypes      CrmBusinessType[]
   crmLeads              CrmLead[]
   crmLeadActivities     CrmLeadActivity[]
   crmLeadFeedback       CrmLeadFeedback[]
   crmLeadHistory        CrmLeadHistoryEvent[]
+  crmCalls              CrmCall[]
   dailyPlan             DailyPlan?
 }
 
@@ -1207,11 +1239,39 @@ model CrmStage {
   version                Int              @default(1)
   metadata               Json             @default("{}")
 
-  company Company   @relation(fields: [companyId], references: [id])
-  leads   CrmLead[]
+  company   Company       @relation(fields: [companyId], references: [id])
+  leads     CrmLead[]
+  subStages CrmSubStage[]
 
   @@unique([companyId, name])
   @@index([companyId, sortOrder])
+  @@index([companyId, active])
+}
+
+/// Nested step under a CRM pipeline stage.
+model CrmSubStage {
+  id          String    @id @default(cuid())
+  companyId   String
+  stageId     String
+  name        String
+  description String    @default("")
+  sortOrder   Int       @default(0)
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+  isArchived  Boolean   @default(false)
+  version     Int       @default(1)
+  metadata    Json      @default("{}")
+
+  company Company   @relation(fields: [companyId], references: [id])
+  stage   CrmStage  @relation(fields: [stageId], references: [id])
+  leads   CrmLead[]
+
+  @@unique([companyId, stageId, name])
+  @@index([companyId, stageId, sortOrder])
   @@index([companyId, active])
 }
 
@@ -1271,13 +1331,17 @@ model CrmLead {
   id               String         @id @default(cuid())
   companyId        String
   name             String
+  /// User-entered / display phone. Never overwritten by normalization.
   phone            String
+  /// E.164 Egyptian mobile (`+2010…`) when valid; null if unparseable.
+  phoneNormalized  String?
   email            String         @default("")
   companyName      String         @default("")
   businessTypeId   String?
   source           CrmLeadSource  @default(other)
   ownerEmployeeId  String?
   stageId          String
+  subStageId       String?
   status           CrmLeadStatus  @default(active)
   tags             String[]       @default([])
   nextAction       CrmNextAction  @default(none)
@@ -1297,13 +1361,17 @@ model CrmLead {
 
   company      Company               @relation(fields: [companyId], references: [id])
   stage        CrmStage              @relation(fields: [stageId], references: [id])
+  subStage     CrmSubStage?          @relation(fields: [subStageId], references: [id])
   businessType CrmBusinessType?      @relation(fields: [businessTypeId], references: [id])
   activities   CrmLeadActivity[]
   feedback     CrmLeadFeedback[]
   history      CrmLeadHistoryEvent[]
+  calls        CrmCall[]
 
   @@index([companyId, ownerEmployeeId])
+  @@index([companyId, phoneNormalized])
   @@index([companyId, stageId])
+  @@index([companyId, subStageId])
   @@index([companyId, businessTypeId])
   @@index([companyId, status])
   @@index([companyId, createdAt])
@@ -1338,25 +1406,29 @@ model CrmLeadActivity {
 }
 
 model CrmLeadFeedback {
-  id                    String        @id @default(cuid())
+  id                    String              @id @default(cuid())
   companyId             String
   leadId                String
   feedbackTypeId        String
-  customerFeedback      String        @default("")
+  customerFeedback      String              @default("")
   /** true = answered call (Active), false = no answer (Inactive). */
-  callAnswered          Boolean       @default(true)
-  nextAction            CrmNextAction @default(none)
+  callAnswered          Boolean             @default(true)
+  nextAction            CrmNextAction       @default(none)
   nextFollowUpAt        DateTime?
-  notes                 String        @default("")
+  /** Set when a meeting was logged with this feedback. */
+  meetingMode           CrmMeetingMode?
+  /** Venue for offline meetings; null for online. */
+  meetingLocation       CrmMeetingLocation?
+  notes                 String              @default("")
   recordedByEmployeeId  String?
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
   createdBy             String?
   updatedBy             String?
   deletedAt             DateTime?
-  isArchived            Boolean       @default(false)
-  version               Int           @default(1)
-  metadata              Json          @default("{}")
+  isArchived            Boolean             @default(false)
+  version               Int                 @default(1)
+  metadata              Json                @default("{}")
 
   company      Company         @relation(fields: [companyId], references: [id])
   lead         CrmLead         @relation(fields: [leadId], references: [id])
@@ -1391,4 +1463,43 @@ model CrmLeadHistoryEvent {
 
   @@index([companyId, leadId])
   @@index([companyId, createdAt])
+}
+
+/// Communication event (phone call). Distinct from salesperson Feedback.
+model CrmCall {
+  id               String           @id @default(cuid())
+  companyId        String
+  leadId           String
+  employeeId       String?
+  phone            String
+  phoneNormalized  String?
+  direction        CrmCallDirection @default(outgoing)
+  status           CrmCallStatus
+  startedAt        DateTime?
+  endedAt          DateTime?
+  durationSeconds  Int?
+  source           CrmCallSource    @default(web)
+  /// Client-supplied idempotency key. Unique per company when present.
+  externalCallId   String?
+  notes            String           @default("")
+  /// Linked timeline activity (type=call).
+  activityId       String?
+  /// Linked CrmLeadFeedback used for existing call KPIs (one feedback per call).
+  feedbackId       String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  createdBy        String?
+  updatedBy        String?
+  deletedAt        DateTime?
+  isArchived       Boolean          @default(false)
+  version         Int              @default(1)
+  metadata         Json             @default("{}")
+
+  company Company @relation(fields: [companyId], references: [id])
+  lead    CrmLead @relation(fields: [leadId], references: [id])
+
+  @@unique([companyId, externalCallId])
+  @@index([companyId, leadId])
+  @@index([companyId, startedAt])
+  @@index([companyId, phoneNormalized])
 }

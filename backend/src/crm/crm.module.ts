@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { CrmCatalogController } from "./crm-catalog.controller";
 import { CrmController } from "./crm.controller";
 import { CrmActivitiesService } from "./crm-activities.service";
+import { CrmCallsService } from "./crm-calls.service";
 import { CrmBusinessTypesService } from "./crm-business-types.service";
 import { CrmDashboardService } from "./crm-dashboard.service";
 import { CrmFeedbackTypesService } from "./crm-feedback-types.service";
@@ -10,6 +11,7 @@ import { CrmLeadCreateService } from "./crm-lead-create.service";
 import { CrmLeadUpdateService } from "./crm-lead-update.service";
 import { CrmLeadsImportService } from "./crm-leads-import.service";
 import { CrmLeadsService } from "./crm-leads.service";
+import { CrmPhoneLookupService } from "./crm-phone-lookup.service";
 import { CrmPerformanceService } from "./crm-performance.service";
 import { CrmReportsService } from "./crm-reports.service";
 import { CrmSharedService } from "./crm-shared.service";
@@ -34,6 +36,8 @@ import { NotificationsModule } from "../notifications/notifications.module";
     CrmLeadsImportService,
     CrmLeadsService,
     CrmActivitiesService,
+    CrmCallsService,
+    CrmPhoneLookupService,
     CrmDashboardService,
     CrmPerformanceService,
     CrmReportsService,

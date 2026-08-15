@@ -7,7 +7,7 @@ import {
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { writeActivity } from "../common/activity-writer";
-import { assertCap, type Actor } from "./crm-access";
+import { assertCap, canViewOthersLeads, type Actor } from "./crm-access";
 import { canCrm } from "../lib/crm-policies";
 import {
   asEnum,
@@ -18,6 +18,7 @@ import {
   NEXT_ACTIONS,
 } from "./crm-input";
 import { mapLead } from "./crm-mappers";
+import { assertPhoneAvailable, resolveStoredPhone } from "./crm-phone";
 import { CrmSharedService } from "./crm-shared.service";
 
 @Injectable()
@@ -36,9 +37,15 @@ export class CrmLeadCreateService {
     await this.shared.ensureDefaultStages(companyId);
 
     const name = String(body.name ?? "").trim();
-    const phone = String(body.phone ?? "").trim();
     if (!name) throw new BadRequestException("name is required");
-    if (!phone) throw new BadRequestException("phone is required");
+    const { phone, phoneNormalized } = resolveStoredPhone({
+      raw: body.phone,
+      required: true,
+    });
+    await assertPhoneAvailable(this.prisma, companyId, phoneNormalized, {
+      canViewOthers: canViewOthersLeads(actor),
+      actorEmployeeId: actor.employeeId,
+    });
 
     let stageId = typeof body.stageId === "string" ? body.stageId : "";
     if (!stageId) {
@@ -104,44 +111,51 @@ export class CrmLeadCreateService {
     }
 
     const now = new Date();
-    const row = await this.prisma.crmLead.create({
-      data: {
-        companyId,
-        name,
-        phone,
-        email: String(body.email ?? "").trim(),
-        companyName: String(body.companyName ?? "").trim(),
-        businessTypeId,
-        source: asEnum<CrmLeadSource>(
-          body.source,
-          LEAD_SOURCES,
-          "source",
-          CrmLeadSource.other
-        ),
-        ownerEmployeeId,
-        stageId: patch.stageId,
-        subStageId,
-        status: asEnum<CrmLeadStatus>(
-          body.status ?? patch.status,
-          LEAD_STATUSES,
-          "status",
-          CrmLeadStatus.active
-        ),
-        tags: asStringArray(body.tags) ?? [],
-        nextAction: asEnum<CrmNextAction>(
-          body.nextAction,
-          NEXT_ACTIONS,
-          "nextAction",
-          CrmNextAction.none
-        ),
-        nextFollowUpAt: nextFollowUpAt === undefined ? null : nextFollowUpAt,
-        lastActivityAt: now,
-        lossReasonTypeId: patch.lossReasonTypeId ?? lossReasonTypeId,
-        notes: String(body.notes ?? ""),
-        convertedAt: patch.convertedAt ?? null,
-        createdBy: actor.userId,
-        updatedBy: actor.userId,
-      },
+    const row = await this.prisma.$transaction(async (tx) => {
+      await assertPhoneAvailable(tx, companyId, phoneNormalized, {
+        canViewOthers: canViewOthersLeads(actor),
+        actorEmployeeId: actor.employeeId,
+      });
+      return tx.crmLead.create({
+        data: {
+          companyId,
+          name,
+          phone,
+          phoneNormalized,
+          email: String(body.email ?? "").trim(),
+          companyName: String(body.companyName ?? "").trim(),
+          businessTypeId,
+          source: asEnum<CrmLeadSource>(
+            body.source,
+            LEAD_SOURCES,
+            "source",
+            CrmLeadSource.other
+          ),
+          ownerEmployeeId,
+          stageId: patch.stageId,
+          subStageId,
+          status: asEnum<CrmLeadStatus>(
+            body.status ?? patch.status,
+            LEAD_STATUSES,
+            "status",
+            CrmLeadStatus.active
+          ),
+          tags: asStringArray(body.tags) ?? [],
+          nextAction: asEnum<CrmNextAction>(
+            body.nextAction,
+            NEXT_ACTIONS,
+            "nextAction",
+            CrmNextAction.none
+          ),
+          nextFollowUpAt: nextFollowUpAt === undefined ? null : nextFollowUpAt,
+          lastActivityAt: now,
+          lossReasonTypeId: patch.lossReasonTypeId ?? lossReasonTypeId,
+          notes: String(body.notes ?? ""),
+          convertedAt: patch.convertedAt ?? null,
+          createdBy: actor.userId,
+          updatedBy: actor.userId,
+        },
+      });
     });
 
     const nameLabel = await this.shared.actorName(actor);

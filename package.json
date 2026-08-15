@@ -20,10 +20,12 @@
     "verify:duration": "npx --yes tsx scripts/verify-work-duration.ts",
     "verify:daily-plan": "npx --yes tsx scripts/verify-daily-plan.ts",
     "verify:crm-scope": "npx --yes tsx scripts/verify-crm-scope.ts",
+    "verify:phone": "npx --yes tsx scripts/verify-phone-normalize.ts",
+    "verify:crm-phone": "npx --yes tsx scripts/verify-crm-phone.ts",
     "verify:permissions": "npx --yes tsx scripts/verify-permissions.ts",
     "verify:targets": "npx --yes tsx scripts/agents/target-user-agent.ts",
     "agent:targets": "npx --yes tsx scripts/agents/target-user-agent.ts",
-    "verify": "npm run smoke && npm run verify:payroll && npm run verify:payroll:multi && npm run verify:deductions && npm run verify:geo && npm run verify:evidence && npm run verify:duration && npm run verify:daily-plan && npm run verify:crm-scope && npm run verify:permissions && npm run verify:targets",
+    "verify": "npm run smoke && npm run verify:payroll && npm run verify:payroll:multi && npm run verify:deductions && npm run verify:geo && npm run verify:evidence && npm run verify:duration && npm run verify:daily-plan && npm run verify:crm-scope && npm run verify:permissions && npm run verify:targets && npm run verify:phone && npm run verify:crm-phone",
     "docker:db": "docker compose -f backend/docker-compose.yml up -d",
     "docker:db:down": "docker compose -f backend/docker-compose.yml down",
     "api:dev": "npm run start:dev --prefix backend",
@@ -31,9 +33,17 @@
     "api:install": "npm install --prefix backend",
     "api:prisma": "npm run db:setup --prefix backend",
     "api:seed": "npm run prisma:seed --prefix backend",
-    "api:migrate": "npm run prisma:migrate --prefix backend"
+    "api:migrate": "npm run prisma:migrate --prefix backend",
+    "api:phone-backfill": "npx --yes tsx --tsconfig backend/tsconfig.json backend/prisma/backfill-phone-normalized.ts",
+    "sync:phone-normalize": "node scripts/sync-phone-normalize.mjs",
+    "cap:sync": "npx cap sync"
   },
   "dependencies": {
+    "@capacitor-community/contacts": "^7.2.0",
+    "@capacitor/android": "^7.6.8",
+    "@capacitor/app": "^7.1.2",
+    "@capacitor/core": "^7.6.8",
+    "@capacitor/ios": "^7.6.8",
     "@hookform/resolvers": "^5.6.0",
     "@radix-ui/react-avatar": "^1.2.6",
     "@radix-ui/react-checkbox": "^1.3.11",
@@ -50,6 +60,7 @@
     "@radix-ui/react-tabs": "^1.1.21",
     "@radix-ui/react-tooltip": "^1.2.16",
     "@tanstack/react-table": "^8.21.3",
+    "capacitor-secure-storage-plugin": "^0.12.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
@@ -68,6 +79,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.6.8",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

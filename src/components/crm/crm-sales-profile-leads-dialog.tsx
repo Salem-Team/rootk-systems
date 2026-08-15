@@ -85,7 +85,13 @@ export function CrmSalesProfileLeadsDialog({
                     />
                     {lead.stageName || "—"}
                   </span>
-                  <CrmPhoneActions phone={lead.phone} className="text-[11px]" />
+                  <CrmPhoneActions
+                    phone={lead.phone}
+                    phoneNormalized={lead.phoneNormalized}
+                    leadId={lead.id}
+                    leadName={lead.name}
+                    className="text-[11px]"
+                  />
                   <span>
                     {t(`crm.source.${lead.source}` as TranslationPath)}
                   </span>

@@ -131,6 +131,9 @@ export function CrmPipelinePanel({
                         >
                           <CrmPhoneActions
                             phone={lead.phone}
+                            phoneNormalized={lead.phoneNormalized}
+                            leadId={lead.id}
+                            leadName={lead.name}
                             className="text-[11px]"
                           />
                         </div>
@@ -201,6 +204,9 @@ export function CrmPipelinePanel({
                         >
                           <CrmPhoneActions
                             phone={lead.phone}
+                            phoneNormalized={lead.phoneNormalized}
+                            leadId={lead.id}
+                            leadName={lead.name}
                             className="text-[11px]"
                           />
                         </div>

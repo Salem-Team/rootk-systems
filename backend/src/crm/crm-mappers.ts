@@ -66,6 +66,7 @@ export function mapLead(row: CrmLead) {
     id: row.id,
     name: row.name,
     phone: row.phone,
+    phoneNormalized: row.phoneNormalized ?? null,
     email: row.email,
     companyName: row.companyName,
     businessTypeId: row.businessTypeId,

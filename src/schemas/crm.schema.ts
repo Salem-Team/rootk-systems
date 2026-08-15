@@ -155,3 +155,18 @@ export type BusinessTypeInput = z.infer<typeof businessTypeSchema>;
 export type LeadActivityInput = z.infer<typeof leadActivitySchema>;
 export type LeadFeedbackInput = z.infer<typeof leadFeedbackSchema>;
 export type BulkLeadsInput = z.infer<typeof bulkLeadsSchema>;
+export const leadCallSchema = z.object({
+  status: z.enum(["answered", "missed", "rejected", "failed", "unknown"]),
+  direction: z.enum(["incoming", "outgoing"]).optional().default("outgoing"),
+  source: z.enum(["manual", "web", "android", "ios"]).optional().default("web"),
+  externalCallId: z.string().trim().min(1).optional(),
+  phoneNumber: z.string().optional(),
+  startedAt: z.string().optional(),
+  endedAt: z.string().nullable().optional(),
+  durationSeconds: z.number().int().min(0).max(86400).nullable().optional(),
+  notes: z.string().optional().default(""),
+  nextAction: nextAction.optional(),
+  nextFollowUpAt: z.string().nullable().optional(),
+});
+
+export type LeadCallInput = z.infer<typeof leadCallSchema>;

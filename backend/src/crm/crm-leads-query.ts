@@ -4,6 +4,7 @@ import { endOfDay } from "date-fns";
 import { canViewOthersLeads, type Actor } from "./crm-access";
 import { LEAD_SOURCES, LEAD_STATUSES } from "./crm-input";
 import { CrmSharedService } from "./crm-shared.service";
+import { searchCanonicalFromQuery } from "./crm-phone";
 
 export function buildLeadWhere(
   shared: CrmSharedService,
@@ -19,11 +20,14 @@ export function buildLeadWhere(
 
   if (query.search?.trim()) {
     const q = query.search.trim();
+    const canonical = searchCanonicalFromQuery(q);
     where.OR = [
       { name: { contains: q, mode: "insensitive" } },
-      { phone: { contains: q, mode: "insensitive" } },
       { email: { contains: q, mode: "insensitive" } },
       { companyName: { contains: q, mode: "insensitive" } },
+      ...(canonical
+        ? [{ phoneNormalized: canonical }]
+        : [{ phone: { contains: q, mode: "insensitive" as const } }]),
     ];
   }
   if (query.stageId) where.stageId = query.stageId;

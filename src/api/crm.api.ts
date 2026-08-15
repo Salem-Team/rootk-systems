@@ -21,6 +21,9 @@ import type {
   CrmLeadActivity,
   CrmLeadFeedback,
   CrmLeadFilters,
+  CrmCall,
+  CrmPhoneDuplicateGroup,
+  CrmPhoneMatchResult,
   CrmSalesPerformanceRow,
   CrmSalesProfile,
   CrmStage,
@@ -33,6 +36,7 @@ import type {
   CreateLeadInput,
   FeedbackTypeInput,
   LeadActivityInput,
+  LeadCallInput,
   LeadFeedbackInput,
   StageInput,
   SubStageInput,
@@ -302,4 +306,27 @@ export async function fetchCrmActivities(limit = 50): Promise<
     []
   );
   return withData(res, ensureCrmList<CrmLeadActivity>(res.data));
+}
+
+export async function fetchCrmLeadMatch(
+  phone: string
+): Promise<ApiResponse<CrmPhoneMatchResult | null>> {
+  return api.get(
+    `${API_ROUTES.crm.leadMatch}${toQuery({ phone })}`,
+    null
+  );
+}
+
+export async function fetchCrmPhoneDuplicates(): Promise<
+  ApiResponse<CrmPhoneDuplicateGroup[]>
+> {
+  const res = await api.get(API_ROUTES.crm.leadDuplicates, []);
+  return withData(res, ensureCrmList<CrmPhoneDuplicateGroup>(res.data));
+}
+
+export async function postCrmLeadCall(
+  leadId: string,
+  body: LeadCallInput
+): Promise<ApiResponse<CrmCall | null>> {
+  return api.post(API_ROUTES.crm.leadCalls(leadId), body, null);
 }

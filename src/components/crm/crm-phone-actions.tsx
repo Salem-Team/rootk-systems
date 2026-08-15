@@ -8,27 +8,49 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "@/hooks/use-translation";
-import { telHref, whatsappHref } from "@/lib/crm/phone-links";
+import { beginPendingCall } from "@/lib/crm/pending-call";
+import { displayCrmPhone, telHref, whatsappHref } from "@/lib/crm/phone-links";
+import { nativePlatform } from "@/lib/native/platform";
 import { cn } from "@/lib/utils";
 
 interface CrmPhoneActionsProps {
   phone: string;
+  phoneNormalized?: string | null;
+  leadId?: string;
+  leadName?: string;
   className?: string;
 }
 
 /** Clickable phone that opens Call / WhatsApp choices. */
-export function CrmPhoneActions({ phone, className }: CrmPhoneActionsProps) {
+export function CrmPhoneActions({
+  phone,
+  phoneNormalized,
+  leadId,
+  leadName,
+  className,
+}: CrmPhoneActionsProps) {
   const { t } = useTranslation();
   const trimmed = phone.trim();
   const callUrl = trimmed ? telHref(trimmed) : null;
   const whatsappUrl = trimmed ? whatsappHref(trimmed) : null;
+  const label = displayCrmPhone(trimmed, phoneNormalized);
 
   if (!trimmed) {
     return <span className={cn("text-muted-foreground", className)}>—</span>;
   }
 
   if (!callUrl && !whatsappUrl) {
-    return <span className={cn("font-mono tabular-nums", className)}>{phone}</span>;
+    return <span className={cn("font-mono tabular-nums", className)}>{label}</span>;
+  }
+
+  function onDial() {
+    if (!leadId) return;
+    beginPendingCall({
+      leadId,
+      leadName: leadName?.trim() || label,
+      phone: trimmed,
+      source: nativePlatform(),
+    });
   }
 
   return (
@@ -41,10 +63,11 @@ export function CrmPhoneActions({ phone, className }: CrmPhoneActionsProps) {
             className
           )}
           aria-label={t("crm.leads.phoneActions")}
+          title={trimmed}
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          {phone}
+          {label}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
@@ -55,7 +78,7 @@ export function CrmPhoneActions({ phone, className }: CrmPhoneActionsProps) {
       >
         {callUrl ? (
           <DropdownMenuItem asChild>
-            <a href={callUrl} className="cursor-pointer">
+            <a href={callUrl} className="cursor-pointer" onClick={onDial}>
               <Phone aria-hidden />
               {t("crm.nextAction.call")}
             </a>

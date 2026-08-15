@@ -117,7 +117,7 @@ export function CrmLeadSheetTabs({
                     </p>
                   ) : null}
                   <p className="mt-1 text-[11px] text-muted-foreground/80">
-                    {item.type}
+                    {t(`crm.activityType.${item.type}`)}
                   </p>
                 </li>
               ))}

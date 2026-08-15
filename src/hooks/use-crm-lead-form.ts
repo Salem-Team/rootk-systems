@@ -5,9 +5,13 @@ import { useTranslation } from "@/hooks/use-translation";
 import { toLocalInput } from "@/lib/crm/lead-form-options";
 import { createLeadSchema } from "@/schemas/crm.schema";
 import { createCrmLead, updateCrmLead } from "@/services/crm.service";
+import { duplicateFromError } from "@/services/crm/crm-calls.service";
+import { crmUserFacingMessage } from "@/lib/crm/client-error";
+import { normalizeEgyptianMobile } from "@/lib/phone-normalize";
 import { getWorkEmployeeId } from "@/stores/session-store";
 import type {
   CrmBusinessType,
+  CrmDuplicateLeadSummary,
   CrmLead,
   CrmLeadSource,
   CrmLeadStatus,
@@ -25,6 +29,7 @@ interface UseCrmLeadFormArgs {
   defaultStageId?: string;
   onOpenChange: (open: boolean) => void;
   onSaved?: (lead: CrmLead) => void;
+  onOpenExistingLead?: (leadId: string) => void;
 }
 
 export function useCrmLeadForm({
@@ -36,6 +41,7 @@ export function useCrmLeadForm({
   defaultStageId,
   onOpenChange,
   onSaved,
+  onOpenExistingLead,
 }: UseCrmLeadFormArgs) {
   const { t } = useTranslation();
   const [name, setName] = useState("");
@@ -53,6 +59,9 @@ export function useCrmLeadForm({
   const [nextFollowUpAt, setNextFollowUpAt] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [duplicateLead, setDuplicateLead] = useState<CrmDuplicateLeadSummary | null>(null);
+  const [duplicateOwnedByOther, setDuplicateOwnedByOther] = useState(false);
 
   const safeStages = Array.isArray(stages) ? stages : [];
   const activeStages = safeStages.filter(
@@ -99,6 +108,17 @@ export function useCrmLeadForm({
       setNextAction("none");
       setNextFollowUpAt("");
       setNotes("");
+      try {
+        const raw = window.sessionStorage.getItem("rootk.crm.contact-draft");
+        if (raw) {
+          const draft = JSON.parse(raw) as { name?: string; phone?: string };
+          if (draft.name) setName(draft.name);
+          if (draft.phone) setPhone(draft.phone);
+          window.sessionStorage.removeItem("rootk.crm.contact-draft");
+        }
+      } catch {
+        /* ignore malformed draft */
+      }
     }
     setSaving(false);
   });
@@ -148,6 +168,13 @@ export function useCrmLeadForm({
       toast.error(t("crm.leadForm.validation"));
       return;
     }
+    const phoneCheck = normalizeEgyptianMobile(parsed.data.phone);
+    const phoneUnchanged =
+      Boolean(editingLead) && editingLead!.phone.trim() === parsed.data.phone;
+    if (!phoneCheck.ok && !phoneUnchanged) {
+      toast.error(t("crm.phone.invalid"));
+      return;
+    }
 
     setSaving(true);
     const res = editingLead
@@ -156,7 +183,24 @@ export function useCrmLeadForm({
     setSaving(false);
 
     if (!res.success || !res.data) {
-      toast.error(res.message ?? t("crm.errors.saveFailed"));
+      const dup = duplicateFromError(res.error ?? {});
+      if (dup) {
+        const existing = dup.existingLead
+          ? {
+              id: dup.existingLead.id,
+              name: dup.existingLead.name,
+              phone: dup.existingLead.phone,
+              phoneNormalized: dup.existingLead.phoneNormalized ?? null,
+              ownerEmployeeId: dup.existingLead.ownerEmployeeId,
+              stageId: dup.existingLead.stageId,
+            }
+          : null;
+        setDuplicateLead(existing);
+        setDuplicateOwnedByOther(Boolean(dup.ownedByOther) && !existing);
+        setDuplicateOpen(true);
+        return;
+      }
+      toast.error(crmUserFacingMessage(res, t, "crm.errors.saveFailed"));
       return;
     }
     toast.success(
@@ -201,5 +245,10 @@ export function useCrmLeadForm({
     activeStages,
     activeBusinessTypes,
     submit,
+    duplicateOpen,
+    setDuplicateOpen,
+    duplicateLead,
+    duplicateOwnedByOther,
+    onOpenExistingLead,
   };
 }

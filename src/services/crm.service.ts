@@ -40,6 +40,12 @@ export {
 } from "@/services/crm/crm-activities.service";
 
 export {
+  recordCrmLeadCall,
+  matchCrmLeadByPhone,
+  getCrmPhoneDuplicates,
+} from "@/services/crm/crm-calls.service";
+
+export {
   getCrmDashboard,
   getCrmPerformance,
   getCrmSalesProfile,

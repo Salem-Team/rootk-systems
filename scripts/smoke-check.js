@@ -545,6 +545,24 @@ function main() {
   assert(fileContains("eslint.config.mjs", "backend/**"), "eslint ignores backend");
   assert(fileContains("eslint.config.mjs", "scripts/**"), "eslint ignores scripts");
 
+  assert(
+    existsSync(join(root, "shared/phone-normalize.ts")) &&
+      existsSync(join(root, "backend/src/lib/phone-normalize.ts")),
+    "shared phone-normalize exists FE/BE"
+  );
+  assert(
+    fileContains("backend/prisma/schema.prisma", "phoneNormalized") &&
+      fileContains("backend/prisma/schema.prisma", "model CrmCall") &&
+      fileContains("docs/prisma/schema.prisma", "model CrmCall"),
+    "phoneNormalized + CrmCall in prisma"
+  );
+  assert(
+    fileContains("src/api/routes.ts", "leadMatch") &&
+      fileContains("backend/src/crm/crm.controller.ts", "leads/match") &&
+      fileContains("backend/src/crm/crm.controller.ts", "leads/:id/calls"),
+    "phone match + call endpoints wired"
+  );
+
   if (failed > 0) {
     console.error(`\nSmoke check failed: ${failed} assertion(s)`);
     process.exit(1);

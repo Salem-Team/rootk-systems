@@ -11,6 +11,7 @@ import { AuthGate } from "@/components/layout/auth-gate";
 import { RoleRedirect } from "@/components/layout/role-redirect";
 import { RouteProgress } from "@/components/layout/route-progress";
 import { PreferenceSync } from "@/components/shared/preference-sync";
+import { CrmPostCallHost } from "@/components/crm/crm-post-call-host";
 import { useCrmFollowUpReminders } from "@/hooks/use-crm-follow-up-reminders";
 import { useUiStore } from "@/stores/ui-store";
 import { useTranslation } from "@/hooks/use-translation";
@@ -56,6 +57,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </main>
         </div>
         <MobileBottomNav />
+        <CrmPostCallHost />
       </div>
     </AuthGate>
   );

@@ -1,33 +1,33 @@
-/** Strip non-digits from a phone string. */
-export function phoneDigits(phone: string): string {
-  return phone.replace(/\D/g, "");
-}
+import {
+  canonicalPhoneOrNull,
+  formatEgyptianNationalDisplay,
+  normalizeEgyptianMobile,
+} from "@/lib/phone-normalize";
 
-/**
- * Normalize to international digits (no +) for tel/WhatsApp.
- * Defaults to Egypt (+20) when the number is local.
- */
-export function toInternationalPhoneDigits(
-  phone: string,
-  defaultCountry = "20"
-): string {
-  let digits = phoneDigits(phone);
-  if (!digits) return "";
-  if (digits.startsWith("00")) digits = digits.slice(2);
-  if (digits.startsWith(defaultCountry)) return digits;
-  if (digits.startsWith("0")) return `${defaultCountry}${digits.slice(1)}`;
-  if (digits.length === 10 && digits.startsWith("1")) {
-    return `${defaultCountry}${digits}`;
-  }
-  return digits;
+/** Display-friendly Egyptian national number when valid; otherwise the original string. */
+export function displayCrmPhone(phone: string, phoneNormalized?: string | null): string {
+  const formatted =
+    formatEgyptianNationalDisplay(phoneNormalized || phone) ??
+    phone.trim();
+  return formatted || "—";
 }
 
 export function telHref(phone: string): string | null {
-  const digits = toInternationalPhoneDigits(phone);
-  return digits ? `tel:+${digits}` : null;
+  const parsed = normalizeEgyptianMobile(phone);
+  if (parsed.ok) return `tel:${parsed.e164}`;
+  const digits = phone.replace(/\D/g, "");
+  return digits ? `tel:+${digits.replace(/^00/, "")}` : null;
 }
 
 export function whatsappHref(phone: string): string | null {
-  const digits = toInternationalPhoneDigits(phone);
-  return digits ? `https://wa.me/${digits}` : null;
+  const parsed = normalizeEgyptianMobile(phone);
+  if (parsed.ok) return `https://wa.me/${parsed.digits}`;
+  return null;
+}
+
+export function sameCrmPhone(a: string, b: string): boolean {
+  const left = canonicalPhoneOrNull(a);
+  const right = canonicalPhoneOrNull(b);
+  if (left && right) return left === right;
+  return a.replace(/\D/g, "") === b.replace(/\D/g, "");
 }

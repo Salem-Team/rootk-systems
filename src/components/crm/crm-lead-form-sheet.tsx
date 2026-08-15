@@ -10,6 +10,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { CrmLeadFormFields } from "@/components/crm/crm-lead-form-fields";
+import { CrmDuplicateLeadDialog } from "@/components/crm/crm-duplicate-lead-dialog";
 import { useCrmLeadForm } from "@/hooks/use-crm-lead-form";
 import type { Employee } from "@/types";
 import type { CrmBusinessType, CrmLead, CrmStage } from "@/types/crm";
@@ -24,6 +25,7 @@ interface CrmLeadFormSheetProps {
   canAssign?: boolean;
   defaultStageId?: string;
   onSaved?: (lead: CrmLead) => void;
+  onOpenExistingLead?: (leadId: string) => void;
 }
 
 /** Add / edit lead sheet with zod-backed validation. */
@@ -37,6 +39,7 @@ export function CrmLeadFormSheet({
   canAssign = false,
   defaultStageId,
   onSaved,
+  onOpenExistingLead,
 }: CrmLeadFormSheetProps) {
   const form = useCrmLeadForm({
     open,
@@ -47,11 +50,13 @@ export function CrmLeadFormSheet({
     defaultStageId,
     onOpenChange,
     onSaved,
+    onOpenExistingLead,
   });
   const { t } = form;
   const safeEmployees = Array.isArray(employees) ? employees : [];
 
   return (
+    <>
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full overflow-y-auto sm:max-w-md">
         <SheetHeader>
@@ -113,5 +118,13 @@ export function CrmLeadFormSheet({
         </div>
       </SheetContent>
     </Sheet>
+    <CrmDuplicateLeadDialog
+      open={form.duplicateOpen}
+      onOpenChange={form.setDuplicateOpen}
+      lead={form.duplicateLead}
+      ownedByOther={form.duplicateOwnedByOther}
+      onOpenLead={form.onOpenExistingLead}
+    />
+    </>
   );
 }

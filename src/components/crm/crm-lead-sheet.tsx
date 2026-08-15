@@ -76,6 +76,9 @@ export function CrmLeadSheet({
                   <div className="mt-1">
                     <CrmPhoneActions
                       phone={lead?.phone ?? ""}
+                      phoneNormalized={lead?.phoneNormalized}
+                      leadId={lead?.id}
+                      leadName={lead?.name}
                       className="text-[12px]"
                     />
                   </div>

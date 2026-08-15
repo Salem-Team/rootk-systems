@@ -6,6 +6,7 @@ import {
   parseMaybe,
   resolveCrmRange,
 } from "@/lib/crm/date-range";
+import { canonicalPhoneOrNull } from "@/lib/phone-normalize";
 
 export function isLeadOwnedByActor(
   ownerEmployeeId: string | null | undefined,
@@ -62,6 +63,7 @@ export function filterLeads(
     }
 
     if (q) {
+      const canonical = canonicalPhoneOrNull(filters.search);
       const hay = [
         lead.name,
         lead.phone,
@@ -71,7 +73,11 @@ export function filterLeads(
       ]
         .join(" ")
         .toLowerCase();
-      if (!hay.includes(q)) return false;
+      const phoneHit = canonical
+        ? (lead.phoneNormalized || canonicalPhoneOrNull(lead.phone)) ===
+          canonical
+        : hay.includes(q);
+      if (!phoneHit && !hay.includes(q)) return false;
     }
 
     if (filters.dateFrom || filters.dateTo || filters.range) {

@@ -128,7 +128,7 @@ export class HttpClient {
         signal: options.signal,
       });
     } catch (error) {
-      throw new InternalError("Network request failed", { path, error });
+      throw new InternalError("Unable to reach the server. Check your connection.", { path, error });
     }
   }
 
@@ -195,6 +195,7 @@ export class HttpClient {
 
     switch (response.status) {
       case 400:
+      case 422:
         return new ValidationError(message, details);
       case 401:
         return new UnauthorizedError(message, details);
@@ -204,6 +205,12 @@ export class HttpClient {
         return new NotFoundError(message, details);
       case 409:
         return new ConflictError(message, details);
+      case 429:
+        return new InternalError(message || "Too many requests. Please try again.", {
+          path,
+          status: response.status,
+          details,
+        });
       default:
         return new InternalError(message, {
           path,
