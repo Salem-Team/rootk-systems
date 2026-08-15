@@ -24,6 +24,9 @@ export const en = {
     capsLockOn: "Caps Lock is on.",
     welcomeBack: "Signed in.",
     copyright: "All rights reserved",
+    downloadApp: "Download Android app",
+    updateApp: "Update app",
+    appVersion: "v{version}",
   },
   userView: {
     trigger: "View as user",

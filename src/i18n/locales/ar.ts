@@ -26,6 +26,9 @@ export const ar: TranslationKeys = {
     capsLockOn: "Caps Lock شغال.",
     welcomeBack: "تم تسجيل الدخول.",
     copyright: "جميع الحقوق محفوظة",
+    downloadApp: "تحميل تطبيق أندرويد",
+    updateApp: "تحديث التطبيق",
+    appVersion: "نسخة {version}",
   },
   userView: {
     trigger: "عرض كمستخدم",
