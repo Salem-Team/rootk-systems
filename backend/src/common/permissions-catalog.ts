@@ -49,6 +49,7 @@ export const PERMISSION_CATALOG = [
   { id: "attendance.checkIn", module: "attendance", employeeDefault: true },
   { id: "attendance.checkOut", module: "attendance", employeeDefault: true },
   { id: "attendance.editRecords", module: "attendance", employeeDefault: false },
+  { id: "attendance.editTeamRecords", module: "attendance", employeeDefault: false },
   { id: "attendance.export", module: "attendance", employeeDefault: false },
 
   // Daily plan
@@ -64,8 +65,10 @@ export const PERMISSION_CATALOG = [
   { id: "tasks.viewAll", module: "tasks", employeeDefault: false },
   { id: "tasks.create", module: "tasks", employeeDefault: true },
   { id: "tasks.editOwn", module: "tasks", employeeDefault: true },
+  { id: "tasks.editTeam", module: "tasks", employeeDefault: false },
   { id: "tasks.editOthers", module: "tasks", employeeDefault: false },
   { id: "tasks.deleteOwn", module: "tasks", employeeDefault: true },
+  { id: "tasks.deleteTeam", module: "tasks", employeeDefault: false },
   { id: "tasks.deleteOthers", module: "tasks", employeeDefault: false },
   { id: "tasks.assign", module: "tasks", employeeDefault: false },
   { id: "tasks.manageMeetings", module: "tasks", employeeDefault: true },
@@ -111,6 +114,7 @@ export const PERMISSION_CATALOG = [
 
   // CRM
   { id: "crm.viewLeads", module: "crm", employeeDefault: true },
+  { id: "crm.viewTeamLeads", module: "crm", employeeDefault: false },
   { id: "crm.viewOthersLeads", module: "crm", employeeDefault: false },
   { id: "crm.createLeads", module: "crm", employeeDefault: true },
   { id: "crm.editLeads", module: "crm", employeeDefault: true },
@@ -131,8 +135,10 @@ export const PERMISSION_CATALOG = [
 
   // Employees
   { id: "employees.view", module: "employees", employeeDefault: false },
+  { id: "employees.viewTeam", module: "employees", employeeDefault: false },
   { id: "employees.create", module: "employees", employeeDefault: false },
   { id: "employees.edit", module: "employees", employeeDefault: false },
+  { id: "employees.editTeam", module: "employees", employeeDefault: false },
   { id: "employees.delete", module: "employees", employeeDefault: false },
   { id: "employees.changeStatus", module: "employees", employeeDefault: false },
   { id: "employees.resetPassword", module: "employees", employeeDefault: false },
@@ -149,11 +155,14 @@ export const PERMISSION_CATALOG = [
   { id: "leave.viewAll", module: "leave", employeeDefault: false },
   { id: "leave.request", module: "leave", employeeDefault: true },
   { id: "leave.approve", module: "leave", employeeDefault: false },
+  { id: "leave.approveTeam", module: "leave", employeeDefault: false },
   { id: "leave.reject", module: "leave", employeeDefault: false },
+  { id: "leave.rejectTeam", module: "leave", employeeDefault: false },
   { id: "leave.delete", module: "leave", employeeDefault: false },
 
   // Payroll
   { id: "payroll.viewOwnPayslip", module: "payroll", employeeDefault: true },
+  { id: "payroll.viewTeamPayslips", module: "payroll", employeeDefault: false },
   { id: "payroll.viewAllPayslips", module: "payroll", employeeDefault: false },
   { id: "payroll.viewDashboard", module: "payroll", employeeDefault: false },
   { id: "payroll.editSalaryProfiles", module: "payroll", employeeDefault: false },
@@ -261,24 +270,41 @@ export function hasAnyPermissionId(
   return ids.some((id) => hasPermissionId(id, permissions, role));
 }
 
-/** Master switch + module-level view of other people's records. */
+/**
+ * Whether the actor may see other people's records in a module.
+ * The module switch is authoritative: granting `crm.viewOthersLeads`
+ * (or `*.viewAll` / `*.viewTeam`) takes effect in that module immediately.
+ */
+export type DataAccessScope = "all" | "team" | "own";
+
+export function resolveDataAccessScope(
+  permissions: readonly string[] | null | undefined,
+  moduleViewAll?: PermissionId,
+  moduleViewTeam?: PermissionId,
+  role?: AppRoleName | string
+): DataAccessScope {
+  if (moduleViewAll && hasPermissionId(moduleViewAll, permissions, role)) {
+    return "all";
+  }
+  if (moduleViewTeam && hasPermissionId(moduleViewTeam, permissions, role)) {
+    return "team";
+  }
+  return "own";
+}
+
 export function canViewOthersInModule(
   permissions: readonly string[] | null | undefined,
   moduleViewAll?: PermissionId,
-  moduleViewTeam?: PermissionId
+  moduleViewTeam?: PermissionId,
+  role?: AppRoleName | string
 ): { all: boolean; team: boolean } {
-  const master = hasPermissionId(
-    "dataAccess.viewOtherUsers",
-    permissions
+  const scope = resolveDataAccessScope(
+    permissions,
+    moduleViewAll,
+    moduleViewTeam,
+    role
   );
-  if (!master) return { all: false, team: false };
-  const all = moduleViewAll
-    ? hasPermissionId(moduleViewAll, permissions)
-    : false;
-  const team =
-    all ||
-    (moduleViewTeam ? hasPermissionId(moduleViewTeam, permissions) : false);
-  return { all, team };
+  return { all: scope === "all", team: scope === "all" || scope === "team" };
 }
 
 export const CRM_CAPABILITY_TO_PERMISSION = {

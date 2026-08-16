@@ -70,8 +70,11 @@ export function CrmLeadFormSheet({
           <CrmLeadFormFields
             name={form.name}
             onNameChange={form.setName}
-            phone={form.phone}
-            onPhoneChange={form.setPhone}
+            contacts={form.contacts}
+            onPatchContact={form.patchContact}
+            onAddContact={form.addContact}
+            onRemoveContact={form.removeContact}
+            canAddContact={form.canAddContact}
             email={form.email}
             onEmailChange={form.setEmail}
             companyName={form.companyName}

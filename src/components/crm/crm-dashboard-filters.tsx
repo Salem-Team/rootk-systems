@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { canFilterCrmByOwner } from "@/lib/crm/lead-filters";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatClockHm } from "@/lib/format-time";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,7 @@ interface CrmDashboardFiltersBarProps {
   filters: CrmDashboardFilters;
   employees: Employee[];
   canAssign?: boolean;
+  canViewOthers?: boolean;
   onFiltersChange: (filters: CrmDashboardFilters) => void;
   /** Show hour + custom date inputs (Performance / Reports). */
   showInteractionFilters?: boolean;
@@ -45,11 +47,13 @@ export function CrmDashboardFiltersBar({
   filters,
   employees,
   canAssign = false,
+  canViewOthers = false,
   onFiltersChange,
   showInteractionFilters = false,
 }: CrmDashboardFiltersBarProps) {
   const { t, locale } = useTranslation();
   const [open, setOpen] = useState(false);
+  const showOwnerFilter = canFilterCrmByOwner({ canAssign, canViewOthers });
 
   return (
     <div className="space-y-2">
@@ -154,7 +158,7 @@ export function CrmDashboardFiltersBar({
           </>
         ) : null}
 
-        {canAssign ? (
+        {showOwnerFilter ? (
           <Select
             value={filters.ownerEmployeeId || "all"}
             onValueChange={(v) =>

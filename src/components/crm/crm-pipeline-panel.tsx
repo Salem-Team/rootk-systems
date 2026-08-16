@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { CrmPhoneActions } from "@/components/crm/crm-phone-actions";
+import { CrmLeadContactList } from "@/components/crm/crm-lead-contact-list";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import { useTranslation } from "@/hooks/use-translation";
@@ -129,13 +129,7 @@ export function CrmPipelinePanel({
                           onClick={(e) => e.stopPropagation()}
                           onPointerDown={(e) => e.stopPropagation()}
                         >
-                          <CrmPhoneActions
-                            phone={lead.phone}
-                            phoneNormalized={lead.phoneNormalized}
-                            leadId={lead.id}
-                            leadName={lead.name}
-                            className="text-[11px]"
-                          />
+                          <CrmLeadContactList lead={lead} compact />
                         </div>
                         <p className="mt-1 truncate text-[11px] text-muted-foreground">
                           {lead.ownerEmployeeId
@@ -202,13 +196,7 @@ export function CrmPipelinePanel({
                           onClick={(e) => e.stopPropagation()}
                           onPointerDown={(e) => e.stopPropagation()}
                         >
-                          <CrmPhoneActions
-                            phone={lead.phone}
-                            phoneNormalized={lead.phoneNormalized}
-                            leadId={lead.id}
-                            leadName={lead.name}
-                            className="text-[11px]"
-                          />
+                          <CrmLeadContactList lead={lead} compact />
                         </div>
                         <p className="mt-1 truncate text-[11px] text-muted-foreground">
                           {lead.ownerEmployeeId

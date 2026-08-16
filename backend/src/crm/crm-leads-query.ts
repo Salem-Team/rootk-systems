@@ -1,33 +1,64 @@
 /** Pure Prisma where-clause builder for lead listing/filtering. */
 import { CrmLeadSource, CrmLeadStatus, type Prisma } from "@prisma/client";
 import { endOfDay } from "date-fns";
-import { canViewOthersLeads, type Actor } from "./crm-access";
+import type { Actor } from "./crm-access";
 import { LEAD_SOURCES, LEAD_STATUSES } from "./crm-input";
 import { CrmSharedService } from "./crm-shared.service";
+import { extractHandle, looksLikeHandle } from "../lib/contact-identity";
 import { searchCanonicalFromQuery } from "./crm-phone";
 
 export function buildLeadWhere(
   shared: CrmSharedService,
   companyId: string,
   actor: Actor,
-  query: Record<string, string | undefined>
+  query: Record<string, string | undefined>,
+  ownerIds: string[] | null
 ): Prisma.CrmLeadWhereInput {
   const where: Prisma.CrmLeadWhereInput = {
     companyId,
     deletedAt: null,
-    ...shared.scopeOwnerFilter(actor),
+    ...shared.scopeOwnerFilter(actor, ownerIds),
   };
 
   if (query.search?.trim()) {
     const q = query.search.trim();
     const canonical = searchCanonicalFromQuery(q);
+    const digits = q.replace(/\D/g, "");
+    const phoneOr: Prisma.CrmLeadWhereInput[] = canonical
+      ? [{ phoneNormalized: canonical }]
+      : [{ phone: { contains: q, mode: "insensitive" } }];
+    if (digits.length >= 3) {
+      phoneOr.push({
+        phoneNormalized: { contains: digits, mode: "insensitive" },
+      });
+      if (!canonical) {
+        phoneOr.push({
+          phone: { contains: digits, mode: "insensitive" },
+        });
+      }
+    }
+    const handle = extractHandle(q);
+    if (looksLikeHandle(q) && handle) {
+      phoneOr.push({
+        phoneNormalized: { contains: `:${handle}`, mode: "insensitive" },
+      });
+      phoneOr.push({
+        phone: { contains: handle, mode: "insensitive" },
+      });
+    }
+    phoneOr.push({
+      metadata: { path: ["contactSearch"], string_contains: q.toLowerCase() },
+    });
+    if (canonical) {
+      phoneOr.push({
+        metadata: { path: ["contactKeys"], array_contains: canonical },
+      });
+    }
     where.OR = [
       { name: { contains: q, mode: "insensitive" } },
       { email: { contains: q, mode: "insensitive" } },
       { companyName: { contains: q, mode: "insensitive" } },
-      ...(canonical
-        ? [{ phoneNormalized: canonical }]
-        : [{ phone: { contains: q, mode: "insensitive" as const } }]),
+      ...phoneOr,
     ];
   }
   if (query.stageId) where.stageId = query.stageId;
@@ -38,8 +69,8 @@ export function buildLeadWhere(
   if (query.source && LEAD_SOURCES.has(query.source)) {
     where.source = query.source as CrmLeadSource;
   }
-  if (query.ownerEmployeeId && canViewOthersLeads(actor)) {
-    where.ownerEmployeeId = query.ownerEmployeeId;
+  if (query.ownerEmployeeId) {
+    Object.assign(where, shared.extraOwnerFilter(ownerIds, query.ownerEmployeeId));
   }
   if (query.tag) where.tags = { has: query.tag };
 

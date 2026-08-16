@@ -25,6 +25,8 @@ export type InteractionLeadRow = {
   id: string;
   name: string;
   companyName: string;
+  phone: string;
+  phoneNormalized: string | null;
   ownerEmployeeId: string | null;
 };
 
@@ -124,6 +126,8 @@ export function emptyInteractionBreakdown() {
       leadId: string;
       leadName: string;
       companyName: string;
+      phone: string;
+      phoneNormalized: string | null;
       ownerEmployeeId: string | null;
       ownerEmployeeName: string;
       date: string;
@@ -259,6 +263,8 @@ export function buildInteractionBreakdown(
         leadId: leadId!,
         leadName: lead?.name ?? leadId!,
         companyName: lead?.companyName ?? "",
+        phone: lead?.phone ?? "",
+        phoneNormalized: lead?.phoneNormalized ?? null,
         ownerEmployeeId: ownerId === "__none__" ? null : (ownerId ?? null),
         ownerEmployeeName:
           !ownerId || ownerId === "__none__"

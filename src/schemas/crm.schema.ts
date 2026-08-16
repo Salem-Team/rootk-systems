@@ -53,7 +53,39 @@ const activityType = z.enum([
 
 export const createLeadSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
-  phone: z.string().trim().min(1, "Phone is required"),
+  phone: z.string().trim().min(1, "Contact is required"),
+  contactKind: z
+    .enum([
+      "phone",
+      "whatsapp",
+      "instagram",
+      "telegram",
+      "facebook",
+      "tiktok",
+      "linkedin",
+      "other",
+    ])
+    .optional(),
+  contacts: z
+    .array(
+      z.object({
+        kind: z
+          .enum([
+            "phone",
+            "whatsapp",
+            "instagram",
+            "telegram",
+            "facebook",
+            "tiktok",
+            "linkedin",
+            "other",
+          ])
+          .optional(),
+        phone: z.string().trim().min(1),
+      })
+    )
+    .max(8)
+    .optional(),
   email: z.string().trim().email().optional().or(z.literal("")),
   companyName: z.string().trim().optional().default(""),
   businessTypeId: z.string().nullable().optional(),
@@ -132,6 +164,7 @@ export const leadFeedbackSchema = z.object({
     .nullable()
     .optional(),
   notes: z.string().optional().default(""),
+  mentionedUserIds: z.array(z.string().min(1)).max(20).optional(),
 });
 
 export const bulkLeadsSchema = z.object({

@@ -222,7 +222,7 @@ export async function deleteWorkTask(
   try {
     const current = await workTaskRepository.findById(id);
     if (!current) throw new NotFoundError("Task not found");
-    assertEmployeeCanEditTask(current);
+    await assertEmployeeCanEditTask(current);
     const deleted = await workTaskRepository.delete(id);
     if (!deleted) throw new NotFoundError("Task not found");
     emitWorkUpdated();

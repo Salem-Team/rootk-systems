@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { canFilterCrmByOwner } from "@/lib/crm/lead-filters";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
@@ -39,6 +40,7 @@ interface CrmLeadsFiltersProps {
   stages: CrmStage[];
   employees: Employee[];
   canAssign: boolean;
+  canViewOthers?: boolean;
   hasActiveFilters: boolean;
   onFiltersChange: (filters: CrmLeadFilters) => void;
   onClearFilters: () => void;
@@ -51,11 +53,13 @@ export function CrmLeadsFilters({
   stages,
   employees,
   canAssign,
+  canViewOthers = false,
   hasActiveFilters,
   onFiltersChange,
   onClearFilters,
 }: CrmLeadsFiltersProps) {
   const { t } = useTranslation();
+  const showOwnerFilter = canFilterCrmByOwner({ canAssign, canViewOthers });
 
   return (
     <div
@@ -133,7 +137,7 @@ export function CrmLeadsFilters({
         </SelectContent>
       </Select>
 
-      {canAssign ? (
+      {showOwnerFilter ? (
         <Select
           value={filters.ownerEmployeeId || "all"}
           onValueChange={(v) =>

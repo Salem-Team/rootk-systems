@@ -42,6 +42,7 @@ interface CrmReportsPanelProps {
   onFiltersChange: (filters: CrmDashboardFilters) => void;
   employees: Employee[];
   canAssign?: boolean;
+  canViewOthers?: boolean;
   loading?: boolean;
   className?: string;
 }
@@ -53,6 +54,7 @@ export function CrmReportsPanel({
   onFiltersChange,
   employees,
   canAssign = false,
+  canViewOthers = false,
   loading = false,
   className,
 }: CrmReportsPanelProps) {
@@ -105,6 +107,7 @@ export function CrmReportsPanel({
         filters={filters}
         employees={employees}
         canAssign={canAssign}
+        canViewOthers={canViewOthers}
         onFiltersChange={onFiltersChange}
         showInteractionFilters
       />

@@ -29,6 +29,7 @@ import {
   taskAssigneeCompletionSummary,
   type Actor,
 } from "./work-mappers";
+import { assertCanMutateWorkTask, canWidenTaskAssignees } from "./work-access";
 
 export type { Actor };
 
@@ -52,16 +53,15 @@ export class WorkTasksStatusService {
       where: { id, companyId, deletedAt: null },
     });
     if (!current) throw new NotFoundException("Task not found");
-    if (actor.role === "employee" && !ownsPersonalTask(current, actor)) {
-      throw new ForbiddenException("You can only edit your personal tasks");
-    }
+    await assertCanMutateWorkTask(this.prisma, companyId, actor, current, "edit");
 
-    const nextAssigneeIds =
-      actor.role === "employee"
-        ? [actor.employeeId]
-        : Array.isArray(body.assigneeIds)
-          ? (body.assigneeIds as string[]).map(String).filter(Boolean)
-          : current.assigneeIds;
+    const nextAssigneeIds = !canWidenTaskAssignees(actor)
+      ? current.assigneeIds.includes(actor.employeeId)
+        ? current.assigneeIds
+        : [actor.employeeId]
+      : Array.isArray(body.assigneeIds)
+        ? (body.assigneeIds as string[]).map(String).filter(Boolean)
+        : current.assigneeIds;
 
     const nextStatus = body.status as TaskStatus | undefined;
     let progress = syncAssigneeProgress(

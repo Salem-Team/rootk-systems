@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { CrmMentionText } from "@/components/crm/crm-mention-text";
 import { CrmSalesProfileLeadsDialog } from "@/components/crm/crm-sales-profile-leads-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import {
@@ -269,7 +270,10 @@ export function CrmSalesProfileSheet({
                       key={f.id}
                       className="rounded-lg border border-border/60 px-3 py-2 text-[13px] text-muted-foreground"
                     >
-                      {f.customerFeedback || f.notes || "—"}
+                      <CrmMentionText
+                        text={f.customerFeedback || f.notes || "—"}
+                        names={(f.mentionedUsers ?? []).map((u) => u.name)}
+                      />
                     </li>
                   ))
                 )}

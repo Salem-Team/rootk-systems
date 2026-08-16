@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useHydrateOnOpen } from "@/hooks/use-hydrate-on-open";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { CrmMentionTextarea } from "@/components/crm/crm-mention-textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,11 +24,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/hooks/use-translation";
 import { NEXT_ACTIONS, TAGS, toLocalInput } from "@/lib/crm/lead-form-options";
+import type { MentionableUser } from "@/lib/mentions";
+import { resolveAccountFullName } from "@/lib/user-display-name";
 import { cn } from "@/lib/utils";
 import { addCrmLeadFeedback } from "@/services/crm.service";
+import { getUsers } from "@/services/user.service";
+import { getSessionUserId } from "@/stores/session-store";
 import type {
   CrmLead,
   CrmLeadTag,
@@ -59,6 +63,8 @@ export function CrmFeedbackForm({
   const [nextAction, setNextAction] = useState<CrmNextAction>("follow_up");
   const [nextFollowUpAt, setNextFollowUpAt] = useState("");
   const [customerFeedback, setCustomerFeedback] = useState("");
+  const [mentionUsers, setMentionUsers] = useState<MentionableUser[]>([]);
+  const [mentionedUsers, setMentionedUsers] = useState<MentionableUser[]>([]);
   const [callAnswered, setCallAnswered] = useState(true);
   const [meetingMode, setMeetingMode] = useState<CrmMeetingMode>("online");
   const [meetingLocation, setMeetingLocation] =
@@ -72,6 +78,29 @@ export function CrmFeedbackForm({
       ),
     [stages, lead?.stageId]
   );
+  const selfUserId = getSessionUserId();
+
+  useEffect(() => {
+    if (!open) return;
+    void getUsers().then((res) => {
+      if (!res.success || !Array.isArray(res.data)) return;
+      setMentionUsers(
+        res.data
+          .filter((user) => user.isActive !== false)
+          .map((user) => {
+            const name =
+              resolveAccountFullName(user) || user.email.split("@")[0];
+            return {
+              id: user.id,
+              name,
+              email: user.email,
+              initials: (user.initials || name.slice(0, 2)).toUpperCase(),
+            };
+          })
+          .sort((a, b) => a.name.localeCompare(b.name))
+      );
+    });
+  }, [open]);
 
   useHydrateOnOpen(open, lead?.id, () => {
     if (!lead) return;
@@ -80,6 +109,7 @@ export function CrmFeedbackForm({
     setNextAction(lead.nextAction === "none" ? "follow_up" : lead.nextAction);
     setNextFollowUpAt(toLocalInput(lead.nextFollowUpAt));
     setCustomerFeedback("");
+    setMentionedUsers([]);
     setCallAnswered(true);
     setMeetingMode("online");
     setMeetingLocation("our_company");
@@ -114,6 +144,7 @@ export function CrmFeedbackForm({
           ? meetingLocation
           : null,
       notes: "",
+      mentionedUserIds: mentionedUsers.map((user) => user.id),
     });
     setSaving(false);
     if (!res.success) {
@@ -325,10 +356,14 @@ export function CrmFeedbackForm({
               <Label htmlFor="crm-fb-text">
                 {t("crm.feedback.customerFeedback")}
               </Label>
-              <Textarea
+              <CrmMentionTextarea
                 id="crm-fb-text"
                 value={customerFeedback}
-                onChange={(e) => setCustomerFeedback(e.target.value)}
+                onChange={setCustomerFeedback}
+                users={mentionUsers}
+                mentionedUsers={mentionedUsers}
+                onMentionedUsersChange={setMentionedUsers}
+                selfUserId={selfUserId}
                 rows={4}
                 placeholder={t("crm.feedback.feedbackPlaceholder")}
               />

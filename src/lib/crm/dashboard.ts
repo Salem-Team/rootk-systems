@@ -1,3 +1,7 @@
+import {
+  isLeadOwnedByActor,
+  type CrmLeadScopeOpts,
+} from "@/lib/crm/lead-filters";
 import type { Employee } from "@/types";
 import type {
   CrmChartPoint,
@@ -33,17 +37,12 @@ export function buildCrmDashboard(
   feedback: CrmLeadFeedback[],
   employees: Employee[],
   filters: CrmDashboardFilters,
-  scoped?: { actorEmployeeId?: string | null; isAdmin?: boolean }
+  scoped?: CrmLeadScopeOpts
 ): CrmDashboard {
   const { from, to } = resolveCrmRange(filters);
   let leads = allLeads.filter((l) => l.status !== "archived");
-  if (!scoped?.isAdmin) {
-    const actorId = scoped?.actorEmployeeId?.trim() ?? "";
-    leads = actorId
-      ? leads.filter((l) => l.ownerEmployeeId === actorId)
-      : [];
-  }
-  if (scoped?.isAdmin && filters.ownerEmployeeId) {
+  leads = leads.filter((l) => isLeadOwnedByActor(l.ownerEmployeeId, scoped));
+  if (filters.ownerEmployeeId) {
     leads = leads.filter((l) => l.ownerEmployeeId === filters.ownerEmployeeId);
   }
   if (filters.source) {
@@ -94,9 +93,11 @@ export function buildCrmDashboard(
     .sort((a, b) => b.value - a.value)
     .slice(0, 8);
 
-  const salesRoster = scoped?.isAdmin
+  const salesRoster = scoped?.canViewOthers
     ? employees
-    : employees.filter((e) => e.id === scoped?.actorEmployeeId);
+    : scoped?.teamOwnerIds && scoped.teamOwnerIds.length > 0
+      ? employees.filter((e) => scoped.teamOwnerIds!.includes(e.id))
+      : employees.filter((e) => e.id === scoped?.actorEmployeeId);
   const salesPerformance = buildSalesPerformance(
     leads,
     stages,

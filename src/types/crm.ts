@@ -1,4 +1,13 @@
 import type { BaseEntity, PaginatedResult } from "@/types";
+import type { CrmContactKind } from "@/lib/crm/contact-identity";
+
+export type { CrmContactKind };
+
+export type CrmLeadContact = {
+  kind: CrmContactKind;
+  phone: string;
+  phoneNormalized: string | null;
+};
 
 export type CrmLeadStatus = "active" | "inactive" | "archived";
 
@@ -138,8 +147,12 @@ export interface CrmLead extends BaseEntity {
   id: string;
   name: string;
   phone: string;
-  /** E.164 Egyptian mobile when valid; null if the display value could not be canonicalized. */
+  /** E.164, `h:{kind}:{handle}`, or null when the display value could not be canonicalized. */
   phoneNormalized?: string | null;
+  /** Inferred from `phone` / `phoneNormalized` when omitted (legacy rows). */
+  contactKind?: CrmContactKind;
+  /** Additional phones / usernames besides the primary `phone` field. */
+  contacts?: CrmLeadContact[];
   email: string;
   companyName: string;
   businessTypeId: string | null;
@@ -186,6 +199,8 @@ export interface CrmLeadFeedback extends BaseEntity {
   meetingLocation: CrmMeetingLocation | null;
   notes: string;
   recordedByEmployeeId: string | null;
+  mentionedUserIds?: string[];
+  mentionedUsers?: { id: string; name: string }[];
 }
 
 export interface CrmLeadHistoryEvent extends BaseEntity {
@@ -305,6 +320,8 @@ export interface CrmClientCallRow {
   leadId: string;
   leadName: string;
   companyName: string;
+  phone: string;
+  phoneNormalized: string | null;
   ownerEmployeeId: string | null;
   ownerEmployeeName: string;
   /** yyyy-MM-dd for this row's day. */

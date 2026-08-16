@@ -1,6 +1,7 @@
 "use client";
 
 import { format, parseISO } from "date-fns";
+import { CrmMentionText } from "@/components/crm/crm-mention-text";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -42,7 +43,7 @@ export function CrmCallFeedbackDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[min(36rem,85dvh)] flex-col gap-0 overflow-hidden sm:max-w-lg">
+      <DialogContent className="flex max-h-[min(36rem,85dvh)] flex-col gap-0 overflow-hidden sm:max-w-xl">
         <DialogHeader className="shrink-0 pe-6">
           <DialogTitle>{title}</DialogTitle>
           {description ? (
@@ -92,8 +93,8 @@ export function CrmCallFeedbackDialog({
                   </p>
 
                   {item.customerFeedback ? (
-                    <p className="mt-1 whitespace-pre-wrap text-[13px] text-foreground">
-                      {item.customerFeedback}
+                    <p className="mt-1 text-[13px] text-foreground">
+                      <CrmMentionText text={item.customerFeedback} />
                     </p>
                   ) : (
                     <p className="mt-1 text-[12px] text-muted-foreground">

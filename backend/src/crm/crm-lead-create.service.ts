@@ -4,10 +4,11 @@ import {
   CrmLeadSource,
   CrmLeadStatus,
   CrmNextAction,
+  type Prisma,
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { writeActivity } from "../common/activity-writer";
-import { assertCap, canViewOthersLeads, type Actor } from "./crm-access";
+import { assertCap, type Actor } from "./crm-access";
 import { canCrm } from "../lib/crm-policies";
 import {
   asEnum,
@@ -18,7 +19,11 @@ import {
   NEXT_ACTIONS,
 } from "./crm-input";
 import { mapLead } from "./crm-mappers";
-import { assertPhoneAvailable, resolveStoredPhone } from "./crm-phone";
+import {
+  assertContactsAvailable,
+  resolveIncomingContactList,
+} from "./crm-phone";
+import { canonicalContactKeys, contactsMetadataPatch } from "../lib/lead-contacts";
 import { CrmSharedService } from "./crm-shared.service";
 
 @Injectable()
@@ -38,14 +43,18 @@ export class CrmLeadCreateService {
 
     const name = String(body.name ?? "").trim();
     if (!name) throw new BadRequestException("name is required");
-    const { phone, phoneNormalized } = resolveStoredPhone({
-      raw: body.phone,
-      required: true,
-    });
-    await assertPhoneAvailable(this.prisma, companyId, phoneNormalized, {
-      canViewOthers: canViewOthersLeads(actor),
-      actorEmployeeId: actor.employeeId,
-    });
+    const { primary, extras } = resolveIncomingContactList(body);
+    const { phone, phoneNormalized } = primary;
+    const ownerIds = await this.shared.resolveOwnerIds(companyId, actor);
+    await assertContactsAvailable(
+      this.prisma,
+      companyId,
+      canonicalContactKeys([primary, ...extras]),
+      {
+        visibleOwnerIds: ownerIds,
+        actorEmployeeId: actor.employeeId,
+      }
+    );
 
     let stageId = typeof body.stageId === "string" ? body.stageId : "";
     if (!stageId) {
@@ -77,6 +86,8 @@ export class CrmLeadCreateService {
         throw new ForbiddenException("You can only create leads assigned to you");
       }
       ownerEmployeeId = actor.employeeId;
+    } else {
+      await this.shared.assertOwnerAssignable(companyId, actor, ownerEmployeeId);
     }
 
     const lossReasonTypeId =
@@ -112,16 +123,22 @@ export class CrmLeadCreateService {
 
     const now = new Date();
     const row = await this.prisma.$transaction(async (tx) => {
-      await assertPhoneAvailable(tx, companyId, phoneNormalized, {
-        canViewOthers: canViewOthersLeads(actor),
-        actorEmployeeId: actor.employeeId,
-      });
+      await assertContactsAvailable(
+        tx,
+        companyId,
+        canonicalContactKeys([primary, ...extras]),
+        {
+          visibleOwnerIds: ownerIds,
+          actorEmployeeId: actor.employeeId,
+        }
+      );
       return tx.crmLead.create({
         data: {
           companyId,
           name,
           phone,
           phoneNormalized,
+          metadata: contactsMetadataPatch(extras) as Prisma.InputJsonValue,
           email: String(body.email ?? "").trim(),
           companyName: String(body.companyName ?? "").trim(),
           businessTypeId,

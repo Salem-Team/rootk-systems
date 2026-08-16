@@ -2,6 +2,7 @@
  * Duplicate / tenant isolation tests for canonical phones (no live DB).
  * Run: npx tsx scripts/verify-crm-phone.ts
  */
+import { resolveCrmContact } from "../shared/contact-identity";
 import { canonicalPhoneOrNull } from "../shared/phone-normalize";
 import { canCrm } from "../src/lib/crm-policies";
 
@@ -128,6 +129,34 @@ assert(
 assert(
   replayCall({ id: "c1", leadId: "lead-a" }, "lead-a").id === "c1",
   "same lead + same externalCallId is idempotent"
+);
+
+const waUser = resolveCrmContact({ raw: "@salem_team", kind: "whatsapp" });
+assert(waUser.kind === "whatsapp", "whatsapp username keeps kind");
+assert(
+  waUser.phoneNormalized === "h:whatsapp:salem_team" && waUser.phone === "@salem_team",
+  "whatsapp username uniqueness key is h:whatsapp:handle"
+);
+
+const igUser = resolveCrmContact({
+  raw: "https://instagram.com/rootk.ads",
+  kind: "instagram",
+});
+assert(
+  igUser.kind === "instagram" && igUser.phoneNormalized === "h:instagram:rootk.ads",
+  "instagram profile URL becomes a handle key"
+);
+
+const asPhone = resolveCrmContact({ raw: "01012345678", kind: "whatsapp" });
+assert(
+  asPhone.kind === "phone" && asPhone.phoneNormalized === "+201012345678",
+  "whatsapp + Egyptian mobile is stored as phone"
+);
+
+const inferred = resolveCrmContact({ raw: "t.me/some_user" });
+assert(
+  inferred.kind === "telegram" && inferred.phoneNormalized === "h:telegram:some_user",
+  "t.me links infer telegram without an explicit kind"
 );
 
 if (failed) {

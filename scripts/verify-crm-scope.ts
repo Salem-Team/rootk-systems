@@ -5,7 +5,11 @@
 
 import { canCrm } from "../src/lib/crm-policies";
 import { buildCrmDashboard } from "../src/lib/crm/dashboard";
-import { filterLeads, isLeadOwnedByActor } from "../src/lib/crm/lead-filters";
+import {
+  canFilterCrmByOwner,
+  filterLeads,
+  isLeadOwnedByActor,
+} from "../src/lib/crm/lead-filters";
 import {
   buildSalesProfile,
   filterSalesProfileLeads,
@@ -144,26 +148,28 @@ const feedbackTypes: CrmFeedbackType[] = [];
 const feedback: CrmLeadFeedback[] = [];
 
 function main() {
-  assert(isLeadOwnedByActor(hagar, { isAdmin: true }), "admin owns any lead");
   assert(
-    isLeadOwnedByActor(hagar, { isAdmin: false, actorEmployeeId: hagar }),
+    isLeadOwnedByActor(hagar, { canViewOthers: true }),
+    "view-others owns any lead"
+  );
+  assert(
+    isLeadOwnedByActor(hagar, { canViewOthers: false, actorEmployeeId: hagar }),
     "sales owns assigned lead"
   );
   assert(
-    !isLeadOwnedByActor(salem, { isAdmin: false, actorEmployeeId: hagar }),
+    !isLeadOwnedByActor(salem, { actorEmployeeId: hagar }),
     "sales does not own teammate lead"
   );
   assert(
-    !isLeadOwnedByActor(hagar, { isAdmin: false, actorEmployeeId: "" }),
+    !isLeadOwnedByActor(hagar, { actorEmployeeId: "" }),
     "missing actor id is fail-closed"
   );
   assert(
-    !isLeadOwnedByActor(null, { isAdmin: false, actorEmployeeId: hagar }),
+    !isLeadOwnedByActor(null, { actorEmployeeId: hagar }),
     "sales does not see unassigned leads"
   );
 
   const hagarLeads = filterLeads(leads, {}, {
-    isAdmin: false,
     actorEmployeeId: hagar,
   });
   assert(
@@ -172,7 +178,6 @@ function main() {
   );
 
   const emptyActor = filterLeads(leads, {}, {
-    isAdmin: false,
     actorEmployeeId: "",
   });
   assert(emptyActor.length === 0, "filterLeads: empty actor sees nothing");
@@ -180,27 +185,60 @@ function main() {
   const missingOpts = filterLeads(leads, {});
   assert(missingOpts.length === 0, "filterLeads: omitted opts is fail-closed");
 
-  const adminAll = filterLeads(leads, {}, { isAdmin: true });
-  assert(adminAll.length === 4, "filterLeads: admin sees all including unassigned");
+  const othersAll = filterLeads(leads, {}, { canViewOthers: true });
+  assert(othersAll.length === 4, "filterLeads: view-others sees all including unassigned");
 
-  const adminHagar = filterLeads(
-    leads,
-    { ownerEmployeeId: hagar },
-    { isAdmin: true }
+  const teamLeads = filterLeads(leads, {}, {
+    actorEmployeeId: hagar,
+    teamOwnerIds: [hagar, salem],
+  });
+  assert(
+    teamLeads.length === 3 &&
+      teamLeads.every((l) => l.ownerEmployeeId === hagar || l.ownerEmployeeId === salem),
+    "filterLeads: team sees own plus direct reports"
   );
   assert(
-    adminHagar.length === 2 && adminHagar.every((l) => l.ownerEmployeeId === hagar),
-    "filterLeads: admin owner filter"
+    canFilterCrmByOwner({ canViewTeam: true }) &&
+      !canFilterCrmByOwner({ canViewOthers: false, canViewTeam: false, canAssign: false }),
+    "owner filter is available for team managers"
+  );
+  assert(
+    isLeadOwnedByActor(salem, { actorEmployeeId: hagar, teamOwnerIds: [hagar, salem] }),
+    "manager owns direct-report lead in team scope"
+  );
+
+  const othersHagar = filterLeads(
+    leads,
+    { ownerEmployeeId: hagar },
+    { canViewOthers: true }
+  );
+  assert(
+    othersHagar.length === 2 && othersHagar.every((l) => l.ownerEmployeeId === hagar),
+    "filterLeads: view-others owner filter"
   );
 
   const peek = filterLeads(
     leads,
     { ownerEmployeeId: salem },
-    { isAdmin: false, actorEmployeeId: hagar }
+    { actorEmployeeId: hagar }
   );
   assert(
     peek.length === 2 && peek.every((l) => l.ownerEmployeeId === hagar),
     "filterLeads: sales cannot peek via owner filter"
+  );
+
+  const dashTeam = buildCrmDashboard(
+    leads,
+    stages,
+    feedbackTypes,
+    feedback,
+    employees,
+    { range: "all" },
+    { actorEmployeeId: hagar, teamOwnerIds: [hagar, salem] }
+  );
+  assert(
+    dashTeam.kpis.totalLeads === 3,
+    "dashboard: team KPI includes direct reports not the rest of the company"
   );
 
   const dashHagar = buildCrmDashboard(
@@ -210,7 +248,7 @@ function main() {
     feedback,
     employees,
     { range: "all" },
-    { isAdmin: false, actorEmployeeId: hagar }
+    { actorEmployeeId: hagar }
   );
   assert(dashHagar.kpis.totalLeads === 2, "dashboard: sales KPI is assigned only");
   assert(
@@ -230,7 +268,7 @@ function main() {
     feedback,
     employees,
     { range: "all" },
-    { isAdmin: false, actorEmployeeId: "" }
+    { actorEmployeeId: "" }
   );
   assert(dashEmpty.kpis.totalLeads === 0, "dashboard: missing actor is empty");
   assert(
@@ -245,9 +283,9 @@ function main() {
     feedback,
     employees,
     { range: "all" },
-    { isAdmin: true }
+    { canViewOthers: true }
   );
-  assert(dashAdmin.kpis.totalLeads === 4, "dashboard: admin sees all");
+  assert(dashAdmin.kpis.totalLeads === 4, "dashboard: view-others sees all");
   assert(
     dashAdmin.salesPerformance.some((r) => r.employeeId === hagar) &&
       dashAdmin.salesPerformance.some((r) => r.employeeId === salem),
@@ -261,7 +299,7 @@ function main() {
     feedback,
     employees,
     { range: "all", ownerEmployeeId: salem },
-    { isAdmin: true }
+    { canViewOthers: true }
   );
   assert(
     dashAdminFilter.kpis.totalLeads === 1,
@@ -275,10 +313,10 @@ function main() {
     feedback,
     employees,
     { range: "all", ownerEmployeeId: salem },
-    { isAdmin: false, actorEmployeeId: hagar }
+    { actorEmployeeId: hagar }
   );
   assert(
-    dashPeek.kpis.totalLeads === 2,
+    dashPeek.kpis.totalLeads === 0,
     "dashboard: sales owner query cannot peek teammate"
   );
 
@@ -341,6 +379,12 @@ function main() {
   );
   assert(pending.length === 1, "filterSalesProfileLeads pending follow-ups");
 
+  assert(
+    canFilterCrmByOwner({ canViewOthers: true }) &&
+      canFilterCrmByOwner({ canAssign: true }) &&
+      !canFilterCrmByOwner({}),
+    "owner filter follows view-others or assign, not role"
+  );
   assert(canCrm("admin", "assign"), "admin can assign");
   assert(!canCrm("employee", "assign"), "sales cannot assign");
   assert(!canCrm("employee", "view_performance"), "sales cannot view all performance");

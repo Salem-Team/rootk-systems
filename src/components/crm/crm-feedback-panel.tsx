@@ -12,6 +12,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { CrmMentionChips, CrmMentionText } from "@/components/crm/crm-mention-text";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import {
@@ -210,9 +211,13 @@ export function CrmFeedbackPanel({
                   </div>
                   {item.customerFeedback ? (
                     <p className="text-[12px] text-muted-foreground">
-                      {item.customerFeedback}
+                      <CrmMentionText
+                        text={item.customerFeedback}
+                        names={(item.mentionedUsers ?? []).map((u) => u.name)}
+                      />
                     </p>
                   ) : null}
+                  <CrmMentionChips users={item.mentionedUsers} />
                   <p className="text-[11px] text-muted-foreground/80">
                     {t("crm.feedback.lead")}:{" "}
                     {leadMap.get(item.leadId) ?? item.leadId}

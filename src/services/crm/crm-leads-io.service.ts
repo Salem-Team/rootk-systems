@@ -17,13 +17,19 @@ import { crmLeadRepository } from "@/repositories/crm.repository";
 import { fromError, ok } from "@/services/api-result";
 import { simulateDelay } from "@/services/fake-api";
 import { createCrmLead } from "@/services/crm/crm-lead-mutations.service";
+import { canCrm } from "@/lib/crm-policies";
 import {
   actorEmployeeId,
   assertCap,
+  crmLeadFilterScope,
   ensureCatalog,
-  isAdmin,
+  resolveCrmOwnerIds,
   scopeCrmFiltersToActor,
 } from "@/services/crm/crm-shared";
+import {
+  authPermissionSet,
+  getSessionRole,
+} from "@/stores/session-store";
 import type { ApiResponse } from "@/types";
 import type { CrmLeadFilters, CrmNextAction } from "@/types/crm";
 
@@ -106,7 +112,14 @@ export async function importCrmLeads(
             ownerByKey.get(row.owner.toLowerCase()) ||
             null;
         }
-        if (!isAdmin()) ownerEmployeeId = actorEmployeeId();
+        if (!canCrm(getSessionRole(), "assign", authPermissionSet())) {
+          ownerEmployeeId = actorEmployeeId();
+        } else if (ownerEmployeeId) {
+          const allowed = await resolveCrmOwnerIds();
+          if (allowed !== null && !allowed.includes(ownerEmployeeId)) {
+            ownerEmployeeId = actorEmployeeId();
+          }
+        }
         const businessTypeId = row.businessType
           ? businessTypeByKey.get(row.businessType) ||
             businessTypeByKey.get(row.businessType.toLowerCase()) ||
@@ -169,10 +182,7 @@ export async function exportCrmLeadRows(
       crmLeadRepository.findAll(),
       employeeRepository.findAll(),
     ]);
-    const filtered = filterLeads(all, scopeCrmFiltersToActor(filters), {
-      actorEmployeeId: actorEmployeeId(),
-      isAdmin: isAdmin(),
-    });
+    const filtered = filterLeads(all, scopeCrmFiltersToActor(filters), await crmLeadFilterScope());
     const stageName = new Map(stages.map((s) => [s.id, s.name]));
     const businessName = new Map(businessTypes.map((b) => [b.id, b.name]));
     const ownerName = new Map(employees.map((e) => [e.id, e.name]));

@@ -14,8 +14,6 @@ import { LeaveService } from "./leave.service";
 import { ActorId, CompanyId } from "../common/tenant";
 import { CurrentUser, type JwtPayload } from "../common/decorators/current-user";
 import { RolesGuard } from "../common/roles.guard";
-import { isEmployeeRole } from "../common/roles";
-import { resolveScopedEmployeeId } from "../common/scoped-employee";
 import { RequirePermission } from "../common/permissions.decorator";
 
 @Controller("leave")
@@ -32,14 +30,15 @@ export class LeaveController {
     @Query("status") status?: string,
     @Query("type") type?: string
   ) {
-    return this.service.list(companyId, {
-      employeeId: resolveScopedEmployeeId(user, employeeId, {
-        viewAll: "leave.viewAll",
-        viewTeam: "leave.viewTeam",
-      }),
-      status,
-      type,
-    });
+    return this.service.list(
+      companyId,
+      {
+        employeeId,
+        status,
+        type,
+      },
+      user
+    );
   }
 
   @Get(":id")
@@ -49,15 +48,7 @@ export class LeaveController {
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string
   ) {
-    const row = await this.service.byId(companyId, id);
-    if (
-      row &&
-      isEmployeeRole(user.role) &&
-      row.employeeId !== user.employeeId
-    ) {
-      return null;
-    }
-    return row;
+    return this.service.byId(companyId, id, user);
   }
 
   @Post()
@@ -80,10 +71,11 @@ export class LeaveController {
   }
 
   @Patch(":id/approve")
-  @RequirePermission("leave.approve")
+  @RequirePermission("leave.approve", "leave.approveTeam")
   approve(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
+    @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
     @Body() body: { reviewerNote?: string }
   ) {
@@ -92,15 +84,17 @@ export class LeaveController {
       actorId,
       id,
       "approved",
-      body.reviewerNote
+      body.reviewerNote,
+      user
     );
   }
 
   @Patch(":id/reject")
-  @RequirePermission("leave.reject")
+  @RequirePermission("leave.reject", "leave.rejectTeam")
   reject(
     @CompanyId() companyId: string,
     @ActorId() actorId: string,
+    @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
     @Body() body: { reviewerNote?: string }
   ) {
@@ -109,7 +103,8 @@ export class LeaveController {
       actorId,
       id,
       "rejected",
-      body.reviewerNote
+      body.reviewerNote,
+      user
     );
   }
 

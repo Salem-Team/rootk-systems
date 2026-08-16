@@ -20,11 +20,10 @@ import { getSessionUserId } from "@/stores/session-store";
 import type { ApiResponse } from "@/types";
 import type { CrmLead, CrmLeadFilters, PaginatedLeads } from "@/types/crm";
 import {
-  actorEmployeeId,
   assertCap,
   assertLeadAccess,
+  crmLeadFilterScope,
   ensureCatalog,
-  isAdmin,
   scopeCrmFiltersToActor,
   writeHistory,
 } from "@/services/crm/crm-shared";
@@ -38,30 +37,14 @@ export async function getCrmLeads(
   const scoped = scopeCrmFiltersToActor(filters);
   if (isApiMode()) {
     const res = await fetchCrmLeads(scoped);
-    const data = ensurePaginatedLeads(res.data);
-    if (isAdmin()) return { ...res, data };
-    const empId = actorEmployeeId()?.trim() ?? "";
-    const items = empId
-      ? data.items.filter((lead) => lead.ownerEmployeeId === empId)
-      : [];
-    return {
-      ...res,
-      data: {
-        ...data,
-        items,
-        total: items.length === data.items.length ? data.total : items.length,
-      },
-    };
+    return { ...res, data: ensurePaginatedLeads(res.data) };
   }
   try {
     await simulateDelay();
     assertCap("view");
     await ensureCatalog();
     const all = await crmLeadRepository.findAll();
-    let filtered = filterLeads(all, scoped, {
-      actorEmployeeId: actorEmployeeId(),
-      isAdmin: isAdmin(),
-    });
+    let filtered = filterLeads(all, scoped, await crmLeadFilterScope());
     const sort = filters.sort ?? "updatedAt";
     const order = filters.order ?? "desc";
     filtered = [...filtered].sort((a, b) => {
@@ -99,7 +82,7 @@ export async function getCrmLead(
     const res = await fetchCrmLead(id);
     if (res.data) {
       try {
-        assertLeadAccess(res.data);
+        await assertLeadAccess(res.data);
       } catch (error) {
         return fromError(error, null);
       }
@@ -111,7 +94,7 @@ export async function getCrmLead(
     assertCap("view");
     const lead = await crmLeadRepository.findById(id);
     if (!lead) throw new NotFoundError("Lead not found");
-    assertLeadAccess(lead);
+    await assertLeadAccess(lead);
     return ok(lead);
   } catch (error) {
     return fromError(error, null);
@@ -127,7 +110,7 @@ export async function removeCrmLead(
     await simulateDelay();
     const existing = await crmLeadRepository.findById(id);
     if (!existing) throw new NotFoundError("Lead not found");
-    assertLeadAccess(existing);
+    await assertLeadAccess(existing);
     await crmLeadRepository.delete(id);
     await writeHistory({
       leadId: id,

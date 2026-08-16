@@ -1,5 +1,6 @@
 import { unwrapList, type ListPayload } from "@/api/contracts";
 import { ensureCrmDashboard, emptyCrmDashboard } from "@/lib/crm-dashboard-normalize";
+import { detectContactKind } from "@/lib/crm/contact-identity";
 import type {
   CrmLead,
   CrmLeadActivity,
@@ -42,15 +43,22 @@ export function emptyPaginatedLeads(
   };
 }
 
+function normalizeLead(lead: CrmLead): CrmLead {
+  return {
+    ...lead,
+    subStageId: lead.subStageId ?? null,
+    contactKind:
+      lead.contactKind ?? detectContactKind(lead.phone, lead.phoneNormalized),
+    contacts: Array.isArray(lead.contacts) ? lead.contacts : [],
+  };
+}
+
 /** Normalize leads list whether paginated envelope or bare array. */
 export function ensurePaginatedLeads(raw: unknown): PaginatedLeads {
   const empty = emptyPaginatedLeads();
   if (!raw) return empty;
   if (Array.isArray(raw)) {
-    const items = (raw as CrmLead[]).map((lead) => ({
-      ...lead,
-      subStageId: lead.subStageId ?? null,
-    }));
+    const items = (raw as CrmLead[]).map(normalizeLead);
     return {
       items,
       total: items.length,
@@ -66,10 +74,7 @@ export function ensurePaginatedLeads(raw: unknown): PaginatedLeads {
     : Array.isArray(row.data)
       ? row.data
       : [];
-  const items = rawItems.map((lead) => ({
-    ...lead,
-    subStageId: lead.subStageId ?? null,
-  }));
+  const items = rawItems.map(normalizeLead);
   const page = typeof row.page === "number" ? row.page : 1;
   const pageSize = typeof row.pageSize === "number" ? row.pageSize : 20;
   const total = typeof row.total === "number" ? row.total : items.length;
@@ -96,6 +101,10 @@ export function ensureLeadFeedbackList(raw: unknown): CrmLeadFeedback[] {
     ...row,
     meetingMode: row.meetingMode ?? null,
     meetingLocation: row.meetingLocation ?? null,
+    mentionedUserIds: Array.isArray(row.mentionedUserIds)
+      ? row.mentionedUserIds
+      : [],
+    mentionedUsers: Array.isArray(row.mentionedUsers) ? row.mentionedUsers : [],
   }));
 }
 

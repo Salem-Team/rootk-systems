@@ -16,6 +16,31 @@ import {
 } from "@/stores/session-store";
 import type { ApiResponse, LeaveRequest } from "@/types";
 import { emptyLeave } from "./leave-service-helpers";
+import { localDirectReportIds } from "@/services/employee-scope";
+
+async function assertCanReviewLeave(
+  employeeId: string,
+  kind: "approve" | "reject"
+) {
+  const allPerm = kind === "approve" ? "leave.approve" : "leave.reject";
+  const teamPerm = kind === "approve" ? "leave.approveTeam" : "leave.rejectTeam";
+  const permissions = getSessionPermissions();
+  const role = getSessionRole();
+  if (hasPermissionId(allPerm, permissions, role)) return;
+  if (!hasPermissionId(teamPerm, permissions, role)) {
+    throw new ForbiddenError(
+      kind === "approve"
+        ? "You do not have permission to approve leave"
+        : "You do not have permission to reject leave"
+    );
+  }
+  const reports = await localDirectReportIds();
+  if (!reports.includes(employeeId)) {
+    throw new ForbiddenError(
+      "You can only act on people who report directly to you"
+    );
+  }
+}
 
 /** Local-mode approval apply (no role gate — used by admin approve + auto-approve). */
 export async function applyApprovedLeaveLocal(
@@ -130,15 +155,9 @@ export async function approveLeave(
 ): Promise<ApiResponse<LeaveRequest>> {
   if (isApiMode()) return patchApproveLeave(id, reviewerNote);
   try {
-    if (
-      !hasPermissionId(
-        "leave.approve",
-        getSessionPermissions(),
-        getSessionRole()
-      )
-    ) {
-      throw new ForbiddenError("You do not have permission to approve leave");
-    }
+    const current = await leaveRepository.findById(id);
+    if (!current) throw new NotFoundError("Leave request not found");
+    await assertCanReviewLeave(current.employeeId, "approve");
     const parsed = reviewLeaveSchema.safeParse({ reviewerNote });
     if (!parsed.success) {
       throw new ValidationError("Invalid review payload", parsed.error.flatten());
@@ -161,22 +180,13 @@ export async function rejectLeave(
 ): Promise<ApiResponse<LeaveRequest>> {
   if (isApiMode()) return patchRejectLeave(id, reviewerNote);
   try {
-    if (
-      !hasPermissionId(
-        "leave.reject",
-        getSessionPermissions(),
-        getSessionRole()
-      )
-    ) {
-      throw new ForbiddenError("You do not have permission to reject leave");
-    }
+    const current = await leaveRepository.findById(id);
+    if (!current) throw new NotFoundError("Leave request not found");
+    await assertCanReviewLeave(current.employeeId, "reject");
     const parsed = reviewLeaveSchema.safeParse({ reviewerNote });
     if (!parsed.success) {
       throw new ValidationError("Invalid review payload", parsed.error.flatten());
     }
-
-    const current = await leaveRepository.findById(id);
-    if (!current) throw new NotFoundError("Leave request not found");
     if (current.status !== "pending") {
       throw new ConflictError("Only pending requests can be rejected");
     }

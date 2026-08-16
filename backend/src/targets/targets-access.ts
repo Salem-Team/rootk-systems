@@ -22,7 +22,8 @@ export function canSeeTargetOthers(actor: Actor) {
   return canViewOthersInModule(
     actor.permissions,
     "targets.viewAll",
-    "targets.viewTeam"
+    "targets.viewTeam",
+    actor.role
   );
 }
 

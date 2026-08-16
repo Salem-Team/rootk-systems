@@ -1,5 +1,6 @@
 "use client";
 
+import { CrmMentionChips, CrmMentionText } from "@/components/crm/crm-mention-text";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/hooks/use-translation";
@@ -113,7 +114,7 @@ export function CrmLeadSheetTabs({
                   </div>
                   {item.description ? (
                     <p className="mt-1 text-[12px] text-muted-foreground">
-                      {item.description}
+                      <CrmMentionText text={item.description} />
                     </p>
                   ) : null}
                   <p className="mt-1 text-[11px] text-muted-foreground/80">
@@ -146,9 +147,13 @@ export function CrmLeadSheetTabs({
                   </div>
                   {item.customerFeedback ? (
                     <p className="mt-1 text-[12px] text-muted-foreground">
-                      {item.customerFeedback}
+                      <CrmMentionText
+                        text={item.customerFeedback}
+                        names={(item.mentionedUsers ?? []).map((u) => u.name)}
+                      />
                     </p>
                   ) : null}
+                  <CrmMentionChips users={item.mentionedUsers} />
                   <p className="mt-1.5 text-[11px] text-muted-foreground">
                     {t("crm.feedback.recordedBy")}:{" "}
                     <span className="font-medium text-foreground">

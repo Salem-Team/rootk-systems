@@ -1,6 +1,12 @@
 import { patchCrmLead, postCrmLead } from "@/api/crm.api";
 import { isApiMode } from "@/lib/env";
 import { enrichWithAudit, touchEntity } from "@/lib/entity";
+import {
+  ContactIdentityError,
+  detectContactKind,
+  resolveCrmContact,
+} from "@/lib/crm/contact-identity";
+import { canonicalContactKeys } from "@/lib/crm/lead-contacts";
 import { canonicalPhoneOrNull } from "@/lib/phone-normalize";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { createId } from "@/lib/id";
@@ -29,16 +35,94 @@ import {
   actorEmployeeId,
   assertCap,
   assertLeadAccess,
-  canViewOthersCrm,
+  resolveCrmOwnerIds,
   ensureCatalog,
-  isAdmin,
   writeHistory,
 } from "@/services/crm/crm-shared";
 import { clearLocalCrmFollowUpReminders } from "@/services/crm/crm-follow-up-reminders.service";
 
-function throwPhoneDuplicate(existing: CrmLead): never {
+function leadCanonicalKeys(lead: CrmLead): string[] {
+  return canonicalContactKeys([
+    {
+      phoneNormalized:
+        lead.phoneNormalized ?? canonicalPhoneOrNull(lead.phone),
+    },
+    ...(lead.contacts ?? []),
+  ]);
+}
+
+function resolvePayloadContacts(
+  parsed: { phone: string; contactKind?: unknown; contacts?: Array<{ phone: string; kind?: unknown }> },
+  previous?: CrmLead
+) {
+  if (parsed.contacts && parsed.contacts.length > 0) {
+    const rows = parsed.contacts.map((row, index) =>
+      resolveLeadContact(
+        row.phone,
+        row.kind,
+        index === 0
+          ? previous
+            ? { phone: previous.phone, phoneNormalized: previous.phoneNormalized }
+            : undefined
+          : undefined
+      )
+    );
+    const keys = canonicalContactKeys(rows);
+    if (keys.length !== new Set(keys).size) {
+      throw new ValidationError("Duplicate contact on the same lead", {
+        code: "INVALID_CONTACT",
+      });
+    }
+    return { primary: rows[0]!, extras: rows.slice(1) };
+  }
+  const primary = resolveLeadContact(
+    parsed.phone,
+    parsed.contactKind,
+    previous
+      ? { phone: previous.phone, phoneNormalized: previous.phoneNormalized }
+      : undefined
+  );
+  return { primary, extras: previous?.contacts ?? [] };
+}
+
+async function throwIfContactTaken(keys: string[], excludeLeadId?: string) {
+  if (keys.length === 0) return;
+  const clash = (await crmLeadRepository.findAll()).find((lead) => {
+    if (excludeLeadId && lead.id === excludeLeadId) return false;
+    const existingKeys = leadCanonicalKeys(lead);
+    return keys.some((key) => existingKeys.includes(key));
+  });
+  if (clash) await throwPhoneDuplicate(clash);
+}
+
+function resolveLeadContact(
+  raw: string,
+  kind?: unknown,
+  previous?: { phone: string; phoneNormalized?: string | null }
+) {
+  try {
+    return resolveCrmContact({
+      raw,
+      kind,
+      previousPhone: previous?.phone,
+      previousNormalized: previous?.phoneNormalized,
+    });
+  } catch (error) {
+    if (error instanceof ContactIdentityError) {
+      throw new ValidationError(error.message, {
+        code:
+          error.code === "invalid_handle" ? "INVALID_CONTACT" : "INVALID_PHONE",
+      });
+    }
+    throw error;
+  }
+}
+
+async function throwPhoneDuplicate(existing: CrmLead): Promise<never> {
+  const allowed = await resolveCrmOwnerIds();
   const visible =
-    canViewOthersCrm() || existing.ownerEmployeeId === actorEmployeeId();
+    allowed === null ||
+    Boolean(existing.ownerEmployeeId && allowed.includes(existing.ownerEmployeeId));
   if (!visible) {
     throw new ConflictError("A lead with this phone number already exists", {
       code: "PHONE_DUPLICATE",
@@ -67,16 +151,14 @@ export async function createCrmLead(
     assertCap("create");
     await simulateDelay();
     const parsed = createLeadSchema.parse(input);
-    const phoneNormalized = canonicalPhoneOrNull(parsed.phone);
+    const { primary, extras } = resolvePayloadContacts(parsed);
+    const phoneNormalized = primary.phoneNormalized;
     if (!phoneNormalized) {
-      throw new ValidationError("Not a valid Egyptian mobile number");
+      throw new ValidationError("Not a valid Egyptian mobile number", {
+        code: "INVALID_PHONE",
+      });
     }
-    const existing = (await crmLeadRepository.findAll()).find(
-      (lead) =>
-        (lead.phoneNormalized || canonicalPhoneOrNull(lead.phone)) ===
-        phoneNormalized
-    );
-    if (existing) throwPhoneDuplicate(existing);
+    await throwIfContactTaken(canonicalContactKeys([primary, ...extras]));
     const { stages, subStages } = await ensureCatalog();
     if (!stages.some((s) => s.id === parsed.stageId)) {
       throw new ValidationError("Please select a valid stage");
@@ -91,19 +173,26 @@ export async function createCrmLead(
     const actorId = getSessionUserId() || "system";
     const empId = actorEmployeeId()?.trim() || null;
     let ownerEmployeeId = parsed.ownerEmployeeId ?? empId;
-    if (!isAdmin()) {
+    if (!canCrm(getSessionRole(), "assign", authPermissionSet())) {
       if (!empId) {
         throw new ForbiddenError("You can only create leads assigned to you");
       }
       ownerEmployeeId = empId;
+    } else if (ownerEmployeeId) {
+      const allowed = await resolveCrmOwnerIds();
+      if (allowed !== null && !allowed.includes(ownerEmployeeId)) {
+        throw new ForbiddenError("You can only assign leads to people in your team");
+      }
     }
     const now = new Date().toISOString();
     const row = enrichWithAudit(
       {
         id: createId("crm-lead"),
         name: parsed.name,
-        phone: parsed.phone,
+        phone: primary.phone,
         phoneNormalized,
+        contactKind: primary.kind,
+        contacts: extras,
         email: parsed.email ?? "",
         companyName: parsed.companyName ?? "",
         businessTypeId: parsed.businessTypeId ?? null,
@@ -162,31 +251,50 @@ export async function updateCrmLead(
     await simulateDelay();
     const existing = await crmLeadRepository.findById(id);
     if (!existing) throw new NotFoundError("Lead not found");
-    assertLeadAccess(existing);
+    await assertLeadAccess(existing);
     const parsed = updateLeadSchema.parse(input);
     const actorId = getSessionUserId() || "system";
     const empId = actorEmployeeId();
     const { stages, subStages } = await ensureCatalog();
 
+    let nextPhone = existing.phone;
     let nextPhoneNormalized = existing.phoneNormalized ?? canonicalPhoneOrNull(existing.phone);
-    if (parsed.phone !== undefined && parsed.phone !== existing.phone) {
-      const normalized = canonicalPhoneOrNull(parsed.phone);
-      if (!normalized) {
-        throw new ValidationError("Not a valid Egyptian mobile number");
-      }
-      const clash = (await crmLeadRepository.findAll()).find(
-        (lead) =>
-          lead.id !== existing.id &&
-          (lead.phoneNormalized || canonicalPhoneOrNull(lead.phone)) ===
-            normalized
+    let nextContactKind =
+      existing.contactKind ??
+      detectContactKind(existing.phone, existing.phoneNormalized);
+    let nextContacts = existing.contacts ?? [];
+    if (
+      parsed.phone !== undefined ||
+      parsed.contactKind !== undefined ||
+      parsed.contacts !== undefined
+    ) {
+      const resolved = resolvePayloadContacts(
+        {
+          phone: parsed.phone ?? existing.phone,
+          contactKind: parsed.contactKind,
+          contacts: parsed.contacts,
+        },
+        existing
       );
-      if (clash) throwPhoneDuplicate(clash);
-      nextPhoneNormalized = normalized;
+      await throwIfContactTaken(
+        canonicalContactKeys([resolved.primary, ...resolved.extras]),
+        existing.id
+      );
+      nextPhone = resolved.primary.phone;
+      nextPhoneNormalized = resolved.primary.phoneNormalized;
+      nextContactKind = resolved.primary.kind;
+      if (parsed.contacts !== undefined) nextContacts = resolved.extras;
     }
 
     if (parsed.ownerEmployeeId !== undefined && parsed.ownerEmployeeId !== existing.ownerEmployeeId) {
       if (!canCrm(getSessionRole(), "assign", authPermissionSet())) {
         throw new ForbiddenError("You cannot reassign leads");
+      }
+      if (parsed.ownerEmployeeId) {
+        const allowed = await resolveCrmOwnerIds();
+        if (allowed !== null && !allowed.includes(parsed.ownerEmployeeId)) {
+          throw new ForbiddenError("You can only assign leads to people in your team");
+        }
       }
     }
 
@@ -284,7 +392,10 @@ export async function updateCrmLead(
 
     const updated = touchEntity(existing, actorId, {
       ...parsed,
+      phone: nextPhone,
       phoneNormalized: nextPhoneNormalized ?? existing.phoneNormalized,
+      contactKind: nextContactKind,
+      contacts: nextContacts,
       stageId: nextStageId,
       subStageId: nextSubStageId,
       email: parsed.email ?? existing.email,

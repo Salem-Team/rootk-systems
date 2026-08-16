@@ -8,7 +8,7 @@ import {
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { writeActivity } from "../common/activity-writer";
-import { assertCap, canViewOthersLeads, type Actor } from "./crm-access";
+import { assertCap, type Actor } from "./crm-access";
 import {
   asEnum,
   asOptionalDate,
@@ -18,8 +18,16 @@ import {
   NEXT_ACTIONS,
 } from "./crm-input";
 import { mapLead } from "./crm-mappers";
-import { clearFollowUpReminderMeta } from "./crm-follow-up-meta";
-import { assertPhoneAvailable, resolveStoredPhone } from "./crm-phone";
+import { clearFollowUpReminderMeta, asLeadMetadata } from "./crm-follow-up-meta";
+import {
+  assertContactsAvailable,
+  resolveIncomingContactList,
+} from "./crm-phone";
+import {
+  canonicalContactKeys,
+  contactsMetadataPatch,
+  extraContactsFromMetadata,
+} from "../lib/lead-contacts";
 import { CrmSharedService } from "./crm-shared.service";
 
 @Injectable()
@@ -36,7 +44,7 @@ export class CrmLeadUpdateService {
     body: Record<string, unknown>
   ) {
     const current = await this.shared.requireLead(companyId, actor, id);
-    this.shared.assertCanEditLead(actor, current);
+    await this.shared.assertCanEditLead(companyId, actor, current);
 
     const data: Prisma.CrmLeadUpdateInput = {
       updatedBy: actor.userId,
@@ -48,19 +56,34 @@ export class CrmLeadUpdateService {
       if (!name) throw new BadRequestException("name is required");
       data.name = name;
     }
-    if (body.phone !== undefined) {
-      const resolved = resolveStoredPhone({
-        raw: body.phone,
-        required: true,
-        previousPhone: current.phone,
+    if (
+      body.phone !== undefined ||
+      body.contactKind !== undefined ||
+      body.contacts !== undefined
+    ) {
+      const resolved = resolveIncomingContactList(body, {
+        phone: current.phone,
+        phoneNormalized: current.phoneNormalized,
+        extras: extraContactsFromMetadata(current.metadata),
       });
-      data.phone = resolved.phone;
-      data.phoneNormalized = resolved.phoneNormalized;
-      await assertPhoneAvailable(this.prisma, companyId, resolved.phoneNormalized, {
-        excludeLeadId: id,
-        canViewOthers: canViewOthersLeads(actor),
-        actorEmployeeId: actor.employeeId,
-      });
+      data.phone = resolved.primary.phone;
+      data.phoneNormalized = resolved.primary.phoneNormalized;
+      await assertContactsAvailable(
+        this.prisma,
+        companyId,
+        canonicalContactKeys([resolved.primary, ...resolved.extras]),
+        {
+          excludeLeadId: id,
+          visibleOwnerIds: await this.shared.resolveOwnerIds(companyId, actor),
+          actorEmployeeId: actor.employeeId,
+        }
+      );
+      if (resolved.replaceExtras) {
+        data.metadata = contactsMetadataPatch(
+          resolved.extras,
+          current.metadata
+        ) as Prisma.InputJsonValue;
+      }
     }
     if (body.email !== undefined) data.email = String(body.email ?? "").trim();
     if (body.companyName !== undefined) {
@@ -96,7 +119,8 @@ export class CrmLeadUpdateService {
     }
     if (body.nextFollowUpAt !== undefined) {
       data.nextFollowUpAt = asOptionalDate(body.nextFollowUpAt) ?? null;
-      data.metadata = clearFollowUpReminderMeta(current.metadata);
+      const meta = asLeadMetadata(data.metadata ?? current.metadata);
+      data.metadata = clearFollowUpReminderMeta(meta);
     }
     if (body.notes !== undefined) data.notes = String(body.notes ?? "");
     if (body.lossReasonTypeId !== undefined) {
@@ -114,6 +138,7 @@ export class CrmLeadUpdateService {
         typeof body.ownerEmployeeId === "string" && body.ownerEmployeeId
           ? body.ownerEmployeeId
           : null;
+      await this.shared.assertOwnerAssignable(companyId, actor, nextOwner);
       data.ownerEmployeeId = nextOwner;
       ownerChanged = nextOwner !== current.ownerEmployeeId;
       previousOwner = current.ownerEmployeeId;

@@ -1,8 +1,19 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { CrmActivityType, CrmNextAction, type Prisma } from "@prisma/client";
+import {
+  CrmActivityType,
+  CrmNextAction,
+  NotificationAudience,
+  type Prisma,
+} from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { writeActivity } from "../common/activity-writer";
-import { assertCap, canViewOthersLeads, type Actor } from "./crm-access";
+import {
+  collectMentionedUserIds,
+  formatUserMentionName,
+  mentionMetadata,
+} from "../lib/mentions";
+import { NotificationsService } from "../notifications/notifications.service";
+import { assertCap, type Actor } from "./crm-access";
 import {
   clampPage,
   clampPageSize,
@@ -18,7 +29,8 @@ import { CrmSharedService } from "./crm-shared.service";
 export class CrmActivitiesService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly shared: CrmSharedService
+    private readonly shared: CrmSharedService,
+    private readonly notifications: NotificationsService
   ) {}
 
   async addActivity(
@@ -28,7 +40,7 @@ export class CrmActivitiesService {
     body: Record<string, unknown>
   ) {
     const lead = await this.shared.requireLead(companyId, actor, leadId);
-    this.shared.assertCanEditLead(actor, lead);
+    await this.shared.assertCanEditLead(companyId, actor, lead);
 
     const title = String(body.title ?? "").trim();
     if (!title) throw new BadRequestException("title is required");
@@ -99,7 +111,7 @@ export class CrmActivitiesService {
     body: Record<string, unknown>
   ) {
     const lead = await this.shared.requireLead(companyId, actor, leadId);
-    this.shared.assertCanEditLead(actor, lead);
+    await this.shared.assertCanEditLead(companyId, actor, lead);
     await this.shared.ensureDefaultFeedbackTypes(companyId);
 
     let feedbackTypeId = String(body.feedbackTypeId ?? "").trim();
@@ -185,6 +197,12 @@ export class CrmActivitiesService {
       }
     }
 
+    const mentionUsers = await this.resolveMentionUsers(
+      companyId,
+      actor.userId,
+      collectMentionedUserIds(body)
+    );
+
     const row = await this.prisma.crmLeadFeedback.create({
       data: {
         companyId,
@@ -200,6 +218,13 @@ export class CrmActivitiesService {
         recordedByEmployeeId: recordedByEmployeeId ?? null,
         createdBy: actor.userId,
         updatedBy: actor.userId,
+        ...(mentionUsers.length > 0
+          ? {
+              metadata: mentionMetadata(
+                mentionUsers
+              ) as unknown as Prisma.InputJsonValue,
+            }
+          : {}),
       },
     });
 
@@ -266,6 +291,14 @@ export class CrmActivitiesService {
       employeeId: lead.ownerEmployeeId ?? undefined,
       actorId: actor.userId,
     });
+    await this.notifyFeedbackMentions({
+      companyId,
+      actor,
+      leadId,
+      leadName: lead.name,
+      feedbackId: row.id,
+      mentionUsers,
+    });
 
     return mapLeadFeedback(row);
   }
@@ -280,12 +313,15 @@ export class CrmActivitiesService {
     const safePage = clampPage(page);
     const safeSize = clampPageSize(pageSize, DEFAULT_ACTIVITIES_PAGE_SIZE);
 
+    const ownerIds = await this.shared.resolveOwnerIds(companyId, actor);
+
     const where: Prisma.CrmLeadActivityWhereInput = {
       companyId,
       deletedAt: null,
-      ...(canViewOthersLeads(actor)
-        ? {}
-        : { lead: { deletedAt: null, ...this.shared.scopeOwnerFilter(actor) } }),
+      lead: {
+        deletedAt: null,
+        ...this.shared.scopeOwnerFilter(actor, ownerIds),
+      },
     };
 
     const rows = await this.prisma.crmLeadActivity.findMany({
@@ -311,6 +347,8 @@ export class CrmActivitiesService {
       DEFAULT_FEEDBACK_PAGE_SIZE
     );
 
+    const ownerIds = await this.shared.resolveOwnerIds(companyId, actor);
+
     const where: Prisma.CrmLeadFeedbackWhereInput = {
       companyId,
       deletedAt: null,
@@ -318,10 +356,8 @@ export class CrmActivitiesService {
       ...(query.leadId ? { leadId: query.leadId } : {}),
       lead: {
         deletedAt: null,
-        ...this.shared.scopeOwnerFilter(actor),
-        ...(query.ownerEmployeeId && canViewOthersLeads(actor)
-          ? { ownerEmployeeId: query.ownerEmployeeId }
-          : {}),
+        ...this.shared.scopeOwnerFilter(actor, ownerIds),
+        ...this.shared.extraOwnerFilter(ownerIds, query.ownerEmployeeId),
       },
     };
 
@@ -334,5 +370,63 @@ export class CrmActivitiesService {
 
     // Flat array — matches frontend `CrmLeadFeedback[]`.
     return rows.map(mapLeadFeedback);
+  }
+
+  private async resolveMentionUsers(
+    companyId: string,
+    actorId: string,
+    ids: string[]
+  ) {
+    const mentionIds = ids.filter((id) => id !== actorId);
+    if (mentionIds.length === 0) return [];
+    const users = await this.prisma.user.findMany({
+      where: {
+        companyId,
+        id: { in: mentionIds },
+        deletedAt: null,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        displayName: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+      },
+    });
+    return users.map((user) => ({
+      id: user.id,
+      name: formatUserMentionName(user) || user.email,
+    }));
+  }
+
+  private async notifyFeedbackMentions(opts: {
+    companyId: string;
+    actor: Actor;
+    leadId: string;
+    leadName: string;
+    feedbackId: string;
+    mentionUsers: { id: string; name: string }[];
+  }) {
+    if (opts.mentionUsers.length === 0) return;
+    try {
+      const actorName = await this.shared.actorName(opts.actor);
+      await this.notifications.notifyDomain({
+        companyId: opts.companyId,
+        actorId: opts.actor.userId,
+        category: "mention",
+        priority: "high",
+        audience: NotificationAudience.all,
+        titleKey: "notifications.crmFeedbackMentionTitle",
+        bodyKey: "notifications.crmFeedbackMentionBody",
+        vars: { actor: actorName, lead: opts.leadName },
+        href: `/crm?lead=${opts.leadId}`,
+        entityType: "crm_feedback",
+        entityId: opts.feedbackId,
+        recipientIds: opts.mentionUsers.map((user) => user.id),
+      });
+    } catch {
+      // Mentions should never block saving feedback.
+    }
   }
 }

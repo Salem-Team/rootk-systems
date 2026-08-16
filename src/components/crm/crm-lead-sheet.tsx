@@ -3,7 +3,7 @@
 import { Loader2, Pencil } from "lucide-react";
 import { CrmFeedbackForm } from "@/components/crm/crm-feedback-form";
 import { CrmLeadSheetTabs } from "@/components/crm/crm-lead-sheet-tabs";
-import { CrmPhoneActions } from "@/components/crm/crm-phone-actions";
+import { CrmLeadContactList } from "@/components/crm/crm-lead-contact-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -74,13 +74,9 @@ export function CrmLeadSheet({
                 <SheetTitle className="truncate">{lead?.name ?? "…"}</SheetTitle>
                 <SheetDescription asChild>
                   <div className="mt-1">
-                    <CrmPhoneActions
-                      phone={lead?.phone ?? ""}
-                      phoneNormalized={lead?.phoneNormalized}
-                      leadId={lead?.id}
-                      leadName={lead?.name}
-                      className="text-[12px]"
-                    />
+                  <div className="mt-1">
+                    {lead ? <CrmLeadContactList lead={lead} /> : null}
+                  </div>
                   </div>
                 </SheetDescription>
               </div>

@@ -17,6 +17,8 @@ import {
   PERMISSION_MODULES,
   ROUTE_PERMISSIONS,
   TARGET_CAPABILITY_TO_PERMISSION,
+  OTHER_USERS_DATA_PERMISSION_IDS,
+  withPermissionGrantSideEffects,
   canViewOthersInModule,
   isPermissionId,
   overridesFromEffective,
@@ -134,7 +136,16 @@ function main() {
     "crm.viewOthersLeads",
     "attendance.viewTeam"
   );
-  assert(!blocked.all && !blocked.team, "master off blocks module view-others");
+  assert(blocked.all, "crm.viewOthersLeads works without the master switch");
+
+  const masterOnly = canViewOthersInModule(
+    ["dataAccess.viewOtherUsers"],
+    "crm.viewOthersLeads"
+  );
+  assert(
+    !masterOnly.all,
+    "master switch alone does not unlock CRM without crm.viewOthersLeads"
+  );
 
   const allowed = canViewOthersInModule(
     [
@@ -148,7 +159,7 @@ function main() {
   assert(allowed.all, "master + view others leads → all");
 
   const teamOnly = canViewOthersInModule(
-    ["dataAccess.viewOtherUsers", "attendance.viewTeam"],
+    ["attendance.viewTeam"],
     "attendance.viewAll",
     "attendance.viewTeam"
   );
@@ -178,12 +189,48 @@ function main() {
     "view_team capability can be granted without the master switch"
   );
   assert(
-    !canViewOthersInModule(
+    canViewOthersInModule(
       ["organicAds.viewTeam", "organicAds.viewAll"],
       "organicAds.viewAll",
       "organicAds.viewTeam"
-    ).team,
-    "ads viewTeam without master switch does not expose others' ads"
+    ).all,
+    "ads viewAll without master switch still exposes others' ads"
+  );
+
+  const grantedOthers = withPermissionGrantSideEffects(
+    ["crm.viewLeads"],
+    "crm.viewOthersLeads",
+    true
+  );
+  assert(
+    grantedOthers.has("dataAccess.viewOtherUsers") &&
+      grantedOthers.has("crm.viewLeads"),
+    "granting view others leads also turns on the master switch"
+  );
+  assert(
+    OTHER_USERS_DATA_PERMISSION_IDS.includes("crm.viewOthersLeads"),
+    "other-users list is derived from the catalog and includes CRM"
+  );
+  const empGranted = resolveEffectivePermissions("employee", [
+    { permissionId: "crm.viewOthersLeads", granted: true },
+  ]);
+  assert(
+    canViewOthersInModule(
+      empGranted,
+      "crm.viewOthersLeads",
+      undefined,
+      "employee"
+    ).all,
+    "employee role + crm.viewOthersLeads grant can see other leads"
+  );
+  assert(
+    !canViewOthersInModule(
+      resolveEffectivePermissions("employee", []),
+      "crm.viewOthersLeads",
+      undefined,
+      "employee"
+    ).all,
+    "employee without grant still scoped to own leads"
   );
 
   for (const cap of Object.keys(CRM_CAPABILITY_TO_PERMISSION)) {

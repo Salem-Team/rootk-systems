@@ -10,6 +10,9 @@ import type {
   CrmSubStage,
 } from "@prisma/client";
 import { auditFields, iso, isoOrNull } from "../common/mappers";
+import { detectContactKind } from "../lib/contact-identity";
+import { extraContactsFromMetadata } from "../lib/lead-contacts";
+import { mentionsFromMetadata } from "../lib/mentions";
 
 export function mapSubStage(row: CrmSubStage) {
   return {
@@ -67,6 +70,8 @@ export function mapLead(row: CrmLead) {
     name: row.name,
     phone: row.phone,
     phoneNormalized: row.phoneNormalized ?? null,
+    contactKind: detectContactKind(row.phone, row.phoneNormalized),
+    contacts: extraContactsFromMetadata(row.metadata),
     email: row.email,
     companyName: row.companyName,
     businessTypeId: row.businessTypeId,
@@ -120,6 +125,7 @@ export function mapLeadActivity(row: CrmLeadActivity) {
 }
 
 export function mapLeadFeedback(row: CrmLeadFeedback) {
+  const mentionedUsers = mentionsFromMetadata(row.metadata);
   return {
     id: row.id,
     leadId: row.leadId,
@@ -132,6 +138,8 @@ export function mapLeadFeedback(row: CrmLeadFeedback) {
     meetingLocation: row.meetingLocation ?? null,
     notes: row.notes,
     recordedByEmployeeId: row.recordedByEmployeeId,
+    mentionedUserIds: mentionedUsers.map((user) => user.id),
+    mentionedUsers,
     ...auditFields(row),
   };
 }

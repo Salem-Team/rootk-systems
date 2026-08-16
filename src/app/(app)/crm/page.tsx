@@ -15,6 +15,7 @@ import { CrmLeadFormSheet } from "@/components/crm/crm-lead-form-sheet";
 import { CrmLeadSheet } from "@/components/crm/crm-lead-sheet";
 import { CrmLeadsOverview } from "@/components/crm/crm-leads-overview";
 import { CrmLeadsPanel } from "@/components/crm/crm-leads-panel";
+import { CrmLeadsBulkAdd } from "@/components/crm/crm-leads-bulk-add";
 import { CrmPerformancePanel } from "@/components/crm/crm-performance-panel";
 import { CrmPhoneContactImport } from "@/components/crm/crm-phone-contact-import";
 import { CrmPhoneDuplicatesBanner } from "@/components/crm/crm-phone-duplicates-banner";
@@ -50,6 +51,14 @@ export default function CrmPage() {
                     JSON.stringify(draft)
                   );
                 }}
+              />
+              <CrmLeadsBulkAdd
+                stages={hub.safeStages}
+                businessTypes={hub.safeBusinessTypes}
+                employees={hub.safeEmployees}
+                canAssign={hub.canAssign}
+                onImported={() => void hub.reloadVisible()}
+                className="min-h-11"
               />
               <Button onClick={hub.openCreate}>
                 <Plus className="h-4 w-4" />
@@ -88,6 +97,7 @@ export default function CrmPage() {
               }
               employees={hub.safeEmployees}
               canAssign={hub.canAssign}
+              canViewOthers={hub.canViewOthers || hub.canViewTeam}
             />
           ) : null}
 
@@ -99,11 +109,15 @@ export default function CrmPage() {
               loading={hub.loading && hub.safePipelineLeads.length === 0}
               employees={hub.safeEmployees}
               canAssign={hub.canAssign}
+              canViewOthers={hub.canViewOthers || hub.canViewTeam}
               ownerEmployeeId={hub.overviewOwnerEmployeeId}
               onOwnerChange={hub.setOverviewOwner}
               onOpenAllLeads={hub.openAllLeads}
               onOpenStage={hub.openStageLeads}
               onAddLead={hub.canCreate ? hub.openCreate : undefined}
+              onImported={hub.canCreate ? () => void hub.reloadVisible() : undefined}
+              canCreate={hub.canCreate}
+              businessTypes={hub.safeBusinessTypes}
             />
           ) : null}
 
@@ -131,7 +145,9 @@ export default function CrmPage() {
                 onAddLead={hub.canCreate ? hub.openCreate : undefined}
                 onImported={() => void hub.reloadVisible()}
                 canAssign={hub.canAssign}
+                canViewOthers={hub.canViewOthers || hub.canViewTeam}
                 canImport={hub.canCreate}
+                businessTypes={hub.safeBusinessTypes}
               />
             </div>
           ) : null}
@@ -152,6 +168,7 @@ export default function CrmPage() {
               loading={hub.loading}
               onRowClick={(lead) => hub.setViewLeadId(lead.id)}
               canAssign={hub.canAssign}
+              canViewOthers={hub.canViewOthers || hub.canViewTeam}
             />
           ) : null}
 
@@ -198,6 +215,7 @@ export default function CrmPage() {
               onFiltersChange={hub.setDashFilters}
               employees={hub.safeEmployees}
               canAssign={hub.canAssign}
+              canViewOthers={hub.canViewOthers || hub.canViewTeam}
               loading={hub.loading}
               onSelectEmployee={(id) => hub.setProfileEmployeeId(id)}
             />
@@ -217,6 +235,7 @@ export default function CrmPage() {
               onFiltersChange={hub.setDashFilters}
               employees={hub.safeEmployees}
               canAssign={hub.canAssign}
+              canViewOthers={hub.canViewOthers || hub.canViewTeam}
             />
           ) : null}
         </div>

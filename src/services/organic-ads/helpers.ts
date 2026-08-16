@@ -12,6 +12,7 @@ import {
   organicAdvertisementRepository,
 } from "@/repositories/organic-ads.repository";
 import { workTaskRepository } from "@/repositories";
+import { localDirectReportIds } from "@/services/employee-scope";
 import {
   authPermissionSet,
   getSessionPermissions,
@@ -42,7 +43,8 @@ export function canSeeOrganicAdsTeam(): boolean {
   return canViewOthersInModule(
     getSessionPermissions(),
     "organicAds.viewAll",
-    "organicAds.viewTeam"
+    "organicAds.viewTeam",
+    getSessionRole()
   ).team;
 }
 
@@ -104,10 +106,16 @@ export async function scopedAds(): Promise<OrganicAdvertisement[]> {
   const others = canViewOthersInModule(
     getSessionPermissions(),
     "organicAds.viewAll",
-    "organicAds.viewTeam"
+    "organicAds.viewTeam",
+    getSessionRole()
   );
-  if (others.team) return all;
   const employeeId = getWorkEmployeeId();
+  if (others.all) return all;
+  if (others.team) {
+    const reports = await localDirectReportIds();
+    const allowed = new Set([employeeId, ...reports].filter(Boolean));
+    return all.filter((a) => allowed.has(a.ownerEmployeeId));
+  }
   if (!employeeId) return [];
   return all.filter((a) => a.ownerEmployeeId === employeeId);
 }

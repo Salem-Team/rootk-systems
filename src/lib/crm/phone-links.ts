@@ -1,11 +1,15 @@
+import { detectContactKind, displayCrmContact } from "@/lib/crm/contact-identity";
 import {
   canonicalPhoneOrNull,
   formatEgyptianNationalDisplay,
   normalizeEgyptianMobile,
 } from "@/lib/phone-normalize";
 
-/** Display-friendly Egyptian national number when valid; otherwise the original string. */
+/** Display-friendly contact: national phone, or `@handle` for usernames. */
 export function displayCrmPhone(phone: string, phoneNormalized?: string | null): string {
+  if (detectContactKind(phone, phoneNormalized) !== "phone") {
+    return displayCrmContact(phone, phoneNormalized);
+  }
   const formatted =
     formatEgyptianNationalDisplay(phoneNormalized || phone) ??
     phone.trim();

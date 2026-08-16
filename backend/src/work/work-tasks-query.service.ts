@@ -67,12 +67,27 @@ export class WorkTasksQueryService {
       where: { id, companyId, deletedAt: null },
     });
     if (!row) return null;
-    if (
-      actor.role === "employee" &&
-      workTaskListScope(actor) === "own" &&
-      !row.assigneeIds.includes(actor.employeeId)
-    ) {
-      return null;
+    if (actor.role === "employee") {
+      const scope = workTaskListScope(actor);
+      if (scope === "own" && !row.assigneeIds.includes(actor.employeeId)) {
+        return null;
+      }
+      if (scope === "managed") {
+        const reportIds = await listDirectReportIds(
+          this.prisma,
+          companyId,
+          actor.employeeId
+        );
+        const visible = new Set(
+          [actor.employeeId, ...reportIds].filter(Boolean)
+        );
+        const visibleCreated = [actor.userId, actor.employeeId];
+        const onTeam = row.assigneeIds.some((id) => visible.has(id));
+        const createdByMe = Boolean(
+          row.createdBy && visibleCreated.includes(row.createdBy)
+        );
+        if (!onTeam && !createdByMe) return null;
+      }
     }
     return mapTask(row, actor);
   }

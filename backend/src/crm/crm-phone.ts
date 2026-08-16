@@ -1,10 +1,16 @@
-/** CRM phone identity helpers — wrap the shared canonicalizer. */
+/** CRM contact identity helpers — wrap the shared canonicalizer. */
 import { BadRequestException, ConflictException } from "@nestjs/common";
 import type { PrismaClient } from "@prisma/client";
 import {
-  canonicalPhoneOrNull,
-  normalizeEgyptianMobile,
-} from "../lib/phone-normalize";
+  ContactIdentityError,
+  resolveCrmContact,
+  type CrmContactKind,
+} from "../lib/contact-identity";
+import {
+  MAX_LEAD_CONTACTS,
+  type LeadContactRecord,
+} from "../lib/lead-contacts";
+import { canonicalPhoneOrNull } from "../lib/phone-normalize";
 
 type PhoneDb = {
   crmLead: Pick<PrismaClient["crmLead"], "findFirst">;
@@ -49,43 +55,47 @@ export function summarizeLead(row: {
 }
 
 /**
- * Incoming `phone` is stored as entered (trimmed). Canonical E.164 is separate.
- * Create: invalid Egyptian mobile is rejected.
- * Update of an unchanged historical invalid value: kept, phoneNormalized stays null.
+ * Incoming contact is a phone or a platform username.
+ * Phone: stored as entered; uniqueness key is E.164.
+ * Handle: stored as `@handle`; uniqueness key is `h:{kind}:{handle}`.
+ * Update of an unchanged historical invalid phone: kept, phoneNormalized stays null.
  */
 export function resolveStoredPhone(input: {
   raw: unknown;
+  kind?: unknown;
   required: boolean;
   previousPhone?: string;
-}): { phone: string; phoneNormalized: string | null } {
-  const trimmed = String(input.raw ?? "").trim();
-  if (!trimmed) {
-    if (input.required) {
-      throw new BadRequestException("phone is required");
+  previousNormalized?: string | null;
+}): {
+  kind: CrmContactKind;
+  phone: string;
+  phoneNormalized: string | null;
+} {
+  try {
+    return resolveCrmContact({
+      raw: input.raw,
+      kind: input.kind,
+      previousPhone: input.previousPhone,
+      previousNormalized: input.previousNormalized,
+    });
+  } catch (error) {
+    if (error instanceof ContactIdentityError) {
+      if (error.code === "empty") {
+        throw new BadRequestException("phone is required");
+      }
+      if (error.code === "invalid_handle") {
+        throw new BadRequestException({
+          message: error.message,
+          code: "INVALID_CONTACT",
+        });
+      }
+      throw new BadRequestException({
+        message: error.message,
+        code: "INVALID_PHONE",
+      });
     }
-    throw new BadRequestException("phone is required");
+    throw error;
   }
-
-  const parsed = normalizeEgyptianMobile(trimmed);
-  if (parsed.ok) {
-    return { phone: trimmed, phoneNormalized: parsed.e164 };
-  }
-
-  const unchangedInvalid =
-    input.previousPhone !== undefined &&
-    input.previousPhone.trim() === trimmed;
-
-  if (unchangedInvalid) {
-    return { phone: trimmed, phoneNormalized: null };
-  }
-
-  if (parsed.code === "empty") {
-    throw new BadRequestException("phone is required");
-  }
-  throw new BadRequestException({
-    message: parsed.reason,
-    code: "INVALID_PHONE",
-  });
 }
 
 export async function findLeadByCanonicalPhone(
@@ -98,8 +108,16 @@ export async function findLeadByCanonicalPhone(
     where: {
       companyId,
       deletedAt: null,
-      phoneNormalized,
       ...(excludeLeadId ? { id: { not: excludeLeadId } } : {}),
+      OR: [
+        { phoneNormalized },
+        {
+          metadata: {
+            path: ["contactKeys"],
+            array_contains: phoneNormalized,
+          },
+        },
+      ],
     },
     select: {
       id: true,
@@ -116,7 +134,12 @@ export async function assertPhoneAvailable(
   prisma: PhoneDb,
   companyId: string,
   phoneNormalized: string | null,
-  opts: { excludeLeadId?: string; actorEmployeeId?: string; canViewOthers: boolean }
+  opts: {
+    excludeLeadId?: string;
+    actorEmployeeId?: string;
+    canViewOthers?: boolean;
+    visibleOwnerIds?: string[] | null;
+  }
 ) {
   if (!phoneNormalized) return;
   const existing = await findLeadByCanonicalPhone(
@@ -127,8 +150,13 @@ export async function assertPhoneAvailable(
   );
   if (!existing) return;
   const visible =
-    opts.canViewOthers ||
-    (!!opts.actorEmployeeId && existing.ownerEmployeeId === opts.actorEmployeeId);
+    opts.visibleOwnerIds !== undefined
+      ? opts.visibleOwnerIds === null ||
+        (!!existing.ownerEmployeeId &&
+          opts.visibleOwnerIds.includes(existing.ownerEmployeeId))
+      : Boolean(opts.canViewOthers) ||
+        (!!opts.actorEmployeeId &&
+          existing.ownerEmployeeId === opts.actorEmployeeId);
   if (!visible) {
     throw new ConflictException({
       message: "A lead with this phone number already exists",
@@ -138,6 +166,90 @@ export async function assertPhoneAvailable(
     });
   }
   throw new PhoneDuplicateException(summarizeLead(existing));
+}
+
+export async function assertContactsAvailable(
+  prisma: PhoneDb,
+  companyId: string,
+  keys: string[],
+  opts: {
+    excludeLeadId?: string;
+    actorEmployeeId?: string;
+    canViewOthers?: boolean;
+    visibleOwnerIds?: string[] | null;
+  }
+) {
+  for (const key of keys) {
+    await assertPhoneAvailable(prisma, companyId, key, opts);
+  }
+}
+
+export function resolveIncomingContactList(
+  body: Record<string, unknown>,
+  previous?: {
+    phone: string;
+    phoneNormalized: string | null;
+    extras?: LeadContactRecord[];
+  }
+): {
+  primary: LeadContactRecord;
+  extras: LeadContactRecord[];
+  replaceExtras: boolean;
+} {
+  const rawList = Array.isArray(body.contacts) ? body.contacts : null;
+  if (rawList) {
+    if (rawList.length > MAX_LEAD_CONTACTS) {
+      throw new BadRequestException("Too many contacts");
+    }
+    const resolved: LeadContactRecord[] = [];
+    const seen = new Set<string>();
+    for (const [index, item] of rawList.entries()) {
+      const row =
+        item && typeof item === "object"
+          ? (item as Record<string, unknown>)
+          : {};
+      const raw = row.phone ?? row.value;
+      if (!String(raw ?? "").trim()) continue;
+      const next = resolveStoredPhone({
+        raw,
+        kind: row.kind,
+        required: true,
+        previousPhone: index === 0 ? previous?.phone : undefined,
+        previousNormalized: index === 0 ? previous?.phoneNormalized : undefined,
+      });
+      if (next.phoneNormalized) {
+        if (seen.has(next.phoneNormalized)) {
+          throw new BadRequestException({
+            message: "Duplicate contact on the same lead",
+            code: "INVALID_CONTACT",
+          });
+        }
+        seen.add(next.phoneNormalized);
+      }
+      resolved.push(next);
+    }
+    if (resolved.length === 0) {
+      throw new BadRequestException("phone is required");
+    }
+    return {
+      primary: resolved[0],
+      extras: resolved.slice(1),
+      replaceExtras: true,
+    };
+  }
+
+  const primary = resolveStoredPhone({
+    raw: body.phone !== undefined ? body.phone : previous?.phone,
+    kind: body.contactKind,
+    required: true,
+    previousPhone: previous?.phone,
+    previousNormalized: previous?.phoneNormalized,
+  });
+  return {
+    primary,
+    extras: previous?.extras ?? [],
+    replaceExtras: false,
+  };
 }
 
 export function searchCanonicalFromQuery(q: string): string | null {

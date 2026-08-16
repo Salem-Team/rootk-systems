@@ -55,7 +55,7 @@ export class CrmCallsService {
     body: Record<string, unknown>
   ) {
     const lead = await this.shared.requireLead(companyId, actor, leadId);
-    this.shared.assertCanEditLead(actor, lead);
+    await this.shared.assertCanEditLead(companyId, actor, lead);
 
     const status = asEnum<CrmCallStatus>(
       body.status,

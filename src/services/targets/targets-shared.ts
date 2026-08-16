@@ -52,7 +52,8 @@ export function scopeTargets(
   const others = canViewOthersInModule(
     getSessionPermissions(),
     "targets.viewAll",
-    "targets.viewTeam"
+    "targets.viewTeam",
+    getSessionRole()
   );
 
   if (others.all) {

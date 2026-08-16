@@ -61,7 +61,8 @@ export function useOrganicAdsPage() {
   const canViewTeam = canViewOthersInModule(
     permissions,
     "organicAds.viewAll",
-    "organicAds.viewTeam"
+    "organicAds.viewTeam",
+    role
   ).team;
 
   const [tab, setTab] = useState<OrganicAdsHubTab>(() =>

@@ -13,7 +13,14 @@ import {
   type Prisma,
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { assertCap, canViewOthersLeads, type Actor } from "./crm-access";
+import { employeeIdsForScope } from "../common/employee-scope";
+import {
+  assertCap,
+  canViewOthersLeads,
+  crmLeadAccessScope,
+  ownerIdAllowed,
+  type Actor,
+} from "./crm-access";
 import {
   CRM_SYSTEM_ACTOR_ID,
   DEFAULT_BUSINESS_TYPES,
@@ -162,27 +169,83 @@ export class CrmSharedService {
     return row;
   }
 
-  scopeOwnerFilter(actor: Actor): Prisma.CrmLeadWhereInput {
+  scopeOwnerFilter(actor: Actor, ownerIds?: string[] | null): Prisma.CrmLeadWhereInput {
+    if (ownerIds !== undefined) {
+      if (ownerIds === null) return {};
+      if (ownerIds.length === 0) return { id: { in: [] } };
+      return { ownerEmployeeId: { in: ownerIds } };
+    }
     if (canViewOthersLeads(actor)) return {};
     const employeeId = actor.employeeId?.trim();
     if (!employeeId) return { id: { in: [] } };
     return { ownerEmployeeId: employeeId };
   }
 
+  async resolveOwnerIds(
+    companyId: string,
+    actor: Actor
+  ): Promise<string[] | null> {
+    return employeeIdsForScope(
+      this.prisma,
+      companyId,
+      actor.employeeId,
+      crmLeadAccessScope(actor)
+    );
+  }
+
+  async ownerScope(
+    companyId: string,
+    actor: Actor
+  ): Promise<Prisma.CrmLeadWhereInput> {
+    return this.scopeOwnerFilter(actor, await this.resolveOwnerIds(companyId, actor));
+  }
+
+  extraOwnerFilter(
+    ownerIds: string[] | null,
+    requestedOwnerId?: string
+  ): Prisma.CrmLeadWhereInput {
+    if (!requestedOwnerId) return {};
+    if (ownerIdAllowed(ownerIds, requestedOwnerId)) {
+      return { ownerEmployeeId: requestedOwnerId };
+    }
+    return { id: { in: [] } };
+  }
+
+  async assertOwnerAssignable(
+    companyId: string,
+    actor: Actor,
+    ownerEmployeeId: string | null
+  ) {
+    if (!ownerEmployeeId) return;
+    const ownerIds = await this.resolveOwnerIds(companyId, actor);
+    if (!ownerIdAllowed(ownerIds, ownerEmployeeId)) {
+      throw new ForbiddenException(
+        "You can only assign leads to people in your team"
+      );
+    }
+  }
+
   async requireLead(companyId: string, actor: Actor, id: string) {
     assertCap(actor, "view");
     const lead = await this.prisma.crmLead.findFirst({
-      where: { id, companyId, deletedAt: null, ...this.scopeOwnerFilter(actor) },
+      where: {
+        id,
+        companyId,
+        deletedAt: null,
+        ...(await this.ownerScope(companyId, actor)),
+      },
     });
     if (!lead) throw new NotFoundException("Lead not found");
     return lead;
   }
 
-  assertCanEditLead(actor: Actor, lead: CrmLead) {
+  async assertCanEditLead(companyId: string, actor: Actor, lead: CrmLead) {
     assertCap(actor, "edit");
     if (canViewOthersLeads(actor)) return;
-    if (lead.ownerEmployeeId !== actor.employeeId) {
-      throw new ForbiddenException("You can only edit your own leads");
+    const ownerIds = await this.resolveOwnerIds(companyId, actor);
+    if (ownerIds === null) return;
+    if (!lead.ownerEmployeeId || !ownerIds.includes(lead.ownerEmployeeId)) {
+      throw new ForbiddenException("You can only edit leads in your team scope");
     }
   }
 

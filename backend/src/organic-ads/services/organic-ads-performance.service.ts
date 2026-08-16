@@ -1,12 +1,15 @@
-import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { AdStatus, type OrganicAdvertisement } from "@prisma/client";
+import {
+  assertEmployeeInScope,
+  employeeIdsForModule,
+} from "../../common/employee-scope";
 import { PrismaService } from "../../prisma/prisma.service";
 import { iso } from "../../common/mappers";
 import { isOrganicAdsType } from "../../lib/organic-ads-task-match";
 import {
   assertCap,
   buildScopedWhere,
-  canSeeOrganicAdsTeam,
   computeHealthScore,
   isInRange,
   mapAd,
@@ -27,7 +30,7 @@ export class OrganicAdsPerformanceService {
     const [settings, ads, employees] = await Promise.all([
       this.settings.ensureSettings(companyId),
       this.prisma.organicAdvertisement.findMany({
-        where: buildScopedWhere(companyId, actor),
+        where: await buildScopedWhere(this.prisma, companyId, actor),
       }),
       this.prisma.employee.findMany({
         where: { companyId, deletedAt: null },
@@ -73,14 +76,14 @@ export class OrganicAdsPerformanceService {
 
   async getSalesProfile(companyId: string, actor: Actor, employeeId: string) {
     assertCap(actor, "view_own");
-    if (
-      !canSeeOrganicAdsTeam(actor) &&
-      employeeId !== actor.employeeId
-    ) {
-      throw new ForbiddenException(
-        "You can only view your own advertising profile"
-      );
-    }
+    const allowed = await employeeIdsForModule(
+      this.prisma,
+      companyId,
+      actor,
+      "organicAds.viewAll",
+      "organicAds.viewTeam"
+    );
+    assertEmployeeInScope(employeeId, allowed);
 
     const [settings, employee, ads, targets] = await Promise.all([
       this.settings.ensureSettings(companyId),

@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { assertCap, canViewOthersLeads, type Actor } from "./crm-access";
+import { assertCap, ownerIdAllowed, type Actor } from "./crm-access";
 import { CRM_IMPORT_MAX_ROWS } from "./crm-defaults";
 import { CrmLeadCreateService } from "./crm-lead-create.service";
 import { CrmSharedService } from "./crm-shared.service";
@@ -39,6 +39,7 @@ export class CrmLeadsImportService {
     }
 
     await this.shared.ensureDefaultBusinessTypes(companyId);
+    const ownerIds = await this.shared.resolveOwnerIds(companyId, actor);
     const [stages, employees, businessTypes] = await Promise.all([
       this.prisma.crmStage.findMany({
         where: { companyId, deletedAt: null },
@@ -108,7 +109,7 @@ export class CrmLeadsImportService {
             ownerByKey.get(ownerRaw.toLowerCase()) ||
             null;
         }
-        if (!canViewOthersLeads(actor)) {
+        if (!ownerIdAllowed(ownerIds, ownerEmployeeId)) {
           ownerEmployeeId = actor.employeeId;
         }
 
@@ -163,19 +164,16 @@ export class CrmLeadsImportService {
     query: Record<string, string | undefined>
   ) {
     assertCap(actor, "view");
+    const ownerIds = await this.shared.resolveOwnerIds(companyId, actor);
     const list = await this.prisma.crmLead.findMany({
       where: {
         companyId,
         deletedAt: null,
-        ...(canViewOthersLeads(actor)
-          ? {}
-          : { ownerEmployeeId: actor.employeeId }),
+        ...this.shared.scopeOwnerFilter(actor, ownerIds),
         ...(query.status ? { status: query.status as never } : {}),
         ...(query.stageId ? { stageId: query.stageId } : {}),
         ...(query.source ? { source: query.source as never } : {}),
-        ...(query.ownerEmployeeId && canViewOthersLeads(actor)
-          ? { ownerEmployeeId: query.ownerEmployeeId }
-          : {}),
+        ...this.shared.extraOwnerFilter(ownerIds, query.ownerEmployeeId),
       },
       orderBy: { updatedAt: "desc" },
       take: CRM_IMPORT_MAX_ROWS,

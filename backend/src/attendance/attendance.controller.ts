@@ -12,7 +12,6 @@ import { ActorId, CompanyId } from "../common/tenant";
 import { CurrentUser, type JwtPayload } from "../common/decorators/current-user";
 import {
   resolveActorEmployeeId,
-  resolveScopedEmployeeId,
 } from "../common/scoped-employee";
 import { RequirePermission } from "../common/permissions.decorator";
 import { RolesGuard } from "../common/roles.guard";
@@ -37,16 +36,17 @@ export class AttendanceController {
     @Query("from") from?: string,
     @Query("to") to?: string
   ) {
-    return this.service.list(companyId, {
-      employeeId: resolveScopedEmployeeId(user, employeeId, {
-        viewAll: "attendance.viewAll",
-        viewTeam: "attendance.viewTeam",
-      }),
-      date,
-      status,
-      from,
-      to,
-    });
+    return this.service.list(
+      companyId,
+      {
+        employeeId,
+        date,
+        status,
+        from,
+        to,
+      },
+      user
+    );
   }
 
   @Get("me/today")

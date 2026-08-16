@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { assertCap, canViewOthersLeads, type Actor } from "./crm-access";
+import { assertCap, type Actor } from "./crm-access";
 import { mapLead } from "./crm-mappers";
 import { searchCanonicalFromQuery, summarizeLead } from "./crm-phone";
 import { CrmSharedService } from "./crm-shared.service";
@@ -26,18 +26,19 @@ export class CrmPhoneLookupService {
       });
     }
 
+    const ownerIds = await this.shared.resolveOwnerIds(companyId, actor);
     const row = await this.prisma.crmLead.findFirst({
       where: {
         companyId,
         deletedAt: null,
         phoneNormalized: canonical,
-        ...this.shared.scopeOwnerFilter(actor),
+        ...this.shared.scopeOwnerFilter(actor, ownerIds),
       },
     });
 
     if (row) return { lead: mapLead(row), ownedByOther: false };
 
-    if (canViewOthersLeads(actor)) return { lead: null, ownedByOther: false };
+    if (ownerIds === null) return { lead: null, ownedByOther: false };
 
     const hidden = await this.prisma.crmLead.findFirst({
       where: { companyId, deletedAt: null, phoneNormalized: canonical },
@@ -48,7 +49,7 @@ export class CrmPhoneLookupService {
 
   async listDuplicateGroups(companyId: string, actor: Actor) {
     assertCap(actor, "view");
-    const owner = this.shared.scopeOwnerFilter(actor);
+    const owner = await this.shared.ownerScope(companyId, actor);
     const grouped = await this.prisma.crmLead.groupBy({
       by: ["phoneNormalized"],
       where: {

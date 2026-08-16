@@ -45,6 +45,8 @@ export default function LeavePage() {
     "leave.viewTeam",
     "leave.approve",
     "leave.reject",
+    "leave.approveTeam",
+    "leave.rejectTeam",
   ]);
   const canRequestLeave = useHasPermission("leave.request");
   const [loading, setLoading] = useState(true);

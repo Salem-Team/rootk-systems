@@ -1,5 +1,5 @@
 import { fetchDailyReport } from "@/api/daily-plan.api";
-import { AppRole } from "@/constants/roles";
+import { canViewOthersInModule } from "@/constants/permissions";
 import { isApiMode } from "@/lib/env";
 import { isValidReportDate } from "@/lib/daily-report";
 import { assembleEmployeeActivityRows } from "@/lib/employee-activity";
@@ -18,6 +18,7 @@ import {
 } from "@/repositories";
 import { fromError, ok } from "@/services/api-result";
 import { actorContext } from "@/services/work/work-shared";
+import { getSessionPermissions } from "@/stores/session-store";
 import type { ApiResponse, DailyReport, Employee } from "@/types";
 
 const emptyReport = (date = ""): DailyReport => ({
@@ -32,13 +33,22 @@ function scopedEmployees(
   actor: ReturnType<typeof actorContext>
 ) {
   const active = roster.filter((e) => e.status !== "inactive");
-  if (actor.role === AppRole.admin) return active;
-  const allowed = new Set(
-    [actor.employeeId, ...directReportIds(actor.employeeId, roster)].filter(
-      Boolean
-    )
+  const others = canViewOthersInModule(
+    getSessionPermissions(),
+    "dailyPlan.viewAll",
+    "dailyPlan.viewTeam",
+    actor.role
   );
-  return active.filter((e) => allowed.has(e.id));
+  if (others.all) return active;
+  if (others.team) {
+    const allowed = new Set(
+      [actor.employeeId, ...directReportIds(actor.employeeId, roster)].filter(
+        Boolean
+      )
+    );
+    return active.filter((e) => allowed.has(e.id));
+  }
+  return active.filter((e) => e.id === actor.employeeId);
 }
 
 export async function getEmployeeActivityReport(opts?: {

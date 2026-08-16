@@ -90,6 +90,10 @@ export function ensureInteractionBreakdown(
           leadId: String(c.leadId ?? ""),
           leadName: String(c.leadName ?? ""),
           companyName: String(c.companyName ?? ""),
+          phone: String(c.phone ?? ""),
+          phoneNormalized: c.phoneNormalized
+            ? String(c.phoneNormalized)
+            : null,
           ownerEmployeeId: c.ownerEmployeeId ?? null,
           ownerEmployeeName: String(c.ownerEmployeeName ?? ""),
           date: String(c.date ?? ""),

@@ -1,9 +1,11 @@
 /** Actor identity + capability checks shared across all CRM domain services. */
 import { ForbiddenException } from "@nestjs/common";
 import type { AppRoleName } from "../common/roles";
-import { AppRole } from "../common/roles";
 import { canCrm, type CrmCapability } from "../lib/crm-policies";
-import { canViewOthersInModule } from "../common/permissions-catalog";
+import {
+  resolveDataAccessScope,
+  type DataAccessScope,
+} from "../common/permissions-catalog";
 
 export type Actor = {
   userId: string;
@@ -18,13 +20,28 @@ export function assertCap(actor: Actor, capability: CrmCapability) {
   }
 }
 
-export function isAdmin(actor: Actor) {
-  return actor.role === AppRole.admin;
+export function crmLeadAccessScope(actor: Actor): DataAccessScope {
+  return resolveDataAccessScope(
+    actor.permissions,
+    "crm.viewOthersLeads",
+    "crm.viewTeamLeads",
+    actor.role
+  );
 }
 
 export function canViewOthersLeads(actor: Actor) {
-  return canViewOthersInModule(
-    actor.permissions,
-    "crm.viewOthersLeads"
-  ).all;
+  return crmLeadAccessScope(actor) === "all";
+}
+
+export function canInspectOtherOwners(actor: Actor) {
+  return crmLeadAccessScope(actor) !== "own";
+}
+
+export function ownerIdAllowed(
+  ownerIds: string[] | null,
+  ownerId: string | null | undefined
+): boolean {
+  if (ownerIds === null) return true;
+  if (!ownerId) return false;
+  return ownerIds.includes(ownerId);
 }

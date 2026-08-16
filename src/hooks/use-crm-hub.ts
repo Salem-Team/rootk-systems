@@ -3,13 +3,14 @@ import type { CrmHubTab } from "@/components/crm/crm-hub-sidebar";
 import { useCrmHubLoaders } from "@/hooks/use-crm-hub-loaders";
 import { useLiveReload } from "@/hooks/use-live-reload";
 import { canCrm } from "@/lib/crm-policies";
+import { resolveDataAccessScope } from "@/constants/permissions";
 import {
   ensureCrmDashboard,
   ensureCrmList,
   ensurePaginatedLeads,
   ensureSalesPerformance,
 } from "@/lib/crm-normalize";
-import { CRM_UPDATED_EVENT } from "@/lib/events";
+import { CRM_OPEN_LEAD_EVENT, CRM_UPDATED_EVENT } from "@/lib/events";
 import { useSessionStore } from "@/stores/session-store";
 import type { Employee } from "@/types";
 import type {
@@ -34,6 +35,14 @@ export function useCrmHub() {
 
   const canCreate = canCrm(role, "create", permissions);
   const canAssign = canCrm(role, "assign", permissions);
+  const crmScope = resolveDataAccessScope(
+    permissions,
+    "crm.viewOthersLeads",
+    "crm.viewTeamLeads",
+    role
+  );
+  const canViewOthers = crmScope === "all";
+  const canViewTeam = crmScope !== "own";
   const canManageStages = canCrm(role, "manage_stages", permissions);
   const canManageBusinessTypes = canCrm(role, "manage_business_types", permissions);
   const canViewPerformance = canCrm(role, "view_performance", permissions);
@@ -79,6 +88,19 @@ export function useCrmHub() {
   const [profileEmployeeId, setProfileEmployeeId] = useState<string | null>(
     null
   );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const lead = new URLSearchParams(window.location.search).get("lead");
+    if (lead) setViewLeadId(lead);
+
+    function onOpenLead(event: Event) {
+      const id = (event as CustomEvent<string>).detail?.trim();
+      if (id) setViewLeadId(id);
+    }
+    window.addEventListener(CRM_OPEN_LEAD_EVENT, onOpenLead);
+    return () => window.removeEventListener(CRM_OPEN_LEAD_EVENT, onOpenLead);
+  }, []);
 
   const {
     loadCore,
@@ -325,6 +347,8 @@ export function useCrmHub() {
   return {
     canCreate,
     canAssign,
+    canViewOthers,
+    canViewTeam,
     canManageStages,
     canManageBusinessTypes,
     canViewPerformance,

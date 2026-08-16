@@ -1,6 +1,7 @@
 import { ForbiddenError } from "@/lib/errors";
 import { hasPermissionId } from "@/constants/permissions";
 import { AppRole } from "@/constants/roles";
+import { localDirectReportIds } from "@/services/employee-scope";
 import {
   getSessionPermissions,
   getSessionRole,
@@ -96,6 +97,16 @@ function canManageOthersWork(): boolean {
   );
 }
 
+function canSeeTeamWork(): boolean {
+  const permissions = getSessionPermissions();
+  const role = getSessionRole();
+  return (
+    canManageOthersWork() ||
+    hasPermissionId("tasks.viewTeam", permissions, role) ||
+    hasPermissionId("tasks.editTeam", permissions, role)
+  );
+}
+
 export type WorkTaskListScope = "all" | "managed" | "own";
 
 /** Who the current actor may list besides tasks assigned to them. */
@@ -107,8 +118,7 @@ export function workTaskListScope(): WorkTaskListScope {
   if (hasPermissionId("team.viewAll", permissions, role)) return "all";
   if (
     hasPermissionId("tasks.viewTeam", permissions, role) ||
-    hasPermissionId("tasks.assign", permissions, role) ||
-    hasPermissionId("tasks.editOthers", permissions, role)
+    hasPermissionId("tasks.assign", permissions, role)
   ) {
     return "managed";
   }
@@ -118,7 +128,7 @@ export function workTaskListScope(): WorkTaskListScope {
 /** Hide co-assignees and overlay personal progress when viewer lacks company scope. */
 export function presentWorkTaskForActor(task: WorkTask): WorkTask {
   const { role, employeeId } = actorContext();
-  if (canManageOthersWork() || role !== AppRole.employee || !employeeId) {
+  if (canSeeTeamWork() || role !== AppRole.employee || !employeeId) {
     return task;
   }
   return presentAssigneeProgressForEmployee(task, employeeId);
@@ -128,16 +138,22 @@ export function presentWorkTasksForActor(tasks: WorkTask[]): WorkTask[] {
   return tasks.map(presentWorkTaskForActor);
 }
 
-export function assertEmployeeCanEditTask(task: WorkTask): void {
+export async function assertEmployeeCanEditTask(task: WorkTask): Promise<void> {
   const { userId, employeeId } = actorContext();
-  if (canManageOthersWork()) return;
+  if (hasPermissionId("tasks.editOthers", getSessionPermissions(), getSessionRole())) {
+    return;
+  }
   if (
     hasPermissionId("tasks.editOwn", getSessionPermissions(), getSessionRole()) &&
     employeeOwnsPersonalTask(task, employeeId, userId)
   ) {
     return;
   }
-  throw new ForbiddenError("You can only edit your personal tasks");
+  if (hasPermissionId("tasks.editTeam", getSessionPermissions(), getSessionRole())) {
+    const reports = await localDirectReportIds();
+    if (task.assigneeIds.some((id) => reports.includes(id))) return;
+  }
+  throw new ForbiddenError("You can only edit tasks in your team scope");
 }
 
 export function assertEmployeeCanEditMeeting(meeting: WorkMeeting): void {

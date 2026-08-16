@@ -1,13 +1,12 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
 import { CrmLeadStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { writeActivity } from "../common/activity-writer";
-import { assertCap, canViewOthersLeads, type Actor } from "./crm-access";
+import { assertCap, type Actor } from "./crm-access";
 import {
   clampPage,
   clampPageSize,
@@ -59,7 +58,8 @@ export class CrmLeadsService {
     const order = query.order === "asc" ? "asc" : "desc";
     const sortKey = LEAD_SORT_KEYS.has(sort) ? sort : "createdAt";
 
-    const where = buildLeadWhere(this.shared, companyId, actor, query);
+    const ownerIds = await this.shared.resolveOwnerIds(companyId, actor);
+    const where = buildLeadWhere(this.shared, companyId, actor, query, ownerIds);
     const [total, rows] = await Promise.all([
       this.prisma.crmLead.count({ where }),
       this.prisma.crmLead.findMany({
@@ -87,9 +87,6 @@ export class CrmLeadsService {
   async deleteLead(companyId: string, actor: Actor, id: string) {
     const lead = await this.shared.requireLead(companyId, actor, id);
     const isOwner = lead.ownerEmployeeId === actor.employeeId;
-    if (!canViewOthersLeads(actor) && !isOwner) {
-      throw new ForbiddenException("You can only delete your own leads");
-    }
     if (!isOwner) assertCap(actor, "delete");
     // owners may soft-delete without admin delete capability
 
@@ -145,7 +142,7 @@ export class CrmLeadsService {
         companyId,
         deletedAt: null,
         id: { in: ids },
-        ...this.shared.scopeOwnerFilter(actor),
+        ...(await this.shared.ownerScope(companyId, actor)),
       },
     });
     if (leads.length === 0) throw new NotFoundException("No leads found");

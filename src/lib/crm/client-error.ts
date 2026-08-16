@@ -24,7 +24,12 @@ export function crmUserFacingMessage(
   if (code === "UNAUTHORIZED") return t("crm.errors.session");
   if (code === "FORBIDDEN") return t("crm.errors.permission");
   if (code === "NOT_FOUND") return t("crm.errors.notFound");
-  if (nestCode === "INVALID_PHONE") return t("crm.phone.invalid");
+  if (code === "INVALID_PHONE" || nestCode === "INVALID_PHONE") {
+    return t("crm.phone.invalid");
+  }
+  if (code === "INVALID_CONTACT" || nestCode === "INVALID_CONTACT") {
+    return t("crm.contact.invalidHandle");
+  }
   if (status === 429 || /too many requests/i.test(raw)) {
     return t("crm.errors.rateLimited");
   }

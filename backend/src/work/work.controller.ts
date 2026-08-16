@@ -71,7 +71,7 @@ export class WorkController {
   }
 
   @Patch("tasks/:id")
-  @RequirePermission("tasks.editOwn", "tasks.editOthers")
+  @RequirePermission("tasks.editOwn", "tasks.editTeam", "tasks.editOthers")
   updateTask(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload | undefined,
@@ -82,7 +82,7 @@ export class WorkController {
   }
 
   @Patch("tasks/:id/status")
-  @RequirePermission("tasks.editOwn", "tasks.editOthers")
+  @RequirePermission("tasks.editOwn", "tasks.editTeam", "tasks.editOthers")
   taskStatus(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload | undefined,
@@ -103,7 +103,7 @@ export class WorkController {
   }
 
   @Patch("tasks/:id/sub-items/:subId")
-  @RequirePermission("tasks.editOwn", "tasks.editOthers")
+  @RequirePermission("tasks.editOwn", "tasks.editTeam", "tasks.editOthers")
   toggleSub(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload | undefined,
@@ -114,7 +114,7 @@ export class WorkController {
   }
 
   @Delete("tasks/:id")
-  @RequirePermission("tasks.deleteOwn", "tasks.deleteOthers")
+  @RequirePermission("tasks.deleteOwn", "tasks.deleteTeam", "tasks.deleteOthers")
   deleteTask(
     @CompanyId() companyId: string,
     @CurrentUser() user: JwtPayload | undefined,

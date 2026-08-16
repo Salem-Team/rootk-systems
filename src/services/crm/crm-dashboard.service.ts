@@ -24,10 +24,9 @@ import type {
   CrmSalesProfile,
 } from "@/types/crm";
 import {
-  actorEmployeeId,
   assertCap,
+  crmLeadFilterScope,
   ensureCatalog,
-  isAdmin,
   scopeCrmFiltersToActor,
 } from "@/services/crm/crm-shared";
 
@@ -53,7 +52,7 @@ export async function getCrmDashboard(
         feedback,
         employees,
         scoped,
-        { actorEmployeeId: actorEmployeeId(), isAdmin: isAdmin() }
+        await crmLeadFilterScope()
       )
     );
     return ok(data);

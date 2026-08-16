@@ -6,11 +6,11 @@ import { NotificationsService } from "../notifications/notifications.service";
 import { syncAssigneeProgress } from "../lib/task-assignee-progress";
 import {
   mapTask,
-  ownsPersonalTask,
   sanitizeEvidenceLinks,
   type Actor,
 } from "./work-mappers";
 import { assertCanAssignToTeam } from "../lib/team";
+import { assertCanMutateWorkTask } from "./work-access";
 
 export type { Actor };
 
@@ -167,9 +167,7 @@ export class WorkTasksWriteService {
       where: { id, companyId, deletedAt: null },
     });
     if (!current) throw new NotFoundException("Task not found");
-    if (actor.role === "employee" && !ownsPersonalTask(current, actor)) {
-      throw new ForbiddenException("You can only delete your personal tasks");
-    }
+    await assertCanMutateWorkTask(this.prisma, companyId, actor, current, "delete");
     await this.prisma.workTask.update({
       where: { id },
       data: {

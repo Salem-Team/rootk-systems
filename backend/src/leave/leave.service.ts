@@ -1,7 +1,15 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, ForbiddenException } from "@nestjs/common";
 import { LeaveStatus, Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { auditFields, dateOnly, iso, parseDate } from "../common/mappers";
+import {
+  assertEmployeeInScope,
+  employeeIdsForModule,
+  prismaEmployeeFilter,
+} from "../common/employee-scope";
+import { hasPermissionId } from "../common/permissions-catalog";
+import { listDirectReportIds } from "../lib/team";
+import type { JwtPayload } from "../common/decorators/current-user";
 import { NotificationsService } from "../notifications/notifications.service";
 import { writeActivity } from "../common/activity-writer";
 
@@ -62,10 +70,27 @@ export class LeaveService {
 
   async list(
     companyId: string,
-    filters: { employeeId?: string; status?: string; type?: string } = {}
+    filters: { employeeId?: string; status?: string; type?: string } = {},
+    actor?: JwtPayload
   ) {
     const where: Prisma.LeaveRequestWhereInput = { companyId, deletedAt: null };
-    if (filters.employeeId) where.employeeId = filters.employeeId;
+    if (actor) {
+      const allowed = await employeeIdsForModule(
+        this.prisma,
+        companyId,
+        actor,
+        "leave.viewAll",
+        "leave.viewTeam"
+      );
+      if (filters.employeeId) {
+        assertEmployeeInScope(filters.employeeId, allowed);
+        where.employeeId = filters.employeeId;
+      } else {
+        Object.assign(where, prismaEmployeeFilter(allowed));
+      }
+    } else if (filters.employeeId) {
+      where.employeeId = filters.employeeId;
+    }
     if (filters.status) where.status = filters.status as LeaveStatus;
     if (filters.type) where.type = filters.type;
     const rows = await this.prisma.leaveRequest.findMany({
@@ -75,11 +100,22 @@ export class LeaveService {
     return rows.map(mapLeave);
   }
 
-  async byId(companyId: string, id: string) {
+  async byId(companyId: string, id: string, actor?: JwtPayload) {
     const row = await this.prisma.leaveRequest.findFirst({
       where: { id, companyId, deletedAt: null },
     });
-    return row ? mapLeave(row) : null;
+    if (!row) return null;
+    if (actor) {
+      const allowed = await employeeIdsForModule(
+        this.prisma,
+        companyId,
+        actor,
+        "leave.viewAll",
+        "leave.viewTeam"
+      );
+      assertEmployeeInScope(row.employeeId, allowed);
+    }
+    return mapLeave(row);
   }
 
   async create(
@@ -165,12 +201,33 @@ export class LeaveService {
     actorId: string,
     id: string,
     status: "approved" | "rejected",
-    reviewerNote?: string
+    reviewerNote?: string,
+    actor?: JwtPayload
   ) {
     const current = await this.prisma.leaveRequest.findFirst({
       where: { id, companyId, deletedAt: null },
     });
     if (!current) throw new NotFoundException("Leave request not found");
+    if (actor) {
+      const allPerm = status === "approved" ? "leave.approve" : "leave.reject";
+      const teamPerm =
+        status === "approved" ? "leave.approveTeam" : "leave.rejectTeam";
+      const canAll = hasPermissionId(allPerm, actor.permissions, actor.role);
+      const canTeam = hasPermissionId(teamPerm, actor.permissions, actor.role);
+      if (!canAll) {
+        if (!canTeam) {
+          throw new ForbiddenException("You do not have permission for this action");
+        }
+        const reports = actor.employeeId
+          ? await listDirectReportIds(this.prisma, companyId, actor.employeeId)
+          : [];
+        if (!reports.includes(current.employeeId)) {
+          throw new ForbiddenException(
+            "You can only act on people who report directly to you"
+          );
+        }
+      }
+    }
 
     const row = await this.prisma.leaveRequest.update({
       where: { id },

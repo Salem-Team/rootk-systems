@@ -2,11 +2,16 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import { EmployeeStatus, LeaveStatus, TaskStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { isoOrNull, parseDate, parseDateEnd } from "../common/mappers";
-import { AppRole } from "../common/roles";
+import { canViewOthersInModule } from "../common/permissions-catalog";
 import { listDirectReportIds } from "../lib/team";
 import { buildDailyReportFacts, isValidReportDate } from "../lib/daily-report";
 
-type Actor = { userId: string; role: string; employeeId: string };
+type Actor = {
+  userId: string;
+  role: string;
+  employeeId: string;
+  permissions?: string[];
+};
 
 @Injectable()
 export class DailyPlanReportService {
@@ -235,20 +240,34 @@ export class DailyPlanReportService {
       deletedAt: null,
       status: { not: EmployeeStatus.inactive },
     };
-    if (actor.role === AppRole.admin) {
+    const others = canViewOthersInModule(
+      actor.permissions,
+      "dailyPlan.viewAll",
+      "dailyPlan.viewTeam",
+      actor.role
+    );
+    if (others.all) {
       return this.prisma.employee.findMany({
         where,
         select: { id: true, name: true, department: true },
       });
     }
-    const reportIds = await listDirectReportIds(
-      this.prisma,
-      companyId,
-      actor.employeeId
-    );
-    const allowed = new Set([actor.employeeId, ...reportIds].filter(Boolean));
+    if (others.team) {
+      const reportIds = await listDirectReportIds(
+        this.prisma,
+        companyId,
+        actor.employeeId
+      );
+      const allowed = new Set([actor.employeeId, ...reportIds].filter(Boolean));
+      return this.prisma.employee.findMany({
+        where: { ...where, id: { in: [...allowed] } },
+        select: { id: true, name: true, department: true },
+      });
+    }
+    const ownId = actor.employeeId?.trim();
+    if (!ownId) return [];
     return this.prisma.employee.findMany({
-      where: { ...where, id: { in: [...allowed] } },
+      where: { ...where, id: ownId },
       select: { id: true, name: true, department: true },
     });
   }

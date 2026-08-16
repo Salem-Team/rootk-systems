@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { CrmLeadStatus, CrmStageCategory, type Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { assertCap, canViewOthersLeads, type Actor } from "./crm-access";
+import { assertCap, canInspectOtherOwners, canViewOthersLeads, ownerIdAllowed, type Actor } from "./crm-access";
 import {
   buildPipelineBreakdown,
   buildSalesPerformance,
@@ -29,10 +29,13 @@ export class CrmPerformanceService {
     actor: Actor,
     query: Record<string, string | undefined>
   ) {
-    if (!canViewOthersLeads(actor)) {
+    const scopeOwnerIds = await this.shared.resolveOwnerIds(companyId, actor);
+    if (!canInspectOtherOwners(actor)) {
       assertCap(actor, "view_dashboard");
-    } else {
+    } else if (canViewOthersLeads(actor)) {
       assertCap(actor, "view_performance");
+    } else {
+      assertCap(actor, "view_dashboard");
     }
 
     await this.shared.ensureDefaultStages(companyId);
@@ -48,11 +51,9 @@ export class CrmPerformanceService {
     const where: Prisma.CrmLeadWhereInput = {
       companyId,
       deletedAt: null,
-      ...this.shared.scopeOwnerFilter(actor),
+      ...this.shared.scopeOwnerFilter(actor, scopeOwnerIds),
+      ...this.shared.extraOwnerFilter(scopeOwnerIds, query.ownerEmployeeId),
     };
-    if (query.ownerEmployeeId && canViewOthersLeads(actor)) {
-      where.ownerEmployeeId = query.ownerEmployeeId;
-    }
     const [leads, feedback] = await Promise.all([
       this.prisma.crmLead.findMany({ where }),
       this.prisma.crmLeadFeedback.findMany({
@@ -62,10 +63,8 @@ export class CrmPerformanceService {
           ...(from ? { createdAt: { gte: from, lte: to } } : {}),
           lead: {
             deletedAt: null,
-            ...this.shared.scopeOwnerFilter(actor),
-            ...(query.ownerEmployeeId && canViewOthersLeads(actor)
-              ? { ownerEmployeeId: query.ownerEmployeeId }
-              : {}),
+            ...this.shared.scopeOwnerFilter(actor, scopeOwnerIds),
+            ...this.shared.extraOwnerFilter(scopeOwnerIds, query.ownerEmployeeId),
           },
         },
         select: {
@@ -102,8 +101,9 @@ export class CrmPerformanceService {
   }
 
   async performanceProfile(companyId: string, actor: Actor, employeeId: string) {
-    if (!canViewOthersLeads(actor) && actor.employeeId !== employeeId) {
-      throw new ForbiddenException("You can only view your own performance");
+    const ownerIds = await this.shared.resolveOwnerIds(companyId, actor);
+    if (!ownerIdAllowed(ownerIds, employeeId)) {
+      throw new ForbiddenException("You can only view performance in your team scope");
     }
     if (canViewOthersLeads(actor)) assertCap(actor, "view_performance");
     else assertCap(actor, "view_dashboard");

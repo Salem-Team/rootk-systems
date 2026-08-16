@@ -17,20 +17,19 @@ import type {
   CrmPhoneDuplicateGroup,
   CrmPhoneMatchResult,
 } from "@/types/crm";
-import { assertCap, assertLeadAccess, canViewOthersCrm } from "@/services/crm/crm-shared";
+import { assertCap, assertLeadAccess, resolveCrmOwnerIds } from "@/services/crm/crm-shared";
 import { getWorkEmployeeId } from "@/stores/session-store";
 import { addCrmLeadFeedback } from "@/services/crm/crm-activities.service";
 
 const localCallsByExternalId = new Map<string, CrmCall>();
 
-function scopeVisible(lead: CrmLead, canViewOthers: boolean, empId: string): boolean {
-  if (canViewOthers) return true;
-  return Boolean(empId) && lead.ownerEmployeeId === empId;
+function ownerVisible(lead: CrmLead, allowed: string[] | null): boolean {
+  if (allowed === null) return true;
+  return Boolean(lead.ownerEmployeeId && allowed.includes(lead.ownerEmployeeId));
 }
 
 export async function matchCrmLeadByPhone(
-  phone: string,
-  opts?: { canViewOthers?: boolean }
+  phone: string
 ): Promise<ApiResponse<CrmPhoneMatchResult | null>> {
   if (isApiMode()) return fetchCrmLeadMatch(phone);
   try {
@@ -39,13 +38,12 @@ export async function matchCrmLeadByPhone(
     const canonical = canonicalPhoneOrNull(phone);
     if (!canonical) throw new ValidationError("Not a valid Egyptian mobile number");
     const all = await crmLeadRepository.findAll();
-    const empId = getWorkEmployeeId();
-    const canViewOthers = opts?.canViewOthers ?? canViewOthersCrm();
+    const allowed = await resolveCrmOwnerIds();
     const match = all.find(
       (lead) => canonicalPhoneOrNull(lead.phoneNormalized || lead.phone) === canonical
     );
     if (!match) return ok({ lead: null, ownedByOther: false });
-    if (!scopeVisible(match, canViewOthers, empId)) {
+    if (!ownerVisible(match, allowed)) {
       return ok({ lead: null, ownedByOther: true });
     }
     return ok({ lead: match, ownedByOther: false });
@@ -54,18 +52,14 @@ export async function matchCrmLeadByPhone(
   }
 }
 
-export async function getCrmPhoneDuplicates(opts?: {
-  canViewOthers?: boolean;
-}): Promise<ApiResponse<CrmPhoneDuplicateGroup[]>> {
+export async function getCrmPhoneDuplicates(): Promise<ApiResponse<CrmPhoneDuplicateGroup[]>> {
   if (isApiMode()) return fetchCrmPhoneDuplicates();
   try {
     assertCap("view");
     await simulateDelay();
     const all = await crmLeadRepository.findAll();
-    const empId = getWorkEmployeeId();
-    const visible = all.filter((lead) =>
-      scopeVisible(lead, opts?.canViewOthers ?? canViewOthersCrm(), empId)
-    );
+    const allowed = await resolveCrmOwnerIds();
+    const visible = all.filter((lead) => ownerVisible(lead, allowed));
     const groups = new Map<string, CrmLead[]>();
     for (const lead of visible) {
       const key = lead.phoneNormalized || canonicalPhoneOrNull(lead.phone);
@@ -104,7 +98,7 @@ export async function recordCrmLeadCall(
     await simulateDelay();
     const lead = await crmLeadRepository.findById(leadId);
     if (!lead) throw new NotFoundError("Lead not found");
-    assertLeadAccess(lead);
+    await assertLeadAccess(lead);
     const parsed = leadCallSchema.parse(input);
     if (parsed.externalCallId) {
       const replay = localCallsByExternalId.get(parsed.externalCallId);

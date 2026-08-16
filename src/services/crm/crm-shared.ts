@@ -1,5 +1,8 @@
-import { AppRole } from "@/constants/roles";
-import { canViewOthersInModule } from "@/constants/permissions";
+import {
+  resolveDataAccessScope,
+  type DataAccessScope,
+} from "@/constants/permissions";
+import { isApiMode } from "@/lib/env";
 import { enrichWithAudit } from "@/lib/entity";
 import { ForbiddenError } from "@/lib/errors";
 import { createId } from "@/lib/id";
@@ -11,6 +14,7 @@ import {
   crmStageRepository,
   crmSubStageRepository,
 } from "@/repositories/crm.repository";
+import { localEmployeeIdsForModule } from "@/services/employee-scope";
 import {
   authPermissionSet,
   getSessionPermissions,
@@ -34,36 +38,61 @@ export function assertCap(capability: Parameters<typeof canCrm>[1]): void {
   }
 }
 
-export function isAdmin(): boolean {
-  return getSessionRole() === AppRole.admin;
+export function crmLeadAccessScope(): DataAccessScope {
+  return resolveDataAccessScope(
+    getSessionPermissions(),
+    "crm.viewOthersLeads",
+    "crm.viewTeamLeads",
+    getSessionRole()
+  );
 }
 
 export function canViewOthersCrm(): boolean {
-  return canViewOthersInModule(
-    getSessionPermissions(),
-    "crm.viewOthersLeads"
-  ).all;
+  return crmLeadAccessScope() === "all";
+}
+
+export function canViewTeamCrm(): boolean {
+  return crmLeadAccessScope() !== "own";
+}
+
+export async function resolveCrmOwnerIds(): Promise<string[] | null> {
+  return localEmployeeIdsForModule("crm.viewOthersLeads", "crm.viewTeamLeads");
+}
+
+export async function crmLeadFilterScope(): Promise<{
+  actorEmployeeId: string | null;
+  canViewOthers: boolean;
+  teamOwnerIds?: string[];
+}> {
+  const ownerIds = await resolveCrmOwnerIds();
+  return {
+    actorEmployeeId: actorEmployeeId(),
+    canViewOthers: ownerIds === null,
+    teamOwnerIds: ownerIds ?? undefined,
+  };
 }
 
 export function actorEmployeeId(): string | null {
   return getWorkEmployeeId();
 }
 
-/** Lists pin owner to the signed-in sales user unless they may see others. */
+/**
+ * Local-mode lists pin owner to the signed-in sales user unless they may see others.
+ * API mode must not add an owner filter — the server applies fresh permissions.
+ */
 export function scopeCrmFiltersToActor<T extends { ownerEmployeeId?: string }>(
   filters: T
 ): T {
-  if (canViewOthersCrm()) return filters;
+  if (isApiMode() || canViewTeamCrm()) return filters;
   const empId = actorEmployeeId()?.trim() ?? "";
   return { ...filters, ownerEmployeeId: empId || undefined };
 }
 
-export function assertLeadAccess(lead: CrmLead): void {
-  if (canViewOthersCrm()) return;
-  const empId = actorEmployeeId();
-  if (!empId || lead.ownerEmployeeId !== empId) {
-    throw new ForbiddenError("You can only access your assigned leads");
-  }
+export async function assertLeadAccess(lead: CrmLead): Promise<void> {
+  const allowed = await resolveCrmOwnerIds();
+  if (allowed === null) return;
+  if (lead.ownerEmployeeId && allowed.includes(lead.ownerEmployeeId)) return;
+  throw new ForbiddenError("You can only access leads in your team scope");
 }
 
 export async function writeHistory(

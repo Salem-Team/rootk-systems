@@ -3,6 +3,7 @@
 import { LayoutList } from "lucide-react";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import { Button } from "@/components/ui/button";
+import { CrmLeadsBulkAdd } from "@/components/crm/crm-leads-bulk-add";
 import {
   Select,
   SelectContent,
@@ -10,10 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { canFilterCrmByOwner } from "@/lib/crm/lead-filters";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
-import type { CrmStage } from "@/types/crm";
+import type { CrmBusinessType, CrmStage } from "@/types/crm";
 
 export interface CrmLeadsStageCount {
   stageId: string;
@@ -27,11 +29,15 @@ interface CrmLeadsOverviewProps {
   loading?: boolean;
   employees?: Employee[];
   canAssign?: boolean;
+  canViewOthers?: boolean;
   ownerEmployeeId?: string;
   onOwnerChange?: (ownerEmployeeId: string | undefined) => void;
   onOpenAllLeads: () => void;
   onOpenStage: (stageId: string) => void;
   onAddLead?: () => void;
+  onImported?: () => void;
+  canCreate?: boolean;
+  businessTypes?: CrmBusinessType[];
   className?: string;
 }
 
@@ -43,14 +49,19 @@ export function CrmLeadsOverview({
   loading = false,
   employees = [],
   canAssign = false,
+  canViewOthers = false,
   ownerEmployeeId,
   onOwnerChange,
   onOpenAllLeads,
   onOpenStage,
   onAddLead,
+  onImported,
+  canCreate = false,
+  businessTypes = [],
   className,
 }: CrmLeadsOverviewProps) {
   const { t } = useTranslation();
+  const showOwnerFilter = canFilterCrmByOwner({ canAssign, canViewOthers });
   const countByStage = new Map(stageCounts.map((c) => [c.stageId, c.count]));
   const activeStages = [...stages]
     .filter((s) => s.active)
@@ -81,7 +92,7 @@ export function CrmLeadsOverview({
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {canAssign && onOwnerChange ? (
+            {showOwnerFilter && onOwnerChange ? (
               <Select
                 value={ownerEmployeeId || "all"}
                 onValueChange={(v) =>
@@ -103,6 +114,16 @@ export function CrmLeadsOverview({
                   ))}
                 </SelectContent>
               </Select>
+            ) : null}
+            {canCreate ? (
+              <CrmLeadsBulkAdd
+                stages={stages}
+                businessTypes={businessTypes}
+                employees={ownerOptions}
+                canAssign={canAssign}
+                onImported={onImported}
+                size="sm"
+              />
             ) : null}
             {onAddLead ? (
               <Button type="button" size="sm" onClick={onAddLead}>

@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import type { JwtPayload } from "../common/decorators/current-user";
 import type { PunchLocation } from "./attendance-mappers";
 import { AttendanceCheckinService } from "./attendance-checkin.service";
 import { AttendanceCheckoutService } from "./attendance-checkout.service";
@@ -24,9 +25,10 @@ export class AttendanceService {
       status?: string;
       from?: string;
       to?: string;
-    } = {}
+    } = {},
+    actor?: JwtPayload
   ) {
-    return this.query.list(companyId, filters);
+    return this.query.list(companyId, filters, actor);
   }
 
   meToday(companyId: string, employeeId?: string) {

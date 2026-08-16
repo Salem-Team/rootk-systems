@@ -166,7 +166,7 @@ export async function updateWorkTask(
     }
     const current = await workTaskRepository.findById(id);
     if (!current) throw new NotFoundError("Task not found");
-    assertEmployeeCanEditTask(current);
+    await assertEmployeeCanEditTask(current);
     const actor = userId;
     const nextRequireLinks =
       role === AppRole.employee

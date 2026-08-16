@@ -16,11 +16,13 @@ import {
   ensureLeadTimeline,
 } from "@/lib/crm-normalize";
 import { emitCrmUpdated } from "@/lib/events";
+import { resolveAccountFullName } from "@/lib/user-display-name";
 import {
   crmLeadActivityRepository,
   crmLeadFeedbackRepository,
   crmLeadRepository,
 } from "@/repositories/crm.repository";
+import { userRepository } from "@/repositories";
 import {
   leadActivitySchema,
   leadFeedbackSchema,
@@ -29,6 +31,7 @@ import {
 } from "@/schemas/crm.schema";
 import { fromError, ok } from "@/services/api-result";
 import { simulateDelay } from "@/services/fake-api";
+import { notifyCrmFeedbackMentions } from "@/services/notify-crm.service";
 import { getSessionUserId } from "@/stores/session-store";
 import type { ApiResponse } from "@/types";
 import type { CrmLeadActivity, CrmLeadFeedback } from "@/types/crm";
@@ -36,8 +39,8 @@ import {
   actorEmployeeId,
   assertCap,
   assertLeadAccess,
+  resolveCrmOwnerIds,
   ensureCatalog,
-  isAdmin,
   writeHistory,
 } from "@/services/crm/crm-shared";
 import { clearLocalCrmFollowUpReminders } from "@/services/crm/crm-follow-up-reminders.service";
@@ -52,7 +55,7 @@ export async function addCrmLeadActivity(
     await simulateDelay();
     const lead = await crmLeadRepository.findById(leadId);
     if (!lead) throw new NotFoundError("Lead not found");
-    assertLeadAccess(lead);
+    await assertLeadAccess(lead);
     const parsed = leadActivitySchema.parse(input);
     const actorId = getSessionUserId() || "system";
     const now = parsed.occurredAt ?? new Date().toISOString();
@@ -96,7 +99,7 @@ export async function getCrmLeadTimeline(
       return { ...leadRes, data: [] };
     }
     try {
-      assertLeadAccess(leadRes.data);
+      await assertLeadAccess(leadRes.data);
     } catch (error) {
       return fromError(error, []);
     }
@@ -108,7 +111,7 @@ export async function getCrmLeadTimeline(
     assertCap("view");
     const lead = await crmLeadRepository.findById(leadId);
     if (!lead) throw new NotFoundError("Lead not found");
-    assertLeadAccess(lead);
+    await assertLeadAccess(lead);
     const items = (await crmLeadActivityRepository.findAll())
       .filter((a) => a.leadId === leadId)
       .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
@@ -128,7 +131,7 @@ export async function addCrmLeadFeedback(
     await simulateDelay();
     const lead = await crmLeadRepository.findById(leadId);
     if (!lead) throw new NotFoundError("Lead not found");
-    assertLeadAccess(lead);
+    await assertLeadAccess(lead);
     const parsed = leadFeedbackSchema.parse(input);
     const actorId = getSessionUserId() || "system";
     const now = new Date().toISOString();
@@ -146,6 +149,20 @@ export async function addCrmLeadFeedback(
       parsed.nextAction === "meeting" ? (parsed.meetingMode ?? null) : null;
     const meetingLocation =
       meetingMode === "offline" ? (parsed.meetingLocation ?? null) : null;
+    const mentionedUserIds = (parsed.mentionedUserIds ?? []).filter(
+      (id) => id && id !== actorId
+    );
+    const directory = await userRepository.findAll();
+    const nameById = new Map(
+      directory.map((user) => [
+        user.id,
+        resolveAccountFullName(user) || user.email,
+      ])
+    );
+    const mentionedUsers = mentionedUserIds.map((id) => ({
+      id,
+      name: nameById.get(id) ?? id,
+    }));
     const row = enrichWithAudit(
       {
         id: createId("crm-fb"),
@@ -159,6 +176,8 @@ export async function addCrmLeadFeedback(
         meetingLocation,
         notes: parsed.notes ?? "",
         recordedByEmployeeId: actorEmployeeId(),
+        mentionedUserIds,
+        mentionedUsers,
       },
       actorId
     );
@@ -202,6 +221,13 @@ export async function addCrmLeadFeedback(
       previousValue: null,
       newValue: parsed.stageId ?? feedbackTypeId,
     });
+    await notifyCrmFeedbackMentions({
+      leadId,
+      leadName: lead.name,
+      feedbackId: row.id,
+      actorId,
+      recipientIds: mentionedUserIds,
+    });
     emitCrmUpdated();
     return ok(row);
   } catch (error) {
@@ -220,14 +246,15 @@ export async function getCrmFeedbackList(
     await simulateDelay();
     assertCap("view");
     let items = await crmLeadFeedbackRepository.findAll();
-    if (!isAdmin()) {
-      const empId = actorEmployeeId()?.trim() ?? "";
-      if (!empId) return ok([]);
+    const allowed = await resolveCrmOwnerIds();
+    if (allowed !== null) {
       const leads = await crmLeadRepository.findAll();
-      const mine = new Set(
-        leads.filter((l) => l.ownerEmployeeId === empId).map((l) => l.id)
+      const visible = new Set(
+        leads
+          .filter((l) => l.ownerEmployeeId && allowed.includes(l.ownerEmployeeId))
+          .map((l) => l.id)
       );
-      items = items.filter((f) => mine.has(f.leadId));
+      items = items.filter((f) => visible.has(f.leadId));
     }
     if (filters.leadId) items = items.filter((f) => f.leadId === filters.leadId);
     if (filters.feedbackTypeId) {
@@ -250,14 +277,15 @@ export async function getCrmActivities(
     await simulateDelay();
     assertCap("view");
     let items = await crmLeadActivityRepository.findAll();
-    if (!isAdmin()) {
-      const empId = actorEmployeeId()?.trim() ?? "";
-      if (!empId) return ok([]);
+    const allowed = await resolveCrmOwnerIds();
+    if (allowed !== null) {
       const leads = await crmLeadRepository.findAll();
-      const mine = new Set(
-        leads.filter((l) => l.ownerEmployeeId === empId).map((l) => l.id)
+      const visible = new Set(
+        leads
+          .filter((l) => l.ownerEmployeeId && allowed.includes(l.ownerEmployeeId))
+          .map((l) => l.id)
       );
-      items = items.filter((a) => mine.has(a.leadId));
+      items = items.filter((a) => visible.has(a.leadId));
     }
     return ok(
       items

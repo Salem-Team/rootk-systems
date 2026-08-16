@@ -4,11 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { motion, useReducedMotion } from "framer-motion";
-import { LogOut, Menu, Moon, Search, Sun, User } from "lucide-react";
+import { LogOut, Menu, Moon, Sun, User } from "lucide-react";
 import { format } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -19,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { NavbarClientSearch } from "@/components/layout/navbar-client-search";
 import { NotificationsPopover } from "@/components/layout/notifications-popover";
 import { UserViewSwitcher } from "@/components/layout/user-view-switcher";
 import { useUiStore } from "@/stores/ui-store";
@@ -84,16 +84,7 @@ export function Navbar() {
           <Menu className="h-5 w-5" />
         </Button>
 
-        <div className="relative hidden max-w-sm flex-1 md:block">
-          <Search className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/80" />
-          <Input
-            placeholder={t("common.search")}
-            className="h-9 border-border/55 bg-muted/40 ps-8 shadow-none transition-colors placeholder:text-muted-foreground/55 hover:bg-muted/55 focus-visible:border-primary/30 focus-visible:bg-card focus-visible:shadow-sm"
-            aria-label={t("common.searchAria")}
-            readOnly
-            tabIndex={-1}
-          />
-        </div>
+        <NavbarClientSearch />
 
         <div className="ms-auto flex items-center gap-0.5 sm:gap-1">
           <div className="me-1.5 hidden rounded-xl border border-border/65 bg-gradient-to-b from-muted/55 to-muted/20 px-3 py-1.5 text-end shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] dark:shadow-none lg:block">

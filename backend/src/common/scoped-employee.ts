@@ -7,7 +7,8 @@ import {
 } from "./permissions-catalog";
 
 /**
- * Own-only unless the actor may view other users' records in this module.
+ * Own-only unless the actor may view all users' records in this module.
+ * Team vs all must be enforced in the service with Prisma (`employeeIdsForModule`).
  */
 export function resolveScopedEmployeeId(
   user: JwtPayload,
@@ -15,13 +16,19 @@ export function resolveScopedEmployeeId(
   scope?: { viewAll?: PermissionId; viewTeam?: PermissionId }
 ): string | undefined {
   const access = scope
-    ? canViewOthersInModule(user.permissions, scope.viewAll, scope.viewTeam)
+    ? canViewOthersInModule(
+        user.permissions,
+        scope.viewAll,
+        scope.viewTeam,
+        user.role
+      )
     : canViewOthersInModule(
         user.permissions,
         "dataAccess.viewOtherUsers",
-        undefined
+        undefined,
+        user.role
       );
-  if (access.all || access.team) {
+  if (access.all) {
     return requestedEmployeeId ?? undefined;
   }
   if (user.employeeId?.trim()) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircle, Phone } from "lucide-react";
+import { ExternalLink, MessageCircle, Phone, Send } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,10 +8,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "@/hooks/use-translation";
+import {
+  contactProfileHref,
+  detectContactKind,
+  telHrefForContact,
+} from "@/lib/crm/contact-identity";
 import { beginPendingCall } from "@/lib/crm/pending-call";
-import { displayCrmPhone, telHref, whatsappHref } from "@/lib/crm/phone-links";
+import { displayCrmPhone } from "@/lib/crm/phone-links";
 import { nativePlatform } from "@/lib/native/platform";
 import { cn } from "@/lib/utils";
+import type { CrmContactKind } from "@/types/crm";
 
 interface CrmPhoneActionsProps {
   phone: string;
@@ -21,7 +27,13 @@ interface CrmPhoneActionsProps {
   className?: string;
 }
 
-/** Clickable phone that opens Call / WhatsApp choices. */
+function profileIcon(kind: CrmContactKind) {
+  if (kind === "whatsapp") return <MessageCircle aria-hidden />;
+  if (kind === "telegram") return <Send aria-hidden />;
+  return <ExternalLink aria-hidden />;
+}
+
+/** Clickable contact that opens Call / platform profile choices. */
 export function CrmPhoneActions({
   phone,
   phoneNormalized,
@@ -31,16 +43,22 @@ export function CrmPhoneActions({
 }: CrmPhoneActionsProps) {
   const { t } = useTranslation();
   const trimmed = phone.trim();
-  const callUrl = trimmed ? telHref(trimmed) : null;
-  const whatsappUrl = trimmed ? whatsappHref(trimmed) : null;
+  const kind = detectContactKind(trimmed, phoneNormalized);
+  const callUrl = telHrefForContact(trimmed, phoneNormalized);
+  const profileUrl = contactProfileHref(trimmed, phoneNormalized);
   const label = displayCrmPhone(trimmed, phoneNormalized);
+  const isPhone = kind === "phone";
 
   if (!trimmed) {
     return <span className={cn("text-muted-foreground", className)}>—</span>;
   }
 
-  if (!callUrl && !whatsappUrl) {
-    return <span className={cn("font-mono tabular-nums", className)}>{label}</span>;
+  if (!callUrl && !profileUrl) {
+    return (
+      <span className={cn(isPhone && "font-mono tabular-nums", className)}>
+        {label}
+      </span>
+    );
   }
 
   function onDial() {
@@ -59,7 +77,8 @@ export function CrmPhoneActions({
         <button
           type="button"
           className={cn(
-            "inline-flex max-w-full items-center truncate font-mono tabular-nums text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "inline-flex max-w-full items-center truncate text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            isPhone && "font-mono tabular-nums",
             className
           )}
           aria-label={t("crm.leads.phoneActions")}
@@ -84,16 +103,18 @@ export function CrmPhoneActions({
             </a>
           </DropdownMenuItem>
         ) : null}
-        {whatsappUrl ? (
+        {profileUrl ? (
           <DropdownMenuItem asChild>
             <a
-              href={whatsappUrl}
+              href={profileUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="cursor-pointer"
             >
-              <MessageCircle aria-hidden />
-              {t("crm.nextAction.whatsapp")}
+              {profileIcon(kind)}
+              {kind === "phone" || kind === "whatsapp"
+                ? t("crm.nextAction.whatsapp")
+                : t("crm.leads.openProfile")}
             </a>
           </DropdownMenuItem>
         ) : null}

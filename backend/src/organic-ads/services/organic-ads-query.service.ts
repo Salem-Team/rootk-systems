@@ -1,11 +1,14 @@
-import { Injectable, NotFoundException, ForbiddenException } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { AdPlatform, AdStatus, AdValidationStatus, Prisma } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
+import {
+  assertEmployeeInScope,
+  employeeIdsForModule,
+} from "../../common/employee-scope";
 import { inspectAdUrl } from "../../lib/organic-ads-url";
 import {
   assertCap,
   buildScopedWhere,
-  canSeeOrganicAdsTeam,
   findDuplicate,
   mapAd,
   resolveDateRange,
@@ -22,7 +25,7 @@ export class OrganicAdsQueryService {
     assertCap(actor, "create");
     const inspected = inspectAdUrl(url ?? "");
     const ads = await this.prisma.organicAdvertisement.findMany({
-      where: buildScopedWhere(companyId, actor),
+      where: await buildScopedWhere(this.prisma, companyId, actor),
     });
     const duplicate = findDuplicate(
       ads,
@@ -39,7 +42,7 @@ export class OrganicAdsQueryService {
 
   async list(companyId: string, actor: Actor, filters: Record<string, unknown> = {}) {
     assertCap(actor, "view_own");
-    const where = buildScopedWhere(companyId, actor);
+    const where = await buildScopedWhere(this.prisma, companyId, actor);
 
     if (typeof filters.search === "string" && filters.search.trim()) {
       const q = filters.search.trim();
@@ -51,11 +54,15 @@ export class OrganicAdsQueryService {
       ];
     }
     if (typeof filters.ownerEmployeeId === "string" && filters.ownerEmployeeId) {
-      if (!canSeeOrganicAdsTeam(actor)) {
-        where.ownerEmployeeId = actor.employeeId;
-      } else {
-        where.ownerEmployeeId = filters.ownerEmployeeId;
-      }
+      const allowed = await employeeIdsForModule(
+        this.prisma,
+        companyId,
+        actor,
+        "organicAds.viewAll",
+        "organicAds.viewTeam"
+      );
+      assertEmployeeInScope(filters.ownerEmployeeId, allowed);
+      where.ownerEmployeeId = filters.ownerEmployeeId;
     }
     if (typeof filters.platform === "string" && filters.platform) {
       where.platform = filters.platform as AdPlatform;
@@ -125,12 +132,14 @@ export class OrganicAdsQueryService {
       where: { id, companyId, deletedAt: null },
     });
     if (!row) throw new NotFoundException("Advertisement not found");
-    if (
-      !canSeeOrganicAdsTeam(actor) &&
-      row.ownerEmployeeId !== actor.employeeId
-    ) {
-      throw new ForbiddenException("You can only view your own advertisements");
-    }
+    const allowed = await employeeIdsForModule(
+      this.prisma,
+      companyId,
+      actor,
+      "organicAds.viewAll",
+      "organicAds.viewTeam"
+    );
+    assertEmployeeInScope(row.ownerEmployeeId, allowed);
     return mapAd(row);
   }
 }

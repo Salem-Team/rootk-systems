@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CrmLeadsBulkAdd } from "@/components/crm/crm-leads-bulk-add";
 import { CrmLeadsBulkBar } from "@/components/crm/crm-leads-bulk-bar";
 import { CrmLeadsFilters } from "@/components/crm/crm-leads-filters";
 import { CrmLeadsImportDialog } from "@/components/crm/crm-leads-import-dialog";
@@ -15,7 +16,13 @@ import { downloadCrmLeadsWorkbook } from "@/lib/crm/leads-excel";
 import { cn } from "@/lib/utils";
 import { exportCrmLeadRows } from "@/services/crm.service";
 import type { Employee } from "@/types";
-import type { CrmLead, CrmLeadFilters, CrmStage, PaginatedLeads } from "@/types/crm";
+import type {
+  CrmBusinessType,
+  CrmLead,
+  CrmLeadFilters,
+  CrmStage,
+  PaginatedLeads,
+} from "@/types/crm";
 
 interface CrmLeadsPanelProps {
   leads: PaginatedLeads | null;
@@ -28,7 +35,9 @@ interface CrmLeadsPanelProps {
   onAddLead?: () => void;
   onImported?: () => void;
   canAssign?: boolean;
+  canViewOthers?: boolean;
   canImport?: boolean;
+  businessTypes?: CrmBusinessType[];
   className?: string;
 }
 
@@ -44,7 +53,9 @@ export function CrmLeadsPanel({
   onAddLead,
   onImported,
   canAssign = false,
+  canViewOthers = false,
   canImport = false,
+  businessTypes = [],
   className,
 }: CrmLeadsPanelProps) {
   const panel = useCrmLeadsPanel({ leads, stages, employees, filters, onFiltersChange });
@@ -97,6 +108,16 @@ export function CrmLeadsPanel({
             <span className="hidden sm:inline">{t("crm.actions.export")}</span>
           </Button>
           {canImport ? (
+            <CrmLeadsBulkAdd
+              stages={stages}
+              businessTypes={businessTypes}
+              employees={employees}
+              canAssign={canAssign}
+              onImported={onImported}
+              size="sm"
+            />
+          ) : null}
+          {canImport ? (
             <Button
               type="button"
               size="sm"
@@ -127,6 +148,7 @@ export function CrmLeadsPanel({
         stages={panel.safeStages}
         employees={panel.safeEmployees}
         canAssign={canAssign}
+        canViewOthers={canViewOthers}
         hasActiveFilters={panel.hasActiveFilters}
         onFiltersChange={onFiltersChange}
         onClearFilters={panel.clearFilters}

@@ -13,6 +13,7 @@ import type {
 } from "@/types/crm";
 import { parseMaybe } from "@/lib/crm/date-range";
 import { formatHour12Label } from "@/lib/crm/format";
+import { canonicalPhoneOrNull } from "@/lib/phone-normalize";
 
 function emptyBucket(): CrmCallMeetingBucket {
   return {
@@ -33,6 +34,100 @@ export function emptyInteractionBreakdown(): CrmInteractionBreakdown {
     byHour: [],
     byClient: [],
     calls: [],
+  };
+}
+
+export const INTERACTION_SUMMARY_KINDS = [
+  "activeCalls",
+  "inactiveCalls",
+  "meetings",
+  "meetingsSplit",
+] as const;
+
+export type CrmInteractionSummaryKind =
+  (typeof INTERACTION_SUMMARY_KINDS)[number];
+
+/** Rows for a summary-card popup (clients + their recorded feedback). */
+export function filterCallsBySummaryKind(
+  calls: CrmInteractionCallDetail[],
+  kind: CrmInteractionSummaryKind
+): CrmInteractionCallDetail[] {
+  if (kind === "activeCalls") {
+    return calls.filter((call) => call.callAnswered);
+  }
+  if (kind === "inactiveCalls") {
+    return calls.filter((call) => !call.callAnswered);
+  }
+  return calls.filter((call) => Boolean(call.meetingMode));
+}
+
+export function filterClientDayCalls(
+  calls: CrmInteractionCallDetail[],
+  row: Pick<CrmClientCallRow, "leadId" | "date" | "ownerEmployeeId">,
+  answered: boolean
+): CrmInteractionCallDetail[] {
+  return calls.filter(
+    (call) =>
+      call.leadId === row.leadId &&
+      call.date === row.date &&
+      call.callAnswered === answered &&
+      (!row.ownerEmployeeId || call.ownerEmployeeId === row.ownerEmployeeId)
+  );
+}
+
+export const INTERACTION_BY_CLIENT_PAGE_SIZE = 20;
+
+function digitsOnly(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
+/** Match a by-client row on name, company, owner, or phone number. */
+export function clientCallRowMatchesSearch(
+  row: CrmClientCallRow,
+  query: string
+): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const hay = [row.leadName, row.companyName, row.ownerEmployeeName, row.phone]
+    .join(" ")
+    .toLowerCase();
+  if (hay.includes(q)) return true;
+  const qDigits = digitsOnly(query);
+  if (qDigits.length < 3) return false;
+  const phoneDigits = digitsOnly(row.phoneNormalized || row.phone);
+  if (phoneDigits.includes(qDigits)) return true;
+  const canonical = canonicalPhoneOrNull(query);
+  if (!canonical) return false;
+  return (
+    row.phoneNormalized === canonical ||
+    canonicalPhoneOrNull(row.phone) === canonical
+  );
+}
+
+export function filterAndPaginateClientCallRows(
+  rows: CrmClientCallRow[],
+  query: string,
+  page: number,
+  pageSize = INTERACTION_BY_CLIENT_PAGE_SIZE
+): {
+  items: CrmClientCallRow[];
+  total: number;
+  page: number;
+  totalPages: number;
+} {
+  const filtered = query.trim()
+    ? rows.filter((row) => clientCallRowMatchesSearch(row, query))
+    : rows;
+  const size = Math.max(1, pageSize);
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / size));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const start = (safePage - 1) * size;
+  return {
+    items: filtered.slice(start, start + size),
+    total,
+    page: safePage,
+    totalPages,
   };
 }
 
@@ -216,6 +311,8 @@ export function buildInteractionBreakdown(
         leadId: leadId!,
         leadName: lead?.name ?? leadId!,
         companyName: lead?.companyName ?? "",
+        phone: lead?.phone ?? "",
+        phoneNormalized: lead?.phoneNormalized ?? null,
         ownerEmployeeId: ownerId === "__none__" ? null : (ownerId ?? null),
         ownerEmployeeName:
           !ownerId || ownerId === "__none__"

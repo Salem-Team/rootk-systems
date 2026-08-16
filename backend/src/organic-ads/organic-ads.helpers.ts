@@ -18,6 +18,11 @@ import {
   subDays,
 } from "date-fns";
 import { auditFields, iso, isoOrNull } from "../common/mappers";
+import {
+  employeeIdsForModule,
+  prismaOwnerEmployeeFilter,
+} from "../common/employee-scope";
+import type { PrismaService } from "../prisma/prisma.service";
 import { canOrganicAds } from "../lib/organic-ads-policies";
 import { canViewOthersInModule } from "../common/permissions-catalog";
 
@@ -142,23 +147,29 @@ export function canSeeOrganicAdsTeam(actor: Actor): boolean {
   return canViewOthersInModule(
     actor.permissions,
     "organicAds.viewAll",
-    "organicAds.viewTeam"
+    "organicAds.viewTeam",
+    actor.role
   ).team;
 }
 
 /** Tenant + team-visibility scoped where-clause for advertisement queries. */
-export function buildScopedWhere(
+export async function buildScopedWhere(
+  prisma: PrismaService,
   companyId: string,
   actor: Actor
-): Prisma.OrganicAdvertisementWhereInput {
-  const where: Prisma.OrganicAdvertisementWhereInput = {
+): Promise<Prisma.OrganicAdvertisementWhereInput> {
+  const allowed = await employeeIdsForModule(
+    prisma,
+    companyId,
+    actor,
+    "organicAds.viewAll",
+    "organicAds.viewTeam"
+  );
+  return {
     companyId,
     deletedAt: null,
+    ...prismaOwnerEmployeeFilter(allowed),
   };
-  if (!canSeeOrganicAdsTeam(actor)) {
-    where.ownerEmployeeId = actor.employeeId;
-  }
-  return where;
 }
 
 export function findDuplicate(

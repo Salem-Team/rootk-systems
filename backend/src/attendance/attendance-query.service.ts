@@ -2,6 +2,12 @@ import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { parseDate } from "../common/mappers";
+import {
+  assertEmployeeInScope,
+  employeeIdsForModule,
+  prismaEmployeeFilter,
+} from "../common/employee-scope";
+import type { JwtPayload } from "../common/decorators/current-user";
 import { utcDay } from "../lib/work-time";
 import { mapAttendance } from "./attendance-mappers";
 
@@ -18,13 +24,30 @@ export class AttendanceQueryService {
       status?: string;
       from?: string;
       to?: string;
-    } = {}
+    } = {},
+    actor?: JwtPayload
   ) {
     const where: Prisma.AttendanceRecordWhereInput = {
       companyId,
       deletedAt: null,
     };
-    if (filters.employeeId) where.employeeId = filters.employeeId;
+    if (actor) {
+      const allowed = await employeeIdsForModule(
+        this.prisma,
+        companyId,
+        actor,
+        "attendance.viewAll",
+        "attendance.viewTeam"
+      );
+      if (filters.employeeId) {
+        assertEmployeeInScope(filters.employeeId, allowed);
+        where.employeeId = filters.employeeId;
+      } else {
+        Object.assign(where, prismaEmployeeFilter(allowed));
+      }
+    } else if (filters.employeeId) {
+      where.employeeId = filters.employeeId;
+    }
     if (filters.status) where.status = filters.status;
     if (filters.date) where.date = parseDate(filters.date);
     if (filters.from || filters.to) {

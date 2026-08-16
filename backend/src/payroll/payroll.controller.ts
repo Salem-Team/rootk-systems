@@ -13,7 +13,7 @@ import { PayrollService } from "./payroll.service";
 import { ActorId, CompanyId } from "../common/tenant";
 import { Roles } from "../common/roles.decorator";
 import { RolesGuard } from "../common/roles.guard";
-import { AppRole, isEmployeeRole } from "../common/roles";
+import { AppRole } from "../common/roles";
 import { CurrentUser, type JwtPayload } from "../common/decorators/current-user";
 import { RequirePermission } from "../common/permissions.decorator";
 import { canViewOthersInModule } from "../common/permissions-catalog";
@@ -21,13 +21,12 @@ import { canViewOthersInModule } from "../common/permissions-catalog";
 function assertOwnPayroll(user: JwtPayload, employeeId: string) {
   const others = canViewOthersInModule(
     user.permissions,
-    "payroll.viewAllPayslips"
+    "payroll.viewAllPayslips",
+    undefined,
+    user.role
   );
   if (others.all) return;
-  if (isEmployeeRole(user.role) && user.employeeId !== employeeId) {
-    throw new ForbiddenException("Cannot access another employee's payroll");
-  }
-  if (!isEmployeeRole(user.role) && user.employeeId !== employeeId) {
+  if (user.employeeId !== employeeId) {
     throw new ForbiddenException("Cannot access another employee's payroll");
   }
 }

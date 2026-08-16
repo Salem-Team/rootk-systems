@@ -18,6 +18,7 @@ interface CrmDelayPanelProps {
   loading?: boolean;
   onRowClick: (lead: CrmLead) => void;
   canAssign?: boolean;
+  canViewOthers?: boolean;
   className?: string;
 }
 
@@ -33,6 +34,7 @@ export function CrmDelayPanel({
   loading = false,
   onRowClick,
   canAssign = false,
+  canViewOthers = false,
   className,
 }: CrmDelayPanelProps) {
   const { t } = useTranslation();
@@ -76,6 +78,7 @@ export function CrmDelayPanel({
           loading={loading}
           onRowClick={onRowClick}
           canAssign={canAssign}
+          canViewOthers={canViewOthers}
           canImport={false}
         />
       )}

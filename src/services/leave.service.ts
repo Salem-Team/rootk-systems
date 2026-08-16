@@ -6,7 +6,6 @@ import {
   fetchLeaveRequests,
   postLeaveRequest,
 } from "@/api/leave.api";
-import { AppRole } from "@/constants/roles";
 import { isApiMode } from "@/lib/env";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { enrichWithAudit } from "@/lib/entity";
@@ -15,7 +14,11 @@ import { demoNow } from "@/lib/mock-date";
 import { leaveRepository, scheduleRepository } from "@/repositories";
 import { createLeaveSchema } from "@/schemas";
 import { fail, fromError, ok } from "@/services/api-result";
-import { getSessionRole, getWorkEmployeeId } from "@/stores/session-store";
+import {
+  employeeInLocalScope,
+  localEmployeeIdsForModule,
+} from "@/services/employee-scope";
+import { getWorkEmployeeId } from "@/stores/session-store";
 import type { ApiResponse, LeaveRequest, LeaveStatus, LeaveType } from "@/types";
 import { countWorkingDaysInRange } from "@/lib/working-days";
 import { emptyLeave } from "./leave-service-helpers";
@@ -30,11 +33,20 @@ export async function getLeaveRequests(
 ): Promise<ApiResponse<LeaveRequest[]>> {
   if (isApiMode()) return fetchLeaveRequests(filters);
   try {
-    const scoped =
-      getSessionRole() === AppRole.employee
-        ? { ...filters, employeeId: getWorkEmployeeId() }
-        : filters;
-    return ok(await leaveRepository.filter(scoped));
+    const allowed = await localEmployeeIdsForModule(
+      "leave.viewAll",
+      "leave.viewTeam"
+    );
+    if (filters.employeeId && !employeeInLocalScope(filters.employeeId, allowed)) {
+      return ok([]);
+    }
+    const rows = await leaveRepository.filter(
+      allowed === null || filters.employeeId
+        ? filters
+        : { ...filters, employeeId: undefined }
+    );
+    if (allowed === null || filters.employeeId) return ok(rows);
+    return ok(rows.filter((row) => allowed.includes(row.employeeId)));
   } catch (error) {
     return fromError(error, []);
   }
@@ -62,11 +74,12 @@ export async function getLeaveById(
   try {
     const request = await leaveRepository.findById(id);
     if (!request) return fail(null, "Leave request not found", "NOT_FOUND");
-    if (
-      getSessionRole() === AppRole.employee &&
-      request.employeeId !== getWorkEmployeeId()
-    ) {
-      throw new ForbiddenError("You can only view your own leave requests");
+    const allowed = await localEmployeeIdsForModule(
+      "leave.viewAll",
+      "leave.viewTeam"
+    );
+    if (!employeeInLocalScope(request.employeeId, allowed)) {
+      throw new ForbiddenError("You can only view leave in your team scope");
     }
     return ok(request);
   } catch (error) {

@@ -5,9 +5,11 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { iso } from "../../common/mappers";
 import { isOrganicAdsType } from "../../lib/organic-ads-task-match";
 import {
+  employeeIdsForModule,
+} from "../../common/employee-scope";
+import {
   assertCap,
   buildScopedWhere,
-  canSeeOrganicAdsTeam,
   computeHealthScore,
   isInRange,
   mapSettings,
@@ -34,11 +36,18 @@ export class OrganicAdsOverviewService {
     activitySort: TeamActivitySort = "ads"
   ) {
     assertCap(actor, "view_own");
+    const allowed = await employeeIdsForModule(
+      this.prisma,
+      companyId,
+      actor,
+      "organicAds.viewAll",
+      "organicAds.viewTeam"
+    );
     const [settings, ads, employees, historyEvents, linkedTargets] =
       await Promise.all([
         this.settings.ensureSettings(companyId),
         this.prisma.organicAdvertisement.findMany({
-          where: buildScopedWhere(companyId, actor),
+          where: await buildScopedWhere(this.prisma, companyId, actor),
         }),
         this.prisma.employee.findMany({
           where: { companyId, deletedAt: null },
@@ -49,9 +58,9 @@ export class OrganicAdsOverviewService {
             companyId,
             deletedAt: null,
             status: { notIn: [TargetStatus.cancelled, TargetStatus.archived] },
-            ...(canSeeOrganicAdsTeam(actor) || !actor.employeeId
+            ...(allowed === null
               ? {}
-              : { assigneeIds: { has: actor.employeeId } }),
+              : { assigneeIds: { hasSome: allowed } }),
           },
           select: {
             id: true,

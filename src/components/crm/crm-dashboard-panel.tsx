@@ -30,6 +30,7 @@ interface CrmDashboardPanelProps {
   onNavigatePerformance?: () => void;
   employees: Employee[];
   canAssign?: boolean;
+  canViewOthers?: boolean;
   className?: string;
 }
 
@@ -43,6 +44,7 @@ export function CrmDashboardPanel({
   onNavigatePerformance,
   employees,
   canAssign = false,
+  canViewOthers = false,
   className,
 }: CrmDashboardPanelProps) {
   const { t, locale } = useTranslation();
@@ -108,6 +110,7 @@ export function CrmDashboardPanel({
         filters={filters}
         employees={employees}
         canAssign={canAssign}
+        canViewOthers={canViewOthers}
         onFiltersChange={onFiltersChange}
       />
 

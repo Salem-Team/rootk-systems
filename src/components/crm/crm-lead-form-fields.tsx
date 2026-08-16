@@ -1,7 +1,9 @@
 "use client";
 
+import { Plus, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -10,11 +12,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { CrmEgPhoneInput } from "@/components/crm/crm-eg-phone-input";
 import { useTranslation } from "@/hooks/use-translation";
+import { CRM_CONTACT_KINDS } from "@/lib/crm/contact-identity";
 import { NEXT_ACTIONS, SOURCES, STATUSES, TAGS } from "@/lib/crm/lead-form-options";
+import type { LeadFormContactDraft } from "@/lib/crm/lead-contacts";
 import type { Employee } from "@/types";
 import type {
   CrmBusinessType,
+  CrmContactKind,
   CrmLeadSource,
   CrmLeadStatus,
   CrmLeadTag,
@@ -26,8 +32,14 @@ import type {
 interface CrmLeadFormFieldsProps {
   name: string;
   onNameChange: (v: string) => void;
-  phone: string;
-  onPhoneChange: (v: string) => void;
+  contacts: LeadFormContactDraft[];
+  onPatchContact: (
+    id: string,
+    patch: Partial<Pick<LeadFormContactDraft, "kind" | "value">>
+  ) => void;
+  onAddContact: () => void;
+  onRemoveContact: (id: string) => void;
+  canAddContact: boolean;
   email: string;
   onEmailChange: (v: string) => void;
   companyName: string;
@@ -63,8 +75,11 @@ interface CrmLeadFormFieldsProps {
 export function CrmLeadFormFields({
   name,
   onNameChange,
-  phone,
-  onPhoneChange,
+  contacts,
+  onPatchContact,
+  onAddContact,
+  onRemoveContact,
+  canAddContact,
   email,
   onEmailChange,
   companyName,
@@ -110,13 +125,79 @@ export function CrmLeadFormFields({
       </div>
 
       <div className="grid gap-1.5">
-        <Label htmlFor="crm-lead-phone">{t("crm.leadForm.phone")}</Label>
-        <Input
-          id="crm-lead-phone"
-          value={phone}
-          onChange={(e) => onPhoneChange(e.target.value)}
-          inputMode="tel"
-        />
+        <Label>{t("crm.leadForm.contact")}</Label>
+        <div className="grid gap-2">
+          {contacts.map((row, index) => (
+            <div key={row.id} className="grid gap-1">
+              <div className="flex items-stretch gap-2">
+                <Select
+                  value={row.kind}
+                  onValueChange={(v) =>
+                    onPatchContact(row.id, { kind: v as CrmContactKind })
+                  }
+                >
+                  <SelectTrigger className="w-[9.25rem] shrink-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CRM_CONTACT_KINDS.map((kind) => (
+                      <SelectItem key={kind} value={kind}>
+                        {t(`crm.contactKind.${kind}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {row.kind === "phone" ? (
+                  <CrmEgPhoneInput
+                    id={index === 0 ? "crm-lead-phone" : undefined}
+                    value={row.value}
+                    onChange={(value) => onPatchContact(row.id, { value })}
+                    className="min-w-0 w-auto flex-1"
+                  />
+                ) : (
+                  <Input
+                    id={index === 0 ? "crm-lead-phone" : undefined}
+                    dir="ltr"
+                    className="min-w-0 flex-1"
+                    value={row.value}
+                    onChange={(e) =>
+                      onPatchContact(row.id, { value: e.target.value })
+                    }
+                    placeholder={t("crm.leadForm.handlePlaceholder")}
+                    autoComplete="username"
+                  />
+                )}
+                {contacts.length > 1 ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={() => onRemoveContact(row.id)}
+                    aria-label={t("crm.leadForm.removeContact")}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
+        {canAddContact ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-fit"
+            onClick={onAddContact}
+          >
+            <Plus className="h-4 w-4" />
+            {t("crm.leadForm.addContact")}
+          </Button>
+        ) : null}
+        <p className="text-[12px] text-muted-foreground">
+          {t("crm.leadForm.contactsHint")}
+        </p>
       </div>
 
       <div className="grid gap-1.5">

@@ -30,6 +30,7 @@ interface CrmPerformancePanelProps {
   onFiltersChange: (filters: CrmDashboardFilters) => void;
   employees: Employee[];
   canAssign?: boolean;
+  canViewOthers?: boolean;
   loading?: boolean;
   onSelectEmployee: (employeeId: string) => void;
   className?: string;
@@ -43,6 +44,7 @@ export function CrmPerformancePanel({
   onFiltersChange,
   employees,
   canAssign = false,
+  canViewOthers = false,
   loading = false,
   onSelectEmployee,
   className,
@@ -58,6 +60,7 @@ export function CrmPerformancePanel({
         filters={filters}
         employees={employees}
         canAssign={canAssign}
+        canViewOthers={canViewOthers}
         onFiltersChange={onFiltersChange}
         showInteractionFilters
       />

@@ -2,7 +2,7 @@
 
 import { format, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { CrmPhoneActions } from "@/components/crm/crm-phone-actions";
+import { CrmLeadContactList } from "@/components/crm/crm-lead-contact-list";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import { Badge } from "@/components/ui/badge";
@@ -129,13 +129,7 @@ export function CrmLeadsTable({
                         onClick={(e) => e.stopPropagation()}
                         onPointerDown={(e) => e.stopPropagation()}
                       >
-                        <CrmPhoneActions
-                          phone={lead.phone}
-                          phoneNormalized={lead.phoneNormalized}
-                          leadId={lead.id}
-                          leadName={lead.name}
-                          className="text-[12px]"
-                        />
+                        <CrmLeadContactList lead={lead} compact />
                       </div>
                     </div>
                     <Badge
@@ -250,13 +244,7 @@ export function CrmLeadsTable({
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
-                  <CrmPhoneActions
-                    phone={lead.phone}
-                    phoneNormalized={lead.phoneNormalized}
-                    leadId={lead.id}
-                    leadName={lead.name}
-                    className="text-[12px]"
-                  />
+                  <CrmLeadContactList lead={lead} compact />
                 </DataTableCell>
                 <DataTableCell className="hidden text-[12px] md:table-cell">
                   {t(`crm.source.${lead.source}`)}

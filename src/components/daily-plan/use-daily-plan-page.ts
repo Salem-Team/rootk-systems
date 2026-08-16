@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AppRole } from "@/constants/roles";
+import { hasPermissionId } from "@/constants/permissions";
 import { useLiveReload } from "@/hooks/use-live-reload";
 import { useTickingNow } from "@/hooks/use-ticking-now";
 import { useTranslation } from "@/hooks/use-translation";
@@ -15,7 +15,14 @@ import type { DailyPlan, DailyPlanSlot, DailyPlanSlotInput } from "@/types/daily
 export function useDailyPlanPage() {
   const { t, locale } = useTranslation();
   const role = useSessionStore((s) => s.role);
-  const canEdit = role === AppRole.admin;
+  const permissions = useSessionStore((s) =>
+    s.authenticated ? s.permissions : []
+  );
+  const canEdit = hasPermissionId(
+    "dailyPlan.editCompanyPlan",
+    permissions,
+    role
+  );
   const now = useTickingNow(15_000);
 
   const [plan, setPlan] = useState<DailyPlan | null>(null);

@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import {
   ALL_PERMISSION_IDS,
   permissionsForRole,
+  withPermissionGrantSideEffects,
   type PermissionId,
 } from "@/constants/permissions";
 import {
@@ -110,12 +111,7 @@ export function UserPermissionsPanel() {
   }, [detail, draft]);
 
   function toggle(id: PermissionId, granted: boolean) {
-    setDraft((prev) => {
-      const next = new Set(prev);
-      if (granted) next.add(id);
-      else next.delete(id);
-      return next;
-    });
+    setDraft((prev) => withPermissionGrantSideEffects(prev, id, granted));
   }
 
   function openUser(id: string) {

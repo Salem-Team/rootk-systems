@@ -8,7 +8,7 @@ import {
   subDays,
 } from "date-fns";
 import { PrismaService } from "../prisma/prisma.service";
-import { assertCap, canViewOthersLeads, type Actor } from "./crm-access";
+import { assertCap, type Actor } from "./crm-access";
 import {
   buildFeedbackReasons,
   buildSalesPerformance,
@@ -44,12 +44,12 @@ export class CrmDashboardService {
   ) {
     assertCap(actor, "view_dashboard");
     const { from, to } = resolveDateBounds(query);
-    const ownerFilter =
-      query.ownerEmployeeId && canViewOthersLeads(actor)
-        ? { ownerEmployeeId: query.ownerEmployeeId }
-        : !canViewOthersLeads(actor)
-          ? { ownerEmployeeId: actor.employeeId }
-          : {};
+    const ownerIds = await this.shared.resolveOwnerIds(companyId, actor);
+    const scopeFilter = this.shared.scopeOwnerFilter(actor, ownerIds);
+    const ownerFilter = this.shared.extraOwnerFilter(
+      ownerIds,
+      query.ownerEmployeeId
+    );
     const sourceFilter =
       query.source && LEAD_SOURCES.has(query.source)
         ? { source: query.source as CrmLeadSource }
@@ -58,7 +58,7 @@ export class CrmDashboardService {
     const where: Prisma.CrmLeadWhereInput = {
       companyId,
       deletedAt: null,
-      ...this.shared.scopeOwnerFilter(actor),
+      ...scopeFilter,
       ...ownerFilter,
       ...sourceFilter,
       ...(from ? { createdAt: { gte: from, lte: to } } : {}),
@@ -82,14 +82,14 @@ export class CrmDashboardService {
           companyId,
           deletedAt: null,
           isArchived: false,
-          ...this.shared.scopeOwnerFilter(actor),
+          ...scopeFilter,
           ...ownerFilter,
           ...sourceFilter,
         },
       }),
     ]);
 
-    return { leads, stages, feedbackTypes, allActiveLeads, from, to };
+    return { leads, stages, feedbackTypes, allActiveLeads, from, to, scopeFilter, ownerFilter };
   }
 
   async dashboard(
@@ -97,7 +97,7 @@ export class CrmDashboardService {
     actor: Actor,
     query: Record<string, string | undefined>
   ) {
-    const { leads, stages, feedbackTypes, allActiveLeads, from, to } =
+    const { leads, stages, feedbackTypes, allActiveLeads, from, to, scopeFilter, ownerFilter } =
       await this.loadScopedLeads(companyId, actor, query);
 
     const stageById = new Map(stages.map((s) => [s.id, s]));
@@ -111,10 +111,8 @@ export class CrmDashboardService {
           companyId,
           deletedAt: null,
           createdAt: { gte: prevFrom, lte: endOfDay(prevTo) },
-          ...this.shared.scopeOwnerFilter(actor),
-          ...(query.ownerEmployeeId && canViewOthersLeads(actor)
-            ? { ownerEmployeeId: query.ownerEmployeeId }
-            : {}),
+          ...scopeFilter,
+          ...ownerFilter,
           ...(query.source && LEAD_SOURCES.has(query.source)
             ? { source: query.source as CrmLeadSource }
             : {}),
@@ -165,10 +163,8 @@ export class CrmDashboardService {
         ...(from ? { createdAt: { gte: from, lte: to } } : {}),
         lead: {
           deletedAt: null,
-          ...this.shared.scopeOwnerFilter(actor),
-          ...(query.ownerEmployeeId && canViewOthersLeads(actor)
-            ? { ownerEmployeeId: query.ownerEmployeeId }
-            : {}),
+          ...scopeFilter,
+          ...ownerFilter,
         },
       },
       select: {
@@ -191,10 +187,8 @@ export class CrmDashboardService {
         deletedAt: null,
         lead: {
           deletedAt: null,
-          ...this.shared.scopeOwnerFilter(actor),
-          ...(query.ownerEmployeeId && canViewOthersLeads(actor)
-            ? { ownerEmployeeId: query.ownerEmployeeId }
-            : {}),
+          ...scopeFilter,
+          ...ownerFilter,
         },
       },
       select: {
@@ -266,6 +260,8 @@ export class CrmDashboardService {
         id: l.id,
         name: l.name,
         companyName: l.companyName,
+        phone: l.phone,
+        phoneNormalized: l.phoneNormalized ?? null,
         ownerEmployeeId: l.ownerEmployeeId,
       })),
       employees,

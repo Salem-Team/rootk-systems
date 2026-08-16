@@ -7,7 +7,19 @@ import { createLeadSchema } from "@/schemas/crm.schema";
 import { createCrmLead, updateCrmLead } from "@/services/crm.service";
 import { duplicateFromError } from "@/services/crm/crm-calls.service";
 import { crmUserFacingMessage } from "@/lib/crm/client-error";
-import { normalizeEgyptianMobile } from "@/lib/phone-normalize";
+import { egyptianMobileFormValue, egyptianMobileLocalDigits } from "@/lib/crm/eg-phone-input";
+import {
+  ContactIdentityError,
+  contactFieldValue,
+  detectContactKind,
+  resolveCrmContact,
+  type CrmContactKind,
+} from "@/lib/crm/contact-identity";
+import {
+  MAX_LEAD_CONTACTS,
+  allLeadContacts,
+  type LeadFormContactDraft,
+} from "@/lib/crm/lead-contacts";
 import { getWorkEmployeeId } from "@/stores/session-store";
 import type {
   CrmBusinessType,
@@ -19,6 +31,35 @@ import type {
   CrmNextAction,
   CrmStage,
 } from "@/types/crm";
+
+function emptyContactDraft(): LeadFormContactDraft {
+  return { id: "c-0", kind: "phone", value: "" };
+}
+
+function valueForContact(
+  kind: CrmContactKind,
+  phone: string,
+  phoneNormalized?: string | null
+) {
+  return kind === "phone"
+    ? egyptianMobileLocalDigits(phone)
+    : contactFieldValue(phone, phoneNormalized);
+}
+
+function draftsFromLead(lead: CrmLead): LeadFormContactDraft[] {
+  const rows = allLeadContacts(
+    lead.phone,
+    lead.phoneNormalized,
+    lead.contacts,
+    lead.contactKind
+  );
+  if (rows.length === 0) return [emptyContactDraft()];
+  return rows.map((row, index) => ({
+    id: `c-${index}-${row.phoneNormalized || row.phone}`,
+    kind: row.kind,
+    value: valueForContact(row.kind, row.phone, row.phoneNormalized),
+  }));
+}
 
 interface UseCrmLeadFormArgs {
   open: boolean;
@@ -45,7 +86,9 @@ export function useCrmLeadForm({
 }: UseCrmLeadFormArgs) {
   const { t } = useTranslation();
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [contacts, setContacts] = useState<LeadFormContactDraft[]>([
+    emptyContactDraft(),
+  ]);
   const [email, setEmail] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [businessTypeId, setBusinessTypeId] = useState<string>("none");
@@ -75,7 +118,7 @@ export function useCrmLeadForm({
   useHydrateOnOpen(open, editingLead?.id ?? "create", () => {
     if (editingLead) {
       setName(editingLead.name);
-      setPhone(editingLead.phone);
+      setContacts(draftsFromLead(editingLead));
       setEmail(editingLead.email ?? "");
       setCompanyName(editingLead.companyName ?? "");
       setBusinessTypeId(editingLead.businessTypeId ?? "none");
@@ -90,7 +133,7 @@ export function useCrmLeadForm({
       setNotes(editingLead.notes ?? "");
     } else {
       setName("");
-      setPhone("");
+      setContacts([emptyContactDraft()]);
       setEmail("");
       setCompanyName("");
       setBusinessTypeId("none");
@@ -113,7 +156,16 @@ export function useCrmLeadForm({
         if (raw) {
           const draft = JSON.parse(raw) as { name?: string; phone?: string };
           if (draft.name) setName(draft.name);
-          if (draft.phone) setPhone(draft.phone);
+          if (draft.phone) {
+            const kind = detectContactKind(draft.phone, null);
+            setContacts([
+              {
+                id: "c-0",
+                kind,
+                value: valueForContact(kind, draft.phone, null),
+              },
+            ]);
+          }
           window.sessionStorage.removeItem("rootk.crm.contact-draft");
         }
       } catch {
@@ -138,10 +190,90 @@ export function useCrmLeadForm({
     activeStages.find((s) => s.id === stageId)?.subStages ?? []
   ).filter((s) => s.active || s.id === editingLead?.subStageId);
 
+  function patchContact(
+    id: string,
+    patch: Partial<Pick<LeadFormContactDraft, "kind" | "value">>
+  ) {
+    setContacts((prev) =>
+      prev.map((row) => {
+        if (row.id !== id) return row;
+        const nextKind = patch.kind ?? row.kind;
+        if (patch.kind && patch.kind !== row.kind) {
+          return { ...row, kind: nextKind, value: "" };
+        }
+        return { ...row, ...patch };
+      })
+    );
+  }
+
+  function addContact() {
+    setContacts((prev) => {
+      if (prev.length >= MAX_LEAD_CONTACTS) return prev;
+      return [
+        ...prev,
+        {
+          id: `c-${Date.now()}`,
+          kind: "phone" as const,
+          value: "",
+        },
+      ];
+    });
+  }
+
+  function removeContact(id: string) {
+    setContacts((prev) =>
+      prev.length <= 1 ? prev : prev.filter((row) => row.id !== id)
+    );
+  }
+
   async function submit() {
+    const filled = contacts.filter((row) => row.value.trim());
+    if (filled.length === 0) {
+      toast.error(t("crm.leadForm.validation"));
+      return;
+    }
+    const resolvedContacts: Array<{ kind: CrmContactKind; phone: string }> = [];
+    const seen = new Set<string>();
+    for (const [index, row] of filled.entries()) {
+      const raw =
+        row.kind === "phone" ? egyptianMobileFormValue(row.value) : row.value.trim();
+      try {
+        const resolved = resolveCrmContact({
+          raw,
+          kind: row.kind,
+          previousPhone: index === 0 ? editingLead?.phone : undefined,
+          previousNormalized:
+            index === 0 ? editingLead?.phoneNormalized : undefined,
+        });
+        if (resolved.phoneNormalized) {
+          if (seen.has(resolved.phoneNormalized)) {
+            toast.error(t("crm.contact.duplicateOnLead"));
+            return;
+          }
+          seen.add(resolved.phoneNormalized);
+        }
+        resolvedContacts.push({ kind: resolved.kind, phone: resolved.phone });
+      } catch (error) {
+        if (error instanceof ContactIdentityError) {
+          toast.error(
+            error.code === "empty"
+              ? t("crm.leadForm.validation")
+              : error.code === "invalid_handle"
+                ? t("crm.contact.invalidHandle")
+                : t("crm.phone.invalid")
+          );
+          return;
+        }
+        throw error;
+      }
+    }
+
+    const primary = resolvedContacts[0];
     const payload = {
       name: name.trim(),
-      phone: phone.trim(),
+      phone: primary!.phone,
+      contactKind: primary!.kind,
+      contacts: resolvedContacts,
       email: email.trim(),
       companyName: companyName.trim(),
       businessTypeId:
@@ -166,13 +298,6 @@ export function useCrmLeadForm({
     const parsed = createLeadSchema.safeParse(payload);
     if (!parsed.success) {
       toast.error(t("crm.leadForm.validation"));
-      return;
-    }
-    const phoneCheck = normalizeEgyptianMobile(parsed.data.phone);
-    const phoneUnchanged =
-      Boolean(editingLead) && editingLead!.phone.trim() === parsed.data.phone;
-    if (!phoneCheck.ok && !phoneUnchanged) {
-      toast.error(t("crm.phone.invalid"));
       return;
     }
 
@@ -214,8 +339,11 @@ export function useCrmLeadForm({
     t,
     name,
     setName,
-    phone,
-    setPhone,
+    contacts,
+    patchContact,
+    addContact,
+    removeContact,
+    canAddContact: contacts.length < MAX_LEAD_CONTACTS,
     email,
     setEmail,
     companyName,
