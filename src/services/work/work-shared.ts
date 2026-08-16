@@ -96,6 +96,25 @@ function canManageOthersWork(): boolean {
   );
 }
 
+export type WorkTaskListScope = "all" | "managed" | "own";
+
+/** Who the current actor may list besides tasks assigned to them. */
+export function workTaskListScope(): WorkTaskListScope {
+  const permissions = getSessionPermissions();
+  const role = getSessionRole();
+  if (role === AppRole.admin) return "all";
+  if (hasPermissionId("tasks.viewAll", permissions, role)) return "all";
+  if (hasPermissionId("team.viewAll", permissions, role)) return "all";
+  if (
+    hasPermissionId("tasks.viewTeam", permissions, role) ||
+    hasPermissionId("tasks.assign", permissions, role) ||
+    hasPermissionId("tasks.editOthers", permissions, role)
+  ) {
+    return "managed";
+  }
+  return "own";
+}
+
 /** Hide co-assignees and overlay personal progress when viewer lacks company scope. */
 export function presentWorkTaskForActor(task: WorkTask): WorkTask {
   const { role, employeeId } = actorContext();

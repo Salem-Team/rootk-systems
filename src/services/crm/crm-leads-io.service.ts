@@ -155,7 +155,7 @@ export async function importCrmLeads(
   }
 }
 
-/** Export leads as normalized row objects for CSV download. */
+/** Export leads as normalized row objects for Excel download. */
 export async function exportCrmLeadRows(
   filters: CrmLeadFilters = {}
 ): Promise<ApiResponse<Array<Record<string, string>>>> {

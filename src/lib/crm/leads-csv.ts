@@ -1,4 +1,4 @@
-import type { CrmLead, CrmLeadSource, CrmLeadStatus, CrmLeadTag } from "@/types/crm";
+import type { CrmLeadSource, CrmLeadStatus, CrmLeadTag } from "@/types/crm";
 
 /** Canonical CSV headers for CRM lead import/export. */
 export const CRM_LEAD_CSV_HEADERS = [
@@ -33,107 +33,139 @@ export interface CrmLeadCsvRow {
   notes: string;
 }
 
+export function isCrmLeadRequiredField(field: CrmLeadCsvHeader): boolean {
+  return field === "name" || field === "phone";
+}
+
 const HEADER_ALIASES: Record<string, CrmLeadCsvHeader> = {
   name: "name",
   lead: "name",
   "lead name": "name",
+  fullname: "name",
+  "full name": "name",
+  customer: "name",
+  "customer name": "name",
+  اسم: "name",
+  "اسم العميل": "name",
+  "اسم الليد": "name",
+  "الاسم": "name",
   phone: "phone",
   mobile: "phone",
+  "mobile number": "phone",
+  "phone number": "phone",
+  tel: "phone",
+  whatsapp: "phone",
+  هاتف: "phone",
+  موبايل: "phone",
+  تليفون: "phone",
+  "رقم الموبايل": "phone",
+  "رقم الهاتف": "phone",
+  "رقم الواتساب": "phone",
   email: "email",
+  "e-mail": "email",
+  mail: "email",
+  ايميل: "email",
+  إيميل: "email",
+  "البريد": "email",
+  "البريد الإلكتروني": "email",
   company: "companyName",
   companyname: "companyName",
   "company name": "companyName",
+  organization: "companyName",
+  شركة: "companyName",
+  "اسم الشركة": "companyName",
   businesstype: "businessType",
   "business type": "businessType",
   industry: "businessType",
   "company type": "businessType",
+  "نوع الشركة": "businessType",
+  "نوع النشاط": "businessType",
   source: "source",
+  "lead source": "source",
+  مصدر: "source",
+  المصدر: "source",
   stage: "stage",
   stagename: "stage",
   "stage name": "stage",
+  pipeline: "stage",
+  مرحلة: "stage",
+  المرحلة: "stage",
   owner: "owner",
   sales: "owner",
+  "sales owner": "owner",
   "owner email": "owner",
   "owner name": "owner",
+  assignee: "owner",
+  مسئول: "owner",
+  المسؤول: "owner",
+  المالك: "owner",
+  "مسؤول المبيعات": "owner",
   status: "status",
+  حالة: "status",
+  الحالة: "status",
   tags: "tags",
+  tag: "tags",
+  labels: "tags",
+  تاج: "tags",
+  وسوم: "tags",
   nextaction: "nextAction",
   "next action": "nextAction",
+  followup: "nextAction",
+  "الإجراء التالي": "nextAction",
+  "الخطوة التالية": "nextAction",
   notes: "notes",
   note: "notes",
+  comment: "notes",
+  comments: "notes",
+  ملاحظات: "notes",
+  ملاحظة: "notes",
 };
 
-function normalizeHeader(raw: string): string {
-  return raw.replace(/^\uFEFF/, "").trim().toLowerCase();
+export function normalizeLeadHeader(raw: string): string {
+  return raw.replace(/^\uFEFF/, "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function splitCsvLine(line: string): string[] {
-  const cells: string[] = [];
-  let current = "";
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i += 1) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i += 1;
-      } else {
-        inQuotes = !inQuotes;
-      }
-      continue;
-    }
-    if (ch === "," && !inQuotes) {
-      cells.push(current.trim());
-      current = "";
-      continue;
-    }
-    current += ch;
-  }
-  cells.push(current.trim());
-  return cells;
-}
-
-/** Parse CSV text into normalized lead rows (skips blank lines). */
-export function parseCrmLeadsCsv(text: string): {
-  rows: CrmLeadCsvRow[];
-  errors: string[];
-} {
-  const errors: string[] = [];
-  const lines = text
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .split("\n")
-    .filter((line) => line.trim().length > 0);
-  if (lines.length === 0) {
-    return { rows: [], errors: ["CSV is empty"] };
-  }
-
-  const headerCells = splitCsvLine(lines[0]).map(normalizeHeader);
-  const indexMap = new Map<CrmLeadCsvHeader, number>();
-  headerCells.forEach((cell, idx) => {
-    const key = HEADER_ALIASES[cell];
-    if (key) indexMap.set(key, idx);
+/** Map file column names → canonical lead fields (first match wins). */
+export function suggestLeadColumnMapping(
+  headers: string[]
+): Partial<Record<CrmLeadCsvHeader, number>> {
+  const mapping: Partial<Record<CrmLeadCsvHeader, number>> = {};
+  const used = new Set<number>();
+  headers.forEach((header, idx) => {
+    const key = HEADER_ALIASES[normalizeLeadHeader(header)];
+    if (!key || mapping[key] !== undefined || used.has(idx)) return;
+    mapping[key] = idx;
+    used.add(idx);
   });
-  if (!indexMap.has("name") || !indexMap.has("phone")) {
+  return mapping;
+}
+
+export function applyLeadColumnMapping(
+  dataRows: string[][],
+  mapping: Partial<Record<CrmLeadCsvHeader, number>>
+): { rows: CrmLeadCsvRow[]; errors: string[] } {
+  const errors: string[] = [];
+  if (mapping.name === undefined || mapping.phone === undefined) {
     return {
       rows: [],
-      errors: ["CSV must include name and phone columns"],
+      errors: ["Spreadsheet must map name and phone columns"],
     };
   }
 
   const rows: CrmLeadCsvRow[] = [];
-  for (let i = 1; i < lines.length; i += 1) {
-    const cells = splitCsvLine(lines[i]);
+  dataRows.forEach((cells, offset) => {
+    const rowNum = offset + 2;
     const read = (key: CrmLeadCsvHeader) => {
-      const idx = indexMap.get(key);
-      return idx === undefined ? "" : String(cells[idx] ?? "").trim();
+      const idx = mapping[key];
+      if (idx === undefined) return "";
+      return String(cells[idx] ?? "").trim();
     };
     const name = read("name");
     const phone = read("phone");
-    if (!name && !phone) continue;
+    if (!name && !phone) return;
     if (!name || !phone) {
-      errors.push(`Row ${i + 1}: name and phone are required`);
-      continue;
+      errors.push(`Row ${rowNum}: name and phone are required`);
+      return;
     }
     rows.push({
       name,
@@ -149,59 +181,26 @@ export function parseCrmLeadsCsv(text: string): {
       nextAction: read("nextAction"),
       notes: read("notes"),
     });
-  }
+  });
   return { rows, errors };
 }
 
-export function crmLeadCsvTemplate(): string {
-  const sample = [
-    CRM_LEAD_CSV_HEADERS.join(","),
-    [
-      "Ahmed Hassan",
-      "+201000000001",
-      "ahmed@example.com",
-      "Acme Co",
-      "Retail",
-      "website",
-      "New Lead",
-      "",
-      "active",
-      "hot;interested",
-      "call",
-      "Imported sample",
-    ]
-      .map((v) => `"${v}"`)
-      .join(","),
-  ].join("\n");
-  return `\uFEFF${sample}\n`;
-}
-
-export function leadsToCsvRows(
-  leads: CrmLead[],
-  stageNameById: Map<string, string>,
-  ownerNameById: Map<string, string>,
-  businessTypeNameById: Map<string, string> = new Map()
-): (string | number)[][] {
-  const header = [...CRM_LEAD_CSV_HEADERS];
-  const body = leads.map((lead) => [
-    lead.name,
-    lead.phone,
-    lead.email ?? "",
-    lead.companyName ?? "",
-    lead.businessTypeId
-      ? businessTypeNameById.get(lead.businessTypeId) ?? lead.businessTypeId
-      : "",
-    lead.source,
-    stageNameById.get(lead.stageId) ?? lead.stageId,
-    lead.ownerEmployeeId
-      ? ownerNameById.get(lead.ownerEmployeeId) ?? lead.ownerEmployeeId
-      : "",
-    lead.status,
-    (lead.tags ?? []).join(";"),
-    lead.nextAction ?? "none",
-    lead.notes ?? "",
-  ]);
-  return [header, ...body];
+/** Unique sample values from a column (for mapping UI). */
+export function sampleColumnValues(
+  dataRows: string[][],
+  columnIndex: number,
+  limit = 3
+): string[] {
+  const seen = new Set<string>();
+  const samples: string[] = [];
+  for (const row of dataRows) {
+    const value = String(row[columnIndex] ?? "").trim();
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    samples.push(value);
+    if (samples.length >= limit) break;
+  }
+  return samples;
 }
 
 export function parseTagsCell(value: string): CrmLeadTag[] {

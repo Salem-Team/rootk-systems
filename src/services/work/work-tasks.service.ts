@@ -9,9 +9,26 @@ import {
   actorContext,
   presentWorkTaskForActor,
   presentWorkTasksForActor,
+  workTaskListScope,
 } from "@/services/work/work-shared";
 import type { ApiResponse } from "@/types";
 import type { TaskStatus, WorkTask } from "@/types/work";
+
+async function filterManagedWorkTasks(
+  tasks: WorkTask[],
+  selfId: string,
+  userId: string
+): Promise<WorkTask[]> {
+  const { listLocalDirectReportIds } = await import("@/services/team-access");
+  const reportIds = new Set(await listLocalDirectReportIds(selfId));
+  reportIds.add(selfId);
+  return tasks.filter(
+    (task) =>
+      task.createdBy === userId ||
+      task.createdBy === selfId ||
+      task.assigneeIds.some((id) => reportIds.has(id))
+  );
+}
 
 /** GET /work/tasks */
 export async function getWorkTasks(filters: {
@@ -19,13 +36,19 @@ export async function getWorkTasks(filters: {
   status?: TaskStatus;
   team?: boolean;
 } = {}): Promise<ApiResponse<WorkTask[]>> {
-  const { role, employeeId: selfId } = actorContext();
+  const { role, userId, employeeId: selfId } = actorContext();
+  const scope = workTaskListScope();
   const teamView = Boolean(filters.team) && role === AppRole.employee;
+  const managedView =
+    !teamView &&
+    scope === "managed" &&
+    !filters.employeeId &&
+    role === AppRole.employee;
   const scoped = teamView
     ? { ...filters, employeeId: undefined, team: true }
-    : role === AppRole.employee
+    : scope === "own" && role === AppRole.employee
       ? { ...filters, employeeId: selfId, team: undefined }
-      : filters;
+      : { ...filters, team: undefined };
   if (isApiMode()) {
     const res = await fetchWorkTasks(scoped);
     if (!res.success) return res;
@@ -33,17 +56,11 @@ export async function getWorkTasks(filters: {
   }
   try {
     let tasks = await workTaskRepository.filter({
-      employeeId: teamView ? undefined : scoped.employeeId,
+      employeeId: teamView || managedView ? undefined : scoped.employeeId,
       status: scoped.status,
     });
-    if (teamView) {
-      const { listLocalDirectReportIds } = await import(
-        "@/services/team-access"
-      );
-      const reportIds = new Set(await listLocalDirectReportIds(selfId));
-      tasks = tasks.filter((task) =>
-        task.assigneeIds.some((id) => reportIds.has(id))
-      );
+    if (teamView || managedView) {
+      tasks = await filterManagedWorkTasks(tasks, selfId, userId);
     }
     return ok(presentWorkTasksForActor(tasks));
   } catch (error) {
@@ -66,6 +83,7 @@ export async function getWorkTaskById(
     const { role, employeeId } = actorContext();
     if (
       role === AppRole.employee &&
+      workTaskListScope() === "own" &&
       !isAssignedTo(task.assigneeIds, employeeId)
     ) {
       return fail(null, "Task not found", "NOT_FOUND");

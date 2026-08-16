@@ -11,8 +11,8 @@ import { CrmLeadsFilters } from "@/components/crm/crm-leads-filters";
 import { CrmLeadsImportDialog } from "@/components/crm/crm-leads-import-dialog";
 import { CrmLeadsTable } from "@/components/crm/crm-leads-table";
 import { useCrmLeadsPanel } from "@/hooks/use-crm-leads-panel";
-import { CRM_LEAD_CSV_HEADERS } from "@/lib/crm/leads-csv";
-import { cn, downloadCsv } from "@/lib/utils";
+import { downloadCrmLeadsWorkbook } from "@/lib/crm/leads-excel";
+import { cn } from "@/lib/utils";
 import { exportCrmLeadRows } from "@/services/crm.service";
 import type { Employee } from "@/types";
 import type { CrmLead, CrmLeadFilters, CrmStage, PaginatedLeads } from "@/types/crm";
@@ -32,7 +32,7 @@ interface CrmLeadsPanelProps {
   className?: string;
 }
 
-/** Searchable, filterable leads table with bulk actions + CSV IO. */
+/** Searchable, filterable leads table with bulk actions + Excel IO. */
 export function CrmLeadsPanel({
   leads,
   stages,
@@ -61,13 +61,9 @@ export function CrmLeadsPanel({
       return;
     }
     const rows = res.data ?? [];
-    const header = [...CRM_LEAD_CSV_HEADERS];
-    const body = rows.map((row) =>
-      header.map((key) => row[key] ?? "")
-    );
-    downloadCsv(
-      `crm-leads-${format(new Date(), "yyyy-MM-dd")}.csv`,
-      [header, ...body]
+    downloadCrmLeadsWorkbook(
+      `crm-leads-${format(new Date(), "yyyy-MM-dd")}.xlsx`,
+      rows
     );
     toast.success(t("crm.toast.exported", { count: String(rows.length) }));
   }

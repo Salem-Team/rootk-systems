@@ -19,6 +19,7 @@ export type Actor = {
   userId: string;
   role: "admin" | "employee";
   employeeId: string;
+  permissions?: string[];
 };
 
 export function normalizeEvidenceUrl(raw: string): string {

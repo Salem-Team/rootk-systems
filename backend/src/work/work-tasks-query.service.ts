@@ -3,6 +3,7 @@ import { TaskPriority, TaskStatus, WorkOrigin, Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { mapTask, type Actor } from "./work-mappers";
 import { listDirectReportIds } from "../lib/team";
+import { workTaskListScope } from "./work-access";
 
 export type { Actor };
 
@@ -26,17 +27,32 @@ export class WorkTasksQueryService {
     if (filters.status) where.status = filters.status as TaskStatus;
     if (filters.priority) where.priority = filters.priority as TaskPriority;
     if (filters.origin) where.origin = filters.origin as WorkOrigin;
-    if (actor.role === "employee" && filters.team === "true") {
+    const scope = workTaskListScope(actor);
+    const teamView =
+      actor.role === "employee" &&
+      (filters.team === "true" || (scope === "managed" && !filters.employeeId));
+    if (teamView) {
       const reportIds = await listDirectReportIds(
         this.prisma,
         companyId,
         actor.employeeId
       );
-      if (reportIds.length === 0) return [];
-      where.assigneeIds = { hasSome: reportIds };
+      const visibleIds = [actor.employeeId, ...reportIds].filter(Boolean);
+      const createdByIds = [actor.userId, actor.employeeId].filter(
+        (id, index, arr) => Boolean(id) && arr.indexOf(id) === index
+      );
+      where.OR = [
+        ...(visibleIds.length > 0
+          ? [{ assigneeIds: { hasSome: visibleIds } }]
+          : []),
+        ...createdByIds.map((id) => ({ createdBy: id })),
+      ];
+      if (!where.OR.length) return [];
     } else {
       const employeeId =
-        actor.role === "employee" ? actor.employeeId : filters.employeeId;
+        actor.role === "employee" && scope === "own"
+          ? actor.employeeId
+          : filters.employeeId;
       if (employeeId) where.assigneeIds = { has: employeeId };
     }
     const rows = await this.prisma.workTask.findMany({
@@ -53,6 +69,7 @@ export class WorkTasksQueryService {
     if (!row) return null;
     if (
       actor.role === "employee" &&
+      workTaskListScope(actor) === "own" &&
       !row.assigneeIds.includes(actor.employeeId)
     ) {
       return null;
