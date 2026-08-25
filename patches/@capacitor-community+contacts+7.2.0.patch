@@ -1,0 +1,14 @@
+diff --git a/node_modules/@capacitor-community/contacts/android/src/main/java/getcapacitor/community/contacts/ContactsPlugin.java b/node_modules/@capacitor-community/contacts/android/src/main/java/getcapacitor/community/contacts/ContactsPlugin.java
+index f89526f..03633dc 100644
+--- a/node_modules/@capacitor-community/contacts/android/src/main/java/getcapacitor/community/contacts/ContactsPlugin.java
++++ b/node_modules/@capacitor-community/contacts/android/src/main/java/getcapacitor/community/contacts/ContactsPlugin.java
+@@ -24,7 +24,8 @@ import java.util.concurrent.Executors;
+ 
+ @CapacitorPlugin(
+     name = "Contacts",
+-    permissions = { @Permission(strings = { Manifest.permission.READ_CONTACTS, Manifest.permission.WRITE_CONTACTS }, alias = "contacts") }
++    // READ only — ROOTK uses pickContact + getContact details, never writes the address book.
++    permissions = { @Permission(strings = { Manifest.permission.READ_CONTACTS }, alias = "contacts") }
+ )
+ public class ContactsPlugin extends Plugin {
+ 

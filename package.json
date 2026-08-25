@@ -1,6 +1,6 @@
 {
   "name": "rootk-systems",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -25,7 +25,8 @@
     "verify:permissions": "npx --yes tsx scripts/verify-permissions.ts",
     "verify:targets": "npx --yes tsx scripts/agents/target-user-agent.ts",
     "agent:targets": "npx --yes tsx scripts/agents/target-user-agent.ts",
-    "verify": "npm run smoke && npm run verify:payroll && npm run verify:payroll:multi && npm run verify:deductions && npm run verify:geo && npm run verify:evidence && npm run verify:duration && npm run verify:daily-plan && npm run verify:crm-scope && npm run verify:permissions && npm run verify:targets && npm run verify:phone && npm run verify:crm-phone",
+    "verify:store": "node scripts/verify-store-readiness.mjs",
+    "verify": "npm run smoke && npm run verify:payroll && npm run verify:payroll:multi && npm run verify:deductions && npm run verify:geo && npm run verify:evidence && npm run verify:duration && npm run verify:daily-plan && npm run verify:crm-scope && npm run verify:permissions && npm run verify:targets && npm run verify:phone && npm run verify:crm-phone && npm run verify:store",
     "docker:db": "docker compose -f backend/docker-compose.yml up -d",
     "docker:db:down": "docker compose -f backend/docker-compose.yml down",
     "api:dev": "npm run start:dev --prefix backend",
@@ -36,7 +37,12 @@
     "api:migrate": "npm run prisma:migrate --prefix backend",
     "api:phone-backfill": "npx --yes tsx --tsconfig backend/tsconfig.json backend/prisma/backfill-phone-normalized.ts",
     "sync:phone-normalize": "node scripts/sync-phone-normalize.mjs",
-    "cap:sync": "npx cap sync"
+    "cap:sync": "npx cap sync",
+    "cap:sync:release": "node scripts/cap-sync-release.mjs",
+    "cap:icons": "python3 scripts/generate-store-icons.py",
+    "cap:version": "MOBILE_VERSION=${MOBILE_VERSION:-1.0.0} node scripts/sync-mobile-version.mjs",
+    "android:bundle:release": "bash scripts/android-bundle-release.sh",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@capacitor-community/contacts": "^7.2.0",
@@ -88,6 +94,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.19",
+    "patch-package": "^8.0.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

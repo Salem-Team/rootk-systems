@@ -544,6 +544,18 @@ function main() {
   assert(fileContains("tsconfig.json", '"backend"'), "tsconfig excludes backend");
   assert(fileContains("eslint.config.mjs", "backend/**"), "eslint ignores backend");
   assert(fileContains("eslint.config.mjs", "scripts/**"), "eslint ignores scripts");
+  assert(fileContains("eslint.config.mjs", "android/**"), "eslint ignores android");
+  assert(fileContains("eslint.config.mjs", "ios/**"), "eslint ignores ios");
+  assert(
+    existsSync(join(root, "scripts/verify-store-readiness.mjs")),
+    "exists scripts/verify-store-readiness.mjs"
+  );
+  assert(
+    existsSync(join(root, "src/app/privacy/page.tsx")) &&
+      existsSync(join(root, "src/app/support/page.tsx")) &&
+      existsSync(join(root, "src/app/account-deletion/page.tsx")),
+    "store legal pages exist"
+  );
 
   assert(
     existsSync(join(root, "shared/phone-normalize.ts")) &&

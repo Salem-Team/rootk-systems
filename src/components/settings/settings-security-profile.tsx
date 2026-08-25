@@ -145,6 +145,40 @@ export function SettingsProfileSection({ user }: { user: SessionUser }) {
             {t("common.profile")}
           </Button>
         </div>
+        <div className="rounded-xl border border-rose-200/80 bg-rose-50/60 px-3.5 py-3 sm:col-span-2">
+          <p className="section-label text-rose-800/80">
+            {t("settings.deleteAccount")}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t("settings.deleteAccountDesc")}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/account-deletion")}
+            >
+              {t("settings.deleteAccount")}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push("/privacy")}
+            >
+              {t("settings.privacyPolicy")}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push("/terms")}
+            >
+              {t("settings.termsOfUse")}
+            </Button>
+          </div>
+        </div>
       </div>
     </section>
   );

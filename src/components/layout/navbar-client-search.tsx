@@ -59,6 +59,7 @@ export function NavbarClientSearch() {
                     <button
                       type="button"
                       role="option"
+                      aria-selected={false}
                       onClick={() => search.openLead(lead)}
                       className="flex w-full flex-col items-stretch rounded-lg px-2.5 py-2 text-start hover:bg-muted/70"
                     >

@@ -1,11 +1,192 @@
 <!doctype html>
-<html lang="en">
+<html lang="ar" dir="rtl">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#082868" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>ROOTK</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --navy: #082868;
+        --ink: #0a1220;
+        --muted: #5b6b82;
+        --line: #d7e0ee;
+        --bg: #f2f5fa;
+        --card: #ffffff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: radial-gradient(120% 80% at 50% -10%, #d9e6fb 0%, var(--bg) 55%);
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      body {
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+      .card {
+        width: min(100%, 420px);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--card);
+        box-shadow: 0 24px 60px rgba(8, 40, 104, 0.12);
+        padding: 28px 24px 24px;
+        text-align: center;
+      }
+      .mark {
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 18px;
+        border-radius: 18px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        background: #fff;
+        display: grid;
+        place-items: center;
+      }
+      .mark img {
+        width: 58px;
+        height: 58px;
+        object-fit: contain;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.35rem;
+        letter-spacing: -0.02em;
+      }
+      p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.6;
+        font-size: 0.95rem;
+      }
+      .actions {
+        display: grid;
+        gap: 10px;
+        margin-top: 22px;
+      }
+      button,
+      a.button {
+        appearance: none;
+        border: 0;
+        border-radius: 14px;
+        min-height: 48px;
+        padding: 0 16px;
+        font: inherit;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+      .primary {
+        background: var(--navy);
+        color: #fff;
+      }
+      .secondary {
+        background: #eef3fb;
+        color: var(--navy);
+      }
+      .meta {
+        margin-top: 16px;
+        font-size: 0.8rem;
+      }
+      .meta a {
+        color: var(--navy);
+        font-weight: 600;
+      }
+      .status {
+        margin-top: 12px;
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+    </style>
   </head>
   <body>
-    <p>ROOTK native shell. Set CAPACITOR_SERVER_URL to the hosted CRM origin, then run <code>npx cap sync</code>.</p>
+    <main class="card" role="main">
+      <div class="mark" aria-hidden="true">
+        <img src="rootk-logo.png" alt="" width="58" height="58" />
+      </div>
+      <h1 id="title">ROOTK</h1>
+      <p id="message">
+        تعذّر الاتصال بالخادم. تأكد من الإنترنت ثم أعد المحاولة.
+      </p>
+      <p class="status" id="status" hidden></p>
+      <div class="actions">
+        <button type="button" class="primary" id="retry">إعادة المحاولة</button>
+        <a
+          class="button secondary"
+          id="support"
+          href="mailto:support@rootk-eg.com?subject=ROOTK%20App%20Support"
+          >الدعم الفني</a
+        >
+      </div>
+      <p class="meta">
+        <a id="privacy" href="https://system.rootk-eg.com/privacy"
+          >سياسة الخصوصية</a
+        >
+        ·
+        <a id="terms" href="https://system.rootk-eg.com/terms"
+          >شروط الاستخدام</a
+        >
+        ·
+        <a id="supportLink" href="https://system.rootk-eg.com/support">الدعم</a>
+      </p>
+    </main>
+    <script>
+      (function () {
+        var LIVE = "https://system.rootk-eg.com";
+        var en =
+          typeof navigator !== "undefined" &&
+          String(navigator.language || "")
+            .toLowerCase()
+            .startsWith("en");
+        var statusEl = document.getElementById("status");
+        if (en) {
+          document.documentElement.lang = "en";
+          document.documentElement.dir = "ltr";
+          document.getElementById("title").textContent = "ROOTK";
+          document.getElementById("message").textContent =
+            "Could not reach the server. Check your connection and try again.";
+          document.getElementById("retry").textContent = "Try again";
+          document.getElementById("support").textContent = "Contact support";
+          document.getElementById("privacy").textContent = "Privacy Policy";
+          document.getElementById("terms").textContent = "Terms of Use";
+          document.getElementById("supportLink").textContent = "Support";
+        }
+
+        function setStatus(text) {
+          statusEl.hidden = !text;
+          statusEl.textContent = text || "";
+        }
+
+        function reopen() {
+          setStatus(
+            en ? "Checking connection…" : "جاري التحقق من الاتصال…",
+          );
+          window.location.replace(LIVE + "/login");
+        }
+
+        document.getElementById("retry").addEventListener("click", reopen);
+
+        if (navigator.onLine === false) {
+          setStatus(
+            en ? "You appear to be offline." : "يبدو أن الجهاز بدون إنترنت.",
+          );
+        }
+      })();
+    </script>
   </body>
 </html>

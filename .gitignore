@@ -39,6 +39,22 @@ yarn-error.log*
 .env*
 !.env.example
 
+# Android / iOS signing secrets (never commit)
+android/keystore.properties
+android/*.jks
+android/*.keystore
+*.mobileprovision
+*.p12
+*.cer
+
+# Native build artifacts
+ios/DerivedData/
+ios/App/Pods/
+android/.gradle/
+android/app/build/
+android/build/
+android/capacitor-cordova-android-plugins/build/
+
 # vercel
 .vercel
 

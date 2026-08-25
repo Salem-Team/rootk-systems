@@ -262,6 +262,35 @@ export function LoginSignInPanel() {
             </motion.div>
           </form>
           <LoginAndroidAppLink />
+          <p className="mt-4 text-center text-[11px] leading-relaxed text-[#5b6b82]">
+            {t("auth.legalHint")}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] font-semibold">
+            <a
+              href="/privacy"
+              className="text-[#082868] underline-offset-2 hover:underline"
+            >
+              {t("auth.privacy")}
+            </a>
+            <a
+              href="/terms"
+              className="text-[#082868] underline-offset-2 hover:underline"
+            >
+              {t("auth.terms")}
+            </a>
+            <a
+              href="/support"
+              className="text-[#082868] underline-offset-2 hover:underline"
+            >
+              {t("auth.support")}
+            </a>
+            <a
+              href="/account-deletion"
+              className="text-[#082868] underline-offset-2 hover:underline"
+            >
+              {t("auth.accountDeletion")}
+            </a>
+          </div>
         </div>
       </motion.div>
     </motion.section>

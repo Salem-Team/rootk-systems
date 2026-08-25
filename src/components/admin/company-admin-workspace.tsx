@@ -62,7 +62,7 @@ export function CompanyAdminWorkspace() {
     const entries = Object.entries(ADMIN_SECTION_PERMISSION) as Array<
       [AdminSection, PermissionId | null]
     >;
-    const canOpen = ([id, perm]: [AdminSection, PermissionId | null]) =>
+    const canOpen = ([, perm]: [AdminSection, PermissionId | null]) =>
       !perm || hasPermissionId(perm, permissions, role);
     const fallback =
       entries.find(([id, perm]) => id !== "myPrefs" && canOpen([id, perm])) ??

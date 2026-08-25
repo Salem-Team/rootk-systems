@@ -27,6 +27,11 @@ export const en = {
     downloadApp: "Download Android app",
     updateApp: "Update app",
     appVersion: "v{version}",
+    privacy: "Privacy Policy",
+    terms: "Terms of Use",
+    support: "Support",
+    accountDeletion: "Delete account",
+    legalHint: "By signing in you agree to the Terms and acknowledge the Privacy Policy.",
   },
   userView: {
     trigger: "View as user",
@@ -1471,6 +1476,11 @@ export const en = {
     prefNavTitle: "Preferences",
     myPreferences: "My account",
     myPreferencesDesc: "Signed-in identity and workspace context.",
+    deleteAccount: "Request account deletion",
+    deleteAccountDesc:
+      "Ask ROOTK support (or your HR admin) to delete your login. Employer legal retention may still apply to payroll records.",
+    privacyPolicy: "Privacy Policy",
+    termsOfUse: "Terms of Use",
     workspaceHint: "Need HR changes?",
     workspaceHintDesc:
       "Salary, schedule, and policy updates are managed by HR from the admin control center.",
@@ -1954,9 +1964,8 @@ export const en = {
     targetWarningTitle: "Performance warning",
     targetWarningBody:
       "Warning on “{title}” (deadline {deadline}): {reason}",
-    crmFollowUpSoonTitle: "Follow-up coming up",
-    crmFollowUpSoonBody:
-      "Follow-up with {name} is in about 15 minutes ({action}).",
+    crmFollowUpSoonTitle: "Next action is due",
+    crmFollowUpSoonBody: "{name} — next action: {action}.",
     crmFeedbackMentionTitle: "You were mentioned",
     crmFeedbackMentionBody: "{actor} mentioned you in CRM feedback on {lead}.",
     payrollRunTitle: "Payroll calculated",

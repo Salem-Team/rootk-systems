@@ -29,6 +29,11 @@ export const ar: TranslationKeys = {
     downloadApp: "تحميل تطبيق أندرويد",
     updateApp: "تحديث التطبيق",
     appVersion: "نسخة {version}",
+    privacy: "سياسة الخصوصية",
+    terms: "شروط الاستخدام",
+    support: "الدعم",
+    accountDeletion: "حذف الحساب",
+    legalHint: "بتسجيل الدخول فأنت توافق على الشروط وتقر بسياسة الخصوصية.",
   },
   userView: {
     trigger: "عرض كمستخدم",
@@ -1320,6 +1325,11 @@ export const ar: TranslationKeys = {
     prefNavTitle: "التفضيلات",
     myPreferences: "حسابي",
     myPreferencesDesc: "هوية الدخول وسياق مساحة العمل.",
+    deleteAccount: "طلب حذف الحساب",
+    deleteAccountDesc:
+      "اطلب من دعم ROOTK أو مسؤول الموارد البشرية حذف حساب الدخول. قد تبقى سجلات الرواتب حسب الالتزام القانوني لصاحب العمل.",
+    privacyPolicy: "سياسة الخصوصية",
+    termsOfUse: "شروط الاستخدام",
     workspaceHint: "محتاج تعديل من الموارد البشرية؟",
     workspaceHintDesc:
       "الراتب والجدول والسياسات تُدار من مركز إدارة الأدمن.",
@@ -1945,9 +1955,8 @@ export const ar: TranslationKeys = {
       "«{title}» متأخر — فاضل {remaining} والإنجاز {progress}. مستوى الخطر: {risk}.",
     targetWarningTitle: "إنذار أداء",
     targetWarningBody: "إنذار على «{title}» (الموعد {deadline}): {reason}",
-    crmFollowUpSoonTitle: "معاد المتابعة قرب",
-    crmFollowUpSoonBody:
-      "متابعة {name} بعد حوالي ربع ساعة ({action}).",
+    crmFollowUpSoonTitle: "حان معاد المتابعة",
+    crmFollowUpSoonBody: "{name} — الخطوة الجاية: {action}.",
     crmFeedbackMentionTitle: "اتعمل لك منشن",
     crmFeedbackMentionBody: "{actor} عملك منشن في فيدباك العميل {lead}.",
     payrollRunTitle: "تم حساب الرواتب",
