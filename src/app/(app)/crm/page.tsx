@@ -159,10 +159,14 @@ export default function CrmPage() {
               employees={hub.safeEmployees}
               filters={hub.leadFilters}
               onFiltersChange={(next) =>
-                hub.setLeadFilters({
-                  ...next,
-                  followUp: "overdue",
-                  status: next.status || "active",
+                hub.setLeadFilters((prev) => {
+                  const resolved =
+                    typeof next === "function" ? next(prev) : next;
+                  return {
+                    ...resolved,
+                    followUp: "overdue",
+                    status: resolved.status || "active",
+                  };
                 })
               }
               loading={hub.loading}

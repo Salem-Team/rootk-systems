@@ -1,5 +1,6 @@
 "use client";
 
+import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -42,7 +43,7 @@ interface CrmLeadsFiltersProps {
   canAssign: boolean;
   canViewOthers?: boolean;
   hasActiveFilters: boolean;
-  onFiltersChange: (filters: CrmLeadFilters) => void;
+  onFiltersChange: Dispatch<SetStateAction<CrmLeadFilters>>;
   onClearFilters: () => void;
 }
 
@@ -71,11 +72,11 @@ export function CrmLeadsFilters({
       <Select
         value={filters.stageId || "all"}
         onValueChange={(v) =>
-          onFiltersChange({
-            ...filters,
+          onFiltersChange((prev) => ({
+            ...prev,
             stageId: v === "all" ? undefined : v,
             page: 1,
-          })
+          }))
         }
       >
         <SelectTrigger className="filter-control h-9 sm:w-[150px]">
@@ -94,11 +95,11 @@ export function CrmLeadsFilters({
       <Select
         value={filters.status || "all"}
         onValueChange={(v) =>
-          onFiltersChange({
-            ...filters,
+          onFiltersChange((prev) => ({
+            ...prev,
             status: v === "all" ? "" : (v as CrmLeadStatus),
             page: 1,
-          })
+          }))
         }
       >
         <SelectTrigger className="filter-control h-9 sm:w-[140px]">
@@ -117,11 +118,11 @@ export function CrmLeadsFilters({
       <Select
         value={filters.source || "all"}
         onValueChange={(v) =>
-          onFiltersChange({
-            ...filters,
+          onFiltersChange((prev) => ({
+            ...prev,
             source: v === "all" ? "" : (v as CrmLeadSource),
             page: 1,
-          })
+          }))
         }
       >
         <SelectTrigger className="filter-control h-9 sm:w-[140px]">
@@ -141,11 +142,11 @@ export function CrmLeadsFilters({
         <Select
           value={filters.ownerEmployeeId || "all"}
           onValueChange={(v) =>
-            onFiltersChange({
-              ...filters,
+            onFiltersChange((prev) => ({
+              ...prev,
               ownerEmployeeId: v === "all" ? undefined : v,
               page: 1,
-            })
+            }))
           }
         >
           <SelectTrigger className="filter-control h-9 sm:w-[160px]">
@@ -165,11 +166,11 @@ export function CrmLeadsFilters({
       <Select
         value={filters.followUp || "all"}
         onValueChange={(v) =>
-          onFiltersChange({
-            ...filters,
+          onFiltersChange((prev) => ({
+            ...prev,
             followUp: v === "all" ? "" : (v as CrmFollowUpFilter),
             page: 1,
-          })
+          }))
         }
       >
         <SelectTrigger className="filter-control h-9 sm:w-[150px]">
@@ -191,11 +192,11 @@ export function CrmLeadsFilters({
       <Select
         value={filters.sort ?? "updatedAt"}
         onValueChange={(v) =>
-          onFiltersChange({
-            ...filters,
+          onFiltersChange((prev) => ({
+            ...prev,
             sort: v as CrmLeadFilters["sort"],
             page: 1,
-          })
+          }))
         }
       >
         <SelectTrigger className="filter-control h-9 sm:w-[150px]">
@@ -217,11 +218,11 @@ export function CrmLeadsFilters({
       <Select
         value={filters.order ?? "desc"}
         onValueChange={(v) =>
-          onFiltersChange({
-            ...filters,
+          onFiltersChange((prev) => ({
+            ...prev,
             order: v as "asc" | "desc",
             page: 1,
-          })
+          }))
         }
       >
         <SelectTrigger className="filter-control h-9 sm:w-[130px]">

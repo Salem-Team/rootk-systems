@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
@@ -16,19 +16,24 @@ import { LoginSignInPanel } from "@/app/login/login-sign-in-panel";
 export default function LoginPage() {
   const router = useRouter();
   const { t } = useTranslation();
+  const hasHydrated = useSessionStore((s) => s.hasHydrated);
   const authenticated = useSessionStore((s) => s.authenticated);
   const reduceMotion = useReducedMotion();
-  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (hydrated && authenticated) {
+    if (hasHydrated && authenticated) {
       router.replace("/dashboard");
     }
-  }, [authenticated, hydrated, router]);
+  }, [authenticated, hasHydrated, router]);
+
+  if (!hasHydrated || authenticated) {
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-[#020814] text-white">
+        <div className="h-10 w-10 animate-pulse rounded-xl border border-white/20 bg-white/10" />
+        <p className="text-xs text-[#8aa0c0]">{t("app.short")}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-[#020814] text-white">

@@ -4,20 +4,21 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from "@nestjs/common";
-import { CrmLeadStatus, NotificationAudience } from "@prisma/client";
+import { CrmLeadStatus, CrmNextAction, NotificationAudience } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import {
-  FOLLOW_UP_REMINDER_LEAD_MINUTES,
+  FOLLOW_UP_REMINDER_GRACE_MS,
   hasFollowUpReminderFor,
+  isFollowUpDueForReminder,
   markFollowUpReminderSent,
 } from "./crm-follow-up-meta";
 
 const TICK_MS = 60_000;
 
 /**
- * Polls for CRM leads whose next follow-up is within the next 15 minutes
- * and sends a one-shot in-app reminder to the lead owner.
+ * Polls for CRM leads whose next-action time has arrived (and recently overdue
+ * if a tick was missed) and sends a one-shot in-app reminder to the owner.
  */
 @Injectable()
 export class CrmFollowUpRemindersService
@@ -49,15 +50,14 @@ export class CrmFollowUpRemindersService
     this.running = true;
     try {
       const now = new Date();
-      const windowEnd = new Date(
-        now.getTime() + FOLLOW_UP_REMINDER_LEAD_MINUTES * 60_000
-      );
+      const windowStart = new Date(now.getTime() - FOLLOW_UP_REMINDER_GRACE_MS);
 
       const leads = await this.prisma.crmLead.findMany({
         where: {
           deletedAt: null,
           status: CrmLeadStatus.active,
-          nextFollowUpAt: { gt: now, lte: windowEnd },
+          nextAction: { not: CrmNextAction.none },
+          nextFollowUpAt: { gte: windowStart, lte: now },
         },
         select: {
           id: true,
@@ -73,6 +73,7 @@ export class CrmFollowUpRemindersService
 
       for (const lead of leads) {
         if (!lead.nextFollowUpAt) continue;
+        if (!isFollowUpDueForReminder(lead.nextFollowUpAt, now)) continue;
         if (hasFollowUpReminderFor(lead.metadata, lead.nextFollowUpAt)) continue;
 
         const recipientIds = await this.resolveOwnerUserIds(
@@ -98,7 +99,7 @@ export class CrmFollowUpRemindersService
             name: lead.name,
             action: lead.nextAction,
           },
-          href: "/crm",
+          href: `/crm?lead=${lead.id}`,
           entityType: "crm_lead",
           entityId: lead.id,
           recipientIds,

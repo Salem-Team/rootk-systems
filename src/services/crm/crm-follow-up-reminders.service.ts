@@ -5,7 +5,7 @@ import { pushNotification } from "@/services/notification.service";
 import { useSessionStore } from "@/stores/session-store";
 import type { CrmLead } from "@/types/crm";
 
-const REMINDER_LEAD_MS = 15 * 60_000;
+const REMINDER_GRACE_MS = 24 * 60 * 60 * 1000;
 const SENT_KEY = "rootk.crm.followUpReminders";
 
 type SentMap = Record<string, string>;
@@ -56,16 +56,17 @@ function alreadySent(leadId: string, followUpAt: string): boolean {
   return Boolean(readSent()[reminderKey(leadId, followUpAt)]);
 }
 
-function isDueSoon(lead: CrmLead, now: Date): boolean {
-  if (lead.status !== "active" || !lead.nextFollowUpAt) return false;
+function isFollowUpDue(lead: CrmLead, now: Date): boolean {
+  if (lead.status !== "active" || lead.nextAction === "none" || !lead.nextFollowUpAt)
+    return false;
   const due = parseMaybe(lead.nextFollowUpAt);
   if (!due) return false;
-  const ms = due.getTime() - now.getTime();
-  return ms > 0 && ms <= REMINDER_LEAD_MS;
+  const elapsed = now.getTime() - due.getTime();
+  return elapsed >= 0 && elapsed <= REMINDER_GRACE_MS;
 }
 
 /**
- * Local-mode tick: notify the current user about owned leads due within 15 minutes.
+ * Local-mode tick: notify the current user when an owned lead's next action is due.
  * API mode relies on the Nest CRM reminder poller instead.
  */
 export async function processLocalCrmFollowUpReminders(): Promise<void> {
@@ -83,7 +84,7 @@ export async function processLocalCrmFollowUpReminders(): Promise<void> {
   const leads = await crmLeadRepository.findAll();
   const due = leads.filter(
     (lead) =>
-      isDueSoon(lead, now) &&
+      isFollowUpDue(lead, now) &&
       lead.nextFollowUpAt &&
       !alreadySent(lead.id, lead.nextFollowUpAt) &&
       (session.role === "admin" ||
@@ -104,7 +105,7 @@ export async function processLocalCrmFollowUpReminders(): Promise<void> {
       priority: "high",
       audience: "employee",
       recipientIds: [userId],
-      href: "/crm",
+      href: `/crm?lead=${lead.id}`,
       entityType: "crm_lead",
       entityId: lead.id,
       actorId: "system",

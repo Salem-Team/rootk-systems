@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/use-translation";
 import { ensureCrmList, ensurePaginatedLeads } from "@/lib/crm-normalize";
@@ -18,8 +25,10 @@ interface UseCrmLeadsPanelArgs {
   stages: CrmStage[];
   employees: Employee[];
   filters: CrmLeadFilters;
-  onFiltersChange: (filters: CrmLeadFilters) => void;
+  onFiltersChange: Dispatch<SetStateAction<CrmLeadFilters>>;
 }
+
+const SEARCH_DEBOUNCE_MS = 300;
 
 export function useCrmLeadsPanel({
   leads,
@@ -33,6 +42,9 @@ export function useCrmLeadsPanel({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
+  /** True while the user is typing — ignore external filter.search sync. */
+  const searchEditingRef = useRef(false);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const safeStages = useMemo(() => ensureCrmList<CrmStage>(stages), [stages]);
   const safeEmployees = useMemo(
@@ -53,19 +65,34 @@ export function useCrmLeadsPanel({
     [safeEmployees]
   );
 
+  // Keep local input in sync when filters change from outside (clear / navigation),
+  // but never clobber mid-keystroke edits.
   useEffect(() => {
-    setSearchLocal(filters.search ?? "");
+    if (searchEditingRef.current) return;
+    const next = filters.search ?? "";
+    setSearchLocal((prev) => (prev === next ? prev : next));
   }, [filters.search]);
 
+  // Debounced search → filters (functional update avoids stale stage/owner races).
   useEffect(() => {
+    const trimmed = searchLocal.trim();
     const timer = window.setTimeout(() => {
-      if ((filters.search ?? "") !== searchLocal) {
-        onFiltersChange({ ...filters, search: searchLocal || undefined, page: 1 });
-      }
-    }, 300);
+      onFiltersChange((prev) => {
+        const prevSearch = (prev.search ?? "").trim();
+        if (prevSearch === trimmed) {
+          searchEditingRef.current = false;
+          return prev;
+        }
+        searchEditingRef.current = false;
+        return {
+          ...prev,
+          search: trimmed || undefined,
+          page: 1,
+        };
+      });
+    }, SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchLocal]);
+  }, [searchLocal, onFiltersChange]);
 
   useEffect(() => {
     const valid = new Set(itemIdKey ? itemIdKey.split("\0") : []);
@@ -83,6 +110,19 @@ export function useCrmLeadsPanel({
   const allSelected =
     items.length > 0 && items.every((l) => selected.has(l.id));
 
+  function onSearchChange(value: string) {
+    searchEditingRef.current = true;
+    setSearchLocal(value);
+  }
+
+  function onSearchBlur() {
+    // Allow external sync again after the pending debounce settles.
+    window.setTimeout(() => {
+      if (document.activeElement === searchInputRef.current) return;
+      searchEditingRef.current = false;
+    }, SEARCH_DEBOUNCE_MS + 50);
+  }
+
   function toggleAll() {
     if (allSelected) setSelected(new Set());
     else setSelected(new Set(items.map((l) => l.id)));
@@ -98,8 +138,14 @@ export function useCrmLeadsPanel({
   }
 
   function clearFilters() {
+    searchEditingRef.current = false;
     setSearchLocal("");
-    onFiltersChange({ page: 1, pageSize: filters.pageSize ?? 20 });
+    onFiltersChange((prev) => ({
+      page: 1,
+      pageSize: prev.pageSize ?? 20,
+      sort: prev.sort ?? "updatedAt",
+      order: prev.order ?? "desc",
+    }));
   }
 
   function clearSelection() {
@@ -133,7 +179,7 @@ export function useCrmLeadsPanel({
           : t("crm.toast.bulkUpdated", { count })
     );
     setSelected(new Set());
-    onFiltersChange({ ...filters });
+    onFiltersChange((prev) => ({ ...prev }));
   }
 
   const hasActiveFilters = Boolean(
@@ -148,7 +194,9 @@ export function useCrmLeadsPanel({
   return {
     t,
     searchLocal,
-    setSearchLocal,
+    onSearchChange,
+    onSearchBlur,
+    searchInputRef,
     filtersOpen,
     setFiltersOpen,
     selected,

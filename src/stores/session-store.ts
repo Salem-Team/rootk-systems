@@ -8,7 +8,7 @@ import {
 } from "@/constants/permissions";
 import { AppRole } from "@/constants/roles";
 import { isApiMode } from "@/lib/env";
-import { crmSessionPersistStorage } from "@/lib/native/session-persist";
+import { crmSessionPersistStorage, writeSessionPersistSnapshot } from "@/lib/native/session-persist";
 import {
   resolveAccountFirstName,
   resolveAccountFullName,
@@ -101,6 +101,9 @@ interface SessionState {
   permissions: PermissionId[];
   /** Present while admin is viewing as another user. */
   impersonation: ImpersonationState | null;
+  /** True after zustand persist finished reading storage (client only). */
+  hasHydrated: boolean;
+  setHasHydrated: (value: boolean) => void;
   /** Apply auth payload (JWT or local session). */
   applyAuthSession: (input: {
     user: AppUser | SessionUser;
@@ -133,6 +136,8 @@ export const useSessionStore = create<SessionState>()(
       refreshToken: null,
       permissions: permissionsForRole(AppRole.admin),
       impersonation: null,
+      hasHydrated: false,
+      setHasHydrated: (value) => set({ hasHydrated: value }),
       applyAuthSession: ({
         user,
         role,
@@ -222,6 +227,13 @@ export const useSessionStore = create<SessionState>()(
           impersonation,
         };
       },
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) {
+          console.warn("[session] rehydrate failed", error);
+        }
+        // Persist finished (success or empty). Safe to gate routes now.
+        useSessionStore.setState({ hasHydrated: true });
+      },
     }
   )
 );
@@ -281,4 +293,46 @@ export function getRefreshToken(): string | null {
 
 export function isImpersonatingSession(): boolean {
   return Boolean(useSessionStore.getState().impersonation);
+}
+
+/** Persist name used by zustand — keep in sync with `persist({ name })`. */
+export const SESSION_PERSIST_KEY = "rootk-session";
+
+/**
+ * Force-write the current session to storage before navigation / reload.
+ * Zustand's async persist can lag a tick behind `applyAuthSession`.
+ */
+export async function flushSessionPersist(): Promise<void> {
+  const s = useSessionStore.getState();
+  await writeSessionPersistSnapshot(SESSION_PERSIST_KEY, {
+    state: {
+      role: s.role,
+      authenticated: s.authenticated,
+      accessToken: s.accessToken,
+      refreshToken: s.refreshToken,
+      user: s.user,
+      permissions: s.permissions,
+      impersonation: s.impersonation,
+    },
+    version: 0,
+  });
+}
+
+/** True when JWT is missing, malformed, or expires within `skewMs`. */
+export function isAccessTokenExpiringSoon(
+  token: string | null | undefined,
+  skewMs = 5 * 60_000
+): boolean {
+  if (!token || !token.includes(".")) return true;
+  try {
+    const payloadPart = token.split(".")[1];
+    if (!payloadPart) return true;
+    const json = JSON.parse(
+      atob(payloadPart.replace(/-/g, "+").replace(/_/g, "/"))
+    ) as { exp?: number };
+    if (typeof json.exp !== "number") return true;
+    return json.exp * 1000 - Date.now() <= skewMs;
+  } catch {
+    return true;
+  }
 }

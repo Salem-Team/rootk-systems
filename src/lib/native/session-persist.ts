@@ -67,3 +67,11 @@ const hybrid: StateStorage = {
 };
 
 export const crmSessionPersistStorage = createJSONStorage(() => hybrid);
+
+/** Direct write used after login so navigation does not race persist. */
+export async function writeSessionPersistSnapshot(
+  name: string,
+  snapshot: unknown
+): Promise<void> {
+  await hybrid.setItem(name, JSON.stringify(snapshot));
+}

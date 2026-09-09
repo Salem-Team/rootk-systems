@@ -5,6 +5,7 @@ import { Controller } from "react-hook-form";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
+  Check,
   Eye,
   EyeOff,
   Loader2,
@@ -30,6 +31,7 @@ export function LoginSignInPanel() {
     isRtl,
     form,
     submitting,
+    success,
     showPassword,
     setShowPassword,
     capsLockOn,
@@ -38,6 +40,7 @@ export function LoginSignInPanel() {
     setEmailFocused,
     passwordFocused,
     setPasswordFocused,
+    preferPasswordFocus,
     onSubmit,
     onPasswordKeyEvent,
   } = useLoginForm();
@@ -113,7 +116,7 @@ export function LoginSignInPanel() {
                       id="login-email"
                       type="email"
                       autoComplete="username"
-                      autoFocus
+                      autoFocus={!preferPasswordFocus}
                       inputMode="email"
                       placeholder=""
                       disabled={submitting}
@@ -167,6 +170,7 @@ export function LoginSignInPanel() {
                       id="login-password"
                       type={showPassword ? "text" : "password"}
                       autoComplete="current-password"
+                      autoFocus={preferPasswordFocus}
                       placeholder=""
                       disabled={submitting}
                       onKeyDown={onPasswordKeyEvent}
@@ -219,10 +223,10 @@ export function LoginSignInPanel() {
                   animate={{
                     opacity: 1,
                     y: 0,
-                    x: reduceMotion ? 0 : [0, -5, 5, -3, 3, 0],
+                    x: reduceMotion ? 0 : [0, -4, 4, -2, 2, 0],
                   }}
                   exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.35 }}
+                  transition={{ duration: 0.3 }}
                   className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs leading-relaxed text-rose-700"
                   role="alert"
                 >
@@ -247,13 +251,24 @@ export function LoginSignInPanel() {
                 size="lg"
                 disabled={submitting}
                 aria-busy={submitting}
-                className="h-12 w-full gap-2 rounded-xl bg-[#082868] text-[15px] font-semibold text-white shadow-[0_14px_32px_rgba(8,40,104,0.38)] transition-colors hover:bg-[#0a327c]"
+                className={cn(
+                  "h-12 w-full gap-2 rounded-xl text-[15px] font-semibold text-white shadow-[0_14px_32px_rgba(8,40,104,0.38)] transition-colors",
+                  success
+                    ? "bg-emerald-600 hover:bg-emerald-600"
+                    : "bg-[#082868] hover:bg-[#0a327c]"
+                )}
               >
-                {submitting ? (
+                {success ? (
+                  <Check className="h-4 w-4" />
+                ) : submitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : null}
-                {submitting ? t("auth.signingIn") : t("auth.signIn")}
-                {!submitting ? (
+                {success
+                  ? t("auth.enteringWorkspace")
+                  : submitting
+                    ? t("auth.signingIn")
+                    : t("auth.signIn")}
+                {!submitting && !success ? (
                   <ArrowRight
                     className={cn("h-4 w-4", isRtl && "rotate-180")}
                   />

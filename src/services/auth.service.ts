@@ -341,7 +341,9 @@ export async function changeOwnPassword(input: {
 }
 
 /** Refresh access token (api mode). */
-export async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(): Promise<
+  string | null | "transient"
+> {
   const refresh = useSessionStore.getState().refreshToken;
   if (!refresh) return null;
 
@@ -356,13 +358,22 @@ export async function refreshAccessToken(): Promise<string | null> {
     return next;
   }
 
-  const res = await refreshSession(refresh);
-  if (!res.success || !res.data.accessToken) return null;
-  useSessionStore.getState().setTokens({
-    accessToken: res.data.accessToken,
-    refreshToken: res.data.refreshToken ?? refresh,
-  });
-  return res.data.accessToken;
+  try {
+    const res = await refreshSession(refresh);
+    if (!res.success || !res.data.accessToken) {
+      const code = res.error?.code;
+      if (code === "UNAUTHORIZED" || code === "FORBIDDEN") return null;
+      // Network / 5xx / unknown — keep local session so the user is not kicked out.
+      return "transient";
+    }
+    useSessionStore.getState().setTokens({
+      accessToken: res.data.accessToken,
+      refreshToken: res.data.refreshToken ?? refresh,
+    });
+    return res.data.accessToken;
+  } catch {
+    return "transient";
+  }
 }
 
 /** Sign out locally + optionally revoke remote session. */
@@ -386,6 +397,13 @@ export async function signOutSession(): Promise<ApiResponse<boolean>> {
 export async function hydrateCurrentUser(): Promise<ApiResponse<AppUser | null>> {
   if (!isApiMode()) {
     return ok(null);
+  }
+  const session = useSessionStore.getState();
+  if (!session.accessToken && session.refreshToken) {
+    const renewed = await refreshAccessToken();
+    if (renewed === "transient" || renewed === null) {
+      return ok(null);
+    }
   }
   if (!useSessionStore.getState().accessToken) {
     return ok(null);

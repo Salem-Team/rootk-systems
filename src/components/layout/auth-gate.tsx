@@ -1,46 +1,48 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getMyPermissions } from "@/services/permissions.service";
 import { useSessionStore } from "@/stores/session-store";
 
 const PERMISSIONS_HYDRATE_TIMEOUT_MS = 8_000;
+const PERMISSIONS_REFRESH_MIN_MS = 60_000;
 
 async function hydratePermissions() {
-  const res = await getMyPermissions();
-  if (res.success && Array.isArray(res.data)) {
-    useSessionStore.getState().setPermissions(res.data);
+  try {
+    const res = await getMyPermissions();
+    if (res.success && Array.isArray(res.data)) {
+      useSessionStore.getState().setPermissions(res.data);
+    }
+  } catch {
+    // Network / transient failures must not kick the user out.
   }
 }
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const hasHydrated = useSessionStore((s) => s.hasHydrated);
   const authenticated = useSessionStore((s) => s.authenticated);
   const userId = useSessionStore((s) => s.user.id);
-  const [ready, setReady] = useState(false);
+  const [permissionsReady, setPermissionsReady] = useState(false);
+  const lastPermissionsAt = useRef(0);
 
   useEffect(() => {
-    setReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (!ready) return;
+    if (!hasHydrated) return;
     if (!authenticated) {
       router.replace("/login");
     }
-  }, [authenticated, ready, router, pathname]);
-
-  const [permissionsReady, setPermissionsReady] = useState(false);
+  }, [authenticated, hasHydrated, router, pathname]);
 
   useEffect(() => {
-    if (!ready || !authenticated) {
+    if (!hasHydrated || !authenticated) {
       setPermissionsReady(false);
       return;
     }
     let cancelled = false;
     setPermissionsReady(false);
+    lastPermissionsAt.current = Date.now();
     void Promise.race([
       hydratePermissions(),
       new Promise<void>((resolve) => {
@@ -51,23 +53,20 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     });
 
     function onVisible() {
-      if (document.visibilityState === "visible") {
-        void hydratePermissions();
-      }
-    }
-    function onFocus() {
+      if (document.visibilityState !== "visible") return;
+      const now = Date.now();
+      if (now - lastPermissionsAt.current < PERMISSIONS_REFRESH_MIN_MS) return;
+      lastPermissionsAt.current = now;
       void hydratePermissions();
     }
     document.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("focus", onFocus);
     return () => {
       cancelled = true;
       document.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("focus", onFocus);
     };
-  }, [authenticated, ready, userId]);
+  }, [authenticated, hasHydrated, userId]);
 
-  if (!ready || !authenticated || !permissionsReady) {
+  if (!hasHydrated || !authenticated || !permissionsReady) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background">
         <div className="h-9 w-9 animate-pulse rounded-lg border border-border bg-card shadow-[var(--shadow-card)]" />

@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
+import { resetCrmDemo } from "./seed-crm-demo";
 
 @Injectable()
 export class DemoService {
@@ -127,11 +128,13 @@ export class DemoService {
   async reset(companyId: string) {
     await this.wipeTransactional(companyId);
     await this.reseedSample(companyId);
+    await resetCrmDemo(this.prisma, companyId);
     return true;
   }
 
   async generate(companyId: string) {
     await this.reseedSample(companyId);
+    await resetCrmDemo(this.prisma, companyId);
     return true;
   }
 

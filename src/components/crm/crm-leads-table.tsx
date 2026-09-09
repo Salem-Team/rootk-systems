@@ -1,5 +1,6 @@
 "use client";
 
+import type { Dispatch, SetStateAction } from "react";
 import { format, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CrmLeadContactList } from "@/components/crm/crm-lead-contact-list";
@@ -42,7 +43,7 @@ interface CrmLeadsTableProps {
   onToggleAll: () => void;
   onToggleOne: (id: string) => void;
   onClearFilters: () => void;
-  onFiltersChange: (filters: CrmLeadFilters) => void;
+  onFiltersChange: Dispatch<SetStateAction<CrmLeadFilters>>;
 }
 
 /** Leads data table body with selection checkboxes and pagination footer. */
@@ -310,7 +311,9 @@ export function CrmLeadsTable({
               size="sm"
               variant="outline"
               disabled={page.page <= 1}
-              onClick={() => onFiltersChange({ ...filters, page: page.page - 1 })}
+              onClick={() =>
+                onFiltersChange((prev) => ({ ...prev, page: page.page - 1 }))
+              }
             >
               <ChevronLeft className="h-3.5 w-3.5" />
               {t("crm.leads.prev")}
@@ -320,7 +323,9 @@ export function CrmLeadsTable({
               size="sm"
               variant="outline"
               disabled={page.page >= page.totalPages}
-              onClick={() => onFiltersChange({ ...filters, page: page.page + 1 })}
+              onClick={() =>
+                onFiltersChange((prev) => ({ ...prev, page: page.page + 1 }))
+              }
             >
               {t("crm.leads.next")}
               <ChevronRight className="h-3.5 w-3.5" />

@@ -77,14 +77,32 @@ assert(plist.includes("NSLocationWhenInUseUsageDescription"), "iOS location usag
 assert(plist.includes("NSContactsUsageDescription"), "iOS contacts usage");
 assert(plist.includes("ITSAppUsesNonExemptEncryption"), "iOS encryption flag");
 
+const pkgVersion = JSON.parse(read("package.json")).version;
+const verMatch = /^(\d+)\.(\d+)\.(\d+)$/.exec(String(pkgVersion || ""));
+assert(verMatch, `package.json version semver (${pkgVersion})`);
+const expectedCode =
+  Number(verMatch[1]) * 10000 + Number(verMatch[2]) * 100 + Number(verMatch[3]);
+
 const gradle = read("android/app/build.gradle");
-assert(gradle.includes('versionName "1.0.0"'), "Android versionName 1.0.0");
-assert(gradle.includes("versionCode 10000"), "Android versionCode 10000");
+assert(
+  gradle.includes(`versionName "${pkgVersion}"`),
+  `Android versionName ${pkgVersion}`,
+);
+assert(
+  gradle.includes(`versionCode ${expectedCode}`),
+  `Android versionCode ${expectedCode}`,
+);
 assert(gradle.includes("signingConfigs"), "Android signingConfigs present");
 
 const pbx = read("ios/App/App.xcodeproj/project.pbxproj");
-assert(pbx.includes("MARKETING_VERSION = 1.0.0"), "iOS marketing 1.0.0");
-assert(pbx.includes("CURRENT_PROJECT_VERSION = 10000"), "iOS build 10000");
+assert(
+  pbx.includes(`MARKETING_VERSION = ${pkgVersion}`),
+  `iOS marketing ${pkgVersion}`,
+);
+assert(
+  pbx.includes(`CURRENT_PROJECT_VERSION = ${expectedCode}`),
+  `iOS build ${expectedCode}`,
+);
 assert(pbx.includes("PrivacyInfo.xcprivacy"), "PrivacyInfo in Xcode project");
 
 const androidCap = JSON.parse(

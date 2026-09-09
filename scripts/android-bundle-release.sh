@@ -11,7 +11,7 @@ fi
 
 export CAPACITOR_SERVER_URL="${CAPACITOR_SERVER_URL:-https://system.rootk-eg.com}"
 export CAPACITOR_STORE_BUILD=1
-export MOBILE_VERSION="${MOBILE_VERSION:-1.0.0}"
+export MOBILE_VERSION="${MOBILE_VERSION:-1.0.1}"
 
 npm run cap:icons
 node scripts/sync-mobile-version.mjs

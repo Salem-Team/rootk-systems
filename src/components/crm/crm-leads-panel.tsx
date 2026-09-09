@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { Download, Search, SlidersHorizontal, Upload } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -29,7 +29,7 @@ interface CrmLeadsPanelProps {
   stages: CrmStage[];
   employees: Employee[];
   filters: CrmLeadFilters;
-  onFiltersChange: (filters: CrmLeadFilters) => void;
+  onFiltersChange: Dispatch<SetStateAction<CrmLeadFilters>>;
   loading?: boolean;
   onRowClick: (lead: CrmLead) => void;
   onAddLead?: () => void;
@@ -81,64 +81,79 @@ export function CrmLeadsPanel({
 
   return (
     <section className={cn("surface-panel", className)}>
-      <div className="panel-header flex flex-wrap items-center justify-between gap-3">
+      <div className="panel-header flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <h2 className="text-sm font-semibold tracking-tight">
           {t("crm.leads.title")}
         </h2>
-        <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto">
-          <div className="relative min-w-0 flex-1 sm:flex-none">
-            <Search className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+        <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="relative w-full min-w-0 sm:w-auto sm:flex-none">
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground sm:start-2.5 sm:h-3.5 sm:w-3.5" />
             <Input
+              ref={panel.searchInputRef}
+              type="search"
               value={panel.searchLocal}
-              onChange={(e) => panel.setSearchLocal(e.target.value)}
+              onChange={(e) => panel.onSearchChange(e.target.value)}
+              onBlur={panel.onSearchBlur}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  panel.onSearchChange("");
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
               placeholder={t("crm.filters.search")}
-              className="h-9 w-full ps-8 sm:w-[220px]"
+              className="h-11 w-full ps-10 text-base sm:h-9 sm:w-[240px] sm:ps-8 sm:text-sm"
               aria-label={t("crm.filters.search")}
+              autoComplete="off"
+              enterKeyHint="search"
+              inputMode="search"
+              dir="auto"
             />
           </div>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={exporting}
-            onClick={() => void onExport()}
-            aria-label={t("crm.actions.export")}
-          >
-            <Download className="h-3.5 w-3.5 sm:me-1.5" />
-            <span className="hidden sm:inline">{t("crm.actions.export")}</span>
-          </Button>
-          {canImport ? (
-            <CrmLeadsBulkAdd
-              stages={stages}
-              businessTypes={businessTypes}
-              employees={employees}
-              canAssign={canAssign}
-              onImported={onImported}
-              size="sm"
-            />
-          ) : null}
-          {canImport ? (
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             <Button
               type="button"
               size="sm"
               variant="outline"
-              onClick={() => setImportOpen(true)}
-              aria-label={t("crm.actions.import")}
+              disabled={exporting}
+              onClick={() => void onExport()}
+              aria-label={t("crm.actions.export")}
             >
-              <Upload className="h-3.5 w-3.5 sm:me-1.5" />
-              <span className="hidden sm:inline">{t("crm.actions.import")}</span>
+              <Download className="h-3.5 w-3.5 sm:me-1.5" />
+              <span className="hidden sm:inline">{t("crm.actions.export")}</span>
             </Button>
-          ) : null}
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="lg:hidden"
-            onClick={() => panel.setFiltersOpen((v) => !v)}
-          >
-            <SlidersHorizontal className="me-1.5 h-3.5 w-3.5" />
-            {t("crm.filters.title")}
-          </Button>
+            {canImport ? (
+              <CrmLeadsBulkAdd
+                stages={stages}
+                businessTypes={businessTypes}
+                employees={employees}
+                canAssign={canAssign}
+                onImported={onImported}
+                size="sm"
+              />
+            ) : null}
+            {canImport ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setImportOpen(true)}
+                aria-label={t("crm.actions.import")}
+              >
+                <Upload className="h-3.5 w-3.5 sm:me-1.5" />
+                <span className="hidden sm:inline">{t("crm.actions.import")}</span>
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="lg:hidden"
+              onClick={() => panel.setFiltersOpen((v) => !v)}
+            >
+              <SlidersHorizontal className="me-1.5 h-3.5 w-3.5" />
+              {t("crm.filters.title")}
+            </Button>
+          </div>
         </div>
       </div>
 

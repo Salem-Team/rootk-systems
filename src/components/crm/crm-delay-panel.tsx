@@ -1,5 +1,6 @@
 "use client";
 
+import type { Dispatch, SetStateAction } from "react";
 import { TimerReset } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-state";
@@ -14,7 +15,7 @@ interface CrmDelayPanelProps {
   stages: CrmStage[];
   employees: Employee[];
   filters: CrmLeadFilters;
-  onFiltersChange: (filters: CrmLeadFilters) => void;
+  onFiltersChange: Dispatch<SetStateAction<CrmLeadFilters>>;
   loading?: boolean;
   onRowClick: (lead: CrmLead) => void;
   canAssign?: boolean;

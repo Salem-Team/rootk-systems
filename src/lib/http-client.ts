@@ -30,8 +30,15 @@ export interface HttpClientConfig {
   getAccessToken?: () => string | null | Promise<string | null>;
   getRefreshToken?: () => string | null | Promise<string | null>;
   onUnauthorized?: () => void | Promise<void>;
-  /** Optional: rotate access token; return new token or null */
-  onRefresh?: (refreshToken: string) => Promise<string | null>;
+  /**
+   * Rotate / renew access token.
+   * - `string` — new access token
+   * - `null` — refresh rejected (invalid/revoked) → sign out
+   * - `"transient"` — network/server blip → keep session, fail the request
+   */
+  onRefresh?: (
+    refreshToken: string
+  ) => Promise<string | null | "transient">;
   defaultHeaders?: Record<string, string>;
 }
 
@@ -44,7 +51,8 @@ interface NestErrorBody {
 }
 
 export class HttpClient {
-  private refreshPromise: Promise<string | null> | null = null;
+  private refreshPromise: Promise<"success" | "invalid" | "transient"> | null =
+    null;
 
   constructor(private readonly config: HttpClientConfig) {}
 
@@ -52,10 +60,16 @@ export class HttpClient {
     const response = await this.rawRequest(path, options);
 
     if (response.status === 401 && !options.skipAuth) {
-      const refreshed = await this.tryRefresh();
-      if (refreshed) {
+      const refreshOutcome = await this.tryRefresh();
+      if (refreshOutcome === "success") {
         const retry = await this.rawRequest(path, options);
         return this.parseSuccess<T>(retry, path);
+      }
+      if (refreshOutcome === "transient") {
+        throw new InternalError(
+          "Unable to renew the session. Check your connection.",
+          { path, status: 401 }
+        );
       }
       await this.config.onUnauthorized?.();
       throw new UnauthorizedError("Session expired");
@@ -141,25 +155,26 @@ export class HttpClient {
     }
   }
 
-  private async tryRefresh(): Promise<boolean> {
-    if (!this.config.getRefreshToken || !this.config.onRefresh) return false;
+  private async tryRefresh(): Promise<"success" | "invalid" | "transient"> {
+    if (!this.config.getRefreshToken || !this.config.onRefresh) return "invalid";
 
     if (!this.refreshPromise) {
       this.refreshPromise = (async () => {
         const refresh = await this.config.getRefreshToken!();
-        if (!refresh) return null;
+        if (!refresh) return "invalid" as const;
         try {
-          return await this.config.onRefresh!(refresh);
+          const result = await this.config.onRefresh!(refresh);
+          if (result === "transient") return "transient" as const;
+          return result ? ("success" as const) : ("invalid" as const);
         } catch {
-          return null;
+          return "transient" as const;
         } finally {
           this.refreshPromise = null;
         }
       })();
     }
 
-    const token = await this.refreshPromise;
-    return Boolean(token);
+    return this.refreshPromise;
   }
 
   private async toAppError(response: Response, path: string): Promise<AppError> {

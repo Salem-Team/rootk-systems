@@ -2,8 +2,17 @@ import type { Prisma } from "@prisma/client";
 
 export const FOLLOW_UP_REMINDER_META_KEY = "followUpReminderSentFor";
 
-/** Minutes before nextFollowUpAt when the in-app reminder fires. */
-export const FOLLOW_UP_REMINDER_LEAD_MINUTES = 15;
+/** Catch-up window if the poller missed the exact due minute. */
+export const FOLLOW_UP_REMINDER_GRACE_MS = 24 * 60 * 60 * 1000;
+
+export function isFollowUpDueForReminder(
+  nextFollowUpAt: Date,
+  now: Date
+): boolean {
+  const due = nextFollowUpAt.getTime();
+  const clock = now.getTime();
+  return due <= clock && clock - due <= FOLLOW_UP_REMINDER_GRACE_MS;
+}
 
 export function asLeadMetadata(
   raw: unknown

@@ -591,6 +591,10 @@ async function main() {
   }
 
   console.log("Seed complete.");
+  console.log("Seeding CRM demo leads…");
+  const { resetCrmDemo } = await import("../src/demo/seed-crm-demo");
+  await resetCrmDemo(prisma, COMPANY_ID);
+  console.log("CRM demo ready (12 leads + activities).");
   console.log("Bootstrap password (seed accounts only): Rootk@2026");
   console.log("Accounts: admin@rootk.systems / employee@rootk.systems");
   console.log(

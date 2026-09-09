@@ -65,10 +65,10 @@ export class AuthService {
       { ...tokenPayload, jti: randomUUID() },
       {
         secret: this.config.get<string>("JWT_SECRET", "rootk-dev-secret"),
-        expiresIn: "7d",
+        expiresIn: "30d",
       }
     );
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await this.prisma.refreshToken.create({
       data: {
         userId: tokenPayload.sub,
@@ -291,12 +291,16 @@ export class AuthService {
       throw new UnauthorizedException("Refresh token revoked or expired");
     }
 
+    // Keep the same refresh token (no rotate-on-refresh) so multi-tab /
+    // parallel 401 retries do not invalidate an otherwise valid session.
+    // Sliding expiry: stay signed in while the user keeps using the app.
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await this.prisma.refreshToken.update({
       where: { id: stored.id },
-      data: { revokedAt: new Date() },
+      data: { expiresAt },
     });
 
-    return this.issueTokens({
+    const tokenPayload: JwtPayload = {
       sub: payload.sub,
       role: payload.role,
       companyId: payload.companyId,
@@ -304,7 +308,9 @@ export class AuthService {
       ...(payload.impersonatorId
         ? { impersonatorId: payload.impersonatorId }
         : {}),
-    });
+    };
+    const accessToken = this.jwt.sign({ ...tokenPayload });
+    return { accessToken, refreshToken };
   }
 
   async logout(userId: string, refreshToken?: string) {
