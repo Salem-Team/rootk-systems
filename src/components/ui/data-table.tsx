@@ -14,7 +14,7 @@ export function DataTable({
     >
       <table
         className={cn(
-          "w-full min-w-[20rem] text-start text-sm sm:min-w-[36rem] md:min-w-[640px]",
+          "w-full min-w-0 text-start text-sm sm:min-w-[32rem] md:min-w-[640px]",
           className
         )}
         {...props}

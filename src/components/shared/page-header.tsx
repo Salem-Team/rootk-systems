@@ -54,7 +54,7 @@ export function PageHeader({
         ) : null}
       </div>
       {mobileSlot ? (
-        <div className="mt-3 flex w-full flex-col gap-2 sm:hidden [&_button]:min-h-11 [&_button]:w-full [&_button]:touch-manipulation">
+        <div className="mt-3 flex w-full flex-wrap gap-2 sm:hidden [&_a]:min-h-11 [&_a]:flex-1 [&_a]:touch-manipulation [&_button]:min-h-11 [&_button]:min-w-[calc(50%-0.25rem)] [&_button]:flex-1 [&_button]:touch-manipulation">
           {mobileSlot}
         </div>
       ) : null}
@@ -115,7 +115,7 @@ export function PageHeader({
       {mobileSlot ? (
         <motion.div
           variants={fadeInUp}
-          className="mt-3 flex w-full flex-col gap-2 sm:hidden [&_button]:min-h-11 [&_button]:w-full [&_button]:touch-manipulation"
+          className="mt-3 flex w-full flex-wrap gap-2 sm:hidden [&_a]:min-h-11 [&_a]:flex-1 [&_a]:touch-manipulation [&_button]:min-h-11 [&_button]:min-w-[calc(50%-0.25rem)] [&_button]:flex-1 [&_button]:touch-manipulation"
         >
           {mobileSlot}
         </motion.div>

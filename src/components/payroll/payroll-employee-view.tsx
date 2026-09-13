@@ -80,7 +80,7 @@ export function PayrollEmployeeView({
           defaultValue={hasPayslip ? "slip" : "profile"}
           className="space-y-4"
         >
-          <div className="sticky top-14 z-20 -mx-3 bg-background/90 px-3 py-2 backdrop-blur-xl sm:-mx-4 sm:px-4">
+          <div className="sticky top-[var(--chrome-sticky-top)] z-20 -mx-3 bg-background/90 px-3 py-2 backdrop-blur-xl sm:-mx-4 sm:px-4">
             <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-xl border border-border/60 bg-card p-1 shadow-sm sm:rounded-2xl">
               <TabsTrigger
                 value="slip"

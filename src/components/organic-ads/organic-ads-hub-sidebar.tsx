@@ -71,8 +71,7 @@ export function OrganicAdsHubSidebar({
     <nav
       aria-label={t("organicAds.sidebar.label")}
       className={cn(
-        "surface-panel overflow-hidden",
-        "max-lg:sticky max-lg:top-[3.25rem] max-lg:z-20 max-lg:-mx-3 max-lg:rounded-none max-lg:border-x-0 max-lg:border-t-0 max-lg:bg-background/94 max-lg:shadow-none max-lg:backdrop-blur-xl sm:max-lg:-mx-4",
+        "surface-panel hub-mobile-nav overflow-hidden",
         className
       )}
     >

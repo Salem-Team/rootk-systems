@@ -89,7 +89,7 @@ export function FloatingQuickActions({
   return (
     <div
       className={cn(
-        "pointer-events-none fixed bottom-[5.75rem] end-3 z-30 flex-col items-end gap-2 pb-[env(safe-area-inset-bottom)] lg:bottom-8 lg:end-8",
+        "pointer-events-none fixed bottom-[var(--mobile-fab-bottom)] end-3 z-30 flex-col items-end gap-2 lg:bottom-8 lg:end-8",
         variant === "employee" ? "hidden lg:flex" : "flex"
       )}
     >

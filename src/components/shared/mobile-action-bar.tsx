@@ -20,12 +20,12 @@ export function MobileActionBar({
   return (
     <div
       className={cn(
-        "pointer-events-none fixed inset-x-0 bottom-[5.5rem] z-30 px-3 pb-[env(safe-area-inset-bottom)]",
+        "pointer-events-none fixed inset-x-0 bottom-[var(--mobile-action-bottom)] z-30 px-3",
         mobileOnly && "lg:hidden",
         className
       )}
     >
-      <div className="pointer-events-auto mx-auto flex max-w-lg gap-2 rounded-2xl border border-border/70 bg-card/95 p-2 shadow-[var(--shadow-float)] backdrop-blur-xl supports-[backdrop-filter]:bg-card/85">
+      <div className="pointer-events-auto mx-auto flex max-w-lg gap-2 rounded-2xl border border-border/70 bg-card/95 p-2 shadow-[var(--shadow-float)] backdrop-blur-xl supports-[backdrop-filter]:bg-card/85 [&_button]:min-h-11 [&_button]:flex-1 [&_button]:touch-manipulation">
         {children}
       </div>
     </div>

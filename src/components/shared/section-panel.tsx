@@ -45,7 +45,7 @@ export function SectionPanel({
       className={cn("overflow-hidden", className)}
     >
       {showHeader ? (
-        <div className="panel-header flex items-start justify-between gap-3">
+        <div className="panel-header flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             {title ? (
               <h3 className="flex items-center gap-2 font-display text-[0.95rem] font-semibold tracking-tight">
@@ -62,7 +62,7 @@ export function SectionPanel({
             ) : null}
           </div>
           {actions ? (
-            <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0 sm:justify-end [&_button]:min-h-10 [&_button]:touch-manipulation sm:[&_button]:min-h-0">
               {actions}
             </div>
           ) : null}

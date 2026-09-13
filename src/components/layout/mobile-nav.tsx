@@ -55,7 +55,7 @@ export function MobileBottomNav() {
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(true)}
-                  className="relative flex min-h-[3.5rem] w-full flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-semibold text-muted-foreground transition-colors touch-manipulation hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                  className="relative flex min-h-[3.25rem] w-full flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 text-[9px] font-semibold text-muted-foreground transition-colors touch-manipulation hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:min-h-[3.5rem] sm:px-1 sm:py-1.5 sm:text-[10px]"
                   aria-label={t("common.openMenu")}
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted/70">
@@ -72,7 +72,7 @@ export function MobileBottomNav() {
               <Link
                 href={item.href}
                 className={cn(
-                  "relative flex min-h-[3.5rem] flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-semibold transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
+                  "relative flex min-h-[3.25rem] flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 text-[9px] font-semibold transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:min-h-[3.5rem] sm:px-1 sm:py-1.5 sm:text-[10px]",
                   active
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
