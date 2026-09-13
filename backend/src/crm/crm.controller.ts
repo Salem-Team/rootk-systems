@@ -404,4 +404,22 @@ export class CrmController {
   ) {
     return this.service.reports(companyId, toDomainActor(user, actorId), query);
   }
+
+  @Get("website-auto-lead")
+  @Roles(AppRole.admin)
+  @RequirePermission("crm.assignLeads")
+  getWebsiteAutoLead(@CompanyId() companyId: string) {
+    return this.service.getWebsiteAutoLead(companyId);
+  }
+
+  @Put("website-auto-lead")
+  @Roles(AppRole.admin)
+  @RequirePermission("crm.assignLeads")
+  updateWebsiteAutoLead(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.service.updateWebsiteAutoLead(companyId, actorId, body);
+  }
 }

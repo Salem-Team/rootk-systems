@@ -3099,6 +3099,17 @@ export const ar: TranslationKeys = {
       businessTypes: "أنواع الشركات",
       reports: "التقارير",
     },
+    autoLead: {
+      title: "توزيع ليدات الموقع",
+      description:
+        "أي ليد جديد من الموقع بيتوزع بالدور (Round-robin) على الأشخاص المفعّلين.",
+      enabled: "مفعّل",
+      disabled: "متوقف",
+      effectiveFrom: "يبدأ من {date}",
+      nextHint: "الدور الجاي {index}/{total}",
+      emptyEmployees: "مفيش موظفين نشطين.",
+      saved: "تم حفظ إعدادات التوزيع",
+    },
     delay: {
       title: "متابعات متأخرة",
       description:

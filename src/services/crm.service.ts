@@ -51,3 +51,9 @@ export {
   getCrmPerformance,
   getCrmSalesProfile,
 } from "@/services/crm/crm-dashboard.service";
+
+export {
+  getWebsiteAutoLead,
+  updateWebsiteAutoLead,
+} from "@/services/crm/crm-website-auto-lead.service";
+export type { WebsiteAutoLeadConfig } from "@/services/crm/crm-website-auto-lead.service";
