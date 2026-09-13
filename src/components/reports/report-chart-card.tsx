@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionPanel } from "@/components/shared/section-panel";
 
 export const tooltipStyle = {
   borderRadius: 12,
@@ -17,12 +17,8 @@ export function ChartCard({
   children: ReactNode;
 }) {
   return (
-    <Card className="transition-[box-shadow,border-color] duration-200 hover:border-primary/15 hover:shadow-[var(--shadow-card-hover)]">
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
+    <SectionPanel title={title} description={description} interactive={false}>
+      {children}
+    </SectionPanel>
   );
 }

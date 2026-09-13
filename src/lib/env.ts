@@ -20,6 +20,9 @@ export const env = {
   dataSource: readDataSource(),
   /** Optional company scope header for multi-tenant backends */
   companyId: process.env.NEXT_PUBLIC_COMPANY_ID ?? DEFAULT_COMPANY_ID,
+  /** Expected production edge id from GET /health/live */
+  expectedEdgeId:
+    process.env.NEXT_PUBLIC_ROOTK_EDGE_ID?.trim() || "rootk-systems-62",
 } as const;
 
 export function isApiMode(): boolean {

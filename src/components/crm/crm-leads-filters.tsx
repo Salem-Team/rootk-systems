@@ -1,6 +1,7 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
+import { FilterShell } from "@/components/shared/filter-shell";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -63,12 +64,14 @@ export function CrmLeadsFilters({
   const showOwnerFilter = canFilterCrmByOwner({ canAssign, canViewOthers });
 
   return (
-    <div
+    <FilterShell
+      compact
       className={cn(
-        "filter-toolbar border-b border-border/60 px-3 py-3 lg:flex",
-        open ? "flex" : "hidden lg:flex"
+        "rounded-none border-x-0 border-t-0 shadow-none",
+        open ? "block" : "hidden lg:block"
       )}
     >
+    <div className="filter-toolbar">
       <Select
         value={filters.stageId || "all"}
         onValueChange={(v) =>
@@ -190,7 +193,7 @@ export function CrmLeadsFilters({
       </Select>
 
       <Select
-        value={filters.sort ?? "updatedAt"}
+        value={filters.sort ?? "createdAt"}
         onValueChange={(v) =>
           onFiltersChange((prev) => ({
             ...prev,
@@ -240,5 +243,6 @@ export function CrmLeadsFilters({
         </Button>
       ) : null}
     </div>
+    </FilterShell>
   );
 }

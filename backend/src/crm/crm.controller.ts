@@ -156,6 +156,20 @@ export class CrmController {
 
   // ── Leads ───────────────────────────────────────────────────────────────
 
+  @Get("leads/counts")
+  countLeadsByStage(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @CurrentUser() user: JwtPayload,
+    @Query() query: Record<string, string | undefined>
+  ) {
+    return this.service.countLeadsByStage(
+      companyId,
+      toDomainActor(user, actorId),
+      query
+    );
+  }
+
   @Get("leads/match")
   matchLead(
     @CompanyId() companyId: string,

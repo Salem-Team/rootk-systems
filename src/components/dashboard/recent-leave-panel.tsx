@@ -26,8 +26,8 @@ export function RecentLeavePanel({ requests }: { requests: LeaveRequest[] }) {
       className="surface-panel overflow-hidden"
       aria-labelledby="recent-leave-heading"
     >
-      <div className="panel-header flex items-center justify-between gap-3">
-        <div>
+      <div className="panel-header flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <h3
             id="recent-leave-heading"
             className="flex items-center gap-2 text-[0.95rem] font-semibold tracking-tight"
@@ -39,8 +39,8 @@ export function RecentLeavePanel({ requests }: { requests: LeaveRequest[] }) {
             {t("dashboard.recentLeaveRequestsDesc")}
           </p>
         </div>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/leave">{t("leave.title")}</Link>
+        <Button asChild variant="ghost" size="sm" className="shrink-0">
+          <Link href="/leave">{t("dashboard.viewAll")}</Link>
         </Button>
       </div>
       <div className="panel-body">

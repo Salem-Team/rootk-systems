@@ -176,11 +176,12 @@ export default function EmployeesPage() {
         <PageHeader
           title={t("employees.title")}
           description={t("employees.description")}
+          eyebrow={t("nav.people")}
           actions={
             <Button
               type="button"
               size="lg"
-              className="w-full gap-2 bg-[#082868] text-white shadow-[0_10px_24px_rgba(8,40,104,0.28)] hover:bg-[#0a327c] sm:w-auto"
+              className="w-full gap-2 sm:w-auto"
               onClick={() => {
                 setEditing(null);
                 setFormOpen(true);

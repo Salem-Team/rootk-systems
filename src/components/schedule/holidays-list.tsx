@@ -120,7 +120,7 @@ export function HolidaysList({
           />
         )}
       </div>
-      <div>
+      <div className="panel-body">
         {sorted.length === 0 ? (
           <EmptyState
             compact

@@ -74,8 +74,8 @@ export function AttendanceTimeline() {
     >
       <SectionPanel
         className="h-full"
-        title={t("attendance.timeline")}
-        description={t("attendance.timelineDesc")}
+        title={t("attendance.recentActivity")}
+        description={t("attendance.recentActivityDesc")}
       >
         {events.length === 0 ? (
           <EmptyState

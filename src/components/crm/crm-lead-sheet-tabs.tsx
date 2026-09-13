@@ -13,11 +13,31 @@ import type {
   CrmLeadFeedback,
 } from "@/types/crm";
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({
+  label,
+  value,
+  multiline = false,
+}: {
+  label: string;
+  value: string;
+  multiline?: boolean;
+}) {
   return (
-    <div className="grid gap-0.5 sm:grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)] sm:gap-2">
+    <div
+      className={
+        multiline
+          ? "grid gap-1"
+          : "grid gap-0.5 sm:grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)] sm:gap-2"
+      }
+    >
       <dt className="text-[11px] text-muted-foreground sm:text-[13px]">{label}</dt>
-      <dd className="min-w-0 break-words text-[13px] font-medium text-foreground">
+      <dd
+        className={
+          multiline
+            ? "min-w-0 whitespace-pre-wrap break-words rounded-lg bg-muted/40 px-3 py-2 text-[13px] font-medium leading-relaxed text-foreground"
+            : "min-w-0 break-words text-[13px] font-medium text-foreground"
+        }
+      >
         {value}
       </dd>
     </div>
@@ -94,7 +114,11 @@ export function CrmLeadSheetTabs({
                     : "—"
                 }
               />
-              <Row label={t("crm.leadSheet.notes")} value={lead.notes || "—"} />
+              <Row
+                label={t("crm.leadSheet.notes")}
+                value={lead.notes || "—"}
+                multiline
+              />
             </dl>
           </section>
         </TabsContent>

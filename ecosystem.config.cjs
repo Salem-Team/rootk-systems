@@ -16,7 +16,7 @@ module.exports = {
       name: "rootk-systems-web",
       cwd: "/var/www/rootk-systems",
       script: "node_modules/next/dist/bin/next",
-      args: "start -p 3030 -H 127.0.0.1",
+      args: "start -p 3030 -H 0.0.0.0",
       instances: 1,
       exec_mode: "fork",
       env: {

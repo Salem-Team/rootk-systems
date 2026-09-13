@@ -18,6 +18,7 @@ import {
   emptyMeetingForm,
   emptyTaskForm,
   meetingToForm,
+  nextTaskFormAfterCreate,
   taskToForm,
   type MeetingFormState,
   type TaskFormState,
@@ -84,11 +85,12 @@ export function useAdminWorkPanelForms({
     setMeetingDialogOpen(true);
   }
 
-  async function saveTask() {
+  async function saveTask(options?: { addAnother?: boolean }) {
     if (!taskForm.title.trim() || taskForm.assigneeIds.length === 0) {
       toast.error(t("workAdmin.validationTask"));
       return;
     }
+    const addAnother = Boolean(options?.addAnother) && !editingTaskId;
     setBusy(true);
     if (!editingTaskId && taskForm.countsAsOrganicAd) {
       const res = await assignOrganicAdsQuota({
@@ -106,10 +108,15 @@ export function useAdminWorkPanelForms({
         toast.error(res.message ?? t("common.error"));
         return;
       }
-      setTaskDialogOpen(false);
       emitTargetsUpdated();
       emitWorkUpdated();
       await reload();
+      if (addAnother) {
+        setTaskForm((prev) => nextTaskFormAfterCreate(prev));
+        toast.success(t("workAdmin.taskCreatedAddAnother"));
+        return;
+      }
+      setTaskDialogOpen(false);
       toast.success(t("workAdmin.organicAdsAssigned"));
       return;
     }
@@ -153,8 +160,13 @@ export function useAdminWorkPanelForms({
       toast.error(res.message ?? t("common.error"));
       return;
     }
-    setTaskDialogOpen(false);
     await reload();
+    if (addAnother) {
+      setTaskForm((prev) => nextTaskFormAfterCreate(prev));
+      toast.success(t("workAdmin.taskCreatedAddAnother"));
+      return;
+    }
+    setTaskDialogOpen(false);
     toast.success(
       editingTaskId ? t("workAdmin.taskUpdated") : t("workAdmin.taskCreated")
     );

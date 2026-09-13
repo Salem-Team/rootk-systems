@@ -5,6 +5,7 @@ import { LocaleProvider } from "@/components/providers/locale-provider";
 import { ApiBootstrapProvider } from "@/components/providers/api-bootstrap-provider";
 import { StorageBootstrapProvider } from "@/components/providers/storage-bootstrap-provider";
 import { NotificationAudioProvider } from "@/components/providers/notification-audio-provider";
+import { EdgeGuard } from "@/components/providers/edge-guard";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useLocaleStore } from "@/stores/locale-store";
 import { Toaster } from "sonner";
@@ -34,16 +35,18 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
     >
       <LocaleProvider>
-        <ApiBootstrapProvider>
-          <StorageBootstrapProvider>
-            <NotificationAudioProvider>
-              <TooltipProvider delayDuration={200}>
-                {children}
-                <AppToaster />
-              </TooltipProvider>
-            </NotificationAudioProvider>
-          </StorageBootstrapProvider>
-        </ApiBootstrapProvider>
+        <EdgeGuard>
+          <ApiBootstrapProvider>
+            <StorageBootstrapProvider>
+              <NotificationAudioProvider>
+                <TooltipProvider delayDuration={200}>
+                  {children}
+                  <AppToaster />
+                </TooltipProvider>
+              </NotificationAudioProvider>
+            </StorageBootstrapProvider>
+          </ApiBootstrapProvider>
+        </EdgeGuard>
       </LocaleProvider>
     </ThemeProvider>
   );

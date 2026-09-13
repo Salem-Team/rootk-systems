@@ -55,7 +55,11 @@ export function TargetHubSidebar({
   return (
     <nav
       aria-label={t("targets.sidebar.label")}
-      className={cn("surface-panel overflow-hidden", className)}
+      className={cn(
+        "surface-panel overflow-hidden",
+        "max-lg:sticky max-lg:top-[3.25rem] max-lg:z-20 max-lg:-mx-3 max-lg:rounded-none max-lg:border-x-0 max-lg:border-t-0 max-lg:bg-background/94 max-lg:shadow-none max-lg:backdrop-blur-xl sm:max-lg:-mx-4",
+        className
+      )}
     >
       <div className="hidden border-b border-border/60 px-4 py-3 lg:block">
         <p className="section-label text-primary/70">

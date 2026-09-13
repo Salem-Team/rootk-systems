@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -16,11 +16,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/hooks/use-translation";
-import { recordCrmLeadCall } from "@/services/crm.service";
 import { crmUserFacingMessage } from "@/lib/crm/client-error";
 import { formatCallClock } from "@/lib/crm/call-duration";
 import { pendingCallDurationSeconds } from "@/lib/crm/pending-call";
-import { nativePlatform } from "@/lib/native/platform";
+import {
+  isPendingCallPersisted,
+  persistPendingCrmCall,
+} from "@/lib/crm/persist-pending-call";
 import type { CrmCallStatus, CrmNextAction } from "@/types/crm";
 import type { PendingCrmCall } from "@/lib/crm/pending-call";
 
@@ -49,56 +51,73 @@ export function CrmPostCallDialog({
   const [notes, setNotes] = useState("");
   const [followAt, setFollowAt] = useState("");
   const [saving, setSaving] = useState(false);
+  const recordedRef = useRef(false);
+  const pendingRef = useRef(pending);
+  pendingRef.current = pending;
 
-  async function submit() {
-    if (!pending) return;
+  useEffect(() => {
+    recordedRef.current = false;
+    setStatus("answered");
+    setNotes("");
+    setFollowAt("");
+  }, [pending?.externalCallId]);
+
+  async function persist(
+    nextStatus: CrmCallStatus,
+    options?: { notes?: string; followAt?: string; silent?: boolean }
+  ): Promise<boolean> {
+    const current = pendingRef.current;
+    if (!current || recordedRef.current) return true;
     setSaving(true);
-    const endedAt = pending.endedAt || new Date().toISOString();
-    const durationSeconds = pendingCallDurationSeconds({
-      ...pending,
-      endedAt,
-    });
-    const nextAction: CrmNextAction = followAt ? "follow_up" : "none";
-    const source =
-      pending.source === "web" ? nativePlatform() : pending.source;
-    const res = await recordCrmLeadCall(pending.leadId, {
-      status: status === "unknown" ? "unknown" : status,
-      direction: "outgoing",
-      source,
-      externalCallId: pending.externalCallId,
-      phoneNumber: pending.phone,
-      startedAt: pending.startedAt,
-      endedAt,
-      durationSeconds,
-      notes,
+    const nextAction: CrmNextAction = options?.followAt ? "follow_up" : "none";
+    const res = await persistPendingCrmCall(current, {
+      status: nextStatus,
+      notes: options?.notes ?? "",
       nextAction,
-      nextFollowUpAt: followAt ? new Date(followAt).toISOString() : null,
+      nextFollowUpAt: options?.followAt
+        ? new Date(options.followAt).toISOString()
+        : null,
     });
     setSaving(false);
-    if (!res.success) {
-      const already =
-        res.error?.details &&
-        typeof res.error.details === "object" &&
-        ("alreadySynchronized" in res.error.details ||
-          (res.error.details as { code?: string }).code === "CALL_DUPLICATE");
-      if (already) {
-        toast.success(t("crm.call.alreadySaved"));
-        onOpenChange(false);
-        onRecorded?.();
-        return;
+    if (isPendingCallPersisted(res)) {
+      recordedRef.current = true;
+      if (!options?.silent) {
+        toast.success(
+          res.success ? t("crm.call.saved") : t("crm.call.alreadySaved")
+        );
+      } else if (res.success) {
+        toast.success(t("crm.call.savedAuto"));
       }
-      toast.error(crmUserFacingMessage(res, t, "crm.call.saveFailed"));
-      return;
+      onRecorded?.();
+      return true;
     }
-    toast.success(t("crm.call.saved"));
+    if (!options?.silent) {
+      toast.error(crmUserFacingMessage(res, t, "crm.call.saveFailed"));
+    }
+    return false;
+  }
+
+  async function submit() {
+    const ok = await persist(status === "unknown" ? "unknown" : status, {
+      notes,
+      followAt,
+    });
+    if (!ok) return;
     onOpenChange(false);
     setNotes("");
     setFollowAt("");
-    onRecorded?.();
+  }
+
+  async function handleOpenChange(next: boolean) {
+    if (!next && pendingRef.current && !recordedRef.current) {
+      // Dismiss / escape / skip still counts the dial in user performance.
+      await persist("unknown", { silent: true });
+    }
+    onOpenChange(next);
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(next) => void handleOpenChange(next)}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>{t("crm.call.title")}</DialogTitle>
@@ -146,8 +165,13 @@ export function CrmPostCallDialog({
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" className="min-h-11" onClick={() => onOpenChange(false)}>
-            {t("crm.actions.cancel")}
+          <Button
+            variant="outline"
+            className="min-h-11"
+            disabled={saving || !pending}
+            onClick={() => void handleOpenChange(false)}
+          >
+            {t("crm.call.skip")}
           </Button>
           <Button className="min-h-11" onClick={() => void submit()} disabled={saving || !pending}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}

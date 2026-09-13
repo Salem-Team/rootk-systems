@@ -55,7 +55,7 @@ export function MobileBottomNav() {
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(true)}
-                  className="relative flex min-h-[3.35rem] w-full flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                  className="relative flex min-h-[3.5rem] w-full flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-semibold text-muted-foreground transition-colors touch-manipulation hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
                   aria-label={t("common.openMenu")}
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted/70">
@@ -72,7 +72,7 @@ export function MobileBottomNav() {
               <Link
                 href={item.href}
                 className={cn(
-                  "relative flex min-h-[3.35rem] flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
+                  "relative flex min-h-[3.5rem] flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-semibold transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
                   active
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
@@ -212,7 +212,7 @@ export function MobileDrawer() {
                       href={item.href}
                       onClick={() => setMobileMenuOpen(false)}
                       className={cn(
-                        "relative flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
+                        "relative flex min-h-12 touch-manipulation items-center gap-3 rounded-xl px-3 py-3 text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
                         active
                           ? "bg-white text-sidebar shadow-md shadow-black/20"
                           : "text-sidebar-foreground/65 hover:bg-white/[0.06] hover:text-white"

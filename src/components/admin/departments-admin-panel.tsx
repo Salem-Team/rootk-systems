@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Loader2, Plus, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
+import { FormSkeleton } from "@/components/shared/loading-state";
 import { DepartmentBadge } from "@/components/employees/department-badge";
 import {
   DataTable,
@@ -118,11 +119,7 @@ export function DepartmentsAdminPanel() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
-    );
+    return <FormSkeleton />;
   }
 
   return (

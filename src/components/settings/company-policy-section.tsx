@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Building2, Clock3, Loader2, Shield } from "lucide-react";
+import { Building2, Clock3, Shield } from "lucide-react";
+import { FormSkeleton } from "@/components/shared/loading-state";
 import { Badge } from "@/components/ui/badge";
 import { getSettings } from "@/services/settings.service";
 import { getWorkSchedule } from "@/services/schedule.service";
@@ -41,11 +42,7 @@ export function CompanyPolicySection() {
   }, [load]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
-    );
+    return <FormSkeleton />;
   }
 
   if (!settings) return null;

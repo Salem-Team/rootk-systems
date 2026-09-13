@@ -356,14 +356,16 @@ export function CrmLeadFormFields({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="grid gap-1.5">
-          <Label>{t("crm.leadForm.nextAction")}</Label>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3.5">
+        <div className="grid min-w-0 gap-1.5">
+          <Label className="text-[13px] leading-snug sm:text-sm">
+            {t("crm.leadForm.nextAction")}
+          </Label>
           <Select
             value={nextAction}
             onValueChange={(v) => onNextActionChange(v as CrmNextAction)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-10 min-w-0 touch-manipulation sm:h-9">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -375,13 +377,20 @@ export function CrmLeadFormFields({
             </SelectContent>
           </Select>
         </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="crm-lead-follow">{t("crm.leadForm.nextFollowUp")}</Label>
+        <div className="grid min-w-0 gap-1.5">
+          <Label
+            htmlFor="crm-lead-follow"
+            className="text-[13px] leading-snug sm:text-sm"
+          >
+            {t("crm.leadForm.nextFollowUp")}
+          </Label>
           <Input
             id="crm-lead-follow"
             type="datetime-local"
+            dir="ltr"
             value={nextFollowUpAt}
             onChange={(e) => onNextFollowUpAtChange(e.target.value)}
+            className="h-10 min-w-0 touch-manipulation tabular-nums [color-scheme:light] dark:[color-scheme:dark] sm:h-9 [&::-webkit-calendar-picker-indicator]:ms-1 [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:min-w-0"
           />
         </div>
       </div>

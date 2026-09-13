@@ -46,6 +46,7 @@ async function main() {
   await resetDemoData();
 
   const { useSessionStore } = await import("../../src/stores/session-store");
+  const { permissionsForRole } = await import("../../src/constants/permissions");
   const targets = await import("../../src/services/targets.service");
   const work = await import("../../src/services/work.service");
   const { getStorageAdapter } = await import("../../src/storage");
@@ -54,6 +55,7 @@ async function main() {
     useSessionStore.setState({
       authenticated: true,
       role: "admin",
+      permissions: permissionsForRole("admin"),
       user: {
         id: "emp-001",
         employeeId: "RK-1001",
@@ -75,6 +77,7 @@ async function main() {
     useSessionStore.setState({
       authenticated: true,
       role: "employee",
+      permissions: permissionsForRole("employee"),
       user: {
         id: employeeEntityId,
         employeeId:

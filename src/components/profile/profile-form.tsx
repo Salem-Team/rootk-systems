@@ -1,6 +1,8 @@
 "use client";
 
 import { Loader2, Save, UserRound } from "lucide-react";
+import { FormSkeleton } from "@/components/shared/loading-state";
+import { SectionPanel } from "@/components/shared/section-panel";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,16 +30,12 @@ export function ProfileForm() {
   } = useProfileForm();
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
-    );
+    return <FormSkeleton />;
   }
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <section className="surface-panel overflow-hidden">
+      <SectionPanel interactive={false} bare>
         <div className="panel-header">
           <div className="flex items-start gap-3">
             <Avatar className="h-12 w-12 ring-1 ring-border">
@@ -47,7 +45,9 @@ export function ProfileForm() {
             </Avatar>
             <div className="min-w-0">
               <h3 className="flex items-center gap-2 text-[0.95rem] font-semibold">
-                <UserRound className="h-3.5 w-3.5 text-primary" aria-hidden />
+                <span className="icon-well h-7 w-7">
+                  <UserRound className="h-3.5 w-3.5" aria-hidden />
+                </span>
                 {t("profile.personalInfo")}
               </h3>
               <p className="mt-0.5 text-sm text-muted-foreground">
@@ -111,11 +111,12 @@ export function ProfileForm() {
             />
           </div>
         </div>
-      </section>
+      </SectionPanel>
 
       <div className="flex justify-end">
         <Button
           size="lg"
+          className="w-full sm:w-auto"
           onClick={() => void handleSave()}
           disabled={saving || !firstName.trim()}
         >

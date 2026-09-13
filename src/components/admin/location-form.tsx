@@ -1,4 +1,4 @@
-import { Link2, Loader2, MapPin, Plus, Save } from "lucide-react";
+import { Link2, Loader2, LocateFixed, MapPin, Plus, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,9 @@ export function LocationForm({
   setDraft,
   busy,
   resolvingMaps,
+  locatingDevice,
   onApplyMapsUrl,
+  onUseMyLocation,
   onSave,
   onCancel,
 }: {
@@ -34,18 +36,21 @@ export function LocationForm({
   setDraft: (updater: (d: LocationDraft) => LocationDraft) => void;
   busy: boolean;
   resolvingMaps: boolean;
+  locatingDevice: boolean;
   onApplyMapsUrl: (rawUrl?: string) => void | Promise<void>;
+  onUseMyLocation: () => void | Promise<void>;
   onSave: () => void | Promise<void>;
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
+  const geoBusy = resolvingMaps || locatingDevice || busy;
 
   return (
     <div className="surface-panel p-4">
       <div className="space-y-1.5">
         <Label htmlFor="loc-maps-url">{t("admin.mapsUrl")}</Label>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <div className="relative min-w-0 flex-1">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <div className="relative min-w-0 flex-1 basis-full sm:basis-auto">
             <Link2 className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id="loc-maps-url"
@@ -77,7 +82,7 @@ export function LocationForm({
             size="sm"
             variant="outline"
             className="shrink-0"
-            disabled={resolvingMaps || busy || !draft.mapsUrl.trim()}
+            disabled={geoBusy || !draft.mapsUrl.trim()}
             onClick={() => void onApplyMapsUrl()}
           >
             {resolvingMaps ? (
@@ -86,6 +91,21 @@ export function LocationForm({
               <MapPin />
             )}
             {t("admin.mapsUrlApply")}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="shrink-0"
+            disabled={geoBusy}
+            onClick={() => void onUseMyLocation()}
+          >
+            {locatingDevice ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <LocateFixed />
+            )}
+            {t("admin.useMyLocation")}
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
@@ -178,7 +198,7 @@ export function LocationForm({
         {t("admin.geoRequiredHint")}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
-        <Button size="sm" disabled={busy || resolvingMaps} onClick={() => void onSave()}>
+        <Button size="sm" disabled={geoBusy} onClick={() => void onSave()}>
           {busy ? (
             <Loader2 className="animate-spin" />
           ) : draft.id ? (

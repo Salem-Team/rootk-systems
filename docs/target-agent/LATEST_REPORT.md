@@ -1,24 +1,24 @@
 # Target User Agent — Test Report
 
-Generated: **2026-08-11T10:54:32.687Z**
+Generated: **2026-09-13T16:24:38.013Z**
 
 Result: **10/10 passed**
 
-Agent target id: `pt_e2849cb5f6a14650`
+Agent target id: `pt_227076abc8574d0d`
 
 ## Scenarios (real user flows)
 
 | # | Actor | Scenario | Result | Detail |
 |---|-------|----------|--------|--------|
 | 1 | admin | Open Target Catalog | ✅ PASS | 4 categories, 7 types |
-| 2 | admin | Create category + type (Operations / Site Visits) | ✅ PASS | category=tcat_853c728dfe0a49b1 type=ttype_b1c5065817fa4bf6 |
-| 3 | admin | Assign target + auto-create 5 tasks | ✅ PASS | target=pt_e2849cb5f6a14650, linkedTasks=5, progress=0% |
+| 2 | admin | Create category + type (Operations / Site Visits) | ✅ PASS | category=tcat_fe44b002b2f4459d type=ttype_b03a570fa51b4d85 |
+| 3 | admin | Assign target + auto-create 5 tasks | ✅ PASS | target=pt_227076abc8574d0d, linkedTasks=5, progress=0% |
 | 4 | employee | Complete 2 tasks → target progress auto-updates to 40% | ✅ PASS | completedQuantity=2, percentage=40% |
 | 5 | employee | Employee cannot edit target (permission gate) | ✅ PASS | correctly forbidden |
-| 6 | admin | Send performance warning | ✅ PASS | warning=tw_6e8d0cbcbe804878 |
-| 7 | employee | Employee acknowledges warning | ✅ PASS | acknowledgedAt=2026-08-11T10:54:26.567Z |
-| 8 | admin | Dashboard + delayed center load with agent target visible | ✅ PASS | total=7, completed=1, delayedTargets=5, avgScore=31.7 |
-| 9 | employee | Employee performance page shows target + warning | ✅ PASS | score=43.9, targets=3, warnings=1 |
+| 6 | admin | Send performance warning | ✅ PASS | warning=tw_be0a32e28d404b8e |
+| 7 | employee | Employee acknowledges warning | ✅ PASS | acknowledgedAt=2026-09-13T16:24:31.816Z |
+| 8 | admin | Dashboard + delayed center load with agent target visible | ✅ PASS | total=7, completed=1, delayedTargets=5, avgScore=27.6 |
+| 9 | employee | Employee performance page shows target + warning | ✅ PASS | score=34.3, targets=3, warnings=1 |
 | 10 | employee | Complete remaining tasks → target reaches 100% / completed | ✅ PASS | status=completed, percentage=100% |
 
 ## How to view in the app
@@ -36,9 +36,9 @@ Agent target id: `pt_e2849cb5f6a14650`
   "completed": 1,
   "inProgress": 5,
   "delayed": 1,
-  "critical": 4,
+  "critical": 5,
   "completionRate": 14.3,
-  "averagePerformance": 31.7,
+  "averagePerformance": 27.6,
   "employeesAtRisk": 4,
   "upcomingDeadlines": 5,
   "byCategory": [
@@ -61,7 +61,7 @@ Agent target id: `pt_e2849cb5f6a14650`
       "count": 3
     },
     {
-      "id": "tcat_853c728dfe0a49b1",
+      "id": "tcat_fe44b002b2f4459d",
       "name": "Agent Demo — Operations",
       "color": "#0F766E",
       "count": 1
@@ -93,7 +93,7 @@ Agent target id: `pt_e2849cb5f6a14650`
     {
       "department": "Design",
       "count": 3,
-      "avgScore": 55.1
+      "avgScore": 54.8
     },
     {
       "department": "Engineering",
@@ -103,7 +103,7 @@ Agent target id: `pt_e2849cb5f6a14650`
     {
       "department": "Sales",
       "count": 2,
-      "avgScore": 28.3
+      "avgScore": 14.2
     }
   ],
   "topPerformers": [
@@ -115,13 +115,13 @@ Agent target id: `pt_e2849cb5f6a14650`
     },
     {
       "employeeId": "emp-003",
-      "score": 43.9,
+      "score": 34.3,
       "completed": 0,
       "total": 3
     },
     {
       "employeeId": "emp-014",
-      "score": 28.3,
+      "score": 14.2,
       "completed": 0,
       "total": 2
     },
@@ -153,13 +153,13 @@ Agent target id: `pt_e2849cb5f6a14650`
     },
     {
       "employeeId": "emp-014",
-      "score": 28.3,
+      "score": 14.2,
       "completed": 0,
       "total": 2
     },
     {
       "employeeId": "emp-003",
-      "score": 43.9,
+      "score": 34.3,
       "completed": 0,
       "total": 3
     },
@@ -172,72 +172,72 @@ Agent target id: `pt_e2849cb5f6a14650`
   ],
   "completionTrend": [
     {
-      "date": "2026-07-29",
+      "date": "2026-08-31",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-07-30",
+      "date": "2026-09-01",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-07-31",
+      "date": "2026-09-02",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-08-01",
+      "date": "2026-09-03",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-08-02",
+      "date": "2026-09-04",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-08-03",
+      "date": "2026-09-05",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-08-04",
+      "date": "2026-09-06",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-08-05",
+      "date": "2026-09-07",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-08-06",
+      "date": "2026-09-08",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-08-07",
+      "date": "2026-09-09",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-08-08",
+      "date": "2026-09-10",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-08-09",
+      "date": "2026-09-11",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-08-10",
+      "date": "2026-09-12",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-08-11",
+      "date": "2026-09-13",
       "created": 7,
       "completed": 1
     }

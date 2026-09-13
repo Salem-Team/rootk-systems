@@ -30,6 +30,7 @@ module.exports = {
         PORT: "3011",
         CORS_ORIGIN:
           "http://localhost:3010,http://127.0.0.1:3010",
+        ROOTK_EDGE_ID: "rootk-systems-62",
       },
     },
     {
@@ -53,6 +54,7 @@ module.exports = {
         NEXT_TELEMETRY_DISABLED: "1",
         NEXT_PUBLIC_API_BASE_URL: "http://localhost:3011/api",
         NEXT_PUBLIC_DATA_SOURCE: "api",
+        NEXT_PUBLIC_ROOTK_EDGE_ID: "rootk-systems-62",
       },
     },
   ],

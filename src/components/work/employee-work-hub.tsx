@@ -1,7 +1,7 @@
 "use client";
 
-import { ar as arLocale, enUS } from "date-fns/locale";
-import { CalendarDays, ListTodo, Loader2, Target } from "lucide-react";
+import { PageSkeleton } from "@/components/shared/loading-state";
+import { MobileSegmentedTabs } from "@/components/shared/mobile-segmented-tabs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmployeeWorkHero } from "@/components/work/employee-work-hero";
 import { EmployeeWorkTaskPanel } from "@/components/work/employee-work-task-panel";
@@ -15,6 +15,8 @@ import { useEmployeeWorkHubActions } from "@/components/work/use-employee-work-h
 import type { WorkTab } from "@/components/work/employee-work-hub-types";
 import { getWorkEmployeeIdFromUser, useSessionStore } from "@/stores/session-store";
 import { useTranslation } from "@/hooks/use-translation";
+import { ar as arLocale, enUS } from "date-fns/locale";
+import { CalendarDays, ListTodo, Target } from "lucide-react";
 
 export function EmployeeWorkHub() {
   const { t, locale } = useTranslation();
@@ -43,11 +45,7 @@ export function EmployeeWorkHub() {
   }
 
   if (data.loading) {
-    return (
-      <div className="flex items-center justify-center py-24 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   return (
@@ -68,29 +66,31 @@ export function EmployeeWorkHub() {
         onValueChange={(v) => data.setTab(v as WorkTab)}
         className="space-y-4"
       >
-        <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-xl bg-muted/60 p-1 sm:inline-grid sm:w-auto sm:rounded-2xl sm:p-1.5">
-          <TabsTrigger
-            value="tasks"
-            className="min-h-10 gap-1 rounded-lg px-2 text-[11px] sm:min-h-11 sm:rounded-xl sm:px-4 sm:text-[13px]"
-          >
-            <ListTodo className="hidden h-3.5 w-3.5 sm:me-1.5 sm:inline" aria-hidden />
-            {t("workHub.tabTasks")}
-          </TabsTrigger>
-          <TabsTrigger
-            value="meetings"
-            className="min-h-10 gap-1 rounded-lg px-2 text-[11px] sm:min-h-11 sm:rounded-xl sm:px-4 sm:text-[13px]"
-          >
-            <CalendarDays className="hidden h-3.5 w-3.5 sm:me-1.5 sm:inline" aria-hidden />
-            {t("workHub.tabMeetings")}
-          </TabsTrigger>
-          <TabsTrigger
-            value="day"
-            className="min-h-10 gap-1 rounded-lg px-2 text-[11px] sm:min-h-11 sm:rounded-xl sm:px-4 sm:text-[13px]"
-          >
-            <Target className="hidden h-3.5 w-3.5 sm:me-1.5 sm:inline" aria-hidden />
-            {t("workHub.tabDay")}
-          </TabsTrigger>
-        </TabsList>
+        <MobileSegmentedTabs>
+          <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-xl bg-muted/60 p-1 sm:inline-grid sm:w-auto sm:rounded-2xl sm:p-1.5">
+            <TabsTrigger
+              value="tasks"
+              className="min-h-11 gap-1 touch-manipulation rounded-lg px-2 text-[12px] font-semibold sm:rounded-xl sm:px-4 sm:text-[13px]"
+            >
+              <ListTodo className="hidden h-3.5 w-3.5 sm:me-1.5 sm:inline" aria-hidden />
+              {t("workHub.tabTasks")}
+            </TabsTrigger>
+            <TabsTrigger
+              value="meetings"
+              className="min-h-11 gap-1 touch-manipulation rounded-lg px-2 text-[12px] font-semibold sm:rounded-xl sm:px-4 sm:text-[13px]"
+            >
+              <CalendarDays className="hidden h-3.5 w-3.5 sm:me-1.5 sm:inline" aria-hidden />
+              {t("workHub.tabMeetings")}
+            </TabsTrigger>
+            <TabsTrigger
+              value="day"
+              className="min-h-11 gap-1 touch-manipulation rounded-lg px-2 text-[12px] font-semibold sm:rounded-xl sm:px-4 sm:text-[13px]"
+            >
+              <Target className="hidden h-3.5 w-3.5 sm:me-1.5 sm:inline" aria-hidden />
+              {t("workHub.tabDay")}
+            </TabsTrigger>
+          </TabsList>
+        </MobileSegmentedTabs>
 
         <TabsContent value="tasks" className="mt-0 outline-none">
           <EmployeeWorkTaskPanel

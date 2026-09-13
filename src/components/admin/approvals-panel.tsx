@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ClipboardCheck, Loader2 } from "lucide-react";
+import { ClipboardCheck } from "lucide-react";
 import { toast } from "sonner";
+import { FormSkeleton } from "@/components/shared/loading-state";
 import { Switch } from "@/components/ui/switch";
 import {
   getApprovalRules,
@@ -42,11 +43,7 @@ export function ApprovalsPanel() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
-    );
+    return <FormSkeleton />;
   }
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { Search, UsersRound } from "lucide-react";
+import { FilterShell } from "@/components/shared/filter-shell";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageSkeleton } from "@/components/shared/loading-state";
 import { Input } from "@/components/ui/input";
@@ -26,21 +27,24 @@ export function TeamPage() {
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="relative min-w-0 flex-1 sm:max-w-sm">
-          <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={page.query}
-            onChange={(e) => page.setQuery(e.target.value)}
-            placeholder={page.t("team.search")}
-            className="h-10 rounded-xl ps-9"
-          />
+      <FilterShell sticky className="mb-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative min-w-0 flex-1 sm:max-w-sm">
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={page.query}
+              onChange={(e) => page.setQuery(e.target.value)}
+              placeholder={page.t("team.search")}
+              className="h-10 rounded-xl ps-9"
+              aria-label={page.t("team.search")}
+            />
+          </div>
+          <p className="inline-flex items-center gap-1.5 rounded-lg bg-muted/60 px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground">
+            <UsersRound className="h-3.5 w-3.5" aria-hidden />
+            {page.t("team.memberCount", { count: String(page.reports.length) })}
+          </p>
         </div>
-        <p className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
-          <UsersRound className="h-3.5 w-3.5" />
-          {page.t("team.memberCount", { count: String(page.reports.length) })}
-        </p>
-      </div>
+      </FilterShell>
 
       <TeamMembersTable
         members={page.visible}
@@ -65,7 +69,7 @@ export function TeamPage() {
         setTaskForm={page.setTaskForm}
         employees={page.canViewAllTeam ? page.employees : page.reports}
         meetings={[]}
-        onSave={() => void page.saveTask()}
+        onSave={(options) => void page.saveTask(options)}
       />
 
       <TargetAssignSheet

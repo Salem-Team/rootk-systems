@@ -11,6 +11,7 @@ import {
   Search,
 } from "lucide-react";
 import { toast } from "sonner";
+import { FormSkeleton } from "@/components/shared/loading-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -136,11 +137,7 @@ export function UserAccountsPanel() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
-    );
+    return <FormSkeleton />;
   }
 
   return (

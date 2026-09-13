@@ -28,21 +28,24 @@ export function Announcements({
   items,
   title,
   description,
+  limit,
 }: {
   items: Announcement[];
   title?: string;
   description?: string;
+  limit?: number;
 }) {
   const { t, locale } = useTranslation();
   const dateLocale = locale === "ar" ? arLocale : enUS;
   const [readIds, setReadIds] = useState<Set<string>>(() => new Set());
 
   const ordered = useMemo(() => {
-    return [...items].sort((a, b) => {
+    const sorted = [...items].sort((a, b) => {
       const rank = { high: 0, medium: 1, low: 2 };
       return rank[a.priority] - rank[b.priority];
     });
-  }, [items]);
+    return typeof limit === "number" ? sorted.slice(0, limit) : sorted;
+  }, [items, limit]);
 
   const pinnedId = ordered.find((i) => i.priority === "high")?.id;
 

@@ -55,7 +55,7 @@ export function EmployeeFilters({
   ];
 
   return (
-    <FilterShell>
+    <FilterShell sticky>
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
           <div className="flex-1 space-y-2">

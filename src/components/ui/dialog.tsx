@@ -46,7 +46,8 @@ const DialogContent = React.forwardRef<
       ref={ref}
       data-ui-overlay=""
       className={cn(
-        // Base shell
+        // Base shell — prefer DialogBody for scroll so header/footer stay pinned.
+        // overflow-y-auto remains as fallback for simple dialogs without DialogBody.
         "fixed z-50 flex w-full flex-col gap-4 border border-border/80 bg-card shadow-[var(--shadow-float)] outline-none",
         "min-h-0 overflow-y-auto overscroll-contain",
         // Mobile: bottom sheet — stays usable on short viewports
@@ -99,9 +100,7 @@ const DialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "sticky top-0 z-10 -mx-4 -mt-1 flex flex-col gap-1.5 bg-card/95 px-4 pb-3 pt-1 text-start backdrop-blur-sm",
-      "sm:-mx-5 sm:px-5",
-      "pe-11 sm:pe-12",
+      "shrink-0 flex flex-col gap-1.5 pe-11 text-start sm:pe-12",
       className
     )}
     {...props}
@@ -109,15 +108,29 @@ const DialogHeader = ({
 );
 DialogHeader.displayName = "DialogHeader";
 
+/** Scrollable middle section — keeps DialogHeader / DialogFooter pinned. */
+const DialogBody = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={cn(
+      "min-h-0 flex-1 overflow-y-auto overscroll-contain",
+      className
+    )}
+    {...props}
+  />
+);
+DialogBody.displayName = "DialogBody";
+
 const DialogFooter = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "sticky bottom-0 z-10 -mx-4 mt-auto flex flex-col-reverse gap-2 bg-card/95 px-4 pb-1 pt-3 backdrop-blur-sm",
-      "sm:-mx-5 sm:flex-row sm:justify-end sm:px-5",
-      "border-t border-border/50",
+      "shrink-0 mt-auto flex flex-col-reverse gap-2 border-t border-border/50 pt-3",
+      "sm:flex-row sm:justify-end",
       className
     )}
     {...props}
@@ -160,6 +173,7 @@ export {
   DialogClose,
   DialogContent,
   DialogHeader,
+  DialogBody,
   DialogFooter,
   DialogTitle,
   DialogDescription,

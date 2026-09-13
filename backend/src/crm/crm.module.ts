@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { CrmCatalogController } from "./crm-catalog.controller";
 import { CrmController } from "./crm.controller";
+import { WebsiteLeadIngestController } from "./website-lead-ingest.controller";
 import { CrmActivitiesService } from "./crm-activities.service";
 import { CrmCallsService } from "./crm-calls.service";
 import { CrmBusinessTypesService } from "./crm-business-types.service";
@@ -23,7 +24,11 @@ import { NotificationsModule } from "../notifications/notifications.module";
 
 @Module({
   imports: [NotificationsModule],
-  controllers: [CrmController, CrmCatalogController],
+  controllers: [
+    CrmController,
+    CrmCatalogController,
+    WebsiteLeadIngestController,
+  ],
   providers: [
     RolesGuard,
     CrmSharedService,

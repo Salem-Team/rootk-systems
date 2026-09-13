@@ -299,7 +299,13 @@ export class CrmLeadUpdateService {
     actor: Actor,
     ctx: {
       id: string;
-      row: { name: string; ownerEmployeeId: string | null };
+      row: {
+        name: string;
+        phone: string | null;
+        companyName: string | null;
+        stageId: string;
+        ownerEmployeeId: string | null;
+      };
       nameLabel: string;
       previousOwner: string | null;
     }
@@ -328,6 +334,18 @@ export class CrmLeadUpdateService {
       description: ctx.row.name,
       employeeId: ctx.row.ownerEmployeeId ?? undefined,
       actorId: actor.userId,
+    });
+    await this.shared.notifyLeadAssignedToOwner({
+      companyId,
+      actor,
+      lead: {
+        id: ctx.id,
+        name: ctx.row.name,
+        phone: ctx.row.phone,
+        companyName: ctx.row.companyName,
+        stageId: ctx.row.stageId,
+        ownerEmployeeId: ctx.row.ownerEmployeeId,
+      },
     });
   }
 

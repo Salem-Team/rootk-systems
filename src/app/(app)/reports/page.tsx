@@ -42,6 +42,7 @@ export default function ReportsPage() {
     <PermissionGate anyOf={["reports.viewWeekly", "reports.viewMonthly"]}>
       <PageTransition>
         <PageHeader
+          eyebrow={t("nav.reports")}
           title={t("reports.title")}
           description={t("reports.description")}
         />

@@ -143,13 +143,26 @@ export class CrmCallsService {
       throw new BadRequestException("Feedback type not found");
     }
 
+    // Prefer a real Employee.id so Active/Inactive call metrics attribute correctly.
+    let recordedByEmployeeId: string | null =
+      actor.employeeId ?? lead.ownerEmployeeId ?? null;
+    if (recordedByEmployeeId) {
+      const recorder = await this.prisma.employee.findFirst({
+        where: { id: recordedByEmployeeId, companyId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!recorder) {
+        recordedByEmployeeId = lead.ownerEmployeeId ?? null;
+      }
+    }
+
     try {
       const saved = await this.prisma.$transaction(async (tx) => {
         const call = await tx.crmCall.create({
           data: {
             companyId,
             leadId,
-            employeeId: actor.employeeId || null,
+            employeeId: recordedByEmployeeId,
             phone,
             phoneNormalized,
             direction,
@@ -175,7 +188,7 @@ export class CrmCallsService {
             nextAction,
             nextFollowUpAt: nextFollowUpAt === undefined ? null : nextFollowUpAt,
             notes,
-            recordedByEmployeeId: actor.employeeId || null,
+            recordedByEmployeeId,
             createdBy: actor.userId,
             updatedBy: actor.userId,
             metadata: { callId: call.id },
@@ -204,7 +217,7 @@ export class CrmCallsService {
             type: CrmActivityType.call,
             title,
             description,
-            actorEmployeeId: actor.employeeId || null,
+            actorEmployeeId: recordedByEmployeeId,
             occurredAt: startedAt ?? new Date(),
             createdBy: actor.userId,
             updatedBy: actor.userId,

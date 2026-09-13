@@ -747,6 +747,91 @@
     @apply space-y-5 sm:space-y-6;
   }
 
+  .sticky-tabs {
+    position: sticky;
+    top: 3.25rem;
+    z-index: 15;
+    margin-inline: -0.25rem;
+    padding-block: 0.35rem;
+    background: color-mix(in oklab, var(--background) 92%, transparent);
+    backdrop-filter: blur(14px) saturate(1.15);
+    -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  }
+
+  @media (min-width: 640px) {
+    .sticky-tabs {
+      top: 3.4rem;
+      margin-inline: 0;
+      padding-block: 0.5rem;
+    }
+  }
+
+  /* Mobile-app segmented control helpers (optional — style TabsList yourself) */
+  .mobile-seg-list {
+    display: grid;
+    width: 100%;
+    min-height: 2.75rem;
+    gap: 0.25rem;
+    border-radius: 0.9rem;
+    border: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
+    background: var(--card);
+    padding: 0.25rem;
+    box-shadow: var(--shadow-card);
+  }
+
+  .touch-target {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    touch-action: manipulation;
+  }
+
+  .touch-row {
+    min-height: 3.25rem;
+    touch-action: manipulation;
+  }
+
+  /* Compact app-like page chrome on phones */
+  @media (max-width: 639px) {
+    .type-title {
+      font-size: 1.35rem;
+      letter-spacing: -0.03em;
+    }
+
+    .type-subtitle {
+      font-size: 0.8125rem;
+      line-height: 1.45;
+    }
+
+    .type-eyebrow {
+      font-size: 0.6875rem;
+    }
+  }
+
+  .mobile-fab {
+    position: fixed;
+    inset-inline-end: 1rem;
+    bottom: calc(5.75rem + env(safe-area-inset-bottom));
+    z-index: 35;
+    display: inline-flex;
+    height: 3.25rem;
+    min-width: 3.25rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 1rem;
+    padding-inline: 1.1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-float);
+    touch-action: manipulation;
+  }
+
+  @media (min-width: 1024px) {
+    .mobile-fab {
+      display: none;
+    }
+  }
+
   /**
    * Light cascade for direct page children (skip header — PageHeader has its own motion).
    * Uses transform + opacity via CSS so we don't nest another Framer opacity layer.

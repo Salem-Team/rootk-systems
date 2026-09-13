@@ -79,6 +79,44 @@ export class CrmLeadsService {
     };
   }
 
+  /** Accurate stage card totals — not capped by list pageSize. */
+  async countLeadsByStage(
+    companyId: string,
+    actor: Actor,
+    query: Record<string, string | undefined>
+  ) {
+    assertCap(actor, "view");
+    await this.shared.ensureDefaultStages(companyId);
+
+    const ownerIds = await this.shared.resolveOwnerIds(companyId, actor);
+    const where = buildLeadWhere(
+      this.shared,
+      companyId,
+      actor,
+      {
+        ...query,
+        status: query.status ?? CrmLeadStatus.active,
+      },
+      ownerIds
+    );
+
+    const [total, grouped] = await Promise.all([
+      this.prisma.crmLead.count({ where }),
+      this.prisma.crmLead.groupBy({
+        by: ["stageId"],
+        where,
+        _count: { _all: true },
+      }),
+    ]);
+
+    const byStage: Record<string, number> = {};
+    for (const row of grouped) {
+      byStage[row.stageId] = row._count._all;
+    }
+
+    return { total, byStage };
+  }
+
   async getLead(companyId: string, actor: Actor, id: string) {
     const lead = await this.shared.requireLead(companyId, actor, id);
     return mapLead(lead);

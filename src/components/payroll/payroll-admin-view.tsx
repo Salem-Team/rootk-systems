@@ -1,8 +1,8 @@
 "use client";
 
 import { PageHeader } from "@/components/shared/page-header";
+import { MobileSegmentedTabs } from "@/components/shared/mobile-segmented-tabs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { PayrollKpiRow } from "@/components/payroll/payroll-kpi-row";
 import { PayrollTimeline } from "@/components/payroll/payroll-timeline";
 import { PayrollPoliciesPanel } from "@/components/payroll/payroll-policies-panel";
@@ -22,6 +22,7 @@ import {
   getPayrollDashboard,
 } from "@/services/payroll.service";
 import { useTranslation } from "@/hooks/use-translation";
+import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
 import type {
   EmployeePayslip,
@@ -105,18 +106,25 @@ export function PayrollAdminView({
         title={t("payroll.title")}
         description={t("payroll.description")}
         actions={
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("payroll.personaLabel")}>
+          <div
+            className="flex flex-wrap gap-1.5 rounded-xl border border-border/70 bg-muted/40 p-1"
+            role="group"
+            aria-label={t("payroll.personaLabel")}
+          >
             {(["admin", "hr", "finance", "manager"] as PayrollPersona[]).map(
               (p) => (
                 <button
                   key={p}
                   type="button"
                   onClick={() => onPersonaChange(p)}
-                  className="focus-ring rounded-md"
+                  className={cn(
+                    "focus-ring h-8 rounded-lg px-2.5 text-[12px] font-semibold transition-colors",
+                    persona === p
+                      ? "bg-card text-foreground shadow-[var(--shadow-card)]"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
                 >
-                  <Badge variant={persona === p ? "default" : "outline"}>
-                    {t(`payroll.persona.${p}`)}
-                  </Badge>
+                  {t(`payroll.persona.${p}`)}
                 </button>
               )
             )}
@@ -127,29 +135,31 @@ export function PayrollAdminView({
       <PayrollKpiRow summary={summary} />
 
       <Tabs value={tab} onValueChange={onTabChange}>
-        <TabsList className="scroll-x flex h-auto w-full flex-nowrap justify-start gap-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible">
-          <TabsTrigger value="overview" className="shrink-0">
-            {t("payroll.tabOverview")}
-          </TabsTrigger>
-          <TabsTrigger value="ledger" className="shrink-0">
-            {t("payroll.tabLedger")}
-          </TabsTrigger>
-          <TabsTrigger value="salary" className="shrink-0">
-            {t("payroll.tabSalary")}
-          </TabsTrigger>
-          <TabsTrigger value="policies" className="shrink-0">
-            {t("payroll.tabPolicies")}
-          </TabsTrigger>
-          <TabsTrigger value="rules" className="shrink-0">
-            {t("payroll.tabRules")}
-          </TabsTrigger>
-          <TabsTrigger value="workflow" className="shrink-0">
-            {t("payroll.tabWorkflow")}
-          </TabsTrigger>
-          <TabsTrigger value="reports" className="shrink-0">
-            {t("payroll.tabReports")}
-          </TabsTrigger>
-        </TabsList>
+        <MobileSegmentedTabs className="lg:contents">
+          <TabsList className="scroll-x flex h-auto w-full flex-nowrap justify-start gap-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible">
+            <TabsTrigger value="overview" className="min-h-11 shrink-0 touch-manipulation">
+              {t("payroll.tabOverview")}
+            </TabsTrigger>
+            <TabsTrigger value="ledger" className="min-h-11 shrink-0 touch-manipulation">
+              {t("payroll.tabLedger")}
+            </TabsTrigger>
+            <TabsTrigger value="salary" className="min-h-11 shrink-0 touch-manipulation">
+              {t("payroll.tabSalary")}
+            </TabsTrigger>
+            <TabsTrigger value="policies" className="min-h-11 shrink-0 touch-manipulation">
+              {t("payroll.tabPolicies")}
+            </TabsTrigger>
+            <TabsTrigger value="rules" className="min-h-11 shrink-0 touch-manipulation">
+              {t("payroll.tabRules")}
+            </TabsTrigger>
+            <TabsTrigger value="workflow" className="min-h-11 shrink-0 touch-manipulation">
+              {t("payroll.tabWorkflow")}
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="min-h-11 shrink-0 touch-manipulation">
+              {t("payroll.tabReports")}
+            </TabsTrigger>
+          </TabsList>
+        </MobileSegmentedTabs>
 
         <TabsContent value="overview" className="mt-4 space-y-4">
           <div className="grid gap-4 xl:grid-cols-5">

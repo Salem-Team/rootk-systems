@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { emptyTaskForm, type TaskFormState } from "@/components/work/admin-work-panel-types";
+import { emptyTaskForm, nextTaskFormAfterCreate, type TaskFormState } from "@/components/work/admin-work-panel-types";
 import { hasPermissionId } from "@/constants/permissions";
 import { useLiveReload } from "@/hooks/use-live-reload";
 import { useTranslation } from "@/hooks/use-translation";
@@ -132,11 +132,12 @@ export function useTeamPage() {
     setTargetOpen(true);
   }
 
-  async function saveTask() {
+  async function saveTask(options?: { addAnother?: boolean }) {
     if (!taskForm.title.trim() || taskForm.assigneeIds.length === 0) {
       toast.error(t("workAdmin.validationTask"));
       return;
     }
+    const addAnother = Boolean(options?.addAnother);
     setTaskBusy(true);
     if (taskForm.countsAsOrganicAd) {
       const res = await assignOrganicAdsQuota({
@@ -154,10 +155,15 @@ export function useTeamPage() {
         toast.error(res.message ?? t("common.error"));
         return;
       }
-      setTaskOpen(false);
       emitTargetsUpdated();
-      toast.success(t("workAdmin.organicAdsAssigned"));
       await reload();
+      if (addAnother) {
+        setTaskForm((prev) => nextTaskFormAfterCreate(prev));
+        toast.success(t("workAdmin.taskCreatedAddAnother"));
+        return;
+      }
+      setTaskOpen(false);
+      toast.success(t("workAdmin.organicAdsAssigned"));
       return;
     }
     const res = await createWorkTask({
@@ -185,9 +191,14 @@ export function useTeamPage() {
       toast.error(res.message ?? t("common.error"));
       return;
     }
+    await reload();
+    if (addAnother) {
+      setTaskForm((prev) => nextTaskFormAfterCreate(prev));
+      toast.success(t("workAdmin.taskCreatedAddAnother"));
+      return;
+    }
     setTaskOpen(false);
     toast.success(t("workAdmin.taskCreated"));
-    await reload();
   }
 
   async function assignManagers(

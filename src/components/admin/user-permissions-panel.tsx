@@ -1,18 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-  RotateCcw,
-  Save,
-  Search,
-  Shield,
-  ShieldCheck,
-} from "lucide-react";
-import { toast } from "sonner";
+import { HubSkeleton } from "@/components/shared/loading-state";
+import { EmptyState } from "@/components/shared/empty-state";
+import { MobileActionBar } from "@/components/shared/mobile-action-bar";
 import {
   ALL_PERMISSION_IDS,
   permissionsForRole,
@@ -37,6 +27,20 @@ import type {
   UserPermissionSummary,
 } from "@/types/permissions";
 import type { AppUser } from "@/types";
+import { motion } from "framer-motion";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  RotateCcw,
+  Save,
+  Search,
+  Shield,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 function displayName(user: AppUser) {
   return user.displayName?.trim() || user.email;
@@ -155,11 +159,7 @@ export function UserPermissionsPanel() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
-    );
+    return <HubSkeleton />;
   }
 
   const actions = detail ? (
@@ -233,10 +233,16 @@ export function UserPermissionsPanel() {
         </div>
         <ul className="max-h-none space-y-0.5 p-2 lg:max-h-[70vh] lg:overflow-y-auto">
           {filteredUsers.length === 0 ? (
-            <li className="px-3 py-10 text-center text-sm text-muted-foreground">
-              {users.length === 0
-                ? t("permissions.noUsersLoaded")
-                : t("permissions.noUsers")}
+            <li>
+              <EmptyState
+                compact
+                icon={Users}
+                title={
+                  users.length === 0
+                    ? t("permissions.noUsersLoaded")
+                    : t("permissions.noUsers")
+                }
+              />
             </li>
           ) : (
             filteredUsers.map((row) => {
@@ -250,10 +256,8 @@ export function UserPermissionsPanel() {
                     aria-current={active ? "true" : undefined}
                     aria-label={t("permissions.openUser", { name })}
                     className={cn(
-                      "flex min-h-[3.75rem] w-full touch-manipulation items-center gap-3 rounded-xl px-2.5 py-2.5 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                      active
-                        ? "bg-primary/[0.08] text-foreground"
-                        : "hover:bg-muted/50 active:bg-muted/70"
+                      "list-row flex min-h-[3.75rem] w-full touch-manipulation items-center gap-3 px-2.5 py-2.5 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      active && "list-row-active"
                     )}
                   >
                     <Avatar className="h-10 w-10 border border-border/60">
@@ -424,11 +428,7 @@ export function UserPermissionsPanel() {
       </div>
 
       {mobileDetailOpen && detail ? (
-        <div className="pointer-events-none fixed inset-x-0 bottom-[5.5rem] z-30 px-3 pb-[env(safe-area-inset-bottom)] lg:hidden">
-          <div className="pointer-events-auto flex gap-2 rounded-2xl border border-border/70 bg-card/95 p-2 shadow-[var(--shadow-float)] backdrop-blur-xl">
-            {actions}
-          </div>
-        </div>
+        <MobileActionBar>{actions}</MobileActionBar>
       ) : null}
     </motion.section>
   );

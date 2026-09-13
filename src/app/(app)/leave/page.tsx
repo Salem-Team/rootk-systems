@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { MobileSegmentedTabs } from "@/components/shared/mobile-segmented-tabs";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageTransition } from "@/components/shared/page-transition";
 import { PageSkeleton } from "@/components/shared/loading-state";
@@ -34,6 +33,8 @@ import { useHasAnyPermission, useHasPermission } from "@/hooks/use-permission";
 import { useTranslation } from "@/hooks/use-translation";
 import { computeLeaveBalance } from "@/lib/leave-balance";
 import type { Employee, LeaveRequest } from "@/types";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 
 export default function LeavePage() {
   const { t } = useTranslation();
@@ -104,7 +105,7 @@ export default function LeavePage() {
   const createDialog = canRequestLeave ? (
     <Dialog open={createOpen} onOpenChange={setCreateOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full sm:w-auto">
+        <Button className="min-h-11 w-full touch-manipulation sm:w-auto">
           <Plus />
           {t("leave.newRequest")}
         </Button>
@@ -133,11 +134,7 @@ export default function LeavePage() {
             ? t("leaveWorkflow.pageDesc")
             : t("leave.employeePageDesc")
         }
-        actions={
-          createDialog ? (
-            <div className="hidden sm:block">{createDialog}</div>
-          ) : undefined
-        }
+        actions={createDialog ?? undefined}
       />
 
       <div className="mb-4 space-y-4 sm:mb-6 sm:space-y-6">
@@ -145,7 +142,6 @@ export default function LeavePage() {
           requests={canManageLeave ? requests : mine}
           compact={!canManageLeave}
         />
-        {createDialog ? <div className="sm:hidden">{createDialog}</div> : null}
       </div>
 
       <Tabs
@@ -154,20 +150,22 @@ export default function LeavePage() {
         className="space-y-6"
       >
         {canManageLeave ? (
-          <TabsList className="scroll-x flex h-auto w-full flex-nowrap justify-start gap-1 [scrollbar-width:none] sm:w-auto sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
-            <TabsTrigger value="workflow" className="shrink-0">
-              {t("leaveWorkflow.reviewTab")}
-            </TabsTrigger>
-            <TabsTrigger value="all" className="shrink-0">
-              {t("leave.allRequests")} ({requests.length})
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="shrink-0">
-              {t("leave.pendingTab")} ({pending.length})
-            </TabsTrigger>
-            <TabsTrigger value="mine" className="shrink-0">
-              {t("leave.myRequests")} ({mine.length})
-            </TabsTrigger>
-          </TabsList>
+          <MobileSegmentedTabs className="lg:contents">
+            <TabsList className="scroll-x flex h-auto w-full flex-nowrap justify-start gap-1 [scrollbar-width:none] sm:w-auto sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden lg:inline-flex">
+              <TabsTrigger value="workflow" className="min-h-11 shrink-0 touch-manipulation">
+                {t("leaveWorkflow.reviewTab")}
+              </TabsTrigger>
+              <TabsTrigger value="all" className="min-h-11 shrink-0 touch-manipulation">
+                {t("leave.allRequests")} ({requests.length})
+              </TabsTrigger>
+              <TabsTrigger value="pending" className="min-h-11 shrink-0 touch-manipulation">
+                {t("leave.pendingTab")} ({pending.length})
+              </TabsTrigger>
+              <TabsTrigger value="mine" className="min-h-11 shrink-0 touch-manipulation">
+                {t("leave.myRequests")} ({mine.length})
+              </TabsTrigger>
+            </TabsList>
+          </MobileSegmentedTabs>
         ) : null}
 
         {canManageLeave ? (
