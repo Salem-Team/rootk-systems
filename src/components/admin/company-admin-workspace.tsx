@@ -203,7 +203,7 @@ export function CompanyAdminWorkspace() {
         </AnimatePresence>
 
         {showSave ? (
-          <div className="pointer-events-none max-lg:fixed max-lg:inset-x-0 max-lg:bottom-[5.5rem] max-lg:z-30 max-lg:px-3 max-lg:pb-[env(safe-area-inset-bottom)] lg:flex lg:justify-end">
+          <div className="pointer-events-none max-lg:fixed max-lg:inset-x-0 max-lg:bottom-[var(--mobile-action-bottom)] max-lg:z-30 max-lg:px-3 lg:flex lg:justify-end">
             <Button
               size="lg"
               className="pointer-events-auto w-full min-h-12 shadow-[var(--shadow-float)] lg:w-auto lg:min-h-10 lg:shadow-none"

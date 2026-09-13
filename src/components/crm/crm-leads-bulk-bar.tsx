@@ -96,7 +96,7 @@ export function CrmLeadsBulkBar({
           exit={{ opacity: 0, y: 12, scale: 0.96 }}
           transition={snappySpring}
           className={cn(
-            "pointer-events-none fixed inset-x-0 bottom-[5.5rem] z-40 flex justify-center px-3 pb-[env(safe-area-inset-bottom)] lg:bottom-6",
+            "pointer-events-none fixed inset-x-0 bottom-[var(--mobile-action-bottom)] z-40 flex justify-center px-3 lg:bottom-6",
             sidebarCollapsed ? "lg:ps-[72px]" : "lg:ps-[252px]"
           )}
         >

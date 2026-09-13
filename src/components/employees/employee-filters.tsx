@@ -56,9 +56,9 @@ export function EmployeeFilters({
 
   return (
     <FilterShell sticky>
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
-          <div className="flex-1 space-y-2">
+      <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:gap-4">
+          <div className="flex-1 space-y-1.5 sm:space-y-2">
             <Label htmlFor="employee-search">{t("common.searchAria")}</Label>
             <div className="relative">
               <Search
@@ -71,14 +71,14 @@ export function EmployeeFilters({
                 placeholder={t("employees.searchPlaceholder")}
                 value={values.query}
                 onChange={(e) => onChange({ ...values, query: e.target.value })}
-                className="ps-9"
+                className="h-11 ps-9 sm:h-9"
                 aria-label={t("common.searchAria")}
               />
             </div>
           </div>
 
-          <div className="grid flex-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
-            <div className="space-y-2">
+          <div className="grid flex-1 grid-cols-1 gap-2.5 min-[420px]:grid-cols-2 lg:grid-cols-3 lg:gap-4">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label htmlFor="department-filter">{t("common.department")}</Label>
               <Select
                 value={values.department}
@@ -108,7 +108,7 @@ export function EmployeeFilters({
               </Select>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label htmlFor="status-filter">{t("common.status")}</Label>
               <Select
                 value={values.status}
@@ -135,7 +135,7 @@ export function EmployeeFilters({
               </Select>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label htmlFor="sort-filter">{t("employees.sortBy")}</Label>
               <Select
                 value={values.sort}

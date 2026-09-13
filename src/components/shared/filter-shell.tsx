@@ -9,7 +9,7 @@ interface FilterShellProps {
   className?: string;
   /** Tighter padding for compact toolbars. */
   compact?: boolean;
-  /** Stick below the navbar on scroll (mobile-friendly filters). */
+  /** Stick below the navbar on scroll — desktop only (not mobile). */
   sticky?: boolean;
 }
 
@@ -26,7 +26,7 @@ export function FilterShell({
     "toolbar-surface rounded-xl",
     compact ? "p-2.5 sm:p-3" : "p-3 sm:p-4",
     sticky &&
-      "sticky top-[3.4rem] z-20 -mx-1 backdrop-blur-xl supports-[backdrop-filter]:bg-card/90 sm:top-[3.55rem]",
+      "lg:sticky lg:top-[var(--chrome-sticky-top)] lg:z-20 lg:-mx-1 lg:backdrop-blur-xl lg:supports-[backdrop-filter]:bg-card/90",
     className
   );
 

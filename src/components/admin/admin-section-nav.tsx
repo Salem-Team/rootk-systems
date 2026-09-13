@@ -157,7 +157,7 @@ export function AdminSectionNav({
 
   return (
     <>
-      <div className="sticky top-[3.25rem] z-20 -mx-3 border-b border-border/50 bg-background/94 px-3 py-2 backdrop-blur-xl sm:top-[3.4rem] sm:-mx-4 sm:px-4 md:-mx-6 md:px-6 lg:hidden">
+      <div className="sticky top-[var(--chrome-sticky-top)] z-20 -mx-3 border-b border-border/50 bg-background/94 px-3 py-2 backdrop-blur-xl sm:-mx-4 sm:px-4 md:-mx-6 md:px-6 lg:hidden">
         <div
           className="flex items-center gap-1.5"
           role="tablist"

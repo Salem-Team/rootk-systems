@@ -199,7 +199,7 @@ function OrganicAdsPageContent() {
       />
 
       {page.canCreate ? (
-        <div className="fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 px-3 lg:hidden">
+        <div className="fixed inset-x-0 bottom-[var(--mobile-action-bottom)] z-30 px-3 lg:hidden">
           <Button
             type="button"
             className="h-12 w-full touch-manipulation rounded-2xl text-[15px] shadow-[var(--shadow-float)]"

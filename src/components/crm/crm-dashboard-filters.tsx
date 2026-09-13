@@ -62,6 +62,7 @@ export function CrmDashboardFiltersBar({
           type="button"
           size="sm"
           variant="outline"
+          className="min-h-11 w-full touch-manipulation"
           onClick={() => setOpen((v) => !v)}
         >
           <SlidersHorizontal className="me-1.5 h-3.5 w-3.5" />
