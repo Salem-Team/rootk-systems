@@ -13,7 +13,7 @@ export const ar: TranslationKeys = {
     signingIn: "جاري الدخول…",
     signOut: "سجّل خروج",
     email: "إيميل الشغل",
-    emailPlaceholder: "name@rootk.systems",
+    emailPlaceholder: "اكتب إيميل الشغل",
     password: "كلمة المرور",
     passwordPlaceholder: "اكتب كلمة المرور",
     showPassword: "إظهار كلمة المرور",
