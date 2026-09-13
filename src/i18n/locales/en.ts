@@ -11,7 +11,7 @@ export const en = {
     signingIn: "Signing in…",
     signOut: "Sign out",
     email: "Work email",
-    emailPlaceholder: "name@rootk.systems",
+    emailPlaceholder: "Enter your work email",
     password: "Password",
     passwordPlaceholder: "Enter your password",
     showPassword: "Show password",
