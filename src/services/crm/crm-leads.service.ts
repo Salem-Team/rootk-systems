@@ -1,8 +1,10 @@
 import {
   deleteCrmLead,
   fetchCrmLead,
+  fetchCrmLeadCounts,
   fetchCrmLeads,
   postCrmBulkLeads,
+  type CrmLeadStageCounts,
 } from "@/api/crm.api";
 import { isApiMode } from "@/lib/env";
 import { NotFoundError } from "@/lib/errors";
@@ -30,6 +32,36 @@ import {
 import { updateCrmLead } from "@/services/crm/crm-lead-mutations.service";
 
 export { createCrmLead, updateCrmLead } from "@/services/crm/crm-lead-mutations.service";
+
+export async function getCrmLeadCounts(
+  filters: Pick<
+    CrmLeadFilters,
+    "status" | "source" | "ownerEmployeeId" | "search" | "tag" | "followUp"
+  > = {}
+): Promise<ApiResponse<CrmLeadStageCounts>> {
+  const scoped = scopeCrmFiltersToActor(filters);
+  if (isApiMode()) {
+    return fetchCrmLeadCounts(scoped);
+  }
+  try {
+    await simulateDelay();
+    assertCap("view");
+    await ensureCatalog();
+    const all = await crmLeadRepository.findAll();
+    const filtered = filterLeads(
+      all,
+      { ...scoped, status: scoped.status ?? "active" },
+      await crmLeadFilterScope()
+    );
+    const byStage: Record<string, number> = {};
+    for (const lead of filtered) {
+      byStage[lead.stageId] = (byStage[lead.stageId] ?? 0) + 1;
+    }
+    return ok({ total: filtered.length, byStage });
+  } catch (error) {
+    return fromError(error, { total: 0, byStage: {} });
+  }
+}
 
 export async function getCrmLeads(
   filters: CrmLeadFilters = {}

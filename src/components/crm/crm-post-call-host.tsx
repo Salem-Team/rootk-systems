@@ -14,6 +14,7 @@ import { emitCrmUpdated } from "@/lib/events";
 
 /**
  * After a tel: dial, prompt for the call result on web focus / native resume.
+ * Dismissing the dialog still records the call (unknown) for user performance.
  * Does not read iOS or Android call logs.
  */
 export function CrmPostCallHost() {
@@ -55,7 +56,7 @@ export function CrmPostCallHost() {
   function handleOpenChange(next: boolean) {
     setOpen(next);
     if (!next) {
-      clearPendingCall();
+      if (pending) clearPendingCall(pending.externalCallId);
       setPending(null);
     }
   }

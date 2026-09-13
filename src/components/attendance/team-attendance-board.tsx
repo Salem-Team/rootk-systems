@@ -26,7 +26,13 @@ function matchesFilter(status: AttendanceStatus, filter: BoardFilter) {
   return status === filter;
 }
 
-export function TeamAttendanceBoard() {
+export function TeamAttendanceBoard({
+  selectedEmployeeId,
+  onSelectEmployee,
+}: {
+  selectedEmployeeId?: string;
+  onSelectEmployee?: (employeeId: string) => void;
+} = {}) {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
   const [loading, setLoading] = useState(true);
@@ -215,7 +221,13 @@ export function TeamAttendanceBoard() {
                 className="space-y-2"
               >
                 {rows.map(({ employee, record }) => (
-                  <TeamAttendanceRow key={employee.id} employee={employee} record={record} />
+                  <TeamAttendanceRow
+                    key={employee.id}
+                    employee={employee}
+                    record={record}
+                    selected={selectedEmployeeId === employee.id}
+                    onSelect={onSelectEmployee}
+                  />
                 ))}
               </motion.ul>
             )}

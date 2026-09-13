@@ -70,7 +70,7 @@ export function TargetFiltersBar({
     : undefined;
 
   return (
-    <FilterShell className={className}>
+    <FilterShell sticky className={className}>
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative min-w-0 flex-1">

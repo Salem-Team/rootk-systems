@@ -9,11 +9,13 @@ import {
   CrmActivityType,
   CrmLeadStatus,
   CrmStageCategory,
+  NotificationAudience,
   type CrmLead,
   type Prisma,
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { employeeIdsForScope } from "../common/employee-scope";
+import { NotificationsService } from "../notifications/notifications.service";
 import {
   assertCap,
   canViewOthersLeads,
@@ -30,7 +32,10 @@ import {
 
 @Injectable()
 export class CrmSharedService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService
+  ) {}
 
   async ensureDefaultStages(companyId: string, actorId = CRM_SYSTEM_ACTOR_ID) {
     const count = await this.prisma.crmStage.count({
@@ -291,5 +296,84 @@ export class CrmSharedService {
       }
     }
     return stage;
+  }
+
+  /**
+   * Notify the sales owner when a lead is assigned to them (not self-assign).
+   * Never throws — assignment must not fail because of notifications.
+   */
+  async notifyLeadAssignedToOwner(opts: {
+    companyId: string;
+    actor: Actor;
+    lead: {
+      id: string;
+      name: string;
+      phone: string | null;
+      companyName: string | null;
+      stageId: string;
+      ownerEmployeeId: string | null;
+    };
+  }): Promise<void> {
+    const ownerEmployeeId = opts.lead.ownerEmployeeId?.trim() || "";
+    if (!ownerEmployeeId) return;
+    if (
+      opts.actor.employeeId &&
+      ownerEmployeeId === opts.actor.employeeId
+    ) {
+      return;
+    }
+
+    try {
+      const users = await this.prisma.user.findMany({
+        where: {
+          companyId: opts.companyId,
+          employeeId: ownerEmployeeId,
+          deletedAt: null,
+          isActive: true,
+        },
+        select: { id: true },
+      });
+      const recipientIds = users
+        .map((u) => u.id)
+        .filter((id) => id && id !== opts.actor.userId);
+      if (recipientIds.length === 0) return;
+
+      let stageName = "—";
+      if (opts.lead.stageId) {
+        const stage = await this.prisma.crmStage.findFirst({
+          where: {
+            id: opts.lead.stageId,
+            companyId: opts.companyId,
+            deletedAt: null,
+          },
+          select: { name: true },
+        });
+        if (stage?.name) stageName = stage.name;
+      }
+
+      const actorName = await this.actorName(opts.actor);
+      await this.notifications.notifyDomain({
+        companyId: opts.companyId,
+        actorId: opts.actor.userId,
+        category: "work",
+        priority: "high",
+        audience: NotificationAudience.employee,
+        titleKey: "notifications.crmLeadAssignedTitle",
+        bodyKey: "notifications.crmLeadAssignedBody",
+        vars: {
+          actor: actorName,
+          name: opts.lead.name || "—",
+          phone: (opts.lead.phone || "").trim() || "—",
+          company: (opts.lead.companyName || "").trim() || "—",
+          stage: stageName,
+        },
+        href: `/crm?lead=${opts.lead.id}`,
+        entityType: "crm_lead",
+        entityId: opts.lead.id,
+        recipientIds,
+      });
+    } catch {
+      /* assignment must succeed even if notify fails */
+    }
   }
 }

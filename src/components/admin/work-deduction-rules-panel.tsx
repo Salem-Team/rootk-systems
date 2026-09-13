@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Plus, Save, Trash2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { DeductionChargeEditor } from "@/components/admin/deduction-charge-editor";
+import { FormSkeleton } from "@/components/shared/loading-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -103,11 +104,7 @@ export function WorkDeductionRulesPanel() {
   ];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-10 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
-    );
+    return <FormSkeleton />;
   }
 
   return (

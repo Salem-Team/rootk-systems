@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Users,
   UserCheck,
   UserX,
   Clock,
@@ -10,10 +9,6 @@ import {
   CalendarOff,
 } from "lucide-react";
 import { KpiCard } from "@/components/dashboard/kpi-card";
-import {
-  sparklineFor,
-  trendDelta,
-} from "@/components/dashboard/dashboard-mock-data";
 import { StaggerItem, StaggerRoot } from "@/components/shared/stagger";
 import { useTranslation } from "@/hooks/use-translation";
 import type { DashboardStats } from "@/types";
@@ -29,6 +24,8 @@ export function KpiCards({ stats }: { stats: DashboardStats }) {
       icon: UserCheck,
       tone: "text-emerald-700 dark:text-emerald-400",
       badge: t("dashboard.liveNow"),
+      href: "/attendance",
+      hint: t("dashboard.kpiHintPresent"),
     },
     {
       key: "late",
@@ -36,6 +33,8 @@ export function KpiCards({ stats }: { stats: DashboardStats }) {
       value: stats.late,
       icon: Clock,
       tone: "text-amber-700 dark:text-amber-400",
+      href: "/attendance",
+      hint: t("dashboard.kpiHintLate"),
     },
     {
       key: "wfh",
@@ -43,6 +42,8 @@ export function KpiCards({ stats }: { stats: DashboardStats }) {
       value: stats.wfh,
       icon: Home,
       tone: "text-sky-700 dark:text-sky-400",
+      href: "/attendance",
+      hint: t("dashboard.kpiHintWfh"),
     },
     {
       key: "absent",
@@ -50,6 +51,8 @@ export function KpiCards({ stats }: { stats: DashboardStats }) {
       value: stats.absent,
       icon: UserX,
       tone: "text-rose-700 dark:text-rose-400",
+      href: "/attendance",
+      hint: t("dashboard.kpiHintAbsent"),
     },
     {
       key: "onLeave",
@@ -57,6 +60,8 @@ export function KpiCards({ stats }: { stats: DashboardStats }) {
       value: stats.onLeave,
       icon: CalendarOff,
       tone: "text-violet-700 dark:text-violet-400",
+      href: "/leave",
+      hint: t("dashboard.kpiHintLeave"),
     },
     {
       key: "rate",
@@ -66,20 +71,15 @@ export function KpiCards({ stats }: { stats: DashboardStats }) {
       tone: "text-teal-800 dark:text-teal-300",
       suffix: "%",
       decimals: 1,
-    },
-    {
-      key: "total",
-      label: t("dashboard.totalEmployees"),
-      value: stats.totalEmployees,
-      icon: Users,
-      tone: "text-primary",
+      href: "/reports",
+      hint: t("dashboard.kpiHintRate"),
     },
   ] as const;
 
   return (
     <StaggerRoot
       speed="fast"
-      className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7"
+      className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
       role="list"
       aria-label={t("dashboard.executiveOverview")}
     >
@@ -92,9 +92,9 @@ export function KpiCards({ stats }: { stats: DashboardStats }) {
             decimals={"decimals" in item ? item.decimals : 0}
             icon={item.icon}
             tone={item.tone}
-            trend={trendDelta(item.key)}
-            spark={sparklineFor(item.key)}
             badge={"badge" in item ? item.badge : undefined}
+            href={item.href}
+            hint={item.hint}
           />
         </StaggerItem>
       ))}

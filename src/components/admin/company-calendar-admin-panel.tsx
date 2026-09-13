@@ -6,6 +6,7 @@ import { ar as arLocale, enUS } from "date-fns/locale";
 import { motion, useReducedMotion } from "framer-motion";
 import { CalendarDays, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { FormSkeleton } from "@/components/shared/loading-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -93,11 +94,7 @@ export function CompanyCalendarAdminPanel() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
-    );
+    return <FormSkeleton />;
   }
 
   return (

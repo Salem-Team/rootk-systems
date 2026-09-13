@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Building2, Clock, Globe2, Loader2, MapPin } from "lucide-react";
+import { Building2, Clock, Globe2, MapPin } from "lucide-react";
+import { FormSkeleton } from "@/components/shared/loading-state";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
 import type { CompanySettings } from "@/types";
@@ -79,8 +80,8 @@ export function CompanyBranchesSection({
           </Button>
         </div>
         {loadingMeta ? (
-          <div className="panel-body flex justify-center py-10 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" />
+          <div className="panel-body">
+            <FormSkeleton />
           </div>
         ) : (
           <ul className="panel-body grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

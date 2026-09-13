@@ -23,6 +23,11 @@ export {
 } from "@/services/notify-people.service";
 
 export {
+  notifyCrmFeedbackMentions,
+  notifyCrmLeadAssigned,
+} from "@/services/notify-crm.service";
+
+export {
   notifyMeetingScheduled,
   notifyPayrollAdvanced,
   notifyTargetAssigned,

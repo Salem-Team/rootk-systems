@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { FormSkeleton } from "@/components/shared/loading-state";
 import {
   deleteLocation,
   getLocations,
@@ -12,6 +12,7 @@ import {
 } from "@/services/org.service";
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
+import { getBrowserLocation } from "@/lib/geo";
 import type { OfficeLocation } from "@/types/org";
 import { EMPTY_LOCATION_DRAFT, LocationForm } from "./location-form";
 import { LocationCard } from "./location-card";
@@ -24,6 +25,7 @@ export function LocationsAdminPanel() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [resolvingMaps, setResolvingMaps] = useState(false);
+  const [locatingDevice, setLocatingDevice] = useState(false);
 
   async function reload() {
     const res = await getLocations();
@@ -61,6 +63,32 @@ export function LocationsAdminPanel() {
       longitude: String(res.data!.longitude),
     }));
     toast.success(t("admin.mapsUrlApplied"));
+  }
+
+  async function useMyLocation() {
+    setLocatingDevice(true);
+    try {
+      const coords = await getBrowserLocation({
+        enableHighAccuracy: true,
+        timeout: 25_000,
+        maximumAge: 0,
+      });
+      setDraft((d) => ({
+        ...d,
+        latitude: String(coords.latitude),
+        longitude: String(coords.longitude),
+      }));
+      toast.success(t("admin.useMyLocationApplied"));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (/permission denied/i.test(msg)) {
+        toast.error(t("errors.locationPermissionDenied"));
+      } else {
+        toast.error(t("errors.locationUnavailable"));
+      }
+    } finally {
+      setLocatingDevice(false);
+    }
   }
 
   async function onSave() {
@@ -143,11 +171,7 @@ export function LocationsAdminPanel() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
-    );
+    return <FormSkeleton />;
   }
 
   return (
@@ -171,7 +195,9 @@ export function LocationsAdminPanel() {
         setDraft={setDraft}
         busy={busy}
         resolvingMaps={resolvingMaps}
+        locatingDevice={locatingDevice}
         onApplyMapsUrl={applyMapsUrl}
+        onUseMyLocation={useMyLocation}
         onSave={onSave}
         onCancel={() => setDraft(EMPTY_LOCATION_DRAFT)}
       />

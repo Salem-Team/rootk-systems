@@ -1,19 +1,9 @@
 "use client";
 
-import { format } from "date-fns";
-import { ar as arLocale, enUS } from "date-fns/locale";
-import { Download } from "lucide-react";
-import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/empty-state";
+import { SectionPanel } from "@/components/shared/section-panel";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { LateDurationBadge } from "@/components/shared/late-duration-badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   DataTable,
@@ -29,6 +19,10 @@ import { departmentLabel } from "@/lib/department-label";
 import { downloadCsv, formatHours } from "@/lib/utils";
 import { formatHmDuration } from "@/lib/duration-format";
 import type { AttendanceRecord, Employee } from "@/types";
+import { format } from "date-fns";
+import { ar as arLocale, enUS } from "date-fns/locale";
+import { Download } from "lucide-react";
+import { toast } from "sonner";
 
 export function SectionIntro({
   title,
@@ -100,70 +94,67 @@ export function AttendanceTable({
 
   if (records.length === 0) {
     return (
-      <Card className="surface-panel border-0 shadow-none">
-        <CardContent className="pt-6">
-          <EmptyState compact title={title} description={description} />
-        </CardContent>
-      </Card>
+      <SectionPanel interactive={false} bare>
+        <EmptyState compact title={title} description={description} />
+      </SectionPanel>
     );
   }
 
   return (
-    <Card className="surface-panel overflow-hidden border-0 shadow-none">
-      <CardHeader className="flex flex-col items-stretch gap-3 space-y-0 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <CardTitle>{t("reports.detailTitle")}</CardTitle>
-          <CardDescription>
-            {records.length} · {t("reports.detailDesc")}
-          </CardDescription>
-        </div>
-        <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleExport}>
+    <SectionPanel
+      interactive={false}
+      title={t("reports.detailTitle")}
+      description={`${records.length} · ${t("reports.detailDesc")}`}
+      actions={
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full sm:w-auto"
+          onClick={handleExport}
+        >
           <Download />
           {t("common.exportCsv")}
         </Button>
-      </CardHeader>
-      <CardContent>
-        <ul className="grid gap-2 md:hidden">
-          {records.slice(0, 40).map((record) => {
-            const employee = employees.get(record.employeeId);
-            return (
-              <li
-                key={record.id}
-                className="rounded-xl border border-border/70 bg-card px-3 py-3"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-[13px] font-semibold">
-                      {employee?.name ?? record.employeeId}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">
-                      {employee?.department
-                        ? departmentLabel(employee.department, t)
-                        : "—"}{" "}
-                      · {record.date}
-                    </p>
-                  </div>
-                  <StatusBadge status={record.status} />
+      }
+    >
+      <ul className="grid gap-2 md:hidden">
+        {records.slice(0, 40).map((record) => {
+          const employee = employees.get(record.employeeId);
+          return (
+            <li key={record.id} className="list-row px-3 py-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-[13px] font-semibold">
+                    {employee?.name ?? record.employeeId}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    {employee?.department
+                      ? departmentLabel(employee.department, t)
+                      : "—"}{" "}
+                    · {record.date}
+                  </p>
                 </div>
-                <p className="mt-2 text-[12px] text-muted-foreground">
-                  {record.checkIn
-                    ? format(new Date(record.checkIn), "h:mm a", {
-                        locale: dateLocale,
-                      })
+                <StatusBadge status={record.status} />
+              </div>
+              <p className="mt-2 text-[12px] text-muted-foreground">
+                {record.checkIn
+                  ? format(new Date(record.checkIn), "h:mm a", {
+                      locale: dateLocale,
+                    })
+                  : "—"}
+                {" · "}
+                {showHours
+                  ? formatHours(record.workingMinutes)
+                  : record.lateMinutes > 0
+                    ? formatHmDuration(record.lateMinutes, t)
                     : "—"}
-                  {" · "}
-                  {showHours
-                    ? formatHours(record.workingMinutes)
-                    : record.lateMinutes > 0
-                      ? formatHmDuration(record.lateMinutes, t)
-                      : "—"}
-                </p>
-              </li>
-            );
-          })}
-        </ul>
-        <div className="hidden md:block">
-        <DataTable className="min-w-[36rem] sm:min-w-[640px]">
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="hidden md:block">
+        <DataTable embedded className="min-w-[36rem] sm:min-w-[640px]">
           <DataTableHeader>
             <DataTableHeaderRow>
               <DataTableHead>{t("common.name")}</DataTableHead>
@@ -203,23 +194,22 @@ export function AttendanceTable({
                   <DataTableCell>
                     {showHours
                       ? formatHours(record.workingMinutes)
-                      : record.lateMinutes > 0
-                        ? (
-                            <LateDurationBadge
-                              minutes={record.lateMinutes}
-                              size="sm"
-                              durationOnly
-                            />
-                          )
-                        : "—"}
+                      : record.lateMinutes > 0 ? (
+                          <LateDurationBadge
+                            minutes={record.lateMinutes}
+                            size="sm"
+                            durationOnly
+                          />
+                        ) : (
+                          "—"
+                        )}
                   </DataTableCell>
                 </DataTableRow>
               );
             })}
           </DataTableBody>
         </DataTable>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </SectionPanel>
   );
 }

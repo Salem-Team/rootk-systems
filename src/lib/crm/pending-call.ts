@@ -82,8 +82,17 @@ export function pendingCallDurationSeconds(pending: PendingCrmCall): number {
   return elapsedCallSeconds(pending.startedAt, pending.endedAt);
 }
 
-export function clearPendingCall(): void {
-  storage()?.removeItem(KEY);
+export function clearPendingCall(externalCallId?: string): void {
+  const store = storage();
+  if (!store) return;
+  if (!externalCallId) {
+    store.removeItem(KEY);
+    return;
+  }
+  const current = readPendingCall();
+  if (!current || current.externalCallId === externalCallId) {
+    store.removeItem(KEY);
+  }
 }
 
 export function pendingCallIsRipe(minMs = 1500): boolean {

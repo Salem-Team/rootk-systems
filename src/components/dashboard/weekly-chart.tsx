@@ -46,17 +46,22 @@ export function WeeklyChart({ data }: { data: WeeklyStat[] }) {
 
   return (
     <Reveal preset="scale" inView={false}>
-      <section className="surface-panel overflow-hidden">
-        <div className="panel-header">
-          <h3 className="text-[0.95rem] font-semibold tracking-tight">
-            {t("dashboard.weeklyTitle")}
-          </h3>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            {t("dashboard.weeklyDesc")}
-          </p>
+      <section className="surface-panel h-full overflow-hidden">
+        <div className="panel-header flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-[0.95rem] font-semibold tracking-tight">
+              {t("dashboard.weeklyTitle")}
+            </h3>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {t("dashboard.weeklyDesc")}
+            </p>
+          </div>
+          <span className="shrink-0 rounded-md border border-border/70 bg-muted/40 px-2 py-1 text-[11px] font-medium text-muted-foreground">
+            {t("dashboard.last7Days")}
+          </span>
         </div>
         <div
-          className="panel-body h-[320px]"
+          className="panel-body h-[300px] sm:h-[320px]"
           role="img"
           aria-label={t("dashboard.weeklyTitle")}
         >

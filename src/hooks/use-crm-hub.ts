@@ -63,6 +63,10 @@ export function useCrmHub() {
   const [dashboard, setDashboard] = useState<CrmDashboard | null>(null);
   const [leadsPage, setLeadsPage] = useState<PaginatedLeads | null>(null);
   const [pipelineLeads, setPipelineLeads] = useState<CrmLead[]>([]);
+  const [leadStageCounts, setLeadStageCounts] = useState<{
+    total: number;
+    byStage: Record<string, number>;
+  } | null>(null);
   const [activities, setActivities] = useState<CrmLeadActivity[]>([]);
   const [feedback, setFeedback] = useState<CrmLeadFeedback[]>([]);
   const [performance, setPerformance] = useState<CrmSalesPerformanceRow[]>([]);
@@ -74,7 +78,7 @@ export function useCrmHub() {
   const [leadFilters, setLeadFilters] = useState<CrmLeadFilters>({
     page: 1,
     pageSize: 20,
-    sort: "updatedAt",
+    sort: "createdAt",
     order: "desc",
   });
   /** Owner filter for leads stage cards — local only so counts update without reload. */
@@ -106,6 +110,7 @@ export function useCrmHub() {
     loadCore,
     loadDashboard,
     loadLeads,
+    loadLeadCounts,
     loadPipeline,
     loadActivities,
     loadFeedback,
@@ -115,6 +120,7 @@ export function useCrmHub() {
     canViewPerformance,
     dashFilters,
     leadFilters,
+    overviewOwnerEmployeeId,
     setStages,
     setFeedbackTypes,
     setBusinessTypes,
@@ -122,6 +128,7 @@ export function useCrmHub() {
     setDashboard,
     setLeadsPage,
     setPipelineLeads,
+    setLeadStageCounts,
     setActivities,
     setActivityLeads,
     setFeedback,
@@ -138,6 +145,7 @@ export function useCrmHub() {
     if (tab === "leads") {
       if (leadsView === "table") jobs.push(loadLeads());
       jobs.push(loadPipeline());
+      jobs.push(loadLeadCounts());
     }
     if (tab === "delay") jobs.push(loadLeads());
     if (tab === "pipeline") jobs.push(loadPipeline());
@@ -156,6 +164,7 @@ export function useCrmHub() {
     loadCore,
     loadDashboard,
     loadLeads,
+    loadLeadCounts,
     loadPipeline,
     loadActivities,
     loadFeedback,
@@ -335,14 +344,23 @@ export function useCrmHub() {
   }, [safePipelineLeads, overviewOwnerEmployeeId]);
 
   const stageCounts = useMemo(() => {
+    if (leadStageCounts) {
+      return Object.entries(leadStageCounts.byStage).map(([stageId, count]) => ({
+        stageId,
+        count,
+      }));
+    }
     const map = new Map<string, number>();
     for (const lead of overviewLeads) {
       map.set(lead.stageId, (map.get(lead.stageId) ?? 0) + 1);
     }
     return [...map.entries()].map(([stageId, count]) => ({ stageId, count }));
-  }, [overviewLeads]);
+  }, [leadStageCounts, overviewLeads]);
 
-  const overviewTotal = useMemo(() => overviewLeads.length, [overviewLeads]);
+  const overviewTotal = useMemo(() => {
+    if (leadStageCounts) return leadStageCounts.total;
+    return overviewLeads.length;
+  }, [leadStageCounts, overviewLeads]);
 
   return {
     canCreate,

@@ -45,27 +45,7 @@ export class WebsiteLeadIngestController {
       throw new BadRequestException("name and phone are required");
     }
 
-    const notesParts = [
-      String(body.notes ?? "").trim(),
-      body.campaignSlug
-        ? `campaign=${String(body.campaignSlug).trim()}`
-        : "",
-      body.landingPagePath
-        ? `landing=${String(body.landingPagePath).trim()}`
-        : "",
-      body.utmSource ? `utm_source=${String(body.utmSource).trim()}` : "",
-      body.utmMedium ? `utm_medium=${String(body.utmMedium).trim()}` : "",
-      body.utmCampaign
-        ? `utm_campaign=${String(body.utmCampaign).trim()}`
-        : "",
-      body.metaEventId
-        ? `metaEventId=${String(body.metaEventId).trim()}`
-        : "",
-      body.leadUuid ? `websiteLeadUuid=${String(body.leadUuid).trim()}` : "",
-      body.submissionId
-        ? `submissionId=${String(body.submissionId).trim()}`
-        : "",
-    ].filter(Boolean);
+    const notes = String(body.notes ?? "").trim().slice(0, 2000);
 
     const actor: Actor = {
       userId: "website-ingest",
@@ -85,7 +65,7 @@ export class WebsiteLeadIngestController {
         email: String(body.email ?? "").trim(),
         companyName: String(body.companyName ?? body.company ?? "").trim(),
         source: body.source ?? "website",
-        notes: notesParts.join("\n"),
+        notes,
         tags: Array.isArray(body.tags) ? body.tags : ["website", "campaign"],
         nextAction: "follow_up",
       });

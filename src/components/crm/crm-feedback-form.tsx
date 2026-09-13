@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -158,13 +159,13 @@ export function CrmFeedbackForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[min(92dvh,880px)] flex-col gap-0 overflow-hidden sm:max-w-lg">
+        <DialogHeader className="shrink-0 border-b border-border/50 pb-3">
           <DialogTitle>{t("crm.feedback.formTitle")}</DialogTitle>
           <DialogDescription>{t("crm.feedback.formDesc")}</DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-5">
+        <DialogBody className="grid gap-5 py-4">
           <section className="grid gap-2.5">
             <h3 className="text-[13px] font-semibold tracking-tight">
               {t("crm.feedback.sectionLead")}
@@ -235,16 +236,22 @@ export function CrmFeedbackForm({
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-1.5">
-                <Label htmlFor="crm-fb-next-action">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3.5">
+              <div className="grid min-w-0 gap-1.5">
+                <Label
+                  htmlFor="crm-fb-next-action"
+                  className="text-[13px] leading-snug sm:text-sm"
+                >
                   {t("crm.feedback.nextAction")}
                 </Label>
                 <Select
                   value={nextAction}
                   onValueChange={(v) => setNextAction(v as CrmNextAction)}
                 >
-                  <SelectTrigger id="crm-fb-next-action">
+                  <SelectTrigger
+                    id="crm-fb-next-action"
+                    className="h-10 min-w-0 touch-manipulation sm:h-9"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -256,30 +263,49 @@ export function CrmFeedbackForm({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="crm-fb-next-at">
+              <div className="grid min-w-0 gap-1.5">
+                <Label
+                  htmlFor="crm-fb-next-at"
+                  className="text-[13px] leading-snug sm:text-sm"
+                >
                   {t("crm.feedback.nextFollowUp")}
                 </Label>
                 <Input
                   id="crm-fb-next-at"
                   type="datetime-local"
+                  dir="ltr"
                   value={nextFollowUpAt}
                   onChange={(e) => setNextFollowUpAt(e.target.value)}
+                  className={cn(
+                    "h-10 min-w-0 touch-manipulation tabular-nums sm:h-9",
+                    "[color-scheme:light] dark:[color-scheme:dark]",
+                    "[&::-webkit-calendar-picker-indicator]:ms-1 [&::-webkit-calendar-picker-indicator]:opacity-70",
+                    "[&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:min-w-0"
+                  )}
                 />
               </div>
             </div>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[11px] leading-relaxed text-muted-foreground sm:text-[12px]">
               {t("crm.feedback.nextActionHint")}
             </p>
             {nextAction === "meeting" ? (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="grid gap-1.5">
-                  <Label>{t("crm.feedback.meetingMode")}</Label>
+              <div
+                className={cn(
+                  "grid gap-3 sm:gap-3.5",
+                  meetingMode === "offline"
+                    ? "grid-cols-1 sm:grid-cols-2"
+                    : "grid-cols-1"
+                )}
+              >
+                <div className="grid min-w-0 gap-1.5">
+                  <Label className="text-[13px] leading-snug sm:text-sm">
+                    {t("crm.feedback.meetingMode")}
+                  </Label>
                   <Select
                     value={meetingMode}
                     onValueChange={(v) => setMeetingMode(v as CrmMeetingMode)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-10 min-w-0 touch-manipulation sm:h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -293,15 +319,17 @@ export function CrmFeedbackForm({
                   </Select>
                 </div>
                 {meetingMode === "offline" ? (
-                  <div className="grid gap-1.5">
-                    <Label>{t("crm.feedback.meetingLocation")}</Label>
+                  <div className="grid min-w-0 gap-1.5">
+                    <Label className="text-[13px] leading-snug sm:text-sm">
+                      {t("crm.feedback.meetingLocation")}
+                    </Label>
                     <Select
                       value={meetingLocation}
                       onValueChange={(v) =>
                         setMeetingLocation(v as CrmMeetingLocation)
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-10 min-w-0 touch-manipulation sm:h-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -369,9 +397,9 @@ export function CrmFeedbackForm({
               />
             </div>
           </section>
-        </div>
+        </DialogBody>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0">
           <Button
             type="button"
             variant="outline"

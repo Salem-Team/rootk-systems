@@ -12,6 +12,7 @@ import {
   getCrmDashboard,
   getCrmFeedbackList,
   getCrmFeedbackTypes,
+  getCrmLeadCounts,
   getCrmLeads,
   getCrmPerformance,
   getCrmStages,
@@ -31,11 +32,17 @@ import type {
   PaginatedLeads,
 } from "@/types/crm";
 
+export type CrmLeadStageCountsState = {
+  total: number;
+  byStage: Record<string, number>;
+};
+
 interface UseCrmHubLoadersArgs {
   canViewDashboard: boolean;
   canViewPerformance: boolean;
   dashFilters: CrmDashboardFilters;
   leadFilters: CrmLeadFilters;
+  overviewOwnerEmployeeId?: string;
   setStages: (v: CrmStage[]) => void;
   setFeedbackTypes: (v: CrmFeedbackType[]) => void;
   setBusinessTypes: (v: CrmBusinessType[]) => void;
@@ -43,6 +50,7 @@ interface UseCrmHubLoadersArgs {
   setDashboard: (v: CrmDashboard | null) => void;
   setLeadsPage: (v: PaginatedLeads | null) => void;
   setPipelineLeads: (v: CrmLead[]) => void;
+  setLeadStageCounts: (v: CrmLeadStageCountsState | null) => void;
   setActivities: (v: CrmLeadActivity[]) => void;
   setActivityLeads: (v: CrmLead[]) => void;
   setFeedback: (v: CrmLeadFeedback[]) => void;
@@ -55,6 +63,7 @@ export function useCrmHubLoaders({
   canViewPerformance,
   dashFilters,
   leadFilters,
+  overviewOwnerEmployeeId,
   setStages,
   setFeedbackTypes,
   setBusinessTypes,
@@ -62,6 +71,7 @@ export function useCrmHubLoaders({
   setDashboard,
   setLeadsPage,
   setPipelineLeads,
+  setLeadStageCounts,
   setActivities,
   setActivityLeads,
   setFeedback,
@@ -94,6 +104,21 @@ export function useCrmHubLoaders({
     if (res.success) setLeadsPage(ensurePaginatedLeads(res.data));
     else setLeadsPage(ensurePaginatedLeads(null));
   }, [leadFilters, setLeadsPage]);
+
+  const loadLeadCounts = useCallback(async () => {
+    const res = await getCrmLeadCounts({
+      status: "active",
+      ownerEmployeeId: overviewOwnerEmployeeId,
+    });
+    if (res.success && res.data) {
+      setLeadStageCounts({
+        total: res.data.total,
+        byStage: res.data.byStage ?? {},
+      });
+    } else {
+      setLeadStageCounts(null);
+    }
+  }, [overviewOwnerEmployeeId, setLeadStageCounts]);
 
   const loadPipeline = useCallback(async () => {
     const res = await getCrmLeads({
@@ -147,6 +172,7 @@ export function useCrmHubLoaders({
     loadCore,
     loadDashboard,
     loadLeads,
+    loadLeadCounts,
     loadPipeline,
     loadActivities,
     loadFeedback,

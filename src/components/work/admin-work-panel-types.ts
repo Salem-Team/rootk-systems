@@ -62,6 +62,21 @@ export function emptyTaskForm(): TaskFormState {
   };
 }
 
+/** After "save & add another", keep shared assignment context and clear per-task fields. */
+export function nextTaskFormAfterCreate(prev: TaskFormState): TaskFormState {
+  return {
+    ...emptyTaskForm(),
+    assigneeIds: [...prev.assigneeIds],
+    dueDate: prev.dueDate,
+    priority: prev.priority,
+    status: prev.status,
+    tag: prev.tag,
+    relatedMeetingId: prev.relatedMeetingId,
+    requireEvidenceLinks: prev.requireEvidenceLinks,
+    requireEvidenceNotes: prev.requireEvidenceNotes,
+  };
+}
+
 export function emptyMeetingForm(organizerId: string): MeetingFormState {
   return {
     title: "",

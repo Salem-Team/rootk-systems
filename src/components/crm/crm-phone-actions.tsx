@@ -13,8 +13,10 @@ import {
   detectContactKind,
   telHrefForContact,
 } from "@/lib/crm/contact-identity";
-import { beginPendingCall } from "@/lib/crm/pending-call";
+import { beginPendingCall, readPendingCall } from "@/lib/crm/pending-call";
+import { persistPendingCrmCall } from "@/lib/crm/persist-pending-call";
 import { displayCrmPhone } from "@/lib/crm/phone-links";
+import { emitCrmUpdated } from "@/lib/events";
 import { nativePlatform } from "@/lib/native/platform";
 import { cn } from "@/lib/utils";
 import type { CrmContactKind } from "@/types/crm";
@@ -63,6 +65,13 @@ export function CrmPhoneActions({
 
   function onDial() {
     if (!leadId) return;
+    // Flush any previous dial so it still counts in user performance.
+    const previous = readPendingCall();
+    if (previous && previous.externalCallId) {
+      void persistPendingCrmCall(previous, { status: "unknown" }).then((res) => {
+        if (res.success) emitCrmUpdated();
+      });
+    }
     beginPendingCall({
       leadId,
       leadName: leadName?.trim() || label,

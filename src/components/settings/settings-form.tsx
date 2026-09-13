@@ -1,7 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { Loader2, Save } from "lucide-react";
+import { FormSkeleton } from "@/components/shared/loading-state";
 import { CompanyPolicySection } from "@/components/settings/company-policy-section";
 import { Button } from "@/components/ui/button";
 import { SettingsNav } from "@/components/settings/settings-nav";
@@ -14,6 +13,8 @@ import {
   SettingsSecuritySection,
 } from "@/components/settings/settings-security-profile";
 import { useSettingsForm } from "@/components/settings/use-settings-form";
+import { AnimatePresence, motion } from "framer-motion";
+import { Loader2, Save } from "lucide-react";
 
 export function SettingsForm({
   hideCompanyPolicy = false,
@@ -46,11 +47,7 @@ export function SettingsForm({
   } = useSettingsForm({ hideCompanyPolicy });
 
   if (loading || !prefs) {
-    return (
-      <div className="flex items-center justify-center py-20 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
-    );
+    return <FormSkeleton />;
   }
 
   return (

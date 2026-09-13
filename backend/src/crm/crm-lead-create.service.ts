@@ -202,6 +202,19 @@ export class CrmLeadCreateService {
       actorId: actor.userId,
     });
 
+    await this.shared.notifyLeadAssignedToOwner({
+      companyId,
+      actor,
+      lead: {
+        id: row.id,
+        name: row.name,
+        phone: row.phone,
+        companyName: row.companyName,
+        stageId: row.stageId,
+        ownerEmployeeId: row.ownerEmployeeId,
+      },
+    });
+
     return mapLead(row);
   }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 import { TrendingDown, TrendingUp } from "lucide-react";
@@ -16,13 +17,18 @@ interface KpiCardProps {
   decimals?: number;
   icon: LucideIcon;
   tone?: string;
-  trend?: number;
-  spark?: SparkPoint[];
   badge?: string;
+  href?: string;
+  hint?: string;
+  /** Optional legacy sparkline; omitted on the simplified dashboard. */
+  spark?: SparkPoint[];
+  /** Optional legacy trend delta; hidden when 0. */
+  trend?: number;
   className?: string;
 }
 
 function MiniSpark({ points }: { points: SparkPoint[] }) {
+  if (points.length < 2) return null;
   const max = Math.max(...points.map((p) => p.v), 1);
   const min = Math.min(...points.map((p) => p.v), 0);
   const w = 72;
@@ -62,35 +68,20 @@ export function KpiCard({
   decimals = 0,
   icon: Icon,
   tone = "text-primary",
-  trend,
-  spark,
   badge,
+  href,
+  hint,
+  spark,
+  trend,
   className,
 }: KpiCardProps) {
   const reduceMotion = useReducedMotion();
+  const showTrend = typeof trend === "number" && trend !== 0;
   const up = (trend ?? 0) >= 0;
+  const sparkEl = spark && spark.length >= 2 ? <MiniSpark points={spark} /> : null;
 
-  return (
-    <motion.article
-      initial={reduceMotion ? false : "rest"}
-      whileHover={reduceMotion ? undefined : "hover"}
-      variants={
-        reduceMotion
-          ? undefined
-          : {
-              rest: { y: 0 },
-              hover: { y: -2, transition: snappySpring },
-            }
-      }
-      className={cn(
-        "kpi-tile surface-panel-interactive surface-shine group relative overflow-hidden",
-        className
-      )}
-    >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-      />
+  const content = (
+    <>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -104,24 +95,20 @@ export function KpiCard({
               </Badge>
             ) : null}
           </div>
-          <p className="stat-value mt-2 text-[1.5rem] md:text-[1.65rem]">
+          <p className="stat-value mt-2.5 text-[1.55rem] md:text-[1.7rem]">
             <AnimatedCounter
               value={value}
               suffix={suffix}
               decimals={decimals}
             />
           </p>
-          {typeof trend === "number" ? (
-            <motion.p
-              initial={reduceMotion ? false : { opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                delay: 0.15,
-                duration: 0.35,
-                ease: [0.16, 1, 0.3, 1],
-              }}
+          {hint ? (
+            <p className="mt-1.5 text-[11px] text-muted-foreground">{hint}</p>
+          ) : null}
+          {showTrend ? (
+            <p
               className={cn(
-                "mt-2 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium",
+                "mt-1.5 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium",
                 up
                   ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
                   : "bg-rose-500/10 text-rose-700 dark:text-rose-400"
@@ -136,19 +123,65 @@ export function KpiCard({
                 {up ? "+" : ""}
                 {trend}
               </span>
-            </motion.p>
+            </p>
           ) : null}
         </div>
         <div className="flex flex-col items-end gap-2.5">
           <motion.div
             variants={reduceMotion ? undefined : iconPop}
-            className={cn("icon-well h-9 w-9", tone)}
+            className={cn("icon-well h-9 w-9 shrink-0", tone)}
           >
             <Icon className="h-3.5 w-3.5" aria-hidden />
           </motion.div>
-          {spark ? <MiniSpark points={spark} /> : null}
+          {sparkEl}
         </div>
       </div>
+    </>
+  );
+
+  const shellClass = cn(
+    "kpi-tile surface-panel-interactive group relative block h-full overflow-hidden",
+    href && "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
+    className
+  );
+
+  if (href) {
+    return (
+      <motion.div
+        initial={reduceMotion ? false : "rest"}
+        whileHover={reduceMotion ? undefined : "hover"}
+        variants={
+          reduceMotion
+            ? undefined
+            : {
+                rest: { y: 0 },
+                hover: { y: -2, transition: snappySpring },
+              }
+        }
+        className="h-full"
+      >
+        <Link href={href} className={shellClass} aria-label={label}>
+          {content}
+        </Link>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.article
+      initial={reduceMotion ? false : "rest"}
+      whileHover={reduceMotion ? undefined : "hover"}
+      variants={
+        reduceMotion
+          ? undefined
+          : {
+              rest: { y: 0 },
+              hover: { y: -2, transition: snappySpring },
+            }
+      }
+      className={shellClass}
+    >
+      {content}
     </motion.article>
   );
 }

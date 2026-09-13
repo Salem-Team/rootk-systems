@@ -122,6 +122,14 @@ export class CrmService {
     return this.leads.listLeads(companyId, actor, query);
   }
 
+  countLeadsByStage(
+    companyId: string,
+    actor: Actor,
+    query: Record<string, string | undefined>
+  ) {
+    return this.leads.countLeadsByStage(companyId, actor, query);
+  }
+
   getLead(companyId: string, actor: Actor, id: string) {
     return this.leads.getLead(companyId, actor, id);
   }

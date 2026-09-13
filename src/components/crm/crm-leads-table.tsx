@@ -50,7 +50,6 @@ interface CrmLeadsTableProps {
 export function CrmLeadsTable({
   loading,
   page,
-  filters,
   stageMap,
   employeeMap,
   selected,

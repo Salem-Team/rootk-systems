@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, RefreshCw, Users } from "lucide-react";
+import { RefreshCw, Users } from "lucide-react";
+import { FormSkeleton } from "@/components/shared/loading-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,11 +62,7 @@ export function EmployeePreferencesPanel() {
   }, [load]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
-    );
+    return <FormSkeleton />;
   }
 
   return (

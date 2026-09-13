@@ -9,7 +9,11 @@ export class HealthController {
 
   @Get("live")
   live() {
-    return { status: "ok", timestamp: new Date().toISOString() };
+    return {
+      status: "ok",
+      edgeId: process.env.ROOTK_EDGE_ID || "unknown",
+      timestamp: new Date().toISOString(),
+    };
   }
 
   @Get("ready")

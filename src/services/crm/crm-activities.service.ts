@@ -175,7 +175,7 @@ export async function addCrmLeadFeedback(
         meetingMode,
         meetingLocation,
         notes: parsed.notes ?? "",
-        recordedByEmployeeId: actorEmployeeId(),
+        recordedByEmployeeId: actorEmployeeId() || lead.ownerEmployeeId || null,
         mentionedUserIds,
         mentionedUsers,
       },

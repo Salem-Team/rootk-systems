@@ -73,11 +73,11 @@ export function Navbar() {
       transition={{ duration: reduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
       className="sticky top-0 z-30 chrome-bar"
     >
-      <div className="flex h-[3.25rem] min-w-0 items-center gap-1 px-2.5 sm:h-[3.4rem] sm:gap-2.5 sm:px-4 md:px-6 lg:px-8">
+      <div className="flex h-[3.25rem] min-w-0 items-center gap-0.5 px-2 sm:h-[3.4rem] sm:gap-2.5 sm:px-4 md:px-6 lg:px-8">
         <Button
           variant="ghost"
-          size="icon-sm"
-          className="lg:hidden"
+          size="icon"
+          className="h-11 w-11 shrink-0 touch-manipulation lg:hidden"
           onClick={() => setMobileMenuOpen(true)}
           aria-label={t("common.openMenu")}
         >
@@ -86,7 +86,7 @@ export function Navbar() {
 
         <NavbarClientSearch />
 
-        <div className="ms-auto flex items-center gap-0.5 sm:gap-1">
+        <div className="ms-auto flex items-center gap-0 sm:gap-1">
           <div className="me-1.5 hidden rounded-xl border border-border/65 bg-gradient-to-b from-muted/55 to-muted/20 px-3 py-1.5 text-end shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] dark:shadow-none lg:block">
             <p className="text-[11px] font-semibold leading-none tracking-tight text-foreground">
               {format(now, "EEEE, d MMM", { locale: dateLocale })}
@@ -96,22 +96,25 @@ export function Navbar() {
             </p>
           </div>
 
+          {/* Language stays on mobile — bilingual day-to-day use */}
           <LanguageSwitcher />
 
-          <UserViewSwitcher />
-
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={t("common.toggleTheme")}
-            onClick={toggleTheme}
-          >
-            {mounted && resolvedTheme === "dark" ? (
-              <Sun className="h-4 w-4" />
-            ) : (
-              <Moon className="h-4 w-4" />
-            )}
-          </Button>
+          {/* Admin tooling / theme: desktop + tablet only — mobile uses avatar menu */}
+          <div className="hidden items-center gap-0.5 sm:flex">
+            <UserViewSwitcher />
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={t("common.toggleTheme")}
+              onClick={toggleTheme}
+            >
+              {mounted && resolvedTheme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
 
           <NotificationsPopover />
 
@@ -119,10 +122,10 @@ export function Navbar() {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="h-9 gap-2 rounded-lg border border-transparent px-1.5 hover:border-border/60 hover:bg-muted/50"
+                className="h-11 gap-2 rounded-xl border border-transparent px-1.5 touch-manipulation hover:border-border/60 hover:bg-muted/50 sm:h-9"
                 aria-label={t("common.userMenu")}
               >
-                <Avatar className="h-7 w-7 ring-1 ring-border">
+                <Avatar className="h-8 w-8 ring-1 ring-border sm:h-7 sm:w-7">
                   <AvatarFallback className="bg-primary/10 text-[10px] font-semibold text-primary">
                     {user.initials}
                   </AvatarFallback>

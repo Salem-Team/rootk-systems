@@ -9,16 +9,17 @@ import {
 } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
 import { motion, useReducedMotion } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock3, LogIn, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/shared/status-badge";
 import {
   buildCalendarMonth,
   type CalendarDayKind,
 } from "@/components/attendance/attendance-mock-data";
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp } from "@/lib/animations";
-import { demoNow } from "@/lib/mock-date";
-import { cn } from "@/lib/utils";
+import { demoNow, demoTodayKey } from "@/lib/mock-date";
+import { cn, formatHours } from "@/lib/utils";
 import type { AttendanceRecord } from "@/types";
 
 const KIND_STYLE: Record<CalendarDayKind, string> = {
@@ -36,16 +37,32 @@ interface AttendanceCalendarProps {
   records: AttendanceRecord[];
 }
 
+function formatTime(iso: string | undefined, dateLocale: typeof enUS): string {
+  if (!iso) return "—";
+  return format(parseISO(iso), "h:mm a", { locale: dateLocale });
+}
+
 export function AttendanceCalendar({ records }: AttendanceCalendarProps) {
   const { t, locale } = useTranslation();
   const reduceMotion = useReducedMotion();
   const dateLocale = locale === "ar" ? arLocale : enUS;
   const [month, setMonth] = useState(() => demoNow());
+  const [selectedDate, setSelectedDate] = useState(() => demoTodayKey());
+
+  const recordsByDate = useMemo(
+    () => new Map(records.map((record) => [record.date, record])),
+    [records]
+  );
 
   const days = useMemo(
     () => buildCalendarMonth(records, month),
     [records, month]
   );
+
+  const selectedRecord = recordsByDate.get(selectedDate);
+  const selectedLabel = format(parseISO(selectedDate), "EEEE, d MMM yyyy", {
+    locale: dateLocale,
+  });
 
   const weekdays = [
     t("days.sun"),
@@ -122,11 +139,13 @@ export function AttendanceCalendar({ records }: AttendanceCalendarProps) {
             {days.map((day) => {
               const kind = day.isToday ? "today" : day.kind;
               const label = format(parseISO(day.date), "d");
+              const isSelected = day.inMonth && day.date === selectedDate;
               return (
                 <motion.button
                   key={day.date}
                   type="button"
                   role="gridcell"
+                  aria-selected={isSelected}
                   whileHover={
                     reduceMotion || !day.inMonth
                       ? undefined
@@ -136,15 +155,71 @@ export function AttendanceCalendar({ records }: AttendanceCalendarProps) {
                     "aspect-square rounded-lg border text-xs font-medium tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     day.inMonth ? KIND_STYLE[kind] : KIND_STYLE.empty,
                     day.isToday &&
-                      "ring-2 ring-primary/40 ring-offset-1 ring-offset-background"
+                      "ring-2 ring-primary/40 ring-offset-1 ring-offset-background",
+                    isSelected && "outline outline-2 outline-offset-1 outline-foreground/70"
                   )}
                   aria-label={`${day.date}${day.isToday ? ` · ${t("attendance.legendToday")}` : ""}`}
                   disabled={!day.inMonth}
+                  onClick={() => setSelectedDate(day.date)}
                 >
                   {label}
                 </motion.button>
               );
             })}
+          </div>
+
+          <div
+            className="rounded-xl border border-border/70 bg-muted/30 p-3 sm:p-4"
+            aria-live="polite"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">
+                  {t("attendance.dayDetailTitle")}
+                </p>
+                <p className="text-sm font-semibold">{selectedLabel}</p>
+              </div>
+              {selectedRecord ? (
+                <StatusBadge status={selectedRecord.status} />
+              ) : null}
+            </div>
+            {selectedRecord?.checkIn || selectedRecord?.checkOut ? (
+              <dl className="mt-3 grid gap-2 sm:grid-cols-3">
+                <div className="rounded-lg border border-border/60 bg-card px-3 py-2">
+                  <dt className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <LogIn className="h-3.5 w-3.5" aria-hidden />
+                    {t("attendance.checkIn")}
+                  </dt>
+                  <dd className="mt-1 font-mono text-sm font-semibold tabular-nums">
+                    {formatTime(selectedRecord.checkIn, dateLocale)}
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/60 bg-card px-3 py-2">
+                  <dt className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <LogOut className="h-3.5 w-3.5" aria-hidden />
+                    {t("attendance.checkOut")}
+                  </dt>
+                  <dd className="mt-1 font-mono text-sm font-semibold tabular-nums">
+                    {formatTime(selectedRecord.checkOut, dateLocale)}
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/60 bg-card px-3 py-2">
+                  <dt className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <Clock3 className="h-3.5 w-3.5" aria-hidden />
+                    {t("common.hours")}
+                  </dt>
+                  <dd className="mt-1 font-mono text-sm font-semibold tabular-nums">
+                    {selectedRecord.workingMinutes > 0
+                      ? formatHours(selectedRecord.workingMinutes)
+                      : "—"}
+                  </dd>
+                </div>
+              </dl>
+            ) : (
+              <p className="mt-3 text-sm text-muted-foreground">
+                {t("attendance.dayNoRecord")}
+              </p>
+            )}
           </div>
 
           <ul className="flex flex-wrap gap-2" aria-label={t("attendance.legend")}>

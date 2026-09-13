@@ -1,7 +1,6 @@
 "use client";
 
-import { ar as arLocale, enUS } from "date-fns/locale";
-import { Loader2 } from "lucide-react";
+import { PageSkeleton } from "@/components/shared/loading-state";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { AdminWorkHero } from "@/components/work/admin-work-hero";
 import { AdminWorkTabsBar } from "@/components/work/admin-work-tabs-bar";
@@ -18,6 +17,7 @@ import type { PanelTab } from "@/components/work/admin-work-panel-types";
 import { getWorkEmployeeIdFromUser, useSessionStore } from "@/stores/session-store";
 import { useTranslation } from "@/hooks/use-translation";
 import type { WorkMeeting, WorkTask } from "@/types/work";
+import { ar as arLocale, enUS } from "date-fns/locale";
 
 export function AdminWorkAssignPanel() {
   const { locale } = useTranslation();
@@ -34,11 +34,7 @@ export function AdminWorkAssignPanel() {
   });
 
   if (data.loading) {
-    return (
-      <div className="flex items-center justify-center py-24 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   return (
@@ -119,7 +115,7 @@ export function AdminWorkAssignPanel() {
         editingTask={forms.editingTask}
         employees={data.employees}
         meetings={data.meetings}
-        onSave={() => void forms.saveTask()}
+        onSave={(options) => void forms.saveTask(options)}
       />
 
       <AdminWorkMeetingDialog

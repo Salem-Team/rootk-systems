@@ -4,6 +4,8 @@ import type { ApiResponse } from "@/types";
 
 export type HealthStatus = {
   status: "ok" | "degraded" | "down";
+  /** Deployment edge marker — missing on stale/legacy CRM hosts */
+  edgeId?: string;
   timestamp?: string;
   details?: Record<string, unknown>;
 };

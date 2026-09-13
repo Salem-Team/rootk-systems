@@ -166,6 +166,37 @@ export async function fetchCrmLeads(
   return withData(res, ensurePaginatedLeads(res.data));
 }
 
+export type CrmLeadStageCounts = {
+  total: number;
+  byStage: Record<string, number>;
+};
+
+export async function fetchCrmLeadCounts(
+  filters: Pick<
+    CrmLeadFilters,
+    "status" | "source" | "ownerEmployeeId" | "search" | "tag" | "followUp"
+  > = {}
+): Promise<ApiResponse<CrmLeadStageCounts>> {
+  const empty: CrmLeadStageCounts = { total: 0, byStage: {} };
+  const res = await api.get(
+    `${API_ROUTES.crm.leadsCounts}${toQuery({
+      search: filters.search,
+      status: filters.status || "active",
+      source: filters.source || undefined,
+      ownerEmployeeId: filters.ownerEmployeeId,
+      tag: filters.tag || undefined,
+      followUp: filters.followUp || undefined,
+    })}`,
+    empty
+  );
+  const raw = (res.data ?? empty) as CrmLeadStageCounts;
+  return withData(res, {
+    total: Number(raw.total) || 0,
+    byStage:
+      raw.byStage && typeof raw.byStage === "object" ? raw.byStage : {},
+  });
+}
+
 export async function fetchCrmLead(
   id: string
 ): Promise<ApiResponse<CrmLead | null>> {

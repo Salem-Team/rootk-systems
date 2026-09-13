@@ -40,6 +40,7 @@ import {
   writeHistory,
 } from "@/services/crm/crm-shared";
 import { clearLocalCrmFollowUpReminders } from "@/services/crm/crm-follow-up-reminders.service";
+import { notifyCrmLeadAssigned } from "@/services/notify-crm.service";
 
 function leadCanonicalKeys(lead: CrmLead): string[] {
   return canonicalContactKeys([
@@ -234,6 +235,20 @@ export async function createCrmLead(
       previousValue: null,
       newValue: row.name,
     });
+    if (ownerEmployeeId) {
+      const stageName =
+        stages.find((s) => s.id === row.stageId)?.name ?? undefined;
+      void notifyCrmLeadAssigned({
+        leadId: row.id,
+        leadName: row.name,
+        phone: row.phone,
+        companyName: row.companyName,
+        stageName,
+        ownerEmployeeId,
+        actorId,
+        actorEmployeeId: empId,
+      });
+    }
     emitCrmUpdated();
     return ok(row);
   } catch (error) {
@@ -412,6 +427,24 @@ export async function updateCrmLead(
       clearLocalCrmFollowUpReminders(id);
     }
     await crmLeadRepository.update(updated.id, updated);
+    if (
+      parsed.ownerEmployeeId !== undefined &&
+      parsed.ownerEmployeeId &&
+      parsed.ownerEmployeeId !== existing.ownerEmployeeId
+    ) {
+      const stageName =
+        stages.find((s) => s.id === updated.stageId)?.name ?? undefined;
+      void notifyCrmLeadAssigned({
+        leadId: updated.id,
+        leadName: updated.name,
+        phone: updated.phone,
+        companyName: updated.companyName,
+        stageName,
+        ownerEmployeeId: parsed.ownerEmployeeId,
+        actorId,
+        actorEmployeeId: empId,
+      });
+    }
     emitCrmUpdated();
     return ok(updated);
   } catch (error) {

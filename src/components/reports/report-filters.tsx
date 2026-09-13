@@ -26,7 +26,7 @@ export function ReportFilters({
   const dateLocale = locale === "ar" ? arLocale : enUS;
 
   return (
-    <FilterShell>
+    <FilterShell sticky>
       <div className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
           <ReportDateRangeFilter

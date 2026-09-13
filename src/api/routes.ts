@@ -146,6 +146,7 @@ export const API_ROUTES = {
     businessTypeById: (id: string) => `/crm/business-types/${id}`,
     leads: "/crm/leads",
     leadById: (id: string) => `/crm/leads/${id}`,
+    leadsCounts: "/crm/leads/counts",
     leadsBulk: "/crm/leads/bulk",
     leadsImport: "/crm/leads/import",
     leadsExport: "/crm/leads/export",
