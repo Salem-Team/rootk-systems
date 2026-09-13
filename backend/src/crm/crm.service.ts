@@ -14,6 +14,7 @@ import { CrmReportsService } from "./crm-reports.service";
 import { CrmPhoneLookupService } from "./crm-phone-lookup.service";
 import { CrmStagesService } from "./crm-stages.service";
 import { CrmSubStagesService } from "./crm-sub-stages.service";
+import { CrmWebsiteAutoAssignService } from "./crm-website-auto-assign.service";
 
 export type { Actor };
 
@@ -37,7 +38,8 @@ export class CrmService {
     private readonly performanceService: CrmPerformanceService,
     private readonly reportsService: CrmReportsService,
     private readonly phoneLookup: CrmPhoneLookupService,
-    private readonly calls: CrmCallsService
+    private readonly calls: CrmCallsService,
+    private readonly websiteAutoAssign: CrmWebsiteAutoAssignService
   ) {}
 
   // ── Stages ──────────────────────────────────────────────────────────────
@@ -255,5 +257,24 @@ export class CrmService {
     query: Record<string, string | undefined>
   ) {
     return this.reportsService.reports(companyId, actor, query);
+  }
+
+  getWebsiteAutoLead(companyId: string) {
+    return this.websiteAutoAssign.getConfig(companyId);
+  }
+
+  updateWebsiteAutoLead(
+    companyId: string,
+    actorId: string,
+    body: Record<string, unknown>
+  ) {
+    return this.websiteAutoAssign.updateConfig(companyId, actorId, {
+      enabled: typeof body.enabled === "boolean" ? body.enabled : undefined,
+      employeeIds: Array.isArray(body.employeeIds)
+        ? body.employeeIds.map((id) => String(id))
+        : undefined,
+      effectiveFrom:
+        typeof body.effectiveFrom === "string" ? body.effectiveFrom : undefined,
+    });
   }
 }

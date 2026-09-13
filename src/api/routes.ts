@@ -157,6 +157,7 @@ export const API_ROUTES = {
     leadMatch: "/crm/leads/match",
     leadDuplicates: "/crm/leads/duplicates",
     dashboard: "/crm/dashboard",
+    websiteAutoLead: "/crm/website-auto-lead",
     performance: "/crm/performance",
     performanceByEmployee: (employeeId: string) =>
       `/crm/performance/${employeeId}`,

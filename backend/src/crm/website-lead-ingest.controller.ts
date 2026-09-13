@@ -10,6 +10,7 @@ import {
 import { Public } from "../common/public.decorator";
 import { AppRole } from "../common/roles";
 import { CrmService } from "./crm.service";
+import { CrmWebsiteAutoAssignService } from "./crm-website-auto-assign.service";
 import type { Actor } from "./crm-access";
 
 /**
@@ -18,7 +19,10 @@ import type { Actor } from "./crm-access";
  */
 @Controller("integrations/website")
 export class WebsiteLeadIngestController {
-  constructor(private readonly crm: CrmService) {}
+  constructor(
+    private readonly crm: CrmService,
+    private readonly autoAssign: CrmWebsiteAutoAssignService
+  ) {}
 
   @Public()
   @Post("leads")
@@ -58,6 +62,8 @@ export class WebsiteLeadIngestController {
       ],
     };
 
+    const ownerEmployeeId = await this.autoAssign.claimNextOwner(companyId);
+
     try {
       const lead = await this.crm.createLead(companyId, actor, {
         name,
@@ -68,8 +74,13 @@ export class WebsiteLeadIngestController {
         notes,
         tags: Array.isArray(body.tags) ? body.tags : ["website", "campaign"],
         nextAction: "follow_up",
+        ...(ownerEmployeeId ? { ownerEmployeeId } : {}),
       });
-      return { ok: true, lead };
+      return {
+        ok: true,
+        lead,
+        autoAssignedTo: ownerEmployeeId ?? null,
+      };
     } catch (error) {
       if (error instanceof ConflictException) {
         return {

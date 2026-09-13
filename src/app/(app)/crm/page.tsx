@@ -23,6 +23,7 @@ import { CrmPipelinePanel } from "@/components/crm/crm-pipeline-panel";
 import { CrmReportsPanel } from "@/components/crm/crm-reports-panel";
 import { CrmSalesProfileSheet } from "@/components/crm/crm-sales-profile-sheet";
 import { CrmStagesPanel } from "@/components/crm/crm-stages-panel";
+import { CrmWebsiteAutoLeadPanel } from "@/components/crm/crm-website-auto-lead-panel";
 import { useCrmHub } from "@/hooks/use-crm-hub";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -225,7 +226,14 @@ export default function CrmPage() {
             />
           ) : null}
 
-          {hub.tab === "stages" && hub.canManageStages ? <CrmStagesPanel /> : null}
+          {hub.tab === "stages" && hub.canManageStages ? (
+            <div className="grid gap-4">
+              <CrmStagesPanel />
+              {hub.canAssign ? (
+                <CrmWebsiteAutoLeadPanel employees={hub.safeEmployees} />
+              ) : null}
+            </div>
+          ) : null}
 
           {hub.tab === "businessTypes" && hub.canManageBusinessTypes ? (
             <CrmBusinessTypesPanel />

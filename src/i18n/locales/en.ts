@@ -3109,6 +3109,17 @@ export const en = {
       businessTypes: "Business types",
       reports: "Reports",
     },
+    autoLead: {
+      title: "Website auto-assign",
+      description:
+        "New website leads are rotated fairly across the selected people (round-robin).",
+      enabled: "Enabled",
+      disabled: "Disabled",
+      effectiveFrom: "Starts {date}",
+      nextHint: "Next slot {index}/{total}",
+      emptyEmployees: "No active employees available.",
+      saved: "Auto-assign settings saved",
+    },
     delay: {
       title: "Delayed follow-ups",
       description:

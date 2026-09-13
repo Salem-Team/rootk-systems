@@ -18,6 +18,7 @@ import { CrmReportsService } from "./crm-reports.service";
 import { CrmSharedService } from "./crm-shared.service";
 import { CrmStagesService } from "./crm-stages.service";
 import { CrmSubStagesService } from "./crm-sub-stages.service";
+import { CrmWebsiteAutoAssignService } from "./crm-website-auto-assign.service";
 import { CrmService } from "./crm.service";
 import { RolesGuard } from "../common/roles.guard";
 import { NotificationsModule } from "../notifications/notifications.module";
@@ -47,6 +48,7 @@ import { NotificationsModule } from "../notifications/notifications.module";
     CrmPerformanceService,
     CrmReportsService,
     CrmFollowUpRemindersService,
+    CrmWebsiteAutoAssignService,
     CrmService,
   ],
   exports: [CrmService],
