@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { App } from "@capacitor/app";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { configureHttpClient } from "@/lib/http-client";
 import { env, isApiMode } from "@/lib/env";
+import { isNativeApp, nativePlatform } from "@/lib/native/platform";
 import {
   hydrateCurrentUser,
   refreshAccessToken,
@@ -12,16 +14,24 @@ import {
 import {
   getAccessToken,
   getRefreshToken,
+  hasActiveSession,
   isAccessTokenExpiringSoon,
   SESSION_PERSIST_KEY,
   useSessionStore,
 } from "@/stores/session-store";
 import { useTranslation } from "@/hooks/use-translation";
 
+function clientHeader(): string {
+  const platform = nativePlatform();
+  if (platform === "android") return "rootk-hr-android";
+  if (platform === "ios") return "rootk-hr-ios";
+  return "rootk-hr-web";
+}
+
 /**
  * Wires HttpClient with JWT getters + 401 handling.
- * Signs out only after a definitive refresh rejection — not on network blips.
- * Keeps the session alive across tabs and brief offline periods.
+ * Sticky sessions: only explicit Sign out (or a definitively revoked refresh
+ * token) clears the session — never network blips or brief storage glitches.
  */
 export function ApiBootstrapProvider({
   children,
@@ -32,6 +42,7 @@ export function ApiBootstrapProvider({
   const { t } = useTranslation();
   const signOut = useSessionStore((s) => s.signOut);
   const hasHydrated = useSessionStore((s) => s.hasHydrated);
+  const kickLock = useRef(false);
 
   useEffect(() => {
     configureHttpClient({
@@ -40,36 +51,60 @@ export function ApiBootstrapProvider({
       getRefreshToken: () => getRefreshToken(),
       onRefresh: async () => refreshAccessToken(),
       onUnauthorized: () => {
-        // Definitive auth failure only (refresh rejected). Explicit Sign out
-        // goes through signOutSession — this path is last-resort.
+        // Last resort: refresh token rejected by the server.
+        // Never clear a session that still has a refresh token in memory —
+        // a parallel renew may still succeed.
+        const state = useSessionStore.getState();
+        if (state.refreshToken) {
+          void refreshAccessToken().then((result) => {
+            if (result === null && !kickLock.current) {
+              kickLock.current = true;
+              signOut();
+              toast.error(t("auth.sessionExpired"), { duration: 3200 });
+              router.replace("/login");
+            }
+          });
+          return;
+        }
+        if (kickLock.current) return;
+        kickLock.current = true;
         signOut();
         toast.error(t("auth.sessionExpired"), { duration: 3200 });
         router.replace("/login");
       },
       defaultHeaders: {
         "X-Company-Id": env.companyId,
-        "X-Client": "rootk-hr-web",
+        "X-Client": clientHeader(),
       },
     });
   }, [router, signOut, t]);
 
   useEffect(() => {
-    // Safety: if persist never callbacks (corrupt storage), unblock the UI.
+    // Native Keystore reads can be slow; give more time before forcing hydrate.
+    const ms = isNativeApp() ? 8_000 : 4_000;
     const id = window.setTimeout(() => {
       if (!useSessionStore.getState().hasHydrated) {
         useSessionStore.setState({ hasHydrated: true });
       }
-    }, 2500);
+    }, ms);
     return () => window.clearTimeout(id);
   }, []);
 
   useEffect(() => {
     if (!hasHydrated || !isApiMode()) return;
+    if (!hasActiveSession()) {
+      // Do not wipe storage here — AuthGate / login will handle unsigned state.
+      return;
+    }
+    kickLock.current = false;
     void hydrateCurrentUser();
   }, [hasHydrated]);
 
-  // Cross-tab session sync: another tab sign-out / token update.
+  // Cross-tab session sync (web only). Native WebViews can emit spurious
+  // storage clears that must not force logout.
   useEffect(() => {
+    if (isNativeApp()) return;
+
     function onStorage(event: StorageEvent) {
       if (event.key !== SESSION_PERSIST_KEY) return;
       if (event.newValue == null) {
@@ -85,27 +120,54 @@ export function ApiBootstrapProvider({
     return () => window.removeEventListener("storage", onStorage);
   }, [router, signOut]);
 
-  // Silent keep-alive: renew access token before it expires while the tab is open.
+  // Silent keep-alive: renew access token while the app is open / resumes.
   useEffect(() => {
     if (!hasHydrated || !isApiMode()) return;
 
     async function keepAlive() {
       const state = useSessionStore.getState();
-      if (!state.authenticated || !state.refreshToken) return;
-      if (!isAccessTokenExpiringSoon(state.accessToken)) return;
-      await refreshAccessToken();
+      if (!state.refreshToken) return;
+      if (!state.authenticated && !state.accessToken) return;
+      // Renew when missing or near expiry — keep the user signed in.
+      if (
+        state.accessToken &&
+        !isAccessTokenExpiringSoon(state.accessToken, 15 * 60_000)
+      ) {
+        return;
+      }
+      const result = await refreshAccessToken();
+      if (result && result !== "transient") {
+        kickLock.current = false;
+      }
     }
 
     void keepAlive();
-    const id = window.setInterval(() => void keepAlive(), 10 * 60_000);
+    const id = window.setInterval(() => void keepAlive(), 5 * 60_000);
 
     function onVisible() {
       if (document.visibilityState === "visible") void keepAlive();
     }
+    function onFocus() {
+      void keepAlive();
+    }
     document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+
+    let detachNative: (() => void) | undefined;
+    if (isNativeApp()) {
+      const handle = App.addListener("appStateChange", (state) => {
+        if (state.isActive) void keepAlive();
+      });
+      detachNative = () => {
+        void Promise.resolve(handle).then((h) => h.remove());
+      };
+    }
+
     return () => {
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+      detachNative?.();
     };
   }, [hasHydrated]);
 

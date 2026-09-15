@@ -14,8 +14,39 @@ export type WebsiteAutoLeadConfig = {
 
 const META_KEY = "websiteAutoLead";
 
-/** Default recipients requested for production ROOTK (Ziad + Mahmoud). */
-const DEFAULT_NAME_ORDER = ["Ziad El Warraqi", "Mahmoud"] as const;
+/**
+ * Default rotation: Ziad gets a lead, then Mahmoud, then Ziad…
+ * Matchers are ordered slots — first match wins per slot.
+ */
+const DEFAULT_POOL_SLOTS: ReadonlyArray<{
+  label: string;
+  match: (name: string) => boolean;
+}> = [
+  {
+    label: "Ziad El Warraqi",
+    match: (name) => {
+      const n = name.trim().toLowerCase();
+      return (
+        n.includes("ziad") ||
+        n.includes("warraqi") ||
+        n.includes("زياد")
+      );
+    },
+  },
+  {
+    label: "Mahmoud",
+    match: (name) => {
+      const n = name.trim().toLowerCase();
+      // Exact / first-name Mahmoud — not e.g. "Dina Mahmoud".
+      return (
+        n === "mahmoud" ||
+        n === "محمود" ||
+        n.startsWith("mahmoud ") ||
+        n.startsWith("محمود ")
+      );
+    },
+  },
+];
 
 function todayCairoYmd(now = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -91,13 +122,18 @@ export class CrmWebsiteAutoAssignService {
       employeeIds = unique.filter((id) => allowed.has(id));
     }
 
+    // When the pool order is explicitly saved, next lead goes to index 0 (Ziad first).
+    const nextIndex =
+      employeeIds.length === 0
+        ? 0
+        : Array.isArray(patch.employeeIds)
+          ? 0
+          : current.nextIndex % employeeIds.length;
+
     const next: WebsiteAutoLeadConfig = {
       enabled: patch.enabled ?? current.enabled,
       employeeIds,
-      nextIndex:
-        employeeIds.length === 0
-          ? 0
-          : current.nextIndex % employeeIds.length,
+      nextIndex,
       effectiveFrom:
         typeof patch.effectiveFrom === "string" &&
         /^\d{4}-\d{2}-\d{2}$/.test(patch.effectiveFrom)
@@ -176,30 +212,55 @@ export class CrmWebsiteAutoAssignService {
           existing.employeeIds
         );
         const pool = existing.employeeIds.filter((id) => active.includes(id));
-        if (
-          pool.length === existing.employeeIds.length &&
-          existing.employeeIds.length > 0
-        ) {
-          return existing;
-        }
-        // Refresh defaults if pool empty.
         if (pool.length === 0) {
           const boot = await this.bootstrapConfig(tx, companyId);
           await this.writeConfigTx(tx, companyId, "system", boot, meta);
           return boot;
         }
+
+        // Keep Ziad → Mahmoud order when the pool is exactly the default duo.
+        const defaults = await this.bootstrapConfig(tx, companyId);
+        const normalized = this.normalizeDefaultPoolOrder(pool, defaults.employeeIds);
         const cleaned: WebsiteAutoLeadConfig = {
           ...existing,
-          employeeIds: pool,
-          nextIndex: existing.nextIndex % pool.length,
+          employeeIds: normalized.employeeIds,
+          nextIndex:
+            normalized.reordered
+              ? 0
+              : existing.nextIndex % normalized.employeeIds.length,
         };
-        await this.writeConfigTx(tx, companyId, "system", cleaned, meta);
+        const changed =
+          cleaned.employeeIds.length !== existing.employeeIds.length ||
+          cleaned.employeeIds.some((id, i) => id !== existing.employeeIds[i]) ||
+          cleaned.nextIndex !== existing.nextIndex;
+        if (changed) {
+          await this.writeConfigTx(tx, companyId, "system", cleaned, meta);
+        }
         return cleaned;
       }
       const boot = await this.bootstrapConfig(tx, companyId);
       await this.writeConfigTx(tx, companyId, "system", boot, meta);
       return boot;
     });
+  }
+
+  /** If pool is the default duo in any order, lock to Ziad then Mahmoud. */
+  private normalizeDefaultPoolOrder(
+    pool: string[],
+    defaultIds: string[]
+  ): { employeeIds: string[]; reordered: boolean } {
+    if (
+      defaultIds.length === 2 &&
+      pool.length === 2 &&
+      new Set(pool).size === 2 &&
+      pool.every((id) => defaultIds.includes(id))
+    ) {
+      const ordered = [defaultIds[0]!, defaultIds[1]!];
+      const reordered =
+        pool[0] !== ordered[0] || pool[1] !== ordered[1];
+      return { employeeIds: ordered, reordered };
+    }
+    return { employeeIds: pool, reordered: false };
   }
 
   private async bootstrapConfig(
@@ -211,22 +272,26 @@ export class CrmWebsiteAutoAssignService {
         companyId,
         deletedAt: null,
         status: EmployeeStatus.active,
-        OR: DEFAULT_NAME_ORDER.map((name) => ({
-          name: { equals: name, mode: "insensitive" as const },
-        })),
       },
       select: { id: true, name: true },
     });
-    const byName = new Map(
-      employees.map((e) => [e.name.trim().toLowerCase(), e.id])
-    );
-    const employeeIds = DEFAULT_NAME_ORDER.map(
-      (name) => byName.get(name.toLowerCase()) ?? null
-    ).filter((id): id is string => !!id);
+
+    const used = new Set<string>();
+    const employeeIds: string[] = [];
+    for (const slot of DEFAULT_POOL_SLOTS) {
+      const hit = employees.find(
+        (e) => !used.has(e.id) && slot.match(e.name)
+      );
+      if (hit) {
+        used.add(hit.id);
+        employeeIds.push(hit.id);
+      }
+    }
 
     return {
       enabled: true,
       employeeIds,
+      // Ziad (slot 0) always gets the next website lead after bootstrap.
       nextIndex: 0,
       effectiveFrom: "2026-09-13",
     };

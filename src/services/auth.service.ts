@@ -34,6 +34,7 @@ import { usersSeed } from "@/mocks/users";
 import { employeeRepository, userRepository } from "@/repositories";
 import {
   getWorkEmployeeIdFromUser,
+  flushSessionPersist,
   useSessionStore,
   type ImpersonationState,
   type SessionUser,
@@ -362,14 +363,19 @@ export async function refreshAccessToken(): Promise<
     const res = await refreshSession(refresh);
     if (!res.success || !res.data.accessToken) {
       const code = res.error?.code;
+      // Only definitive auth rejection ends the session — never network/5xx.
       if (code === "UNAUTHORIZED" || code === "FORBIDDEN") return null;
-      // Network / 5xx / unknown — keep local session so the user is not kicked out.
       return "transient";
     }
     useSessionStore.getState().setTokens({
       accessToken: res.data.accessToken,
       refreshToken: res.data.refreshToken ?? refresh,
     });
+    try {
+      await flushSessionPersist();
+    } catch {
+      /* in-memory tokens still valid */
+    }
     return res.data.accessToken;
   } catch {
     return "transient";
@@ -399,9 +405,20 @@ export async function hydrateCurrentUser(): Promise<ApiResponse<AppUser | null>>
     return ok(null);
   }
   const session = useSessionStore.getState();
+  // Zombie session: flagged authenticated but no tokens to renew with.
+  if (session.authenticated && !session.accessToken && !session.refreshToken) {
+    session.signOut();
+    return ok(null);
+  }
   if (!session.accessToken && session.refreshToken) {
     const renewed = await refreshAccessToken();
-    if (renewed === "transient" || renewed === null) {
+    if (renewed === null) {
+      // Refresh token rejected — only then end the session.
+      useSessionStore.getState().signOut();
+      return ok(null);
+    }
+    if (renewed === "transient") {
+      // Keep local session; caller can retry when online.
       return ok(null);
     }
   }

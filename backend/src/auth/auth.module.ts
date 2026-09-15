@@ -15,7 +15,8 @@ import { JwtStrategy } from "./jwt.strategy";
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>("JWT_SECRET", "rootk-dev-secret"),
         signOptions: {
-          expiresIn: "1d" as const,
+          // Sticky sessions: long access TTL; refresh keeps renewing quietly.
+          expiresIn: config.get<string>("JWT_EXPIRES_IN", "7d") as `${number}d`,
         },
       }),
     }),

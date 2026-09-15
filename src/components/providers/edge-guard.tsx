@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchHealthLive } from "@/api/health.api";
 import { env } from "@/lib/env";
+import { isNativeApp } from "@/lib/native/platform";
 
 const EXPECTED_EDGE = env.expectedEdgeId;
 const OFFICIAL_CRM = "https://system.rootk-eg.com/crm";
@@ -35,6 +36,7 @@ type GuardState =
  */
 export function EdgeGuard({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<GuardState>({ status: "checking" });
+  const native = typeof window !== "undefined" ? isNativeApp() : false;
   const localDev =
     typeof window !== "undefined"
       ? isLocalHost(window.location.hostname) || isLocalApiBase(env.apiBaseUrl)
@@ -90,7 +92,10 @@ export function EdgeGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (state.status === "stale") {
+    const inAppReload = `${typeof window !== "undefined" ? window.location.origin : ""}${typeof window !== "undefined" ? window.location.pathname : "/"}?t=${Date.now()}`;
     const officialHref = `${OFFICIAL_CRM}?edge=${EXPECTED_EDGE}&t=${Date.now()}`;
+    // Native WebView must stay inside the app — never bounce to the browser.
+    const primaryHref = native || localDev ? inAppReload : officialHref;
 
     return (
       <div
@@ -100,6 +105,8 @@ export function EdgeGuard({ children }: { children: React.ReactNode }) {
           display: "grid",
           placeItems: "center",
           padding: "24px",
+          paddingTop: "max(24px, env(safe-area-inset-top))",
+          paddingBottom: "max(24px, env(safe-area-inset-bottom))",
           background: "#0b1220",
           color: "#f8fafc",
           fontFamily: "system-ui, sans-serif",
@@ -113,7 +120,9 @@ export function EdgeGuard({ children }: { children: React.ReactNode }) {
           <p style={{ margin: "0 0 20px", opacity: 0.75, fontSize: 14 }}>
             {localDev
               ? "أنت على بيئة محلية — تأكد أن ROOTK_EDGE_ID مضبوط في backend/.env ثم أعد التشغيل."
-              : "افتح الرابط الرسمي بعد مسح الكاش، أو استخدم نافذة خاصة (Incognito)."}
+              : native
+                ? "حدّث التطبيق أو أعد تحميل الصفحة داخل التطبيق."
+                : "افتح الرابط الرسمي بعد مسح الكاش، أو استخدم نافذة خاصة (Incognito)."}
             <br />
             API: <code style={{ direction: "ltr" }}>{env.apiBaseUrl}</code>
             {state.edgeId ? (
@@ -124,21 +133,21 @@ export function EdgeGuard({ children }: { children: React.ReactNode }) {
             ) : null}
           </p>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {!localDev ? (
-              <a
-                href={officialHref}
-                style={{
-                  background: "#38bdf8",
-                  color: "#0b1220",
-                  padding: "10px 16px",
-                  borderRadius: 10,
-                  fontWeight: 700,
-                  textDecoration: "none",
-                }}
-              >
-                فتح النسخة الرسمية
-              </a>
-            ) : null}
+            <a
+              href={primaryHref}
+              style={{
+                background: "#38bdf8",
+                color: "#0b1220",
+                padding: "10px 16px",
+                borderRadius: 10,
+                fontWeight: 700,
+                textDecoration: "none",
+              }}
+            >
+              {native || localDev
+                ? "إعادة المحاولة داخل التطبيق"
+                : "فتح النسخة الرسمية"}
+            </a>
             <button
               type="button"
               onClick={() => {
@@ -152,21 +161,20 @@ export function EdgeGuard({ children }: { children: React.ReactNode }) {
                 if ("caches" in window) {
                   void caches
                     .keys()
-                    .then((keys) => Promise.all(keys.map((k) => caches.delete(k))));
+                    .then((keys) =>
+                      Promise.all(keys.map((k) => caches.delete(k))),
+                    );
                 }
-                const reloadTo = localDev
-                  ? `${window.location.origin}${window.location.pathname}?t=${Date.now()}`
-                  : officialHref;
-                window.location.replace(reloadTo);
+                window.location.replace(primaryHref);
               }}
               style={{
-                background: localDev ? "#38bdf8" : "transparent",
-                color: localDev ? "#0b1220" : "#f8fafc",
-                border: localDev ? "none" : "1px solid #334155",
+                background: "transparent",
+                color: "#f8fafc",
+                border: "1px solid #334155",
                 padding: "10px 16px",
                 borderRadius: 10,
                 cursor: "pointer",
-                fontWeight: localDev ? 700 : 400,
+                fontWeight: 400,
               }}
             >
               مسح الكاش وإعادة التحميل

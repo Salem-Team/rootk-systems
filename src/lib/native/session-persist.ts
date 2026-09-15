@@ -28,6 +28,7 @@ const hybrid: StateStorage = {
       return raw;
     }
     const state = parsed.state as Record<string, unknown>;
+    // Prefer Keychain/Keystore; fall back to WebView storage if secure miss.
     state.accessToken = (await secureGet(ACCESS)) ?? state.accessToken ?? null;
     state.refreshToken = (await secureGet(REFRESH)) ?? state.refreshToken ?? null;
     return JSON.stringify(parsed);
@@ -46,13 +47,26 @@ const hybrid: StateStorage = {
     const access = typeof state?.accessToken === "string" ? state.accessToken : null;
     const refresh =
       typeof state?.refreshToken === "string" ? state.refreshToken : null;
-    if (access) await secureSet(ACCESS, access);
+
+    let accessOk = !access;
+    let refreshOk = !refresh;
+    if (access) accessOk = await secureSet(ACCESS, access);
     else await secureRemove(ACCESS);
-    if (refresh) await secureSet(REFRESH, refresh);
+    if (refresh) refreshOk = await secureSet(REFRESH, refresh);
     else await secureRemove(REFRESH);
+
+    // Only strip tokens from WebView storage when both secure writes succeeded.
+    // Otherwise keep them in localStorage so login survives plugin failures.
+    const stripTokens = accessOk && refreshOk;
     if (state) {
-      state.accessToken = null;
-      state.refreshToken = null;
+      if (stripTokens) {
+        state.accessToken = null;
+        state.refreshToken = null;
+      } else if (access || refresh) {
+        console.warn(
+          "[session] secure storage write failed; keeping tokens in WebView storage"
+        );
+      }
     }
     webStorage().setItem(name, JSON.stringify(parsed ?? value));
   },

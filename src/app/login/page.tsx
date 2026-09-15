@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { LOGO_SRC } from "@/constants";
-import { useSessionStore } from "@/stores/session-store";
+import { useSessionStore, hasActiveSession } from "@/stores/session-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { easeOutExpo } from "@/lib/animations";
 import { LoginBackground } from "@/app/login/login-background";
@@ -18,15 +18,22 @@ export default function LoginPage() {
   const { t } = useTranslation();
   const hasHydrated = useSessionStore((s) => s.hasHydrated);
   const authenticated = useSessionStore((s) => s.authenticated);
+  const accessToken = useSessionStore((s) => s.accessToken);
+  const refreshToken = useSessionStore((s) => s.refreshToken);
+  const active = hasActiveSession({
+    authenticated,
+    accessToken,
+    refreshToken,
+  });
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
-    if (hasHydrated && authenticated) {
+    if (hasHydrated && active) {
       router.replace("/dashboard");
     }
-  }, [authenticated, hasHydrated, router]);
+  }, [active, hasHydrated, router]);
 
-  if (!hasHydrated || authenticated) {
+  if (!hasHydrated || active) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-[#020814] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-white">
         <div className="h-10 w-10 animate-pulse rounded-xl border border-white/20 bg-white/10" />

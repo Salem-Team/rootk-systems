@@ -1,8 +1,7 @@
 /**
  * Native token storage.
  * Web uses the browser sandbox (Zustand persist).
- * Native uses Keychain / Keystore. Tokens are never written to LocalStorage
- * on a native platform, even if the plugin is unavailable (in-memory only).
+ * Native prefers Keychain / Keystore via capacitor-secure-storage-plugin.
  */
 
 import { nativePlatform } from "@/lib/native/platform";
@@ -28,10 +27,16 @@ async function plugin(): Promise<SecurePlugin | null> {
   }
 }
 
-export async function secureSet(name: string, value: string): Promise<void> {
+/** @returns true when the value was written to the secure store. */
+export async function secureSet(name: string, value: string): Promise<boolean> {
   const store = await plugin();
-  if (!store) return;
-  await store.set({ key: PREFIX + name, value });
+  if (!store) return false;
+  try {
+    await store.set({ key: PREFIX + name, value });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function secureGet(name: string): Promise<string | null> {
