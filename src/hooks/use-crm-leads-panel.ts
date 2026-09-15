@@ -113,6 +113,7 @@ export function useCrmLeadsPanel({
   const items = page.items;
   const allSelected =
     items.length > 0 && items.every((l) => selected.has(l.id));
+  const someSelected = selected.size > 0 && !allSelected;
 
   function onSearchChange(value: string) {
     searchEditingRef.current = true;
@@ -235,6 +236,7 @@ export function useCrmLeadsPanel({
     employeeMap,
     items,
     allSelected,
+    someSelected,
     toggleAll,
     toggleOne,
     clearFilters,

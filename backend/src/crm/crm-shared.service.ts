@@ -249,6 +249,9 @@ export class CrmSharedService {
     requestedOwnerId?: string
   ): Prisma.CrmLeadWhereInput {
     if (!requestedOwnerId) return {};
+    if (requestedOwnerId === "__unassigned__") {
+      return { ownerEmployeeId: null };
+    }
     if (ownerIdAllowed(ownerIds, requestedOwnerId)) {
       return { ownerEmployeeId: requestedOwnerId };
     }

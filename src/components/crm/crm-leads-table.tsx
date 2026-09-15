@@ -39,6 +39,7 @@ interface CrmLeadsTableProps {
   employeeMap: Map<string, string>;
   selected: Set<string>;
   allSelected: boolean;
+  someSelected?: boolean;
   hasActiveFilters: boolean;
   onAddLead?: () => void;
   onRowClick: (lead: CrmLead) => void;
@@ -57,6 +58,7 @@ export function CrmLeadsTable({
   employeeMap,
   selected,
   allSelected,
+  someSelected = false,
   hasActiveFilters,
   onAddLead,
   onRowClick,
@@ -69,6 +71,24 @@ export function CrmLeadsTable({
   const { t } = useTranslation();
   const items = page.items;
   const openHistory = onViewHistory ?? onRowClick;
+
+  function SelectAllCheckbox({ className }: { className?: string }) {
+    return (
+      <input
+        type="checkbox"
+        checked={allSelected}
+        ref={(el) => {
+          if (el) el.indeterminate = someSelected;
+        }}
+        onChange={onToggleAll}
+        onClick={(e) => e.stopPropagation()}
+        aria-label={
+          allSelected ? t("crm.actions.deselectAll") : t("crm.actions.selectAll")
+        }
+        className={className ?? "h-3.5 w-3.5 accent-primary"}
+      />
+    );
+  }
 
   // Keep showing current rows while soft-refreshing — never flash a skeleton over real data.
   if (loading && items.length === 0) {
@@ -102,6 +122,24 @@ export function CrmLeadsTable({
 
   return (
     <>
+      <div className="flex items-center gap-2.5 border-b border-border/50 px-3 py-2 md:hidden">
+        <SelectAllCheckbox className="h-4 w-4 accent-primary" />
+        <button
+          type="button"
+          className="min-w-0 flex-1 text-start text-[13px] font-medium text-foreground"
+          onClick={onToggleAll}
+        >
+          {allSelected
+            ? t("crm.actions.deselectAll")
+            : t("crm.actions.selectAll")}
+        </button>
+        {selected.size > 0 ? (
+          <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+            {t("crm.actions.selected", { count: String(selected.size) })}
+          </span>
+        ) : null}
+      </div>
+
       <ul className="grid gap-2 p-2.5 pb-3 md:hidden">
         {items.map((lead) => {
           const stage = stageMap.get(lead.stageId);
@@ -205,16 +243,7 @@ export function CrmLeadsTable({
         <DataTableHeader>
           <DataTableHeaderRow>
             <DataTableHead className="w-10">
-              <input
-                type="checkbox"
-                checked={allSelected}
-                onChange={onToggleAll}
-                onClick={(e) => e.stopPropagation()}
-                aria-label={t("crm.actions.selected", {
-                  count: String(items.length),
-                })}
-                className="h-3.5 w-3.5 accent-primary"
-              />
+              <SelectAllCheckbox />
             </DataTableHead>
             <DataTableHead>{t("crm.leads.colLead")}</DataTableHead>
             <DataTableHead className="hidden sm:table-cell">

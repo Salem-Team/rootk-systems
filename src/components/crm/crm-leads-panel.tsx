@@ -19,6 +19,7 @@ import { CrmLeadsImportDialog } from "@/components/crm/crm-leads-import-dialog";
 import { CrmLeadsTable } from "@/components/crm/crm-leads-table";
 import { useCrmLeadsPanel } from "@/hooks/use-crm-leads-panel";
 import { downloadCrmLeadsWorkbook } from "@/lib/crm/leads-excel";
+import { canFilterCrmByOwner } from "@/lib/crm/lead-filters";
 import { cn } from "@/lib/utils";
 import { exportCrmLeadRows } from "@/services/crm.service";
 import type { Employee } from "@/types";
@@ -30,6 +31,13 @@ import type {
   CrmStage,
   PaginatedLeads,
 } from "@/types/crm";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface CrmLeadsPanelProps {
   leads: PaginatedLeads | null;
@@ -44,6 +52,7 @@ interface CrmLeadsPanelProps {
   onImported?: () => void;
   canAssign?: boolean;
   canViewOthers?: boolean;
+  canViewTeam?: boolean;
   canImport?: boolean;
   /** Keys that stay locked (e.g. Delay: status/followUp) — excluded from filter badge. */
   filterBadgeExclude?: Array<keyof CrmLeadFilters>;
@@ -84,6 +93,7 @@ export function CrmLeadsPanel({
   onImported,
   canAssign = false,
   canViewOthers = false,
+  canViewTeam = false,
   canImport = false,
   filterBadgeExclude = [],
   lockedFilterKeys,
@@ -105,6 +115,11 @@ export function CrmLeadsPanel({
   const [exporting, setExporting] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const filterCount = countBadgeFilters(filters, filterBadgeExclude);
+  const showOwnerFilter = canFilterCrmByOwner({
+    canAssign,
+    canViewOthers,
+    canViewTeam,
+  });
 
   async function onExport() {
     setExporting(true);
@@ -213,6 +228,36 @@ export function CrmLeadsPanel({
               </span>
             ) : null}
           </Button>
+          {showOwnerFilter ? (
+            <Select
+              value={filters.ownerEmployeeId || "all"}
+              onValueChange={(v) =>
+                onFiltersChange((prev) => ({
+                  ...prev,
+                  ownerEmployeeId: v === "all" ? undefined : v,
+                  page: 1,
+                }))
+              }
+            >
+              <SelectTrigger
+                className="h-11 w-[min(100%,9.5rem)] shrink-0 rounded-xl border-border/70 sm:h-9 sm:rounded-lg sm:w-[10.5rem]"
+                aria-label={t("crm.filters.byUser")}
+              >
+                <SelectValue placeholder={t("crm.filters.byUser")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("crm.filters.allSales")}</SelectItem>
+                <SelectItem value="__unassigned__">
+                  {t("crm.filters.unassigned")}
+                </SelectItem>
+                {panel.safeEmployees.map((e) => (
+                  <SelectItem key={e.id} value={e.id}>
+                    {e.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
           <Button
             type="button"
             size="sm"
@@ -250,7 +295,7 @@ export function CrmLeadsPanel({
         stages={panel.safeStages}
         employees={panel.safeEmployees}
         canAssign={canAssign}
-        canViewOthers={canViewOthers}
+        canViewOthers={canViewOthers || canViewTeam}
         hasActiveFilters={panel.hasActiveFilters}
         lockedKeys={lockedFilterKeys}
         onFiltersChange={onFiltersChange}
@@ -286,6 +331,7 @@ export function CrmLeadsPanel({
         employeeMap={panel.employeeMap}
         selected={panel.selected}
         allSelected={panel.allSelected}
+        someSelected={panel.someSelected}
         hasActiveFilters={panel.hasActiveFilters}
         onAddLead={onAddLead}
         onRowClick={onRowClick}

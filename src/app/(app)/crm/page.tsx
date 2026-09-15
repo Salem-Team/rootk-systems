@@ -207,7 +207,8 @@ export default function CrmPage() {
                 onAddLead={hub.canCreate ? hub.openCreate : undefined}
                 onImported={() => void hub.reloadVisible()}
                 canAssign={hub.canAssign}
-                canViewOthers={hub.canViewOthers || hub.canViewTeam}
+                canViewOthers={hub.canViewOthers}
+                canViewTeam={hub.canViewTeam}
                 canImport={hub.canCreate}
                 businessTypes={hub.safeBusinessTypes}
                 feedbackTypes={hub.safeFeedbackTypes}
@@ -227,7 +228,8 @@ export default function CrmPage() {
               onRowClick={(lead) => hub.openViewLead(lead.id)}
               onViewHistory={(lead) => hub.openViewLead(lead.id, "timeline")}
               canAssign={hub.canAssign}
-              canViewOthers={hub.canViewOthers || hub.canViewTeam}
+              canViewOthers={hub.canViewOthers}
+              canViewTeam={hub.canViewTeam}
               feedbackTypes={hub.safeFeedbackTypes}
             />
           ) : null}

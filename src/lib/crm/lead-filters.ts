@@ -55,12 +55,14 @@ export function filterLeads(
 
   return leads.filter((lead) => {
     if (!isInCrmScope(lead.ownerEmployeeId, opts)) return false;
-    if (
-      (opts?.canViewOthers || (opts?.teamOwnerIds && opts.teamOwnerIds.length > 0)) &&
+    if (filters.ownerEmployeeId === "__unassigned__") {
+      if (lead.ownerEmployeeId) return false;
+    } else if (
       filters.ownerEmployeeId &&
       lead.ownerEmployeeId !== filters.ownerEmployeeId
-    )
+    ) {
       return false;
+    }
     if (filters.stageId && lead.stageId !== filters.stageId) return false;
     if (filters.subStageId && lead.subStageId !== filters.subStageId)
       return false;

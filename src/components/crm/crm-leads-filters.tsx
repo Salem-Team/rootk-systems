@@ -176,10 +176,13 @@ function FilterControls({
           }
         >
           <SelectTrigger className={cn(triggerClass, !stacked && "sm:w-[160px]")}>
-            <SelectValue placeholder={t("crm.filters.allSales")} />
+            <SelectValue placeholder={t("crm.filters.byUser")} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("crm.filters.allSales")}</SelectItem>
+            <SelectItem value="__unassigned__">
+              {t("crm.filters.unassigned")}
+            </SelectItem>
             {employees.map((e) => (
               <SelectItem key={e.id} value={e.id}>
                 {e.name}

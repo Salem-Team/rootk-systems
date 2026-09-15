@@ -25,6 +25,7 @@ interface CrmDelayPanelProps {
   onViewHistory?: (lead: CrmLead) => void;
   canAssign?: boolean;
   canViewOthers?: boolean;
+  canViewTeam?: boolean;
   feedbackTypes?: CrmFeedbackType[];
   className?: string;
 }
@@ -44,6 +45,7 @@ export function CrmDelayPanel({
   onViewHistory,
   canAssign = false,
   canViewOthers = false,
+  canViewTeam = false,
   feedbackTypes = [],
   className,
 }: CrmDelayPanelProps) {
@@ -96,6 +98,7 @@ export function CrmDelayPanel({
           onViewHistory={onViewHistory}
           canAssign={canAssign}
           canViewOthers={canViewOthers}
+          canViewTeam={canViewTeam}
           canImport={false}
           filterBadgeExclude={DELAY_FILTER_EXCLUDE}
           lockedFilterKeys={DELAY_LOCKED_FILTERS}
