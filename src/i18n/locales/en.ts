@@ -27,6 +27,8 @@ export const en = {
     rateLimited: "Too many attempts. Wait a moment and try again.",
     networkError: "Connection problem. Check your network and try again.",
     sessionExpired: "Your session ended. Please sign in again.",
+    rememberMe: "Remember me",
+    rememberMeHint: "Stay signed in on this device until you sign out",
     copyright: "All rights reserved",
     downloadApp: "Download Android app",
     updateApp: "Update app",
@@ -62,6 +64,10 @@ export const en = {
       failed: "Biometric unlock failed. Try again.",
       usePassword: "Sign out and use password",
       hint: "Your session stays on this device until you sign out",
+      loginWith: "Sign in with {method}",
+      needPasswordOnce:
+        "Sign in with your password once to restore this device session, then you can use biometrics.",
+      orDivider: "or",
     },
   },
   userView: {

@@ -11,6 +11,10 @@ import {
   type BiometryKind,
 } from "@/lib/native/biometrics";
 import { isNativeApp } from "@/lib/native/platform";
+import {
+  hasActiveSession,
+  useSessionStore,
+} from "@/stores/session-store";
 
 const ENABLED_KEY = "rootk.biometric.enabled";
 const PROMPTED_KEY = "rootk.biometric.prompted";
@@ -171,4 +175,54 @@ export function shouldOfferBiometricOptIn(): boolean {
   if (!isNativeApp()) return false;
   const pref = getBiometricPreference();
   return !pref.enabled && !pref.prompted;
+}
+
+/**
+ * True when the login screen can offer fingerprint / Face ID
+ * (preference on + device supports it). Session may still need recovery.
+ */
+export function canOfferBiometricLogin(): boolean {
+  return isNativeApp() && getBiometricPreference().enabled;
+}
+
+/**
+ * After biometric success: renew sticky tokens if needed.
+ * Avoids rehydrate when a live session already exists (login race).
+ */
+export async function resumeStickySessionAfterBiometrics(): Promise<{
+  ok: boolean;
+  reason?: "no_session" | "refresh_failed" | "transient";
+}> {
+  let state = useSessionStore.getState();
+  if (!hasActiveSession(state)) {
+    try {
+      await Promise.race([
+        useSessionStore.persist.rehydrate(),
+        new Promise<void>((resolve) => {
+          window.setTimeout(resolve, 2_500);
+        }),
+      ]);
+    } catch {
+      /* continue with in-memory / secure fallback */
+    }
+    state = useSessionStore.getState();
+  }
+
+  if (hasActiveSession(state)) {
+    if (!state.accessToken && state.refreshToken) {
+      const renewed = await refreshAccessToken();
+      if (renewed === null) return { ok: false, reason: "refresh_failed" };
+      if (renewed === "transient") return { ok: false, reason: "transient" };
+    }
+    return { ok: true };
+  }
+
+  return { ok: false, reason: "no_session" };
+}
+
+async function refreshAccessToken() {
+  const { refreshAccessToken: refresh } = await import(
+    "@/services/auth.service"
+  );
+  return refresh();
 }

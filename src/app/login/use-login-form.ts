@@ -7,15 +7,25 @@ import { useAttendanceStore } from "@/stores/attendance-store";
 import { signInWithCredentials } from "@/services/auth.service";
 import {
   bindBiometricUser,
+  biometryLabelKey,
+  canOfferBiometricLogin,
   checkBiometricSupport,
-  markBiometricPrompted,
+  getBiometricPreference,
+  resumeStickySessionAfterBiometrics,
   shouldOfferBiometricOptIn,
+  unlockWithBiometrics,
 } from "@/services/biometric-auth.service";
 import {
   loginCredentialsSchema,
   type LoginCredentialsDto,
 } from "@/schemas/auth.schema";
 import { useTranslation } from "@/hooks/use-translation";
+import {
+  getRememberMeDefault,
+  getRememberedEmail,
+  saveRememberedLogin,
+} from "@/lib/auth/remember-me";
+import { navigateToAppHome } from "@/lib/auth/navigate-after-login";
 import { isNativeApp } from "@/lib/native/platform";
 import { useBiometricLockStore } from "@/stores/biometric-lock-store";
 import { flushSessionPersist, useSessionStore } from "@/stores/session-store";
@@ -78,7 +88,13 @@ export function useLoginForm() {
   const [success, setSuccess] = useState(false);
   const [emailUnlocked, setEmailUnlocked] = useState(false);
   const [passwordUnlocked, setPasswordUnlocked] = useState(false);
-  const [biometricOptInOpen, setBiometricOptInOpen] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
+  const [biometricReady, setBiometricReady] = useState(false);
+  const [biometricBusy, setBiometricBusy] = useState(false);
+  const [biometricKindLabel, setBiometricKindLabel] = useState(
+    t("auth.biometric.generic")
+  );
+  const [biometricIsFace, setBiometricIsFace] = useState(false);
 
   const form = useForm<LoginCredentialsDto>({
     resolver: zodResolver(loginCredentialsSchema),
@@ -88,29 +104,49 @@ export function useLoginForm() {
 
   useEffect(() => {
     clearLegacyRememberedEmail();
-    // Keep fields empty — never seed admin or last-used credentials.
-    form.reset({ email: "", password: "" });
+    const remember = getRememberMeDefault();
+    setRememberMe(remember);
+    const savedEmail =
+      (remember ? getRememberedEmail() : null) ||
+      getBiometricPreference().email ||
+      "";
+    form.reset({ email: savedEmail, password: "" });
     router.prefetch("/dashboard");
   }, [form, router]);
 
-  const submitting = form.formState.isSubmitting || success;
+  useEffect(() => {
+    if (!isNativeApp() || !canOfferBiometricLogin()) {
+      setBiometricReady(false);
+      return;
+    }
+    let cancelled = false;
+    void checkBiometricSupport().then((info) => {
+      if (cancelled) return;
+      setBiometricReady(info.available);
+      setBiometricIsFace(info.kind === "face");
+      setBiometricKindLabel(
+        t(biometryLabelKey(info.kind) as "auth.biometric.generic")
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [t]);
+
+  const submitting = form.formState.isSubmitting || success || biometricBusy;
 
   async function finishLoginNavigation() {
-    try {
-      await flushSessionPersist();
-    } catch {
-      /* in-memory session is already applied — still navigate */
-    }
-    // Brief pause so native secure storage can settle before route change.
-    await new Promise((resolve) => window.setTimeout(resolve, 220));
-    router.replace("/dashboard");
+    // Persist in the background — never block entry on Keychain stalls.
+    void flushSessionPersist(2_000).catch(() => undefined);
+    navigateToAppHome(router);
   }
 
   async function onSubmit(values: LoginCredentialsDto) {
     setFormError(null);
     resetAttendance();
+    const email = values.email.trim();
     const res = await signInWithCredentials({
-      email: values.email.trim(),
+      email,
       password: values.password,
     });
     if (!res.success) {
@@ -119,34 +155,74 @@ export function useLoginForm() {
       form.setFocus("password");
       return;
     }
+
+    // Native always keeps sticky session; web follows the checkbox.
+    const keepSession = isNativeApp() || rememberMe;
+    saveRememberedLogin({
+      remember: keepSession,
+      email,
+    });
+
     setSuccess(true);
     toast.success(t("auth.welcomeBack"), { duration: 1600 });
 
     const sessionUser = useSessionStore.getState().user;
-    bindBiometricUser({
-      userId: sessionUser.id,
-      email: sessionUser.email,
-    });
+    if (sessionUser?.id) {
+      bindBiometricUser({
+        userId: sessionUser.id,
+        email: sessionUser.email,
+      });
+    }
     useBiometricLockStore.getState().setUnlocked(true);
     useBiometricLockStore.getState().markSkipNextAutoPrompt();
 
+    // Never block navigation for biometric opt-in — offer it inside the app.
     if (isNativeApp() && shouldOfferBiometricOptIn()) {
-      const support = await checkBiometricSupport();
-      if (support.available) {
-        setBiometricOptInOpen(true);
-        return;
-      }
+      void checkBiometricSupport().then((support) => {
+        if (support.available) {
+          useBiometricLockStore.getState().requestOptIn();
+        }
+      });
     }
 
     await finishLoginNavigation();
   }
 
-  async function onBiometricOptInOpenChange(open: boolean) {
-    setBiometricOptInOpen(open);
-    if (!open && success) {
-      markBiometricPrompted();
-      await finishLoginNavigation();
+  async function onBiometricLogin() {
+    if (biometricBusy || !biometricReady) return;
+    setFormError(null);
+    setBiometricBusy(true);
+    const auth = await unlockWithBiometrics({
+      reason: t("auth.biometric.unlockReason"),
+      cancelTitle: t("common.cancel"),
+      title: t("auth.biometric.unlockTitle"),
+      subtitle: t("auth.biometric.unlockSubtitle"),
+    });
+    if (!auth.ok) {
+      setBiometricBusy(false);
+      if (!auth.cancelled) {
+        setFormError(t("auth.biometric.failed"));
+      }
+      return;
     }
+
+    const resumed = await resumeStickySessionAfterBiometrics();
+    if (!resumed.ok) {
+      setBiometricBusy(false);
+      if (resumed.reason === "transient") {
+        setFormError(t("auth.networkError"));
+        return;
+      }
+      setFormError(t("auth.biometric.needPasswordOnce"));
+      return;
+    }
+
+    useBiometricLockStore.getState().setUnlocked(true);
+    useBiometricLockStore.getState().markSkipNextAutoPrompt();
+    setSuccess(true);
+    toast.success(t("auth.welcomeBack"), { duration: 1600 });
+    await finishLoginNavigation();
+    setBiometricBusy(false);
   }
 
   useEffect(() => {
@@ -168,7 +244,6 @@ export function useLoginForm() {
     field: "email" | "password",
     event: FocusEvent<HTMLInputElement>
   ) {
-    // Unlock immediately so password managers / typing work on first tap.
     event.currentTarget.readOnly = false;
     unlockField(field);
     if (field === "email") setEmailFocused(true);
@@ -179,7 +254,6 @@ export function useLoginForm() {
   }
 
   function onFieldPointerDown(field: "email" | "password") {
-    // iOS/Android: unlock before focus so the first keystroke is not dropped.
     unlockField(field);
   }
 
@@ -199,8 +273,13 @@ export function useLoginForm() {
     setPasswordFocused,
     emailUnlocked,
     passwordUnlocked,
-    biometricOptInOpen,
-    onBiometricOptInOpenChange,
+    rememberMe,
+    setRememberMe,
+    biometricReady,
+    biometricBusy,
+    biometricKindLabel,
+    biometricIsFace,
+    onBiometricLogin,
     onSubmit,
     onPasswordKeyEvent,
     onFieldFocus,

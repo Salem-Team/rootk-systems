@@ -8,9 +8,11 @@ import {
   Check,
   Eye,
   EyeOff,
+  Fingerprint,
   Loader2,
   LockKeyhole,
   Mail,
+  ScanFace,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +22,6 @@ import { useLoginForm } from "@/app/login/use-login-form";
 import { fadeInUp, softSpring, staggerContainer } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 import { LoginAndroidAppLink } from "@/app/login/login-android-app-link";
-import { BiometricOptInDialog } from "@/components/auth/biometric-opt-in-dialog";
 
 const fieldClass =
   "h-12 border-[#d0dae8] bg-white pe-3 ps-11 text-[16px] leading-normal text-[#0a1220] shadow-none placeholder:text-[#94a3b8] transition-[border-color,box-shadow,background-color] duration-200 hover:border-[#9eb3d4] focus-visible:border-[#082868] focus-visible:bg-white focus-visible:ring-[3px] focus-visible:ring-[#082868]/14 md:text-[15px]";
@@ -47,9 +48,16 @@ export function LoginSignInPanel() {
     onPasswordKeyEvent,
     onFieldFocus,
     onFieldPointerDown,
-    biometricOptInOpen,
-    onBiometricOptInOpenChange,
+    rememberMe,
+    setRememberMe,
+    biometricReady,
+    biometricBusy,
+    biometricKindLabel,
+    biometricIsFace,
+    onBiometricLogin,
   } = useLoginForm();
+
+  const BiometricIcon = biometricIsFace ? ScanFace : Fingerprint;
 
   return (
     <>
@@ -243,6 +251,24 @@ export function LoginSignInPanel() {
               ) : null}
             </div>
 
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2.5 transition-colors hover:border-[#c5d4ea] hover:bg-white">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                disabled={submitting}
+                onChange={(event) => setRememberMe(event.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#9eb3d4] text-[#082868] accent-[#082868] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#082868]/30"
+              />
+              <span className="min-w-0">
+                <span className="block text-[13px] font-semibold text-[#0a1220]">
+                  {t("auth.rememberMe")}
+                </span>
+                <span className="mt-0.5 block text-[11.5px] leading-snug text-[#64748b]">
+                  {t("auth.rememberMeHint")}
+                </span>
+              </span>
+            </label>
+
             <AnimatePresence>
               {formError ? (
                 <motion.p
@@ -285,12 +311,12 @@ export function LoginSignInPanel() {
               >
                 {success ? (
                   <Check className="h-4 w-4" />
-                ) : submitting ? (
+                ) : submitting && !biometricBusy ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : null}
                 {success
                   ? t("auth.enteringWorkspace")
-                  : submitting
+                  : submitting && !biometricBusy
                     ? t("auth.signingIn")
                     : t("auth.signIn")}
                 {!submitting && !success ? (
@@ -300,6 +326,36 @@ export function LoginSignInPanel() {
                 ) : null}
               </Button>
             </motion.div>
+
+            {biometricReady ? (
+              <div className="space-y-2.5 pt-0.5">
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-[#e2e8f0]" />
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-[#94a3b8]">
+                    {t("auth.biometric.orDivider")}
+                  </span>
+                  <div className="h-px flex-1 bg-[#e2e8f0]" />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  disabled={submitting}
+                  aria-busy={biometricBusy}
+                  onClick={() => void onBiometricLogin()}
+                  className="h-12 w-full gap-2 rounded-xl border-[#c5d4ea] bg-white text-[15px] font-semibold text-[#082868] hover:bg-[#eef3fb] hover:text-[#082868]"
+                >
+                  {biometricBusy ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <BiometricIcon className="h-4 w-4" />
+                  )}
+                  {t("auth.biometric.loginWith", {
+                    method: biometricKindLabel,
+                  })}
+                </Button>
+              </div>
+            ) : null}
           </form>
 
           <LoginAndroidAppLink />
@@ -338,10 +394,6 @@ export function LoginSignInPanel() {
         </div>
       </motion.div>
     </motion.section>
-    <BiometricOptInDialog
-      open={biometricOptInOpen}
-      onOpenChange={(open) => void onBiometricOptInOpenChange(open)}
-    />
     </>
   );
 }

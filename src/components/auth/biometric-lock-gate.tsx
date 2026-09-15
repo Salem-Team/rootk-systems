@@ -59,20 +59,25 @@ export function BiometricLockGate({ children }: { children: React.ReactNode }) {
     if (busy) return;
     setBusy(true);
     setError(null);
-    const res = await unlockWithBiometrics({
-      reason: t("auth.biometric.unlockReason"),
-      cancelTitle: t("common.cancel"),
-      title: t("auth.biometric.unlockTitle"),
-      subtitle: t("auth.biometric.unlockSubtitle"),
-    });
-    setBusy(false);
-    if (res.ok) {
-      setUnlocked(true);
-      setError(null);
-      return;
-    }
-    if (!res.cancelled) {
+    try {
+      const res = await unlockWithBiometrics({
+        reason: t("auth.biometric.unlockReason"),
+        cancelTitle: t("common.cancel"),
+        title: t("auth.biometric.unlockTitle"),
+        subtitle: t("auth.biometric.unlockSubtitle"),
+      });
+      if (res.ok) {
+        setUnlocked(true);
+        setError(null);
+        return;
+      }
+      if (!res.cancelled) {
+        setError(t("auth.biometric.failed"));
+      }
+    } catch {
       setError(t("auth.biometric.failed"));
+    } finally {
+      setBusy(false);
     }
   }, [busy, setUnlocked, t]);
 

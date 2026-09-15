@@ -29,6 +29,8 @@ export const ar: TranslationKeys = {
     rateLimited: "محاولات كتير. استنى شوية وحاول تاني.",
     networkError: "فيه مشكلة في الاتصال. تأكد من النت وحاول تاني.",
     sessionExpired: "انتهت الجلسة. سجّل دخول تاني.",
+    rememberMe: "تذكرني",
+    rememberMeHint: "خلّيك مسجّل على الجهاز ده لحد ما تعمل لوج آوت",
     copyright: "جميع الحقوق محفوظة",
     downloadApp: "تحميل تطبيق أندرويد",
     updateApp: "تحديث التطبيق",
@@ -64,6 +66,10 @@ export const ar: TranslationKeys = {
       failed: "فشل الفتح بالبيومتريك. حاول تاني.",
       usePassword: "سجّل خروج واستخدم كلمة المرور",
       hint: "جلستك بتفضل على الجهاز لحد ما تعمل لوج آوت",
+      loginWith: "دخول بـ {method}",
+      needPasswordOnce:
+        "سجّل دخول بكلمة المرور مرة واحدة عشان نرجّع الجلسة، وبعدها تقدر تستخدم البصمة.",
+      orDivider: "أو",
     },
   },
   userView: {

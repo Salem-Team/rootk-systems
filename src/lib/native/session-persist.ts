@@ -48,27 +48,26 @@ const hybrid: StateStorage = {
     const refresh =
       typeof state?.refreshToken === "string" ? state.refreshToken : null;
 
-    let accessOk = !access;
-    let refreshOk = !refresh;
-    if (access) accessOk = await secureSet(ACCESS, access);
-    else await secureRemove(ACCESS);
-    if (refresh) refreshOk = await secureSet(REFRESH, refresh);
-    else await secureRemove(REFRESH);
-
-    // Only strip tokens from WebView storage when both secure writes succeeded.
-    // Otherwise keep them in localStorage so login survives plugin failures.
-    const stripTokens = accessOk && refreshOk;
-    if (state) {
-      if (stripTokens) {
-        state.accessToken = null;
-        state.refreshToken = null;
-      } else if (access || refresh) {
-        console.warn(
-          "[session] secure storage write failed; keeping tokens in WebView storage"
-        );
+    // Best-effort Keychain mirror. Always keep the full snapshot (with tokens)
+    // in WebView storage so a slow/failed secureGet never wipes a fresh login.
+    if (access) {
+      const ok = await secureSet(ACCESS, access);
+      if (!ok) {
+        console.warn("[session] secure access token write failed; WebView fallback kept");
       }
+    } else {
+      await secureRemove(ACCESS);
     }
-    webStorage().setItem(name, JSON.stringify(parsed ?? value));
+    if (refresh) {
+      const ok = await secureSet(REFRESH, refresh);
+      if (!ok) {
+        console.warn("[session] secure refresh token write failed; WebView fallback kept");
+      }
+    } else {
+      await secureRemove(REFRESH);
+    }
+
+    webStorage().setItem(name, value);
   },
   removeItem: async (name) => {
     if (typeof window === "undefined") return;

@@ -222,6 +222,16 @@ export const useSessionStore = create<SessionState>()(
           typeof p?.refreshToken === "string" && p.refreshToken
             ? p.refreshToken
             : null;
+        // Never clobber a live signed-in session with an incomplete snapshot
+        // (e.g. concurrent rehydrate while Keychain read is still empty).
+        if (
+          current.authenticated &&
+          (current.accessToken || current.refreshToken) &&
+          !accessToken &&
+          !refreshToken
+        ) {
+          return current;
+        }
         // API mode: never restore a zombie "authenticated" flag without tokens.
         const claimedAuth = Boolean(p?.authenticated);
         const authenticated =
@@ -329,10 +339,11 @@ export const SESSION_PERSIST_KEY = "rootk-session";
 /**
  * Force-write the current session to storage before navigation / reload.
  * Zustand's async persist can lag a tick behind `applyAuthSession`.
+ * Never hangs forever — native Keychain can stall.
  */
-export async function flushSessionPersist(): Promise<void> {
+export async function flushSessionPersist(timeoutMs = 2_500): Promise<void> {
   const s = useSessionStore.getState();
-  await writeSessionPersistSnapshot(SESSION_PERSIST_KEY, {
+  const write = writeSessionPersistSnapshot(SESSION_PERSIST_KEY, {
     state: {
       role: s.role,
       authenticated: s.authenticated,
@@ -344,6 +355,12 @@ export async function flushSessionPersist(): Promise<void> {
     },
     version: 0,
   });
+  await Promise.race([
+    write,
+    new Promise<void>((resolve) => {
+      window.setTimeout(resolve, timeoutMs);
+    }),
+  ]);
 }
 
 /** True when JWT is missing, malformed, or expires within `skewMs`. */

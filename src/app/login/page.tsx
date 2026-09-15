@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
@@ -9,9 +9,14 @@ import { LOGO_SRC } from "@/constants";
 import { useSessionStore, hasActiveSession } from "@/stores/session-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { easeOutExpo } from "@/lib/animations";
+import { navigateToAppHome } from "@/lib/auth/navigate-after-login";
+import { isNativeApp } from "@/lib/native/platform";
+import { resumeStickySessionAfterBiometrics } from "@/services/biometric-auth.service";
 import { LoginBackground } from "@/app/login/login-background";
 import { LoginBrandHero } from "@/app/login/login-brand-hero";
 import { LoginSignInPanel } from "@/app/login/login-sign-in-panel";
+
+const RECOVER_TIMEOUT_MS = 2_500;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,14 +31,43 @@ export default function LoginPage() {
     refreshToken,
   });
   const reduceMotion = useReducedMotion();
+  const [recovering, setRecovering] = useState(isNativeApp());
 
   useEffect(() => {
-    if (hasHydrated && active) {
-      router.replace("/dashboard");
+    if (!hasHydrated) return;
+
+    if (active) {
+      setRecovering(false);
+      navigateToAppHome(router);
+      return;
     }
+
+    if (!isNativeApp()) {
+      setRecovering(false);
+      return;
+    }
+
+    let cancelled = false;
+    const timeout = window.setTimeout(() => {
+      if (!cancelled) setRecovering(false);
+    }, RECOVER_TIMEOUT_MS);
+
+    void resumeStickySessionAfterBiometrics().then((result) => {
+      if (cancelled) return;
+      if (result.ok) {
+        navigateToAppHome(router);
+        return;
+      }
+      setRecovering(false);
+    });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
   }, [active, hasHydrated, router]);
 
-  if (!hasHydrated || active) {
+  if (!hasHydrated || active || recovering) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-[#020814] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-white">
         <div className="h-10 w-10 animate-pulse rounded-xl border border-white/20 bg-white/10" />
