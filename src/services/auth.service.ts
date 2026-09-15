@@ -389,9 +389,25 @@ export async function signOutSession(): Promise<ApiResponse<boolean>> {
       await logoutRemote(useSessionStore.getState().refreshToken);
     }
     useSessionStore.getState().signOut();
+    try {
+      const { useBiometricLockStore } = await import(
+        "@/stores/biometric-lock-store"
+      );
+      useBiometricLockStore.getState().reset();
+    } catch {
+      /* ignore */
+    }
     return ok(true, "Signed out");
   } catch (error) {
     useSessionStore.getState().signOut();
+    try {
+      const { useBiometricLockStore } = await import(
+        "@/stores/biometric-lock-store"
+      );
+      useBiometricLockStore.getState().reset();
+    } catch {
+      /* ignore */
+    }
     return fromError(error, false);
   }
 }

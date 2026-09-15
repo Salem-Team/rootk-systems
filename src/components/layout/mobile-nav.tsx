@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -14,7 +15,6 @@ import { usePendingLeaveCount } from "@/hooks/use-pending-leave-count";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { layoutSpring, softSpring } from "@/lib/animations";
 
 export function MobileBottomNav() {
@@ -33,7 +33,7 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.55rem,env(safe-area-inset-bottom))] pt-2 lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 max-w-full px-2 pb-[max(0.55rem,env(safe-area-inset-bottom))] pt-2 sm:px-3 lg:hidden"
       aria-label={t("common.mobileNav")}
     >
       <ul
@@ -141,6 +141,17 @@ export function MobileDrawer() {
     role
   );
 
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    const prevPadding = document.body.style.paddingRight;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.paddingRight = prevPadding;
+    };
+  }, [mobileMenuOpen]);
+
   return (
     <AnimatePresence>
       {mobileMenuOpen ? (
@@ -172,12 +183,12 @@ export function MobileDrawer() {
             transition={
               reduceMotion ? { duration: 0.12 } : softSpring
             }
-            className="fixed inset-y-0 start-0 z-50 flex w-[min(100%,280px)] flex-col bg-sidebar text-sidebar-foreground shadow-[var(--shadow-card-hover)] lg:hidden"
+            className="fixed inset-y-0 start-0 z-50 flex h-dvh max-h-dvh w-[min(100dvw,18.5rem)] flex-col overflow-hidden bg-sidebar text-sidebar-foreground shadow-[var(--shadow-card-hover)] lg:hidden"
             role="dialog"
             aria-modal="true"
             aria-label={t("common.navDrawer")}
           >
-            <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
+            <div className="flex min-h-14 shrink-0 items-center justify-between border-b border-sidebar-border px-4 pt-[env(safe-area-inset-top,0px)]">
               <BrandMark />
               <Button
                 variant="ghost"
@@ -189,14 +200,14 @@ export function MobileDrawer() {
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <ScrollArea className="min-h-0 flex-1 px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <div className="drawer-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <div className="mb-3">
                 <SidebarDailyPlan
                   className="mx-0 mt-0"
                   onNavigate={() => setMobileMenuOpen(false)}
                 />
               </div>
-              <nav className="space-y-1">
+              <nav className="space-y-1 pb-2">
                 {items.map((item) => {
                   const active =
                     pathname === item.href ||
@@ -212,7 +223,7 @@ export function MobileDrawer() {
                       href={item.href}
                       onClick={() => setMobileMenuOpen(false)}
                       className={cn(
-                        "relative flex min-h-12 touch-manipulation items-center gap-3 rounded-xl px-3 py-3 text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
+                        "relative flex min-h-11 touch-manipulation items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
                         active
                           ? "bg-white text-sidebar shadow-md shadow-black/20"
                           : "text-sidebar-foreground/65 hover:bg-white/[0.06] hover:text-white"
@@ -221,18 +232,20 @@ export function MobileDrawer() {
                     >
                       <Icon
                         className={cn(
-                          "relative z-10 h-4 w-4",
+                          "relative z-10 h-4 w-4 shrink-0",
                           active ? "text-primary" : undefined
                         )}
                       />
-                      <span className="relative z-10 flex flex-1 items-center justify-between gap-2">
-                        {item.key === "tasks" && showTasksAdminLabel
-                          ? t("nav.tasksAdmin")
-                          : t(`nav.${item.key}`)}
+                      <span className="relative z-10 flex min-w-0 flex-1 items-center justify-between gap-2">
+                        <span className="truncate">
+                          {item.key === "tasks" && showTasksAdminLabel
+                            ? t("nav.tasksAdmin")
+                            : t(`nav.${item.key}`)}
+                        </span>
                         {badgeCount > 0 ? (
                           <span
                             className={cn(
-                              "rounded-md px-1.5 py-0.5 font-mono text-xs font-semibold",
+                              "shrink-0 rounded-md px-1.5 py-0.5 font-mono text-xs font-semibold",
                               active
                                 ? "bg-primary/12 text-primary"
                                 : "bg-sky-400/20 text-sky-100"
@@ -246,7 +259,7 @@ export function MobileDrawer() {
                   );
                 })}
               </nav>
-            </ScrollArea>
+            </div>
           </motion.aside>
         </>
       ) : null}

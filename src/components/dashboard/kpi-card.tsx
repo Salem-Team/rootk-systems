@@ -95,7 +95,7 @@ export function KpiCard({
               </Badge>
             ) : null}
           </div>
-          <p className="stat-value mt-2.5 text-[1.55rem] md:text-[1.7rem]">
+          <p className="stat-value mt-2 text-[1.35rem] leading-none sm:mt-2.5 sm:text-[1.55rem] md:text-[1.7rem]">
             <AnimatedCounter
               value={value}
               suffix={suffix}
@@ -103,7 +103,9 @@ export function KpiCard({
             />
           </p>
           {hint ? (
-            <p className="mt-1.5 text-[11px] text-muted-foreground">{hint}</p>
+            <p className="mt-1.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground">
+              {hint}
+            </p>
           ) : null}
           {showTrend ? (
             <p

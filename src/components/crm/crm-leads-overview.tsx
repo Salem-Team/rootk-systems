@@ -79,8 +79,8 @@ export function CrmLeadsOverview({
   return (
     <section className={cn("space-y-4", className)}>
       <div className="surface-panel">
-        <div className="panel-header flex flex-wrap items-center justify-between gap-3">
-          <div>
+        <div className="panel-header flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <h2 className="text-sm font-semibold tracking-tight">
               {t("crm.leads.overviewTitle")}
             </h2>
@@ -91,7 +91,7 @@ export function CrmLeadsOverview({
               })}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
             {showOwnerFilter && onOwnerChange ? (
               <Select
                 value={ownerEmployeeId || "all"}
@@ -100,7 +100,7 @@ export function CrmLeadsOverview({
                 }
               >
                 <SelectTrigger
-                  className="h-8 w-[170px]"
+                  className="h-11 w-full touch-manipulation sm:h-8 sm:w-[170px]"
                   aria-label={t("crm.filters.sales")}
                 >
                   <SelectValue placeholder={t("crm.filters.allSales")} />
@@ -115,30 +115,47 @@ export function CrmLeadsOverview({
                 </SelectContent>
               </Select>
             ) : null}
-            {canCreate ? (
-              <CrmLeadsBulkAdd
-                stages={stages}
-                businessTypes={businessTypes}
-                employees={ownerOptions}
-                canAssign={canAssign}
-                onImported={onImported}
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+              {canCreate ? (
+                <CrmLeadsBulkAdd
+                  stages={stages}
+                  businessTypes={businessTypes}
+                  employees={ownerOptions}
+                  canAssign={canAssign}
+                  onImported={onImported}
+                  size="sm"
+                  className="min-h-11 w-full sm:min-h-8 sm:w-auto"
+                />
+              ) : null}
+              {onAddLead ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  className="min-h-11 touch-manipulation sm:min-h-8"
+                  onClick={onAddLead}
+                >
+                  {t("crm.actions.addLead")}
+                </Button>
+              ) : null}
+              <Button
+                type="button"
                 size="sm"
-              />
-            ) : null}
-            {onAddLead ? (
-              <Button type="button" size="sm" onClick={onAddLead}>
-                {t("crm.actions.addLead")}
+                variant="outline"
+                className={cn(
+                  "min-h-11 touch-manipulation sm:min-h-8",
+                  !onAddLead && !canCreate ? "col-span-2" : "col-span-2 sm:col-span-1"
+                )}
+                onClick={onOpenAllLeads}
+              >
+                <LayoutList className="me-1.5 h-3.5 w-3.5" />
+                {t("crm.leads.allLeads")}
               </Button>
-            ) : null}
-            <Button type="button" size="sm" variant="outline" onClick={onOpenAllLeads}>
-              <LayoutList className="me-1.5 h-3.5 w-3.5" />
-              {t("crm.leads.allLeads")}
-            </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
         <button
           type="button"
           onClick={onOpenAllLeads}

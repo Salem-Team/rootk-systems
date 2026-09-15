@@ -135,7 +135,7 @@ export async function addCrmLeadFeedback(
     const parsed = leadFeedbackSchema.parse(input);
     const actorId = getSessionUserId() || "system";
     const now = new Date().toISOString();
-    const { feedbackTypes: types } = await ensureCatalog();
+    const { feedbackTypes: types, stages } = await ensureCatalog();
     const feedbackTypeId =
       parsed.feedbackTypeId ||
       types.find((x) => x.active && x.name.toLowerCase() === "other")?.id ||
@@ -188,6 +188,18 @@ export async function addCrmLeadFeedback(
     ) {
       clearLocalCrmFollowUpReminders(leadId);
     }
+    const nextStageId = parsed.stageId ?? lead.stageId;
+    const nextStage = stages.find((s) => s.id === nextStageId);
+    const selectedType = types.find((x) => x.id === feedbackTypeId);
+    let lossReasonTypeId = lead.lossReasonTypeId;
+    if (selectedType?.isLossReason) {
+      lossReasonTypeId = feedbackTypeId;
+    }
+    if (nextStage?.category === "lost") {
+      if (!lossReasonTypeId) {
+        throw new ValidationError("Please select a loss reason");
+      }
+    }
     await crmLeadRepository.update(
       lead.id,
       touchEntity(lead, actorId, {
@@ -196,6 +208,13 @@ export async function addCrmLeadFeedback(
         lastActivityAt: now,
         ...(parsed.stageId ? { stageId: parsed.stageId } : {}),
         ...(parsed.tags ? { tags: parsed.tags } : {}),
+        ...(lossReasonTypeId !== lead.lossReasonTypeId
+          ? { lossReasonTypeId }
+          : {}),
+        ...(nextStage?.category === "lost" ? { convertedAt: null } : {}),
+        ...(nextStage?.category === "won"
+          ? { convertedAt: new Date().toISOString() }
+          : {}),
       })
     );
     const callLabel = callAnswered ? "answered" : "no_answer";

@@ -4,6 +4,7 @@ import { Loader2, Pencil } from "lucide-react";
 import { CrmFeedbackForm } from "@/components/crm/crm-feedback-form";
 import { CrmLeadSheetTabs } from "@/components/crm/crm-lead-sheet-tabs";
 import { CrmLeadContactList } from "@/components/crm/crm-lead-contact-list";
+import { CrmLossReasonDialog } from "@/components/crm/crm-loss-reason-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -74,9 +75,9 @@ export function CrmLeadSheet({
                 <SheetTitle className="truncate">{lead?.name ?? "…"}</SheetTitle>
                 <SheetDescription asChild>
                   <div className="mt-1">
-                  <div className="mt-1">
-                    {lead ? <CrmLeadContactList lead={lead} /> : null}
-                  </div>
+                    <div className="mt-1">
+                      {lead ? <CrmLeadContactList lead={lead} /> : null}
+                    </div>
                   </div>
                 </SheetDescription>
               </div>
@@ -145,6 +146,8 @@ export function CrmLeadSheet({
                 feedback={sheet.feedback}
                 businessTypes={businessTypes}
                 employees={employees}
+                lossReasonName={sheet.lossReasonName}
+                stageCategory={sheet.stage?.category}
               />
             </div>
           ) : (
@@ -158,10 +161,23 @@ export function CrmLeadSheet({
         onOpenChange={sheet.setFeedbackOpen}
         lead={lead}
         stages={stages}
+        feedbackTypes={feedbackTypes}
         onSaved={() => {
           void sheet.reload();
           onChanged?.();
         }}
+      />
+
+      <CrmLossReasonDialog
+        open={sheet.lossReasonOpen}
+        onOpenChange={(next) => {
+          sheet.setLossReasonOpen(next);
+          if (!next) sheet.setPendingLostStageId(null);
+        }}
+        lossReasons={sheet.lossReasons}
+        stageName={sheet.pendingLostStage?.name}
+        saving={sheet.saving}
+        onConfirm={sheet.confirmLossReason}
       />
     </>
   );

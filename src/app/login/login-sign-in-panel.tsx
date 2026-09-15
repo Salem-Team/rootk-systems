@@ -20,6 +20,7 @@ import { useLoginForm } from "@/app/login/use-login-form";
 import { fadeInUp, softSpring, staggerContainer } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 import { LoginAndroidAppLink } from "@/app/login/login-android-app-link";
+import { BiometricOptInDialog } from "@/components/auth/biometric-opt-in-dialog";
 
 const fieldClass =
   "h-12 border-[#d0dae8] bg-white pe-3 ps-11 text-[16px] leading-normal text-[#0a1220] shadow-none placeholder:text-[#94a3b8] transition-[border-color,box-shadow,background-color] duration-200 hover:border-[#9eb3d4] focus-visible:border-[#082868] focus-visible:bg-white focus-visible:ring-[3px] focus-visible:ring-[#082868]/14 md:text-[15px]";
@@ -46,9 +47,12 @@ export function LoginSignInPanel() {
     onPasswordKeyEvent,
     onFieldFocus,
     onFieldPointerDown,
+    biometricOptInOpen,
+    onBiometricOptInOpenChange,
   } = useLoginForm();
 
   return (
+    <>
     <motion.section
       variants={reduceMotion ? undefined : staggerContainer}
       initial={reduceMotion ? false : "hidden"}
@@ -334,5 +338,10 @@ export function LoginSignInPanel() {
         </div>
       </motion.div>
     </motion.section>
+    <BiometricOptInDialog
+      open={biometricOptInOpen}
+      onOpenChange={(open) => void onBiometricOptInOpenChange(open)}
+    />
+    </>
   );
 }

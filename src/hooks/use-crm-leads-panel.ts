@@ -152,13 +152,23 @@ export function useCrmLeadsPanel({
     setSelected(new Set());
   }
 
-  async function runBulk(action: BulkAction, value?: string) {
+  async function runBulk(
+    action: BulkAction,
+    value?: string,
+    extra?: { lossReasonTypeId?: string; lossReasonDetails?: string }
+  ) {
     if (selected.size === 0) return;
     setBusy(true);
     const res = await bulkUpdateCrmLeads({
       ids: [...selected],
       action,
       value,
+      ...(extra?.lossReasonTypeId
+        ? { lossReasonTypeId: extra.lossReasonTypeId }
+        : {}),
+      ...(extra?.lossReasonDetails
+        ? { lossReasonDetails: extra.lossReasonDetails }
+        : {}),
     });
     setBusy(false);
     if (!res.success) {

@@ -9,6 +9,9 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <!-- CRM contact picker — READ only (WRITE removed for Play Contacts policy). -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- Biometric unlock (fingerprint / face) — optional hardware. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
 
     <!-- Optional hardware so Play does not exclude tablets / Wi-Fi-only devices. -->
     <uses-feature android:name="android.hardware.location" android:required="false" />

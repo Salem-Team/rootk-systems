@@ -51,6 +51,7 @@ interface UseCrmHubLoadersArgs {
   setLeadsPage: (v: PaginatedLeads | null) => void;
   setPipelineLeads: (v: CrmLead[]) => void;
   setLeadStageCounts: (v: CrmLeadStageCountsState | null) => void;
+  setDelayCount: (v: number) => void;
   setActivities: (v: CrmLeadActivity[]) => void;
   setActivityLeads: (v: CrmLead[]) => void;
   setFeedback: (v: CrmLeadFeedback[]) => void;
@@ -72,6 +73,7 @@ export function useCrmHubLoaders({
   setLeadsPage,
   setPipelineLeads,
   setLeadStageCounts,
+  setDelayCount,
   setActivities,
   setActivityLeads,
   setFeedback,
@@ -119,6 +121,15 @@ export function useCrmHubLoaders({
       setLeadStageCounts(null);
     }
   }, [overviewOwnerEmployeeId, setLeadStageCounts]);
+
+  const loadDelayCount = useCallback(async () => {
+    const res = await getCrmLeadCounts({
+      status: "active",
+      followUp: "overdue",
+    });
+    if (res.success && res.data) setDelayCount(res.data.total);
+    else setDelayCount(0);
+  }, [setDelayCount]);
 
   const loadPipeline = useCallback(async () => {
     const res = await getCrmLeads({
@@ -173,6 +184,7 @@ export function useCrmHubLoaders({
     loadDashboard,
     loadLeads,
     loadLeadCounts,
+    loadDelayCount,
     loadPipeline,
     loadActivities,
     loadFeedback,

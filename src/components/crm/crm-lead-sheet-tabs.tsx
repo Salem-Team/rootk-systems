@@ -11,6 +11,7 @@ import type {
   CrmLead,
   CrmLeadActivity,
   CrmLeadFeedback,
+  CrmStageCategory,
 } from "@/types/crm";
 
 function Row({
@@ -52,6 +53,8 @@ interface CrmLeadSheetTabsProps {
   feedback: CrmLeadFeedback[];
   businessTypes?: CrmBusinessType[];
   employees?: Employee[];
+  lossReasonName?: string | null;
+  stageCategory?: CrmStageCategory;
 }
 
 /** Overview / timeline / feedback tabs for the lead detail sheet. */
@@ -63,6 +66,8 @@ export function CrmLeadSheetTabs({
   feedback,
   businessTypes = [],
   employees = [],
+  lossReasonName = null,
+  stageCategory,
 }: CrmLeadSheetTabsProps) {
   const { t } = useTranslation();
   const businessTypeName =
@@ -98,6 +103,12 @@ export function CrmLeadSheetTabs({
                 label={t("crm.leads.colStatus")}
                 value={t(`crm.status.${lead.status}`)}
               />
+              {stageCategory === "lost" ? (
+                <Row
+                  label={t("crm.lossReason.label")}
+                  value={lossReasonName || "—"}
+                />
+              ) : null}
               <Row
                 label={t("crm.leadSheet.nextAction")}
                 value={t(`crm.nextAction.${lead.nextAction}`)}

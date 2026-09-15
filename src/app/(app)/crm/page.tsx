@@ -16,6 +16,7 @@ import { CrmLeadSheet } from "@/components/crm/crm-lead-sheet";
 import { CrmLeadsOverview } from "@/components/crm/crm-leads-overview";
 import { CrmLeadsPanel } from "@/components/crm/crm-leads-panel";
 import { CrmLeadsBulkAdd } from "@/components/crm/crm-leads-bulk-add";
+import { CrmLiveStatus } from "@/components/crm/crm-live-status";
 import { CrmPerformancePanel } from "@/components/crm/crm-performance-panel";
 import { CrmPhoneContactImport } from "@/components/crm/crm-phone-contact-import";
 import { CrmPhoneDuplicatesBanner } from "@/components/crm/crm-phone-duplicates-banner";
@@ -40,33 +41,77 @@ export default function CrmPage() {
         title={t("crm.page.title")}
         description={t("crm.page.description")}
         actions={
-          hub.canCreate ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <CrmPhoneContactImport
-                onOpenLead={(id) => hub.setViewLeadId(id)}
-                onCreate={(draft) => {
-                  hub.openCreate();
-                  // Prefill happens via sessionStorage consumed by the form if needed.
-                  window.sessionStorage.setItem(
-                    "rootk.crm.contact-draft",
-                    JSON.stringify(draft)
-                  );
-                }}
-              />
-              <CrmLeadsBulkAdd
-                stages={hub.safeStages}
-                businessTypes={hub.safeBusinessTypes}
-                employees={hub.safeEmployees}
-                canAssign={hub.canAssign}
-                onImported={() => void hub.reloadVisible()}
-                className="min-h-11"
-              />
-              <Button onClick={hub.openCreate}>
-                <Plus className="h-4 w-4" />
-                {t("crm.actions.addLead")}
-              </Button>
-            </div>
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-2">
+            <CrmLiveStatus
+              lastUpdatedAt={hub.lastUpdatedAt}
+              syncing={hub.syncing}
+            />
+            {hub.canCreate ? (
+              <>
+                <CrmPhoneContactImport
+                  onOpenLead={(id) => hub.setViewLeadId(id)}
+                  onCreate={(draft) => {
+                    hub.openCreate();
+                    window.sessionStorage.setItem(
+                      "rootk.crm.contact-draft",
+                      JSON.stringify(draft)
+                    );
+                  }}
+                />
+                <CrmLeadsBulkAdd
+                  stages={hub.safeStages}
+                  businessTypes={hub.safeBusinessTypes}
+                  employees={hub.safeEmployees}
+                  canAssign={hub.canAssign}
+                  onImported={() => void hub.reloadVisible()}
+                  className="min-h-11"
+                />
+                <Button onClick={hub.openCreate}>
+                  <Plus className="h-4 w-4" />
+                  {t("crm.actions.addLead")}
+                </Button>
+              </>
+            ) : null}
+          </div>
+        }
+        mobileActions={
+          <>
+            <CrmLiveStatus
+              lastUpdatedAt={hub.lastUpdatedAt}
+              syncing={hub.syncing}
+              className="w-full justify-center sm:w-auto"
+            />
+            {hub.canCreate ? (
+              <>
+                <Button
+                  type="button"
+                  className="min-h-11 flex-[1.2]"
+                  onClick={hub.openCreate}
+                >
+                  <Plus className="h-4 w-4" />
+                  {t("crm.actions.addLead")}
+                </Button>
+                <CrmLeadsBulkAdd
+                  stages={hub.safeStages}
+                  businessTypes={hub.safeBusinessTypes}
+                  employees={hub.safeEmployees}
+                  canAssign={hub.canAssign}
+                  onImported={() => void hub.reloadVisible()}
+                  className="min-h-11 min-w-[calc(50%-0.25rem)] flex-1"
+                />
+                <CrmPhoneContactImport
+                  onOpenLead={(id) => hub.setViewLeadId(id)}
+                  onCreate={(draft) => {
+                    hub.openCreate();
+                    window.sessionStorage.setItem(
+                      "rootk.crm.contact-draft",
+                      JSON.stringify(draft)
+                    );
+                  }}
+                />
+              </>
+            ) : null}
+          </>
         }
       />
 
@@ -79,10 +124,15 @@ export default function CrmPage() {
             canManageStages={hub.canManageStages}
             canManageBusinessTypes={hub.canManageBusinessTypes}
             canViewReports={hub.canViewReports}
+            delayCount={hub.delayCount}
           />
         </aside>
 
-        <div className="min-w-0 space-y-3 sm:space-y-4 md:space-y-5">
+        <div
+          className={`min-w-0 space-y-3 transition-opacity duration-300 sm:space-y-4 md:space-y-5 ${
+            hub.syncing && !hub.loading ? "opacity-[0.92]" : "opacity-100"
+          }`}
+        >
           {hub.tab === "leads" ? (
             <CrmPhoneDuplicatesBanner onOpenLead={(id) => hub.setViewLeadId(id)} />
           ) : null}
@@ -149,6 +199,7 @@ export default function CrmPage() {
                 canViewOthers={hub.canViewOthers || hub.canViewTeam}
                 canImport={hub.canCreate}
                 businessTypes={hub.safeBusinessTypes}
+                feedbackTypes={hub.safeFeedbackTypes}
               />
             </div>
           ) : null}
@@ -174,6 +225,7 @@ export default function CrmPage() {
               onRowClick={(lead) => hub.setViewLeadId(lead.id)}
               canAssign={hub.canAssign}
               canViewOthers={hub.canViewOthers || hub.canViewTeam}
+              feedbackTypes={hub.safeFeedbackTypes}
             />
           ) : null}
 

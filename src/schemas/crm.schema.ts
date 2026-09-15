@@ -177,6 +177,9 @@ export const bulkLeadsSchema = z.object({
     "delete",
   ]),
   value: z.string().optional(),
+  lossReasonTypeId: z.string().optional(),
+  /** Optional free-text details appended to each lead's notes when marking lost. */
+  lossReasonDetails: z.string().optional(),
 });
 
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;

@@ -71,9 +71,9 @@ export function Navbar() {
       initial={reduceMotion ? false : { y: -6, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: reduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
-      className="sticky top-0 z-30 chrome-bar"
+      className="sticky top-0 z-40 max-w-full overflow-x-clip chrome-bar"
     >
-      <div className="flex h-[3.25rem] min-w-0 items-center gap-0.5 px-2 sm:h-[3.4rem] sm:gap-2.5 sm:px-4 md:px-6 lg:px-8">
+      <div className="flex h-[3.25rem] min-w-0 max-w-full items-center gap-0.5 px-2 sm:h-[3.4rem] sm:gap-2.5 sm:px-4 md:px-6 lg:px-8">
         <Button
           variant="ghost"
           size="icon"

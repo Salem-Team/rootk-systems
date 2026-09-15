@@ -207,11 +207,35 @@ export class CrmLeadsService {
         ownerEmployeeId: typeof value === "string" && value ? value : null,
       });
     } else if (action === "change_stage") {
+      const details =
+        typeof body.lossReasonDetails === "string"
+          ? body.lossReasonDetails.trim()
+          : "";
+      const reasonId =
+        typeof body.lossReasonTypeId === "string"
+          ? body.lossReasonTypeId
+          : undefined;
+      let notes: string | undefined;
+      if (details) {
+        const current = await this.prisma.crmLead.findFirst({
+          where: { id: leadId, companyId, deletedAt: null },
+          select: { notes: true },
+        });
+        const reason = reasonId
+          ? await this.prisma.crmFeedbackType.findFirst({
+              where: { id: reasonId, companyId, deletedAt: null },
+              select: { name: true },
+            })
+          : null;
+        const reasonName = reason?.name ?? "Lost";
+        const line = `Lost (${reasonName}): ${details}`;
+        const base = (current?.notes ?? "").trim();
+        notes = base ? `${base}\n${line}` : line;
+      }
       await this.updateService.updateLead(companyId, actor, leadId, {
         stageId: String(value ?? ""),
-        ...(typeof body.lossReasonTypeId === "string"
-          ? { lossReasonTypeId: body.lossReasonTypeId }
-          : {}),
+        ...(reasonId ? { lossReasonTypeId: reasonId } : {}),
+        ...(notes !== undefined ? { notes } : {}),
       });
     } else if (action === "change_status") {
       await this.updateService.updateLead(companyId, actor, leadId, {

@@ -24,6 +24,8 @@
 	<true/>
 	<key>NSContactsUsageDescription</key>
 	<string>ROOTK uses Contacts so you can pick one person to match or create a CRM lead. Your address book is not uploaded.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>ROOTK uses Face ID to unlock your saved session on this device after you sign in.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>ROOTK uses your location while you check in or out for attendance so your employer can verify you are at an allowed workplace. Location is not tracked in the background.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>

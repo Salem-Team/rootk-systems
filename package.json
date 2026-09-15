@@ -1,6 +1,6 @@
 {
   "name": "rootk-systems",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -40,11 +40,12 @@
     "cap:sync": "npx cap sync",
     "cap:sync:release": "node scripts/cap-sync-release.mjs",
     "cap:icons": "python3 scripts/generate-store-icons.py",
-    "cap:version": "MOBILE_VERSION=${MOBILE_VERSION:-1.0.7} node scripts/sync-mobile-version.mjs",
+    "cap:version": "MOBILE_VERSION=${MOBILE_VERSION:-1.0.8} node scripts/sync-mobile-version.mjs",
     "android:bundle:release": "bash scripts/android-bundle-release.sh",
     "postinstall": "patch-package"
   },
   "dependencies": {
+    "@aparajita/capacitor-biometric-auth": "^9.1.2",
     "@capacitor-community/contacts": "^7.2.0",
     "@capacitor/android": "^7.6.8",
     "@capacitor/app": "^7.1.2",

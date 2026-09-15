@@ -9,6 +9,7 @@ import {
   SettingsNotificationsSection,
 } from "@/components/settings/settings-appearance-notifications";
 import {
+  SettingsBiometricSection,
   SettingsProfileSection,
   SettingsSecuritySection,
 } from "@/components/settings/settings-security-profile";
@@ -90,16 +91,19 @@ export function SettingsForm({
             {section === "company" ? <CompanyPolicySection /> : null}
 
             {section === "security" ? (
-              <SettingsSecuritySection
-                currentPassword={currentPassword}
-                setCurrentPassword={setCurrentPassword}
-                newPassword={newPassword}
-                setNewPassword={setNewPassword}
-                confirmPassword={confirmPassword}
-                setConfirmPassword={setConfirmPassword}
-                passwordSaving={passwordSaving}
-                handleChangePassword={handleChangePassword}
-              />
+              <div className="space-y-4">
+                <SettingsBiometricSection />
+                <SettingsSecuritySection
+                  currentPassword={currentPassword}
+                  setCurrentPassword={setCurrentPassword}
+                  newPassword={newPassword}
+                  setNewPassword={setNewPassword}
+                  confirmPassword={confirmPassword}
+                  setConfirmPassword={setConfirmPassword}
+                  passwordSaving={passwordSaving}
+                  handleChangePassword={handleChangePassword}
+                />
+              </div>
             ) : null}
 
             {section === "profile" ? (

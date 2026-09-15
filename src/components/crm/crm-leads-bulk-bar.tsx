@@ -32,7 +32,11 @@ import { snappySpring } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/stores/ui-store";
 import type { Employee } from "@/types";
-import type { CrmLeadStatus, CrmStage } from "@/types/crm";
+import type { CrmFeedbackType, CrmLeadStatus, CrmStage } from "@/types/crm";
+import {
+  CrmLossReasonDialog,
+  type CrmLossReasonPayload,
+} from "@/components/crm/crm-loss-reason-dialog";
 
 const STATUSES: CrmLeadStatus[] = ["active", "inactive", "archived"];
 
@@ -40,10 +44,14 @@ interface CrmLeadsBulkBarProps {
   selectedCount: number;
   stages: CrmStage[];
   employees: Employee[];
+  feedbackTypes?: CrmFeedbackType[];
   canAssign: boolean;
   busy: boolean;
   onAssign: (ownerEmployeeId: string) => void;
-  onChangeStage: (stageId: string) => void;
+  onChangeStage: (
+    stageId: string,
+    loss?: { lossReasonTypeId: string; lossReasonDetails?: string }
+  ) => void;
   onChangeStatus: (status: CrmLeadStatus) => void;
   onArchive: () => void;
   onDelete: () => void;
@@ -58,6 +66,7 @@ export function CrmLeadsBulkBar({
   selectedCount,
   stages,
   employees,
+  feedbackTypes = [],
   canAssign,
   busy,
   onAssign,
@@ -72,6 +81,7 @@ export function CrmLeadsBulkBar({
   const [mounted, setMounted] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [lossStageId, setLossStageId] = useState<string | null>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -79,12 +89,36 @@ export function CrmLeadsBulkBar({
     if (selectedCount === 0) return;
     function onKey(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
-      if (archiveOpen || deleteOpen) return;
+      if (archiveOpen || deleteOpen || lossStageId) return;
       onClear();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selectedCount, archiveOpen, deleteOpen, onClear]);
+  }, [selectedCount, archiveOpen, deleteOpen, lossStageId, onClear]);
+
+  const lossStage = lossStageId
+    ? stages.find((stage) => stage.id === lossStageId)
+    : undefined;
+  const lossReasons = feedbackTypes.filter(
+    (ft) => ft.active && ft.isLossReason
+  );
+
+  function requestStageChange(stage: CrmStage) {
+    if (stage.category === "lost") {
+      setLossStageId(stage.id);
+      return;
+    }
+    onChangeStage(stage.id);
+  }
+
+  async function confirmLoss(payload: CrmLossReasonPayload) {
+    if (!lossStageId) return;
+    onChangeStage(lossStageId, {
+      lossReasonTypeId: payload.lossReasonTypeId,
+      lossReasonDetails: payload.details || undefined,
+    });
+    setLossStageId(null);
+  }
 
   const bar = (
     <AnimatePresence>
@@ -172,7 +206,7 @@ export function CrmLeadsBulkBar({
                     .map((stage) => (
                       <DropdownMenuItem
                         key={stage.id}
-                        onSelect={() => onChangeStage(stage.id)}
+                        onSelect={() => requestStageChange(stage)}
                       >
                         {stage.name}
                       </DropdownMenuItem>
@@ -317,6 +351,17 @@ export function CrmLeadsBulkBar({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CrmLossReasonDialog
+        open={Boolean(lossStageId)}
+        onOpenChange={(next) => {
+          if (!next) setLossStageId(null);
+        }}
+        lossReasons={lossReasons}
+        stageName={lossStage?.name}
+        saving={busy}
+        onConfirm={confirmLoss}
+      />
     </>
   );
 }

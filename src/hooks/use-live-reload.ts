@@ -15,9 +15,14 @@ import { isUiComposing } from "@/lib/ui-composing";
 export function useLiveReload(
   reload: () => void | Promise<void>,
   events: string[] = [],
-  opts: { intervalMs?: number; enabled?: boolean } = {}
+  opts: {
+    intervalMs?: number;
+    enabled?: boolean;
+    /** When true, skip the mount-time reload (caller owns the first fetch). */
+    skipInitial?: boolean;
+  } = {}
 ) {
-  const { intervalMs = 45_000, enabled = true } = opts;
+  const { intervalMs = 45_000, enabled = true, skipInitial = false } = opts;
   const reloadRef = useRef(reload);
   reloadRef.current = reload;
   const eventsKey = events.join("|");
@@ -37,9 +42,9 @@ export function useLiveReload(
   }, [run]);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || skipInitial) return;
     run();
-  }, [enabled, run]);
+  }, [enabled, run, skipInitial]);
 
   useEffect(() => {
     if (!enabled) return;

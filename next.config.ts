@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     "@capacitor/core",
     "@capacitor/app",
     "@capacitor-community/contacts",
+    "@aparajita/capacitor-biometric-auth",
     "capacitor-secure-storage-plugin",
   ],
 };

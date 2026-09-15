@@ -8,7 +8,7 @@ import { CrmLeadsPanel } from "@/components/crm/crm-leads-panel";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
-import type { CrmLead, CrmLeadFilters, CrmStage, PaginatedLeads } from "@/types/crm";
+import type { CrmFeedbackType, CrmLead, CrmLeadFilters, CrmStage, PaginatedLeads } from "@/types/crm";
 
 interface CrmDelayPanelProps {
   leads: PaginatedLeads | null;
@@ -20,6 +20,7 @@ interface CrmDelayPanelProps {
   onRowClick: (lead: CrmLead) => void;
   canAssign?: boolean;
   canViewOthers?: boolean;
+  feedbackTypes?: CrmFeedbackType[];
   className?: string;
 }
 
@@ -36,6 +37,7 @@ export function CrmDelayPanel({
   onRowClick,
   canAssign = false,
   canViewOthers = false,
+  feedbackTypes = [],
   className,
 }: CrmDelayPanelProps) {
   const { t } = useTranslation();
@@ -81,6 +83,7 @@ export function CrmDelayPanel({
           canAssign={canAssign}
           canViewOthers={canViewOthers}
           canImport={false}
+          feedbackTypes={feedbackTypes}
         />
       )}
     </div>

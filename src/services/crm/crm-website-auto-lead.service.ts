@@ -1,5 +1,6 @@
 import { api } from "@/api/http";
 import { API_ROUTES } from "@/api/routes";
+import { emitCrmUpdated } from "@/lib/events";
 import { isApiMode } from "@/lib/env";
 import type { ApiResponse } from "@/types";
 
@@ -33,6 +34,7 @@ export async function updateWebsiteAutoLead(input: {
   effectiveFrom?: string;
 }): Promise<ApiResponse<WebsiteAutoLeadConfig>> {
   if (!isApiMode()) {
+    emitCrmUpdated();
     return {
       success: true,
       data: {
@@ -42,9 +44,11 @@ export async function updateWebsiteAutoLead(input: {
       },
     };
   }
-  return api.put<WebsiteAutoLeadConfig>(
+  const res = await api.put<WebsiteAutoLeadConfig>(
     API_ROUTES.crm.websiteAutoLead,
     input,
     EMPTY
   );
+  if (res.success) emitCrmUpdated();
+  return res;
 }

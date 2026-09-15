@@ -201,7 +201,9 @@ export const crmFeedbackTypesSeed: SeedOf<CrmFeedbackType>[] = [
   { id: "crm-ft-wrong", name: "Wrong Lead", description: "", sortOrder: 7, active: true, isLossReason: true },
   { id: "crm-ft-budget", name: "Budget Issue", description: "", sortOrder: 8, active: true, isLossReason: true },
   { id: "crm-ft-feature", name: "Feature Request", description: "", sortOrder: 9, active: true, isLossReason: false },
-  { id: "crm-ft-other", name: "Other", description: "", sortOrder: 10, active: true, isLossReason: true },
+  { id: "crm-ft-duplicate", name: "Duplicate Lead", description: "", sortOrder: 10, active: true, isLossReason: true },
+  { id: "crm-ft-bad-contact", name: "Bad Contact Info", description: "", sortOrder: 11, active: true, isLossReason: true },
+  { id: "crm-ft-other", name: "Other", description: "", sortOrder: 12, active: true, isLossReason: true },
 ];
 
 export const crmBusinessTypesSeed: SeedOf<CrmBusinessType>[] = [

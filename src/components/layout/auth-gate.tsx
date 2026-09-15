@@ -7,6 +7,7 @@ import { getMyPermissions } from "@/services/permissions.service";
 import { refreshAccessToken } from "@/services/auth.service";
 import { isApiMode } from "@/lib/env";
 import { isNativeApp } from "@/lib/native/platform";
+import { BiometricLockGate } from "@/components/auth/biometric-lock-gate";
 import { hasActiveSession, useSessionStore } from "@/stores/session-store";
 
 const PERMISSIONS_HYDRATE_TIMEOUT_MS = 8_000;
@@ -131,5 +132,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return (
+    <BiometricLockGate>{children}</BiometricLockGate>
+  );
 }

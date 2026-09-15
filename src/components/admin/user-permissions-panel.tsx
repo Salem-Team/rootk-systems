@@ -320,13 +320,13 @@ export function UserPermissionsPanel() {
           </div>
         ) : (
           <div className="flex flex-col">
-            <div className="border-b border-border/60 px-3 py-3 sm:px-5 sm:py-4">
+            <div className="sticky top-[var(--chrome-sticky-top)] z-20 border-b border-border/60 bg-card/95 px-3 py-3 backdrop-blur-xl supports-[backdrop-filter]:bg-card/90 sm:px-5 sm:py-4">
               <div className="flex items-start gap-2.5">
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="mt-0.5 h-11 w-11 shrink-0 lg:hidden"
+                  className="mt-0.5 h-11 w-11 shrink-0 touch-manipulation lg:hidden"
                   onClick={closeMobileDetail}
                   aria-label={t("permissions.backToUsers")}
                 >
@@ -367,7 +367,7 @@ export function UserPermissionsPanel() {
               </div>
             </div>
 
-            <div className="space-y-4 p-3 pb-14 sm:p-5 lg:pb-5">
+            <div className="space-y-4 p-3 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] sm:p-5 lg:pb-5">
               {detail.isProtected ? (
                 <div className="rounded-xl border border-amber-300/70 bg-amber-50 px-3 py-2.5 text-[12px] leading-relaxed text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100 sm:rounded-lg">
                   <p className="font-medium">{t("permissions.protectedTitle")}</p>

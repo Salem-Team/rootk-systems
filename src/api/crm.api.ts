@@ -11,6 +11,7 @@ import {
   ensureSalesPerformance,
   ensureSalesProfile,
 } from "@/lib/crm-normalize";
+import { emitCrmUpdated } from "@/lib/events";
 import type { ApiResponse } from "@/types";
 import type {
   CrmBusinessType,
@@ -50,6 +51,12 @@ function withData<T>(
   return { ...res, data };
 }
 
+/** Notify open CRM views after a successful mutation (API mode). */
+function emitIfOk<T>(res: ApiResponse<T>): ApiResponse<T> {
+  if (res.success) emitCrmUpdated();
+  return res;
+}
+
 export async function fetchCrmStages(): Promise<ApiResponse<CrmStage[]>> {
   const res = await api.get(API_ROUTES.crm.stages, []);
   return withData(res, ensureCrmList<CrmStage>(res.data));
@@ -58,30 +65,32 @@ export async function fetchCrmStages(): Promise<ApiResponse<CrmStage[]>> {
 export async function putCrmStage(
   body: StageInput
 ): Promise<ApiResponse<CrmStage | null>> {
-  return api.put(API_ROUTES.crm.stages, body, null);
+  return emitIfOk(await api.put(API_ROUTES.crm.stages, body, null));
 }
 
 export async function reorderCrmStages(
   ids: string[]
 ): Promise<ApiResponse<CrmStage[]>> {
   const res = await api.post(API_ROUTES.crm.stagesReorder, { ids }, []);
-  return withData(res, ensureCrmList<CrmStage>(res.data));
+  return emitIfOk(withData(res, ensureCrmList<CrmStage>(res.data)));
 }
 
 export async function deleteCrmStage(
   id: string,
   moveToStageId?: string
 ): Promise<ApiResponse<{ ok: boolean; leadCount?: number }>> {
-  return api.delete(
-    `${API_ROUTES.crm.stageById(id)}${toQuery({ moveToStageId })}`,
-    { ok: false }
+  return emitIfOk(
+    await api.delete(
+      `${API_ROUTES.crm.stageById(id)}${toQuery({ moveToStageId })}`,
+      { ok: false }
+    )
   );
 }
 
 export async function putCrmSubStage(
   body: SubStageInput
 ): Promise<ApiResponse<CrmSubStage | null>> {
-  return api.put(API_ROUTES.crm.subStages, body, null);
+  return emitIfOk(await api.put(API_ROUTES.crm.subStages, body, null));
 }
 
 export async function reorderCrmSubStages(
@@ -93,13 +102,15 @@ export async function reorderCrmSubStages(
     { stageId, ids },
     []
   );
-  return withData(res, ensureCrmList<CrmSubStage>(res.data));
+  return emitIfOk(withData(res, ensureCrmList<CrmSubStage>(res.data)));
 }
 
 export async function deleteCrmSubStage(
   id: string
 ): Promise<ApiResponse<{ ok: boolean; leadCount?: number }>> {
-  return api.delete(API_ROUTES.crm.subStageById(id), { ok: false });
+  return emitIfOk(
+    await api.delete(API_ROUTES.crm.subStageById(id), { ok: false })
+  );
 }
 
 export async function fetchCrmFeedbackTypes(): Promise<
@@ -112,13 +123,15 @@ export async function fetchCrmFeedbackTypes(): Promise<
 export async function putCrmFeedbackType(
   body: FeedbackTypeInput
 ): Promise<ApiResponse<CrmFeedbackType | null>> {
-  return api.put(API_ROUTES.crm.feedbackTypes, body, null);
+  return emitIfOk(await api.put(API_ROUTES.crm.feedbackTypes, body, null));
 }
 
 export async function deleteCrmFeedbackType(
   id: string
 ): Promise<ApiResponse<{ ok: boolean }>> {
-  return api.delete(API_ROUTES.crm.feedbackTypeById(id), { ok: false });
+  return emitIfOk(
+    await api.delete(API_ROUTES.crm.feedbackTypeById(id), { ok: false })
+  );
 }
 
 export async function fetchCrmBusinessTypes(): Promise<
@@ -131,13 +144,15 @@ export async function fetchCrmBusinessTypes(): Promise<
 export async function putCrmBusinessType(
   body: BusinessTypeInput
 ): Promise<ApiResponse<CrmBusinessType | null>> {
-  return api.put(API_ROUTES.crm.businessTypes, body, null);
+  return emitIfOk(await api.put(API_ROUTES.crm.businessTypes, body, null));
 }
 
 export async function deleteCrmBusinessType(
   id: string
 ): Promise<ApiResponse<{ ok: boolean }>> {
-  return api.delete(API_ROUTES.crm.businessTypeById(id), { ok: false });
+  return emitIfOk(
+    await api.delete(API_ROUTES.crm.businessTypeById(id), { ok: false })
+  );
 }
 
 export async function fetchCrmLeads(
@@ -206,26 +221,30 @@ export async function fetchCrmLead(
 export async function postCrmLead(
   body: CreateLeadInput
 ): Promise<ApiResponse<CrmLead | null>> {
-  return api.post(API_ROUTES.crm.leads, body, null);
+  return emitIfOk(await api.post(API_ROUTES.crm.leads, body, null));
 }
 
 export async function patchCrmLead(
   id: string,
   body: UpdateLeadInput
 ): Promise<ApiResponse<CrmLead | null>> {
-  return api.patch(API_ROUTES.crm.leadById(id), body, null);
+  return emitIfOk(await api.patch(API_ROUTES.crm.leadById(id), body, null));
 }
 
 export async function deleteCrmLead(
   id: string
 ): Promise<ApiResponse<{ ok: boolean }>> {
-  return api.delete(API_ROUTES.crm.leadById(id), { ok: false });
+  return emitIfOk(
+    await api.delete(API_ROUTES.crm.leadById(id), { ok: false })
+  );
 }
 
 export async function postCrmBulkLeads(
   body: BulkLeadsInput
 ): Promise<ApiResponse<{ updated: number }>> {
-  return api.post(API_ROUTES.crm.leadsBulk, body, { updated: 0 });
+  return emitIfOk(
+    await api.post(API_ROUTES.crm.leadsBulk, body, { updated: 0 })
+  );
 }
 
 export type CrmLeadsImportResult = {
@@ -238,7 +257,9 @@ export type CrmLeadsImportResult = {
 export async function postCrmLeadsImport(
   rows: Array<Record<string, unknown>>
 ): Promise<ApiResponse<CrmLeadsImportResult | null>> {
-  return api.post(API_ROUTES.crm.leadsImport, { rows }, null);
+  return emitIfOk(
+    await api.post(API_ROUTES.crm.leadsImport, { rows }, null)
+  );
 }
 
 export async function fetchCrmLeadsExport(
@@ -254,7 +275,9 @@ export async function postCrmLeadActivity(
   leadId: string,
   body: LeadActivityInput
 ): Promise<ApiResponse<CrmLeadActivity | null>> {
-  return api.post(API_ROUTES.crm.leadActivities(leadId), body, null);
+  return emitIfOk(
+    await api.post(API_ROUTES.crm.leadActivities(leadId), body, null)
+  );
 }
 
 export async function fetchCrmLeadTimeline(
@@ -268,7 +291,9 @@ export async function postCrmLeadFeedback(
   leadId: string,
   body: LeadFeedbackInput
 ): Promise<ApiResponse<CrmLeadFeedback | null>> {
-  return api.post(API_ROUTES.crm.leadFeedback(leadId), body, null);
+  return emitIfOk(
+    await api.post(API_ROUTES.crm.leadFeedback(leadId), body, null)
+  );
 }
 
 export async function fetchCrmDashboard(
@@ -359,5 +384,7 @@ export async function postCrmLeadCall(
   leadId: string,
   body: LeadCallInput
 ): Promise<ApiResponse<CrmCall | null>> {
-  return api.post(API_ROUTES.crm.leadCalls(leadId), body, null);
+  return emitIfOk(
+    await api.post(API_ROUTES.crm.leadCalls(leadId), body, null)
+  );
 }

@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useHydrateOnOpen } from "@/hooks/use-hydrate-on-open";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { CrmDateTimeField } from "@/components/crm/crm-datetime-field";
 import { CrmMentionTextarea } from "@/components/crm/crm-mention-textarea";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,7 +16,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -34,6 +33,7 @@ import { addCrmLeadFeedback } from "@/services/crm.service";
 import { getUsers } from "@/services/user.service";
 import { getSessionUserId } from "@/stores/session-store";
 import type {
+  CrmFeedbackType,
   CrmLead,
   CrmLeadTag,
   CrmMeetingLocation,
@@ -47,7 +47,37 @@ interface CrmFeedbackFormProps {
   onOpenChange: (open: boolean) => void;
   lead: CrmLead | null;
   stages: CrmStage[];
+  feedbackTypes?: CrmFeedbackType[];
   onSaved?: () => void;
+}
+
+function ChoiceChip({
+  active,
+  onClick,
+  children,
+  className,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "inline-flex min-h-10 touch-manipulation items-center rounded-lg border px-3 py-2 text-[13px] font-medium transition-colors",
+        active
+          ? "border-primary/45 bg-primary text-primary-foreground shadow-sm"
+          : "border-border/70 bg-card text-muted-foreground hover:bg-muted/55 hover:text-foreground",
+        className
+      )}
+    >
+      {children}
+    </button>
+  );
 }
 
 /** Primary feedback dialog: lead+tags → stage/next-action → feedback. */
@@ -56,11 +86,13 @@ export function CrmFeedbackForm({
   onOpenChange,
   lead,
   stages,
+  feedbackTypes = [],
   onSaved,
 }: CrmFeedbackFormProps) {
   const { t } = useTranslation();
   const [tags, setTags] = useState<CrmLeadTag[]>([]);
   const [stageId, setStageId] = useState("");
+  const [lossReasonTypeId, setLossReasonTypeId] = useState("");
   const [nextAction, setNextAction] = useState<CrmNextAction>("follow_up");
   const [nextFollowUpAt, setNextFollowUpAt] = useState("");
   const [customerFeedback, setCustomerFeedback] = useState("");
@@ -79,7 +111,17 @@ export function CrmFeedbackForm({
       ),
     [stages, lead?.stageId]
   );
+  const lossReasons = useMemo(
+    () =>
+      (Array.isArray(feedbackTypes) ? feedbackTypes : []).filter(
+        (ft) => ft.active && ft.isLossReason
+      ),
+    [feedbackTypes]
+  );
+  const selectedStage = activeStages.find((s) => s.id === stageId);
+  const needsLossReason = selectedStage?.category === "lost";
   const selfUserId = getSessionUserId();
+  const needsSchedule = nextAction !== "none";
 
   useEffect(() => {
     if (!open) return;
@@ -107,6 +149,7 @@ export function CrmFeedbackForm({
     if (!lead) return;
     setTags([...(lead.tags ?? [])]);
     setStageId(lead.stageId);
+    setLossReasonTypeId(lead.lossReasonTypeId ?? "");
     setNextAction(lead.nextAction === "none" ? "follow_up" : lead.nextAction);
     setNextFollowUpAt(toLocalInput(lead.nextFollowUpAt));
     setCustomerFeedback("");
@@ -129,8 +172,13 @@ export function CrmFeedbackForm({
       toast.error(t("crm.leadForm.selectStage"));
       return;
     }
+    if (needsLossReason && !lossReasonTypeId) {
+      toast.error(t("crm.lossReason.required"));
+      return;
+    }
     setSaving(true);
     const res = await addCrmLeadFeedback(lead.id, {
+      feedbackTypeId: needsLossReason ? lossReasonTypeId : undefined,
       customerFeedback,
       callAnswered,
       stageId,
@@ -166,13 +214,13 @@ export function CrmFeedbackForm({
         </DialogHeader>
 
         <DialogBody className="grid gap-5 py-4">
-          <section className="grid gap-2.5">
+          <section className="grid gap-3">
             <h3 className="text-[13px] font-semibold tracking-tight">
               {t("crm.feedback.sectionLead")}
             </h3>
-            <div className="rounded-lg border border-border/70 px-3 py-2.5">
+            <div className="rounded-xl border border-border/70 bg-muted/25 px-3.5 py-3">
               <p className="text-sm font-semibold">{lead?.name ?? "—"}</p>
-              <p className="mt-0.5 font-mono text-[12px] text-muted-foreground">
+              <p className="mt-0.5 font-mono text-[12px] text-muted-foreground" dir="ltr">
                 {lead?.phone ?? "—"}
               </p>
               {lead?.companyName ? (
@@ -181,32 +229,22 @@ export function CrmFeedbackForm({
                 </p>
               ) : null}
             </div>
-            <div className="grid gap-1.5">
+            <div className="grid gap-2">
               <Label>{t("crm.leadForm.tags")}</Label>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {TAGS.map((tag) => {
                   const on = tags.includes(tag);
                   return (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => toggleTag(tag)}
-                      className={cn(
-                        "rounded-md border px-2 py-1 text-[11px] font-medium transition-colors",
-                        on
-                          ? "border-primary/40 bg-primary/10 text-foreground"
-                          : "border-border/70 text-muted-foreground hover:bg-muted/50"
-                      )}
-                    >
+                    <ChoiceChip key={tag} active={on} onClick={() => toggleTag(tag)}>
                       {t(`crm.tags.${tag}`)}
-                    </button>
+                    </ChoiceChip>
                   );
                 })}
               </div>
             </div>
           </section>
 
-          <section className="grid gap-2.5">
+          <section className="grid gap-3">
             <h3 className="text-[13px] font-semibold tracking-tight">
               {t("crm.feedback.sectionAction")}
             </h3>
@@ -214,10 +252,17 @@ export function CrmFeedbackForm({
               <Label htmlFor="crm-fb-stage">{t("crm.feedback.newStage")}</Label>
               <Select
                 value={stageId || undefined}
-                onValueChange={setStageId}
+                onValueChange={(value) => {
+                  setStageId(value);
+                  const next = activeStages.find((s) => s.id === value);
+                  if (next?.category !== "lost") setLossReasonTypeId("");
+                }}
                 disabled={activeStages.length === 0}
               >
-                <SelectTrigger id="crm-fb-stage">
+                <SelectTrigger
+                  id="crm-fb-stage"
+                  className="h-11 touch-manipulation sm:h-10"
+                >
                   <SelectValue placeholder={t("crm.leadForm.selectStage")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -236,148 +281,131 @@ export function CrmFeedbackForm({
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3.5">
-              <div className="grid min-w-0 gap-1.5">
-                <Label
-                  htmlFor="crm-fb-next-action"
-                  className="text-[13px] leading-snug sm:text-sm"
-                >
-                  {t("crm.feedback.nextAction")}
+            {needsLossReason ? (
+              <div className="grid gap-1.5">
+                <Label htmlFor="crm-fb-loss-reason">
+                  {t("crm.lossReason.select")}
                 </Label>
                 <Select
-                  value={nextAction}
-                  onValueChange={(v) => setNextAction(v as CrmNextAction)}
+                  value={lossReasonTypeId || undefined}
+                  onValueChange={setLossReasonTypeId}
+                  disabled={lossReasons.length === 0}
                 >
                   <SelectTrigger
-                    id="crm-fb-next-action"
-                    className="h-10 min-w-0 touch-manipulation sm:h-9"
+                    id="crm-fb-loss-reason"
+                    className="h-11 touch-manipulation sm:h-10"
                   >
-                    <SelectValue />
+                    <SelectValue
+                      placeholder={t("crm.lossReason.placeholder")}
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {NEXT_ACTIONS.map((a) => (
-                      <SelectItem key={a} value={a}>
-                        {t(`crm.nextAction.${a}`)}
+                    {lossReasons.map((reason) => (
+                      <SelectItem key={reason.id} value={reason.id}>
+                        {reason.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid min-w-0 gap-1.5">
-                <Label
-                  htmlFor="crm-fb-next-at"
-                  className="text-[13px] leading-snug sm:text-sm"
-                >
-                  {t("crm.feedback.nextFollowUp")}
-                </Label>
-                <Input
-                  id="crm-fb-next-at"
-                  type="datetime-local"
-                  dir="ltr"
-                  value={nextFollowUpAt}
-                  onChange={(e) => setNextFollowUpAt(e.target.value)}
-                  className={cn(
-                    "h-10 min-w-0 touch-manipulation tabular-nums sm:h-9",
-                    "[color-scheme:light] dark:[color-scheme:dark]",
-                    "[&::-webkit-calendar-picker-indicator]:ms-1 [&::-webkit-calendar-picker-indicator]:opacity-70",
-                    "[&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:min-w-0"
-                  )}
-                />
+            ) : null}
+
+            <div className="grid gap-2">
+              <Label>{t("crm.feedback.nextAction")}</Label>
+              <div className="flex flex-wrap gap-2">
+                {NEXT_ACTIONS.map((action) => (
+                  <ChoiceChip
+                    key={action}
+                    active={nextAction === action}
+                    onClick={() => setNextAction(action)}
+                  >
+                    {t(`crm.nextAction.${action}`)}
+                  </ChoiceChip>
+                ))}
               </div>
             </div>
-            <p className="text-[11px] leading-relaxed text-muted-foreground sm:text-[12px]">
-              {t("crm.feedback.nextActionHint")}
-            </p>
+
+            {needsSchedule ? (
+              <div className="grid gap-2">
+                <CrmDateTimeField
+                  id="crm-fb-next-at"
+                  label={t("crm.feedback.nextFollowUp")}
+                  value={nextFollowUpAt}
+                  onChange={setNextFollowUpAt}
+                />
+                <p className="text-[11px] leading-relaxed text-muted-foreground sm:text-[12px]">
+                  {t("crm.feedback.nextActionHint")}
+                </p>
+              </div>
+            ) : null}
+
             {nextAction === "meeting" ? (
-              <div
-                className={cn(
-                  "grid gap-3 sm:gap-3.5",
-                  meetingMode === "offline"
-                    ? "grid-cols-1 sm:grid-cols-2"
-                    : "grid-cols-1"
-                )}
-              >
-                <div className="grid min-w-0 gap-1.5">
-                  <Label className="text-[13px] leading-snug sm:text-sm">
-                    {t("crm.feedback.meetingMode")}
-                  </Label>
-                  <Select
-                    value={meetingMode}
-                    onValueChange={(v) => setMeetingMode(v as CrmMeetingMode)}
-                  >
-                    <SelectTrigger className="h-10 min-w-0 touch-manipulation sm:h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="online">
-                        {t("crm.feedback.meetingOnline")}
-                      </SelectItem>
-                      <SelectItem value="offline">
-                        {t("crm.feedback.meetingOffline")}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+              <div className="grid gap-3">
+                <div className="grid gap-2">
+                  <Label>{t("crm.feedback.meetingMode")}</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <ChoiceChip
+                      active={meetingMode === "online"}
+                      onClick={() => setMeetingMode("online")}
+                      className="w-full justify-center"
+                    >
+                      {t("crm.feedback.meetingOnline")}
+                    </ChoiceChip>
+                    <ChoiceChip
+                      active={meetingMode === "offline"}
+                      onClick={() => setMeetingMode("offline")}
+                      className="w-full justify-center"
+                    >
+                      {t("crm.feedback.meetingOffline")}
+                    </ChoiceChip>
+                  </div>
                 </div>
                 {meetingMode === "offline" ? (
-                  <div className="grid min-w-0 gap-1.5">
-                    <Label className="text-[13px] leading-snug sm:text-sm">
-                      {t("crm.feedback.meetingLocation")}
-                    </Label>
-                    <Select
-                      value={meetingLocation}
-                      onValueChange={(v) =>
-                        setMeetingLocation(v as CrmMeetingLocation)
-                      }
-                    >
-                      <SelectTrigger className="h-10 min-w-0 touch-manipulation sm:h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="our_company">
-                          {t("crm.feedback.locationOurCompany")}
-                        </SelectItem>
-                        <SelectItem value="client_company">
-                          {t("crm.feedback.locationClientCompany")}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="grid gap-2">
+                    <Label>{t("crm.feedback.meetingLocation")}</Label>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <ChoiceChip
+                        active={meetingLocation === "our_company"}
+                        onClick={() => setMeetingLocation("our_company")}
+                        className="w-full justify-center"
+                      >
+                        {t("crm.feedback.locationOurCompany")}
+                      </ChoiceChip>
+                      <ChoiceChip
+                        active={meetingLocation === "client_company"}
+                        onClick={() => setMeetingLocation("client_company")}
+                        className="w-full justify-center"
+                      >
+                        {t("crm.feedback.locationClientCompany")}
+                      </ChoiceChip>
+                    </div>
                   </div>
                 ) : null}
               </div>
             ) : null}
           </section>
 
-          <section className="grid gap-2.5">
+          <section className="grid gap-3">
             <h3 className="text-[13px] font-semibold tracking-tight">
               {t("crm.feedback.sectionFeedback")}
             </h3>
-            <div className="grid gap-1.5">
+            <div className="grid gap-2">
               <Label>{t("crm.feedback.callStatus")}</Label>
               <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant={callAnswered ? "default" : "outline"}
+                <ChoiceChip
+                  active={callAnswered}
                   onClick={() => setCallAnswered(true)}
+                  className="min-h-11 w-full justify-center"
                 >
                   {t("crm.feedback.answered")}
-                  {callAnswered ? (
-                    <Badge variant="secondary" className="ms-1.5 text-[10px]">
-                      {t("crm.feedback.activeCall")}
-                    </Badge>
-                  ) : null}
-                </Button>
-                <Button
-                  type="button"
-                  variant={!callAnswered ? "default" : "outline"}
+                </ChoiceChip>
+                <ChoiceChip
+                  active={!callAnswered}
                   onClick={() => setCallAnswered(false)}
+                  className="min-h-11 w-full justify-center"
                 >
                   {t("crm.feedback.noAnswer")}
-                  {!callAnswered ? (
-                    <Badge variant="secondary" className="ms-1.5 text-[10px]">
-                      {t("crm.feedback.inactiveCall")}
-                    </Badge>
-                  ) : null}
-                </Button>
+                </ChoiceChip>
               </div>
             </div>
             <div className="grid gap-1.5">
@@ -399,15 +427,21 @@ export function CrmFeedbackForm({
           </section>
         </DialogBody>
 
-        <DialogFooter className="shrink-0">
+        <DialogFooter className="shrink-0 gap-2">
           <Button
             type="button"
             variant="outline"
+            className="min-h-11 touch-manipulation sm:min-h-10"
             onClick={() => onOpenChange(false)}
           >
             {t("crm.actions.cancel")}
           </Button>
-          <Button type="button" disabled={saving || !lead} onClick={() => void submit()}>
+          <Button
+            type="button"
+            className="min-h-11 touch-manipulation sm:min-h-10"
+            disabled={saving || !lead}
+            onClick={() => void submit()}
+          >
             {saving ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (

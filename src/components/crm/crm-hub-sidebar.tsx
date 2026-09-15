@@ -36,6 +36,7 @@ interface CrmHubSidebarProps {
   canManageStages?: boolean;
   canManageBusinessTypes?: boolean;
   canViewReports?: boolean;
+  delayCount?: number;
   className?: string;
 }
 
@@ -99,6 +100,7 @@ export function CrmHubSidebar({
   canManageStages = false,
   canManageBusinessTypes = false,
   canViewReports = false,
+  delayCount = 0,
   className,
 }: CrmHubSidebarProps) {
   const { t } = useTranslation();
@@ -168,6 +170,18 @@ export function CrmHubSidebar({
                   <Icon className="h-3.5 w-3.5" aria-hidden />
                 </span>
                 <span className="whitespace-nowrap">{t(item.labelKey)}</span>
+                {item.id === "delay" && delayCount > 0 ? (
+                  <span
+                    className={cn(
+                      "ms-auto inline-flex min-w-5 items-center justify-center rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold tabular-nums",
+                      isActive
+                        ? "bg-white/20 text-primary-foreground lg:bg-amber-500/15 lg:text-amber-800 dark:lg:text-amber-200"
+                        : "bg-amber-500/15 text-amber-800 dark:text-amber-200"
+                    )}
+                  >
+                    {delayCount > 99 ? "99+" : delayCount}
+                  </span>
+                ) : null}
               </button>
             </li>
           );

@@ -63,17 +63,56 @@ export class CrmSharedService {
     const count = await this.prisma.crmFeedbackType.count({
       where: { companyId, deletedAt: null },
     });
-    if (count > 0) return;
-    await this.prisma.crmFeedbackType.createMany({
-      data: DEFAULT_FEEDBACK_TYPES.map((f) => ({
+    if (count === 0) {
+      await this.prisma.crmFeedbackType.createMany({
+        data: DEFAULT_FEEDBACK_TYPES.map((f) => ({
+          companyId,
+          name: f.name,
+          sortOrder: f.sortOrder,
+          isLossReason: f.isLossReason,
+          createdBy: actorId,
+          updatedBy: actorId,
+        })),
+      });
+      return;
+    }
+
+    // Existing tenants: keep "Other" usable as a custom loss reason,
+    // and fill any missing famous loss-reason presets by name.
+    await this.prisma.crmFeedbackType.updateMany({
+      where: {
         companyId,
-        name: f.name,
-        sortOrder: f.sortOrder,
-        isLossReason: f.isLossReason,
-        createdBy: actorId,
-        updatedBy: actorId,
-      })),
+        deletedAt: null,
+        name: "Other",
+        isLossReason: false,
+      },
+      data: { isLossReason: true, updatedBy: actorId },
     });
+    const existing = await this.prisma.crmFeedbackType.findMany({
+      where: { companyId, deletedAt: null },
+      select: { name: true },
+    });
+    const have = new Set(existing.map((row) => row.name.toLowerCase()));
+    const missing = DEFAULT_FEEDBACK_TYPES.filter(
+      (f) => f.isLossReason && !have.has(f.name.toLowerCase())
+    );
+    if (missing.length > 0) {
+      const maxSort = await this.prisma.crmFeedbackType.aggregate({
+        where: { companyId, deletedAt: null },
+        _max: { sortOrder: true },
+      });
+      let sortOrder = (maxSort._max.sortOrder ?? -1) + 1;
+      await this.prisma.crmFeedbackType.createMany({
+        data: missing.map((f) => ({
+          companyId,
+          name: f.name,
+          sortOrder: sortOrder++,
+          isLossReason: true,
+          createdBy: actorId,
+          updatedBy: actorId,
+        })),
+      });
+    }
   }
 
   async ensureDefaultBusinessTypes(

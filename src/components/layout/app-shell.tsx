@@ -31,7 +31,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <AuthGate>
       <PreferenceSync />
-      <div className="min-h-dvh bg-background">
+      <div className="min-h-dvh max-w-full overflow-x-clip bg-background">
         <a href="#main-content" className="skip-link">
           {t("a11y.skipToContent")}
         </a>
@@ -41,7 +41,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <MobileDrawer />
         <div
           className={cn(
-            "min-h-dvh transition-[padding] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
+            "min-h-dvh min-w-0 max-w-full transition-[padding] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
             sidebarCollapsed ? "lg:ps-[72px]" : "lg:ps-[252px]"
           )}
         >
@@ -51,9 +51,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             id="main-content"
             tabIndex={-1}
             aria-label={t("a11y.mainContent")}
-            className="min-w-0 overflow-x-clip px-3 pb-[var(--mobile-nav-clearance)] pt-3 sm:px-4 sm:pt-5 md:px-6 md:pt-6 lg:px-8 lg:pb-12 lg:pt-7"
+            className="min-w-0 max-w-full overflow-x-clip px-3 pb-[var(--mobile-nav-clearance)] pt-3 sm:px-4 sm:pt-5 md:px-6 md:pt-6 lg:px-8 lg:pb-12 lg:pt-7"
           >
-            <div className="content-frame min-w-0">{children}</div>
+            <div className="content-frame min-w-0 max-w-full">{children}</div>
           </main>
         </div>
         <MobileBottomNav />

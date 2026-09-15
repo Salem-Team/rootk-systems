@@ -54,7 +54,9 @@ export const DEFAULT_FEEDBACK_TYPES: Array<{
   { name: "Wrong Lead", sortOrder: 7, isLossReason: true },
   { name: "Budget Issue", sortOrder: 8, isLossReason: true },
   { name: "Feature Request", sortOrder: 9, isLossReason: false },
-  { name: "Other", sortOrder: 10, isLossReason: false },
+  { name: "Duplicate Lead", sortOrder: 10, isLossReason: true },
+  { name: "Bad Contact Info", sortOrder: 11, isLossReason: true },
+  { name: "Other", sortOrder: 12, isLossReason: true },
 ];
 
 // Pagination.

@@ -239,7 +239,10 @@ export class CrmActivitiesService {
       leadPatch.metadata = clearFollowUpReminderMeta(lead.metadata);
     }
     if (tags) leadPatch.tags = tags;
-    if (ft.isLossReason && !lead.lossReasonTypeId) {
+    const resolvedLossReasonId = ft.isLossReason
+      ? feedbackTypeId
+      : lead.lossReasonTypeId;
+    if (ft.isLossReason) {
       leadPatch.lossReasonTypeId = feedbackTypeId;
     }
     if (stageId && stageId !== lead.stageId) {
@@ -252,7 +255,7 @@ export class CrmActivitiesService {
       await this.shared.applyStageSideEffects(
         companyId,
         stageId,
-        lead.lossReasonTypeId,
+        resolvedLossReasonId,
         stagePatch
       );
       leadPatch.stage = { connect: { id: stageId } };

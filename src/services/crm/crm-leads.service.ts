@@ -9,6 +9,7 @@ import {
 import { isApiMode } from "@/lib/env";
 import { NotFoundError } from "@/lib/errors";
 import { filterLeads } from "@/lib/crm-analytics";
+import { appendLossReasonNote } from "@/lib/crm/loss-reason";
 import { ensurePaginatedLeads } from "@/lib/crm-normalize";
 import { emitCrmUpdated } from "@/lib/events";
 import { crmLeadRepository } from "@/repositories/crm.repository";
@@ -177,7 +178,24 @@ export async function bulkUpdateCrmLeads(
         });
         if (res.success) updated++;
       } else if (parsed.action === "change_stage") {
-        const res = await updateCrmLead(id, { stageId: parsed.value });
+        const existing = await crmLeadRepository.findById(id);
+        if (!existing) continue;
+        const reasonName =
+          (await ensureCatalog()).feedbackTypes.find(
+            (ft) => ft.id === parsed.lossReasonTypeId
+          )?.name ?? "Lost";
+        const nextNotes = appendLossReasonNote(
+          existing.notes ?? "",
+          reasonName,
+          parsed.lossReasonDetails ?? ""
+        );
+        const res = await updateCrmLead(id, {
+          stageId: parsed.value,
+          ...(parsed.lossReasonTypeId
+            ? { lossReasonTypeId: parsed.lossReasonTypeId }
+            : {}),
+          ...(nextNotes !== undefined ? { notes: nextNotes } : {}),
+        });
         if (res.success) updated++;
       } else if (parsed.action === "change_status") {
         const res = await updateCrmLead(id, {

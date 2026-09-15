@@ -55,6 +55,9 @@ export function useCrmHub() {
   const [leadsView, setLeadsView] = useState<"cards" | "table">("cards");
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
+  const [delayCount, setDelayCount] = useState(0);
 
   const [stages, setStages] = useState<CrmStage[]>([]);
   const [feedbackTypes, setFeedbackTypes] = useState<CrmFeedbackType[]>([]);
@@ -111,6 +114,7 @@ export function useCrmHub() {
     loadDashboard,
     loadLeads,
     loadLeadCounts,
+    loadDelayCount,
     loadPipeline,
     loadActivities,
     loadFeedback,
@@ -129,6 +133,7 @@ export function useCrmHub() {
     setLeadsPage,
     setPipelineLeads,
     setLeadStageCounts,
+    setDelayCount,
     setActivities,
     setActivityLeads,
     setFeedback,
@@ -136,28 +141,35 @@ export function useCrmHub() {
   });
 
   const reloadVisible = useCallback(async (opts?: { silent?: boolean }) => {
-    if (!opts?.silent) setLoading(true);
-    await loadCore();
-    const jobs: Promise<void>[] = [];
-    if (tab === "dashboard" || tab === "reports" || tab === "performance") {
-      jobs.push(loadDashboard());
+    const silent = Boolean(opts?.silent);
+    if (silent) setSyncing(true);
+    else setLoading(true);
+    try {
+      await loadCore();
+      const jobs: Promise<void>[] = [loadDelayCount()];
+      if (tab === "dashboard" || tab === "reports" || tab === "performance") {
+        jobs.push(loadDashboard());
+      }
+      if (tab === "leads") {
+        if (leadsView === "table") jobs.push(loadLeads());
+        jobs.push(loadPipeline());
+        jobs.push(loadLeadCounts());
+      }
+      if (tab === "delay") jobs.push(loadLeads());
+      if (tab === "pipeline") jobs.push(loadPipeline());
+      if (tab === "activities") jobs.push(loadActivities());
+      if (tab === "feedback") {
+        jobs.push(loadFeedback());
+        jobs.push(loadDashboard());
+      }
+      if (tab === "performance") jobs.push(loadPerformance());
+      await Promise.all(jobs);
+      setLastUpdatedAt(Date.now());
+    } finally {
+      setLoading(false);
+      setSyncing(false);
+      setReady(true);
     }
-    if (tab === "leads") {
-      if (leadsView === "table") jobs.push(loadLeads());
-      jobs.push(loadPipeline());
-      jobs.push(loadLeadCounts());
-    }
-    if (tab === "delay") jobs.push(loadLeads());
-    if (tab === "pipeline") jobs.push(loadPipeline());
-    if (tab === "activities") jobs.push(loadActivities());
-    if (tab === "feedback") {
-      jobs.push(loadFeedback());
-      jobs.push(loadDashboard());
-    }
-    if (tab === "performance") jobs.push(loadPerformance());
-    await Promise.all(jobs);
-    setLoading(false);
-    setReady(true);
   }, [
     tab,
     leadsView,
@@ -165,18 +177,33 @@ export function useCrmHub() {
     loadDashboard,
     loadLeads,
     loadLeadCounts,
+    loadDelayCount,
     loadPipeline,
     loadActivities,
     loadFeedback,
     loadPerformance,
   ]);
 
+  const pollIntervalMs = useMemo(() => {
+    if (
+      tab === "leads" ||
+      tab === "delay" ||
+      tab === "pipeline" ||
+      tab === "activities" ||
+      tab === "feedback"
+    ) {
+      return 12_000;
+    }
+    if (tab === "dashboard" || tab === "performance") return 20_000;
+    return 40_000;
+  }, [tab]);
+
   useLiveReload(
     () => {
       void reloadVisible({ silent: true });
     },
     [CRM_UPDATED_EVENT],
-    { intervalMs: 40_000 }
+    { intervalMs: pollIntervalMs, skipInitial: true }
   );
 
   useEffect(() => {
@@ -377,6 +404,9 @@ export function useCrmHub() {
     leadsView,
     ready,
     loading,
+    syncing,
+    lastUpdatedAt,
+    delayCount,
     dashFilters,
     setDashFilters,
     leadFilters,

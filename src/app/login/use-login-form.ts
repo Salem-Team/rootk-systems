@@ -6,11 +6,19 @@ import { toast } from "sonner";
 import { useAttendanceStore } from "@/stores/attendance-store";
 import { signInWithCredentials } from "@/services/auth.service";
 import {
+  bindBiometricUser,
+  checkBiometricSupport,
+  markBiometricPrompted,
+  shouldOfferBiometricOptIn,
+} from "@/services/biometric-auth.service";
+import {
   loginCredentialsSchema,
   type LoginCredentialsDto,
 } from "@/schemas/auth.schema";
 import { useTranslation } from "@/hooks/use-translation";
-import { flushSessionPersist } from "@/stores/session-store";
+import { isNativeApp } from "@/lib/native/platform";
+import { useBiometricLockStore } from "@/stores/biometric-lock-store";
+import { flushSessionPersist, useSessionStore } from "@/stores/session-store";
 
 /** Legacy key — cleared so old admin emails never reappear as defaults. */
 const LEGACY_REMEMBERED_EMAIL_KEY = "rootk-login-email";
@@ -70,6 +78,7 @@ export function useLoginForm() {
   const [success, setSuccess] = useState(false);
   const [emailUnlocked, setEmailUnlocked] = useState(false);
   const [passwordUnlocked, setPasswordUnlocked] = useState(false);
+  const [biometricOptInOpen, setBiometricOptInOpen] = useState(false);
 
   const form = useForm<LoginCredentialsDto>({
     resolver: zodResolver(loginCredentialsSchema),
@@ -86,6 +95,17 @@ export function useLoginForm() {
 
   const submitting = form.formState.isSubmitting || success;
 
+  async function finishLoginNavigation() {
+    try {
+      await flushSessionPersist();
+    } catch {
+      /* in-memory session is already applied — still navigate */
+    }
+    // Brief pause so native secure storage can settle before route change.
+    await new Promise((resolve) => window.setTimeout(resolve, 220));
+    router.replace("/dashboard");
+  }
+
   async function onSubmit(values: LoginCredentialsDto) {
     setFormError(null);
     resetAttendance();
@@ -101,14 +121,32 @@ export function useLoginForm() {
     }
     setSuccess(true);
     toast.success(t("auth.welcomeBack"), { duration: 1600 });
-    try {
-      await flushSessionPersist();
-    } catch {
-      /* in-memory session is already applied — still navigate */
+
+    const sessionUser = useSessionStore.getState().user;
+    bindBiometricUser({
+      userId: sessionUser.id,
+      email: sessionUser.email,
+    });
+    useBiometricLockStore.getState().setUnlocked(true);
+    useBiometricLockStore.getState().markSkipNextAutoPrompt();
+
+    if (isNativeApp() && shouldOfferBiometricOptIn()) {
+      const support = await checkBiometricSupport();
+      if (support.available) {
+        setBiometricOptInOpen(true);
+        return;
+      }
     }
-    // Brief pause so native secure storage can settle before route change.
-    await new Promise((resolve) => window.setTimeout(resolve, 220));
-    router.replace("/dashboard");
+
+    await finishLoginNavigation();
+  }
+
+  async function onBiometricOptInOpenChange(open: boolean) {
+    setBiometricOptInOpen(open);
+    if (!open && success) {
+      markBiometricPrompted();
+      await finishLoginNavigation();
+    }
   }
 
   useEffect(() => {
@@ -161,6 +199,8 @@ export function useLoginForm() {
     setPasswordFocused,
     emailUnlocked,
     passwordUnlocked,
+    biometricOptInOpen,
+    onBiometricOptInOpenChange,
     onSubmit,
     onPasswordKeyEvent,
     onFieldFocus,

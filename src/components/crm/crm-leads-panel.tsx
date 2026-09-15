@@ -18,6 +18,7 @@ import { exportCrmLeadRows } from "@/services/crm.service";
 import type { Employee } from "@/types";
 import type {
   CrmBusinessType,
+  CrmFeedbackType,
   CrmLead,
   CrmLeadFilters,
   CrmStage,
@@ -38,6 +39,7 @@ interface CrmLeadsPanelProps {
   canViewOthers?: boolean;
   canImport?: boolean;
   businessTypes?: CrmBusinessType[];
+  feedbackTypes?: CrmFeedbackType[];
   className?: string;
 }
 
@@ -56,6 +58,7 @@ export function CrmLeadsPanel({
   canViewOthers = false,
   canImport = false,
   businessTypes = [],
+  feedbackTypes = [],
   className,
 }: CrmLeadsPanelProps) {
   const panel = useCrmLeadsPanel({ leads, stages, employees, filters, onFiltersChange });
@@ -114,6 +117,7 @@ export function CrmLeadsPanel({
               type="button"
               size="sm"
               variant="outline"
+              className="min-h-11 touch-manipulation sm:min-h-8"
               disabled={exporting}
               onClick={() => void onExport()}
               aria-label={t("crm.actions.export")}
@@ -129,6 +133,7 @@ export function CrmLeadsPanel({
                 canAssign={canAssign}
                 onImported={onImported}
                 size="sm"
+                className="min-h-11 sm:min-h-8"
               />
             ) : null}
             {canImport ? (
@@ -136,6 +141,7 @@ export function CrmLeadsPanel({
                 type="button"
                 size="sm"
                 variant="outline"
+                className="min-h-11 touch-manipulation sm:min-h-8"
                 onClick={() => setImportOpen(true)}
                 aria-label={t("crm.actions.import")}
               >
@@ -147,7 +153,7 @@ export function CrmLeadsPanel({
               type="button"
               size="sm"
               variant="outline"
-              className="lg:hidden"
+              className="min-h-11 touch-manipulation lg:hidden sm:min-h-8"
               onClick={() => panel.setFiltersOpen((v) => !v)}
             >
               <SlidersHorizontal className="me-1.5 h-3.5 w-3.5" />
@@ -173,12 +179,15 @@ export function CrmLeadsPanel({
         selectedCount={panel.selected.size}
         stages={panel.safeStages}
         employees={panel.safeEmployees}
+        feedbackTypes={feedbackTypes}
         canAssign={canAssign}
         busy={panel.busy}
         onAssign={(ownerEmployeeId) =>
           void panel.runBulk("assign", ownerEmployeeId)
         }
-        onChangeStage={(stageId) => void panel.runBulk("change_stage", stageId)}
+        onChangeStage={(stageId, loss) =>
+          void panel.runBulk("change_stage", stageId, loss)
+        }
         onChangeStatus={(status) =>
           void panel.runBulk("change_status", status)
         }

@@ -20,7 +20,7 @@ export function MobileActionBar({
   return (
     <div
       className={cn(
-        "pointer-events-none fixed inset-x-0 bottom-[var(--mobile-action-bottom)] z-30 px-3",
+        "pointer-events-none fixed inset-x-0 bottom-[var(--mobile-action-bottom)] z-40 px-3",
         mobileOnly && "lg:hidden",
         className
       )}

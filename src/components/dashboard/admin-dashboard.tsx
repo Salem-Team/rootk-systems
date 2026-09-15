@@ -126,27 +126,27 @@ export function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="page-stack min-w-0 max-w-full">
       <DashboardHero
         present={stats.present + stats.late + stats.wfh}
         totalEmployees={stats.totalEmployees}
       />
 
-      <section aria-label={t("dashboard.executiveOverview")}>
+      <section aria-label={t("dashboard.executiveOverview")} className="min-w-0">
         <KpiCards stats={stats} />
       </section>
 
-      <div className="grid gap-4 sm:gap-5 xl:grid-cols-12">
-        <Reveal preset="up" className="xl:col-span-8">
+      <div className="grid min-w-0 gap-3 sm:gap-5 xl:grid-cols-12">
+        <Reveal preset="up" className="min-w-0 xl:col-span-8">
           <WeeklyChart data={weekly} />
         </Reveal>
-        <Reveal preset="up" delay={0.04} className="xl:col-span-4">
+        <Reveal preset="up" delay={0.04} className="min-w-0 xl:col-span-4">
           <EmployeeCallStats rows={callRows} />
         </Reveal>
       </div>
 
-      <div className="grid gap-4 sm:gap-5 lg:grid-cols-12">
-        <Reveal preset="up" className="lg:col-span-7">
+      <div className="grid min-w-0 gap-3 sm:gap-5 lg:grid-cols-12">
+        <Reveal preset="up" className="min-w-0 lg:col-span-7">
           <ActivityFeed
             activities={activities}
             title={t("dashboard.activities")}
@@ -154,11 +154,11 @@ export function AdminDashboard() {
             viewAllHref="/attendance"
           />
         </Reveal>
-        <div className="grid gap-4 sm:gap-5 lg:col-span-5">
-          <Reveal preset="up" delay={0.04}>
+        <div className="grid min-w-0 gap-3 sm:gap-5 lg:col-span-5">
+          <Reveal preset="up" delay={0.04} className="min-w-0">
             <RecentLeavePanel requests={leaves} />
           </Reveal>
-          <Reveal preset="up" delay={0.06}>
+          <Reveal preset="up" delay={0.06} className="min-w-0">
             <Announcements items={announcements} limit={3} />
           </Reveal>
         </div>
@@ -166,24 +166,24 @@ export function AdminDashboard() {
 
       <section
         aria-label={t("dashboard.moreInsights")}
-        className="space-y-3"
+        className="min-w-0 space-y-3"
       >
         <div className="flex items-baseline justify-between gap-3 px-0.5">
           <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
             {t("dashboard.moreInsights")}
           </h2>
         </div>
-        <div className="grid gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-4">
-          <Reveal preset="scale">
+        <div className="grid min-w-0 gap-3 sm:gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <Reveal preset="scale" className="min-w-0">
             <TopDepartments stats={deptStats} />
           </Reveal>
-          <Reveal preset="scale" delay={0.03}>
+          <Reveal preset="scale" delay={0.03} className="min-w-0">
             <CompanyCalendarMini events={calendarEvents} />
           </Reveal>
-          <Reveal preset="scale" delay={0.06}>
+          <Reveal preset="scale" delay={0.06} className="min-w-0">
             <HolidaysPanel holidays={holidays} />
           </Reveal>
-          <Reveal preset="scale" delay={0.09}>
+          <Reveal preset="scale" delay={0.09} className="min-w-0">
             <BirthdaysPanel items={birthdays} />
           </Reveal>
         </div>
