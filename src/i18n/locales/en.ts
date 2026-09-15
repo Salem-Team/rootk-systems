@@ -24,6 +24,7 @@ export const en = {
     capsLockOn: "Caps Lock is on.",
     welcomeBack: "Signed in. Taking you in…",
     enteringWorkspace: "Opening your workspace…",
+    rateLimited: "Too many attempts. Wait a moment and try again.",
     networkError: "Connection problem. Check your network and try again.",
     sessionExpired: "Your session ended. Please sign in again.",
     copyright: "All rights reserved",

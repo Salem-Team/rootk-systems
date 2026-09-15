@@ -164,6 +164,34 @@ async function main() {
       status: EmployeeStatus.active,
       salary: 20000,
     },
+    {
+      id: "emp_ziad_001",
+      employeeCode: "RK-010",
+      name: "Ziad El Warraqi",
+      email: "ziad@rootk.systems",
+      department: "Sales",
+      position: "Sales Representative",
+      location: "Cairo",
+      phone: "+20 100 000 0010",
+      managerName: "Nour Al-Admin",
+      managerEmployeeIds: ["emp_admin_001"],
+      status: EmployeeStatus.active,
+      salary: 15000,
+    },
+    {
+      id: "emp_mahmoud_001",
+      employeeCode: "RK-011",
+      name: "Mahmoud",
+      email: "mahmoud@rootk.systems",
+      department: "Sales",
+      position: "Sales Representative",
+      location: "Cairo",
+      phone: "+20 100 000 0011",
+      managerName: "Nour Al-Admin",
+      managerEmployeeIds: ["emp_admin_001"],
+      status: EmployeeStatus.active,
+      salary: 15000,
+    },
   ];
 
   for (const e of employees) {
@@ -200,6 +228,34 @@ async function main() {
     });
 
     // Salary profiles are created by admins via Payroll — do not seed mock pay.
+  }
+
+  // Website leads: Ziad → Mahmoud → Ziad… (next lead goes to Ziad).
+  {
+    const settings = await prisma.companySettings.findUnique({
+      where: { companyId: COMPANY_ID },
+    });
+    const meta =
+      settings?.metadata &&
+      typeof settings.metadata === "object" &&
+      !Array.isArray(settings.metadata)
+        ? (settings.metadata as Record<string, unknown>)
+        : {};
+    await prisma.companySettings.update({
+      where: { companyId: COMPANY_ID },
+      data: {
+        metadata: {
+          ...meta,
+          websiteAutoLead: {
+            enabled: true,
+            employeeIds: ["emp_ziad_001", "emp_mahmoud_001"],
+            nextIndex: 0,
+            effectiveFrom: "2026-09-13",
+          },
+        },
+        updatedBy: "system",
+      },
+    });
   }
 
   const passwordHash = hashDemoPassword();

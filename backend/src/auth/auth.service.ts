@@ -25,6 +25,25 @@ function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
+/** Parse Nest-style durations (`7d`, `24h`, `30m`) into milliseconds. */
+function durationToMs(value: string | undefined, fallbackMs: number): number {
+  if (!value) return fallbackMs;
+  const m = /^(\d+)\s*([smhd])$/i.exec(value.trim());
+  if (!m) return fallbackMs;
+  const n = Number(m[1]);
+  if (!Number.isFinite(n) || n <= 0) return fallbackMs;
+  const unit = m[2]!.toLowerCase();
+  const mult =
+    unit === "s"
+      ? 1000
+      : unit === "m"
+        ? 60_000
+        : unit === "h"
+          ? 3_600_000
+          : 86_400_000;
+  return n * mult;
+}
+
 type SessionBundle = {
   user: ReturnType<typeof mapUser>;
   role: "admin" | "employee";
@@ -50,6 +69,17 @@ export class AuthService {
     return this.config.get<string>("DEFAULT_COMPANY_ID", DEFAULT_COMPANY_ID);
   }
 
+  private refreshTtlMs() {
+    return durationToMs(
+      this.config.get<string>("JWT_REFRESH_EXPIRES_IN"),
+      365 * 24 * 60 * 60 * 1000
+    );
+  }
+
+  private refreshExpiresIn(): string {
+    return this.config.get<string>("JWT_REFRESH_EXPIRES_IN", "365d");
+  }
+
   private async issueTokens(payload: JwtPayload) {
     const tokenPayload: JwtPayload = {
       sub: payload.sub,
@@ -65,10 +95,10 @@ export class AuthService {
       { ...tokenPayload, jti: randomUUID() },
       {
         secret: this.config.get<string>("JWT_SECRET", "rootk-dev-secret"),
-        expiresIn: "30d",
+        expiresIn: this.refreshExpiresIn() as `${number}d`,
       }
     );
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + this.refreshTtlMs());
     await this.prisma.refreshToken.create({
       data: {
         userId: tokenPayload.sub,
@@ -272,8 +302,10 @@ export class AuthService {
   async refresh(refreshToken: string) {
     let payload: JwtPayload;
     try {
+      // Trust DB expiry for stickiness; JWT exp is a soft upper bound only.
       payload = this.jwt.verify<JwtPayload>(refreshToken, {
         secret: this.config.get<string>("JWT_SECRET", "rootk-dev-secret"),
+        ignoreExpiration: true,
       });
     } catch {
       throw new UnauthorizedException("Invalid refresh token");
@@ -293,8 +325,8 @@ export class AuthService {
 
     // Keep the same refresh token (no rotate-on-refresh) so multi-tab /
     // parallel 401 retries do not invalidate an otherwise valid session.
-    // Sliding expiry: stay signed in while the user keeps using the app.
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    // Sliding DB expiry: stay signed in while the user keeps using the app.
+    const expiresAt = new Date(Date.now() + this.refreshTtlMs());
     await this.prisma.refreshToken.update({
       where: { id: stored.id },
       data: { expiresAt },

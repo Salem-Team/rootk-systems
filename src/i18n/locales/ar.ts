@@ -26,6 +26,7 @@ export const ar: TranslationKeys = {
     capsLockOn: "Caps Lock شغال.",
     welcomeBack: "تمام، جاري دخولك…",
     enteringWorkspace: "بنفتح مساحة الشغل…",
+    rateLimited: "محاولات كتير. استنى شوية وحاول تاني.",
     networkError: "فيه مشكلة في الاتصال. تأكد من النت وحاول تاني.",
     sessionExpired: "انتهت الجلسة. سجّل دخول تاني.",
     copyright: "جميع الحقوق محفوظة",

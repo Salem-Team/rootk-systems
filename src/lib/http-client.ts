@@ -63,7 +63,14 @@ export class HttpClient {
       const refreshOutcome = await this.tryRefresh();
       if (refreshOutcome === "success") {
         const retry = await this.rawRequest(path, options);
-        return this.parseSuccess<T>(retry, path);
+        if (retry.ok) {
+          return this.parseSuccess<T>(retry, path);
+        }
+        // Refresh worked — do NOT sign the user out. Surface the API error.
+        if (retry.status === 401) {
+          throw new UnauthorizedError("Request unauthorized after session renew");
+        }
+        throw await this.toAppError(retry, path);
       }
       if (refreshOutcome === "transient") {
         throw new InternalError(

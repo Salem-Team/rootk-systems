@@ -31,12 +31,31 @@ function scrollFieldIntoView(target: HTMLElement) {
       block: "center",
       inline: "nearest",
     });
-  }, 120);
+  }, 280);
 }
 
 function isCoarsePointer(): boolean {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(pointer: coarse)").matches;
+}
+
+function loginErrorMessage(
+  code: string | undefined,
+  t: ReturnType<typeof useTranslation>["t"]
+): string {
+  switch (code) {
+    case "UNAUTHORIZED":
+    case "FORBIDDEN":
+    case "VALIDATION":
+      return t("auth.invalidCredentials");
+    case "RATE_LIMIT":
+      return t("auth.rateLimited");
+    case "NETWORK":
+    case "TIMEOUT":
+      return t("auth.networkError");
+    default:
+      return t("auth.networkError");
+  }
 }
 
 export function useLoginForm() {
@@ -75,11 +94,7 @@ export function useLoginForm() {
       password: values.password,
     });
     if (!res.success) {
-      const code = res.error?.code;
-      const message =
-        code === "UNAUTHORIZED"
-          ? t("auth.invalidCredentials")
-          : t("auth.networkError");
+      const message = loginErrorMessage(res.error?.code, t);
       setFormError(message);
       form.setFocus("password");
       return;
@@ -89,9 +104,10 @@ export function useLoginForm() {
     try {
       await flushSessionPersist();
     } catch {
-      /* still navigate — in-memory session is already applied */
+      /* in-memory session is already applied — still navigate */
     }
-    await new Promise((resolve) => window.setTimeout(resolve, 180));
+    // Brief pause so native secure storage can settle before route change.
+    await new Promise((resolve) => window.setTimeout(resolve, 220));
     router.replace("/dashboard");
   }
 
@@ -105,22 +121,28 @@ export function useLoginForm() {
     setCapsLockOn(event.getModifierState("CapsLock"));
   }
 
+  function unlockField(field: "email" | "password") {
+    if (field === "email") setEmailUnlocked(true);
+    else setPasswordUnlocked(true);
+  }
+
   function onFieldFocus(
     field: "email" | "password",
     event: FocusEvent<HTMLInputElement>
   ) {
     // Unlock immediately so password managers / typing work on first tap.
     event.currentTarget.readOnly = false;
-    if (field === "email") {
-      setEmailFocused(true);
-      setEmailUnlocked(true);
-    } else {
-      setPasswordFocused(true);
-      setPasswordUnlocked(true);
-    }
+    unlockField(field);
+    if (field === "email") setEmailFocused(true);
+    else setPasswordFocused(true);
     if (isCoarsePointer()) {
       scrollFieldIntoView(event.currentTarget);
     }
+  }
+
+  function onFieldPointerDown(field: "email" | "password") {
+    // iOS/Android: unlock before focus so the first keystroke is not dropped.
+    unlockField(field);
   }
 
   return {
@@ -142,5 +164,6 @@ export function useLoginForm() {
     onSubmit,
     onPasswordKeyEvent,
     onFieldFocus,
+    onFieldPointerDown,
   };
 }

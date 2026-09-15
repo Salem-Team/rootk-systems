@@ -214,17 +214,30 @@ export const useSessionStore = create<SessionState>()(
           typeof p.impersonation.impersonatorId === "string"
             ? p.impersonation
             : null;
+        const accessToken =
+          typeof p?.accessToken === "string" && p.accessToken
+            ? p.accessToken
+            : null;
+        const refreshToken =
+          typeof p?.refreshToken === "string" && p.refreshToken
+            ? p.refreshToken
+            : null;
+        // API mode: never restore a zombie "authenticated" flag without tokens.
+        const claimedAuth = Boolean(p?.authenticated);
+        const authenticated =
+          claimedAuth &&
+          (!isApiMode() || Boolean(accessToken || refreshToken));
         return {
           ...current,
           role,
           user,
-          authenticated: p?.authenticated ?? false,
-          accessToken: p?.accessToken ?? null,
-          refreshToken: p?.refreshToken ?? null,
+          authenticated,
+          accessToken,
+          refreshToken,
           permissions: Array.isArray(p?.permissions)
             ? p.permissions
             : permissionsForRole(role),
-          impersonation,
+          impersonation: authenticated ? impersonation : null,
         };
       },
       onRehydrateStorage: () => (_state, error) => {
@@ -289,6 +302,21 @@ export function getAccessToken(): string | null {
 
 export function getRefreshToken(): string | null {
   return useSessionStore.getState().refreshToken;
+}
+
+/**
+ * True when the user should be treated as signed in.
+ * API mode requires at least one token so AuthGate / login redirect stay consistent.
+ */
+export function hasActiveSession(
+  state: Pick<
+    SessionState,
+    "authenticated" | "accessToken" | "refreshToken"
+  > = useSessionStore.getState()
+): boolean {
+  if (!state.authenticated) return false;
+  if (!isApiMode()) return true;
+  return Boolean(state.accessToken || state.refreshToken);
 }
 
 export function isImpersonatingSession(): boolean {

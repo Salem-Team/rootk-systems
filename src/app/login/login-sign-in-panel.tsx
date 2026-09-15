@@ -45,6 +45,7 @@ export function LoginSignInPanel() {
     onSubmit,
     onPasswordKeyEvent,
     onFieldFocus,
+    onFieldPointerDown,
   } = useLoginForm();
 
   return (
@@ -106,7 +107,6 @@ export function LoginSignInPanel() {
             className="space-y-3.5"
             onSubmit={form.handleSubmit(onSubmit)}
             noValidate
-            autoComplete="off"
           >
             <div className="space-y-1.5">
               <Label
@@ -135,7 +135,7 @@ export function LoginSignInPanel() {
                       {...field}
                       id="login-email"
                       type="email"
-                      name="login-email"
+                      name="email"
                       autoComplete="username"
                       autoCapitalize="none"
                       autoCorrect="off"
@@ -145,6 +145,7 @@ export function LoginSignInPanel() {
                       readOnly={!emailUnlocked}
                       placeholder={t("auth.emailPlaceholder")}
                       disabled={submitting}
+                      onPointerDown={() => onFieldPointerDown("email")}
                       onFocus={(event) => onFieldFocus("email", event)}
                       onBlur={() => {
                         setEmailFocused(false);
@@ -191,12 +192,13 @@ export function LoginSignInPanel() {
                       {...field}
                       id="login-password"
                       type={showPassword ? "text" : "password"}
-                      name="login-password"
+                      name="password"
                       autoComplete="current-password"
                       enterKeyHint="go"
                       readOnly={!passwordUnlocked}
                       placeholder={t("auth.passwordPlaceholder")}
                       disabled={submitting}
+                      onPointerDown={() => onFieldPointerDown("password")}
                       onKeyDown={onPasswordKeyEvent}
                       onKeyUp={onPasswordKeyEvent}
                       onFocus={(event) => onFieldFocus("password", event)}
