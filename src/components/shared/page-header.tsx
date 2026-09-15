@@ -11,6 +11,8 @@ interface PageHeaderProps {
   actions?: React.ReactNode;
   /** Primary CTA shown full-width under the title on small screens. */
   mobileActions?: React.ReactNode;
+  /** Optional class for the mobile actions row (overrides default wrap styles). */
+  mobileActionsClassName?: string;
   eyebrow?: string;
   showBreadcrumbs?: boolean;
   className?: string;
@@ -21,12 +23,18 @@ export function PageHeader({
   description,
   actions,
   mobileActions,
+  mobileActionsClassName,
   eyebrow,
   showBreadcrumbs = true,
   className,
 }: PageHeaderProps) {
   const reduceMotion = useReducedMotion();
   const mobileSlot = mobileActions ?? actions;
+  const mobileRowClass = cn(
+    "mt-3 flex w-full flex-wrap gap-2 sm:hidden [&_a]:min-h-11 [&_a]:touch-manipulation [&_button]:min-h-11 [&_button]:touch-manipulation",
+    mobileActionsClassName ??
+      "[&_a]:flex-1 [&_button]:min-w-[calc(50%-0.25rem)] [&_button]:flex-1"
+  );
 
   const body = (
     <>
@@ -54,9 +62,7 @@ export function PageHeader({
         ) : null}
       </div>
       {mobileSlot ? (
-        <div className="mt-3 flex w-full flex-wrap gap-2 sm:hidden [&_a]:min-h-11 [&_a]:flex-1 [&_a]:touch-manipulation [&_button]:min-h-11 [&_button]:min-w-[calc(50%-0.25rem)] [&_button]:flex-1 [&_button]:touch-manipulation">
-          {mobileSlot}
-        </div>
+        <div className={mobileRowClass}>{mobileSlot}</div>
       ) : null}
       <div
         className="soft-divider mt-3.5 hidden sm:mt-5 sm:block"
@@ -113,10 +119,7 @@ export function PageHeader({
         ) : null}
       </div>
       {mobileSlot ? (
-        <motion.div
-          variants={fadeInUp}
-          className="mt-3 flex w-full flex-wrap gap-2 sm:hidden [&_a]:min-h-11 [&_a]:flex-1 [&_a]:touch-manipulation [&_button]:min-h-11 [&_button]:min-w-[calc(50%-0.25rem)] [&_button]:flex-1 [&_button]:touch-manipulation"
-        >
+        <motion.div variants={fadeInUp} className={mobileRowClass}>
           {mobileSlot}
         </motion.div>
       ) : null}

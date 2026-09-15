@@ -3213,6 +3213,7 @@ export const en = {
       import: "Import",
       export: "Export",
       bulkAdd: "Bulk add",
+      moreTools: "More tools",
     },
     import: {
       title: "Import leads",
@@ -3264,6 +3265,9 @@ export const en = {
       truncated: "Only the first 500 numbers will be added.",
       noRows: "Paste at least one valid Egyptian mobile number.",
       invalidLine: "Couldn’t read: {line}",
+      importFailed: "{count} failed to import",
+      importFailedHint:
+        "Failed numbers are kept and highlighted below so you can fix and retry.",
     },
     empty: {
       leads: "No leads found",
@@ -3374,6 +3378,8 @@ export const en = {
     filters: {
       search: "Search leads…",
       title: "Filters",
+      sheetHint: "Pick what you need, then tap Done.",
+      done: "Done",
       stage: "Stage",
       status: "Status",
       source: "Source",
@@ -3461,6 +3467,8 @@ export const en = {
       colLastActivity: "Last activity",
       colNextFollowUp: "Next follow-up",
       colStatus: "Status",
+      colActions: "Actions",
+      viewHistory: "Activity history",
       unassigned: "Unassigned",
       pageOf: "Page {page} of {total}",
       prev: "Previous",

@@ -9,6 +9,7 @@ import {
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/use-translation";
 import { ensureCrmList, ensurePaginatedLeads } from "@/lib/crm-normalize";
+import { emitCrmUpdated } from "@/lib/events";
 import { bulkUpdateCrmLeads } from "@/services/crm.service";
 import type { Employee } from "@/types";
 import type { CrmLeadFilters, CrmStage, PaginatedLeads } from "@/types/crm";
@@ -26,6 +27,8 @@ interface UseCrmLeadsPanelArgs {
   employees: Employee[];
   filters: CrmLeadFilters;
   onFiltersChange: Dispatch<SetStateAction<CrmLeadFilters>>;
+  /** Locked filter keys (e.g. Delay) excluded from "active filters" / clear UX. */
+  filterBadgeExclude?: Array<keyof CrmLeadFilters>;
 }
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -36,6 +39,7 @@ export function useCrmLeadsPanel({
   employees,
   filters,
   onFiltersChange,
+  filterBadgeExclude = [],
 }: UseCrmLeadsPanelArgs) {
   const { t } = useTranslation();
   const [searchLocal, setSearchLocal] = useState(filters.search ?? "");
@@ -140,12 +144,18 @@ export function useCrmLeadsPanel({
   function clearFilters() {
     searchEditingRef.current = false;
     setSearchLocal("");
-    onFiltersChange((prev) => ({
-      page: 1,
-      pageSize: prev.pageSize ?? 20,
-      sort: prev.sort ?? "updatedAt",
-      order: prev.order ?? "desc",
-    }));
+    onFiltersChange((prev) => {
+      const next: CrmLeadFilters = {
+        page: 1,
+        pageSize: prev.pageSize ?? 20,
+        sort: prev.sort ?? "updatedAt",
+        order: prev.order ?? "desc",
+      };
+      // Preserve locked Delay filters so clear doesn't fight the parent lock.
+      if (exclude.has("status") && prev.status) next.status = prev.status;
+      if (exclude.has("followUp") && prev.followUp) next.followUp = prev.followUp;
+      return next;
+    });
   }
 
   function clearSelection() {
@@ -189,16 +199,23 @@ export function useCrmLeadsPanel({
           : t("crm.toast.bulkUpdated", { count })
     );
     setSelected(new Set());
-    onFiltersChange((prev) => ({ ...prev }));
+    // Force a soft list refresh even when filter values are unchanged
+    // (sameLeadFilters would otherwise no-op a `{ ...prev }` write).
+    emitCrmUpdated();
   }
 
+  const exclude = useMemo(
+    () => new Set(filterBadgeExclude),
+    [filterBadgeExclude]
+  );
+
   const hasActiveFilters = Boolean(
-    filters.search ||
-      filters.stageId ||
-      filters.status ||
-      filters.source ||
-      filters.ownerEmployeeId ||
-      filters.followUp
+    (!exclude.has("search") && filters.search) ||
+      (!exclude.has("stageId") && filters.stageId) ||
+      (!exclude.has("status") && filters.status) ||
+      (!exclude.has("source") && filters.source) ||
+      (!exclude.has("ownerEmployeeId") && filters.ownerEmployeeId) ||
+      (!exclude.has("followUp") && filters.followUp)
   );
 
   return {

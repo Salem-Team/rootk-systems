@@ -140,10 +140,10 @@ export function CrmHubSidebar({
                 onClick={() => onTabChange(item.id)}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "relative flex min-h-11 w-full touch-manipulation items-center gap-2 rounded-xl px-3 py-2.5 text-start text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:gap-2.5 lg:rounded-lg lg:px-2.5 lg:py-2 lg:font-medium",
+                  "relative flex min-h-10 w-full touch-manipulation items-center gap-1.5 rounded-full px-2.5 py-2 text-start text-[12px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-11 sm:gap-2 sm:rounded-xl sm:px-3 sm:py-2.5 sm:text-[13px] lg:gap-2.5 lg:rounded-lg lg:px-2.5 lg:py-2 lg:font-medium",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm lg:bg-primary/[0.08] lg:text-primary lg:shadow-none"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground lg:bg-transparent"
+                    : "bg-muted/45 text-muted-foreground hover:bg-muted hover:text-foreground lg:bg-transparent"
                 )}
               >
                 {isActive && !reduceMotion ? (
@@ -161,7 +161,7 @@ export function CrmHubSidebar({
                 ) : null}
                 <span
                   className={cn(
-                    "flex h-8 w-8 items-center justify-center rounded-lg border lg:h-7 lg:w-7 lg:rounded-md",
+                    "flex h-7 w-7 items-center justify-center rounded-full border sm:h-8 sm:w-8 sm:rounded-lg lg:h-7 lg:w-7 lg:rounded-md",
                     isActive
                       ? "border-white/20 bg-white/15 text-primary-foreground lg:border-primary/15 lg:bg-primary/10 lg:text-primary"
                       : "border-border/70 bg-card lg:bg-muted/40"
@@ -169,7 +169,9 @@ export function CrmHubSidebar({
                 >
                   <Icon className="h-3.5 w-3.5" aria-hidden />
                 </span>
-                <span className="whitespace-nowrap">{t(item.labelKey)}</span>
+                <span className="max-w-[7.5rem] truncate whitespace-nowrap sm:max-w-none">
+                  {t(item.labelKey)}
+                </span>
                 {item.id === "delay" && delayCount > 0 ? (
                   <span
                     className={cn(

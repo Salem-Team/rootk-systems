@@ -210,6 +210,7 @@ export async function bulkUpdateCrmLeads(
         if (res.success) updated++;
       }
     }
+    emitCrmUpdated();
     return ok({ updated });
   } catch (error) {
     return fromError(error, { updated: 0 });

@@ -143,3 +143,35 @@ export function filterLeads(
     return true;
   });
 }
+
+/** True when two lead filter objects would produce the same query (avoids reload loops). */
+export function sameLeadFilters(
+  a: CrmLeadFilters,
+  b: CrmLeadFilters
+): boolean {
+  const keys: Array<keyof CrmLeadFilters> = [
+    "page",
+    "pageSize",
+    "search",
+    "stageId",
+    "subStageId",
+    "source",
+    "status",
+    "ownerEmployeeId",
+    "tag",
+    "followUp",
+    "sort",
+    "order",
+    "range",
+    "dateFrom",
+    "dateTo",
+  ];
+  for (const key of keys) {
+    const left = a[key] ?? undefined;
+    const right = b[key] ?? undefined;
+    const norm = (v: unknown) => (v === "" ? undefined : v);
+    if (norm(left) !== norm(right)) return false;
+  }
+  return true;
+}
+

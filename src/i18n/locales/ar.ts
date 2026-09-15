@@ -3203,6 +3203,7 @@ export const ar: TranslationKeys = {
       import: "استيراد",
       export: "تصدير",
       bulkAdd: "إضافة مجموعة",
+      moreTools: "أدوات أكتر",
     },
     import: {
       title: "استيراد العملاء",
@@ -3254,6 +3255,9 @@ export const ar: TranslationKeys = {
       truncated: "هيتضاف أول 500 رقم بس.",
       noRows: "الصق رقم موبايل مصري صالح على الأقل.",
       invalidLine: "تعذّر قراءة: {line}",
+      importFailed: "{count} فشل استيرادهم",
+      importFailedHint:
+        "الأرقام اللي فشلت متحددة ومتعلّمة تحت عشان تعدّلها وتعيد المحاولة.",
     },
     empty: {
       leads: "لا يوجد عملاء محتملون",
@@ -3364,6 +3368,8 @@ export const ar: TranslationKeys = {
     filters: {
       search: "ابحث عن عملاء…",
       title: "فلاتر",
+      sheetHint: "اختار اللي محتاجه بعدين اضغط تم.",
+      done: "تم",
       stage: "المرحلة",
       status: "الحالة",
       source: "المصدر",
@@ -3451,6 +3457,8 @@ export const ar: TranslationKeys = {
       colLastActivity: "آخر نشاط",
       colNextFollowUp: "المتابعة الجاية",
       colStatus: "الحالة",
+      colActions: "إجراءات",
+      viewHistory: "سجل النشاط",
       unassigned: "غير معيّن",
       pageOf: "صفحة {page} من {total}",
       prev: "السابق",

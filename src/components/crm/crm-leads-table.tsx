@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { format, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CrmLeadContactList } from "@/components/crm/crm-lead-contact-list";
+import { CrmLeadRowActions } from "@/components/crm/crm-lead-row-actions";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,7 @@ import {
   DataTableRow,
 } from "@/components/ui/data-table";
 import { useTranslation } from "@/hooks/use-translation";
+import { cn } from "@/lib/utils";
 import type { CrmLead, CrmLeadFilters, CrmStage, PaginatedLeads } from "@/types/crm";
 
 function formatMaybeDate(value: string | null): string {
@@ -40,6 +42,7 @@ interface CrmLeadsTableProps {
   hasActiveFilters: boolean;
   onAddLead?: () => void;
   onRowClick: (lead: CrmLead) => void;
+  onViewHistory?: (lead: CrmLead) => void;
   onToggleAll: () => void;
   onToggleOne: (id: string) => void;
   onClearFilters: () => void;
@@ -57,6 +60,7 @@ export function CrmLeadsTable({
   hasActiveFilters,
   onAddLead,
   onRowClick,
+  onViewHistory,
   onToggleAll,
   onToggleOne,
   onClearFilters,
@@ -64,8 +68,10 @@ export function CrmLeadsTable({
 }: CrmLeadsTableProps) {
   const { t } = useTranslation();
   const items = page.items;
+  const openHistory = onViewHistory ?? onRowClick;
 
-  if (loading) {
+  // Keep showing current rows while soft-refreshing — never flash a skeleton over real data.
+  if (loading && items.length === 0) {
     return (
       <div className="p-3">
         <TableSkeleton rows={6} />
@@ -96,17 +102,17 @@ export function CrmLeadsTable({
 
   return (
     <>
-      <ul className="grid gap-2 p-3 md:hidden">
+      <ul className="grid gap-2 p-2.5 pb-3 md:hidden">
         {items.map((lead) => {
           const stage = stageMap.get(lead.stageId);
           return (
             <li key={lead.id}>
               <article
-                className="flex cursor-pointer gap-3 rounded-xl border border-border/70 bg-card px-3 py-3"
+                className="flex cursor-pointer gap-2.5 rounded-2xl border border-border/60 bg-card/80 px-3 py-3 shadow-[0_1px_0_rgba(255,255,255,0.03)_inset] transition-colors active:bg-muted/40"
                 onClick={() => onRowClick(lead)}
               >
                 <div
-                  className="flex min-h-11 min-w-11 items-start justify-center pt-0.5"
+                  className="flex min-h-11 min-w-10 items-start justify-center pt-1"
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
@@ -115,17 +121,17 @@ export function CrmLeadsTable({
                     checked={selected.has(lead.id)}
                     onChange={() => onToggleOne(lead.id)}
                     aria-label={lead.name}
-                    className="h-4 w-4 accent-primary"
+                    className="mt-0.5 h-4 w-4 accent-primary"
                   />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="truncate text-[13px] font-semibold">
+                      <p className="truncate text-[14px] font-semibold leading-snug tracking-tight">
                         {lead.name}
                       </p>
                       <div
-                        className="mt-0.5"
+                        className="mt-1"
                         onClick={(e) => e.stopPropagation()}
                         onPointerDown={(e) => e.stopPropagation()}
                       >
@@ -134,7 +140,7 @@ export function CrmLeadsTable({
                     </div>
                     <Badge
                       variant="outline"
-                      className="max-w-[7.5rem] shrink-0 truncate border-border/70 font-normal"
+                      className="max-w-[6.75rem] shrink-0 truncate rounded-full border-border/70 px-2 py-0.5 text-[10px] font-medium"
                       style={
                         stage?.color
                           ? {
@@ -147,17 +153,45 @@ export function CrmLeadsTable({
                       {stage?.name ?? "—"}
                     </Badge>
                   </div>
+
                   <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
                     <span>{t(`crm.source.${lead.source}`)}</span>
                     <span aria-hidden>·</span>
-                    <span>
+                    <span className="truncate">
                       {lead.ownerEmployeeId
                         ? (employeeMap.get(lead.ownerEmployeeId) ??
                           t("crm.leads.unassigned"))
                         : t("crm.leads.unassigned")}
                     </span>
-                    <span aria-hidden>·</span>
-                    <span>{t(`crm.status.${lead.status}`)}</span>
+                    {lead.nextFollowUpAt ? (
+                      <>
+                        <span aria-hidden>·</span>
+                        <span className="tabular-nums">
+                          {formatMaybeDate(lead.nextFollowUpAt)}
+                        </span>
+                      </>
+                    ) : null}
+                  </div>
+
+                  <div
+                    className="mt-2.5 flex items-center justify-between gap-2 border-t border-border/40 pt-2"
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <span
+                      className={cn(
+                        "text-[11px] font-medium",
+                        lead.status === "active"
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      {t(`crm.status.${lead.status}`)}
+                    </span>
+                    <CrmLeadRowActions
+                      lead={lead}
+                      onViewHistory={openHistory}
+                    />
                   </div>
                 </div>
               </article>
@@ -200,6 +234,9 @@ export function CrmLeadsTable({
               {t("crm.leads.colNextFollowUp")}
             </DataTableHead>
             <DataTableHead>{t("crm.leads.colStatus")}</DataTableHead>
+            <DataTableHead className="w-[7.5rem] text-end">
+              {t("crm.leads.colActions")}
+            </DataTableHead>
           </DataTableHeaderRow>
         </DataTableHeader>
         <DataTableBody>
@@ -288,6 +325,16 @@ export function CrmLeadsTable({
                   <span className="text-[12px]">
                     {t(`crm.status.${lead.status}`)}
                   </span>
+                </DataTableCell>
+                <DataTableCell
+                  className="text-end"
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <CrmLeadRowActions
+                    lead={lead}
+                    onViewHistory={openHistory}
+                  />
                 </DataTableCell>
               </DataTableRow>
             );

@@ -10,6 +10,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { canFilterCrmByOwner } from "@/lib/crm/lead-filters";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
@@ -38,40 +45,54 @@ const STATUSES: CrmLeadStatus[] = ["active", "inactive", "archived"];
 
 interface CrmLeadsFiltersProps {
   open: boolean;
+  onOpenChange: (open: boolean) => void;
   filters: CrmLeadFilters;
   stages: CrmStage[];
   employees: Employee[];
   canAssign: boolean;
   canViewOthers?: boolean;
   hasActiveFilters: boolean;
+  /** Hide/lock filter controls the parent owns (e.g. Delay: status + followUp). */
+  lockedKeys?: Array<"status" | "followUp">;
   onFiltersChange: Dispatch<SetStateAction<CrmLeadFilters>>;
   onClearFilters: () => void;
 }
 
-/** Filter bar for the leads table: stage/status/source/owner/follow-up/sort. */
-export function CrmLeadsFilters({
-  open,
+function FilterControls({
   filters,
   stages,
   employees,
-  canAssign,
-  canViewOthers = false,
+  showOwnerFilter,
   hasActiveFilters,
+  lockedKeys,
+  stacked,
   onFiltersChange,
   onClearFilters,
-}: CrmLeadsFiltersProps) {
+}: {
+  filters: CrmLeadFilters;
+  stages: CrmStage[];
+  employees: Employee[];
+  showOwnerFilter: boolean;
+  hasActiveFilters: boolean;
+  lockedKeys?: Array<"status" | "followUp">;
+  stacked?: boolean;
+  onFiltersChange: Dispatch<SetStateAction<CrmLeadFilters>>;
+  onClearFilters: () => void;
+}) {
   const { t } = useTranslation();
-  const showOwnerFilter = canFilterCrmByOwner({ canAssign, canViewOthers });
+  const locked = new Set(lockedKeys ?? []);
+  const triggerClass = stacked
+    ? "filter-control h-11 w-full"
+    : "filter-control h-9 sm:w-[150px]";
 
   return (
-    <FilterShell
-      compact
+    <div
       className={cn(
-        "rounded-none border-x-0 border-t-0 shadow-none",
-        open ? "block" : "hidden lg:block"
+        stacked
+          ? "grid gap-2.5"
+          : "filter-toolbar"
       )}
     >
-    <div className="filter-toolbar">
       <Select
         value={filters.stageId || "all"}
         onValueChange={(v) =>
@@ -82,7 +103,7 @@ export function CrmLeadsFilters({
           }))
         }
       >
-        <SelectTrigger className="filter-control h-9 sm:w-[150px]">
+        <SelectTrigger className={triggerClass}>
           <SelectValue placeholder={t("crm.filters.allStages")} />
         </SelectTrigger>
         <SelectContent>
@@ -95,6 +116,7 @@ export function CrmLeadsFilters({
         </SelectContent>
       </Select>
 
+      {!locked.has("status") ? (
       <Select
         value={filters.status || "all"}
         onValueChange={(v) =>
@@ -105,7 +127,7 @@ export function CrmLeadsFilters({
           }))
         }
       >
-        <SelectTrigger className="filter-control h-9 sm:w-[140px]">
+        <SelectTrigger className={cn(triggerClass, !stacked && "sm:w-[140px]")}>
           <SelectValue placeholder={t("crm.filters.allStatuses")} />
         </SelectTrigger>
         <SelectContent>
@@ -117,6 +139,7 @@ export function CrmLeadsFilters({
           ))}
         </SelectContent>
       </Select>
+      ) : null}
 
       <Select
         value={filters.source || "all"}
@@ -128,7 +151,7 @@ export function CrmLeadsFilters({
           }))
         }
       >
-        <SelectTrigger className="filter-control h-9 sm:w-[140px]">
+        <SelectTrigger className={cn(triggerClass, !stacked && "sm:w-[140px]")}>
           <SelectValue placeholder={t("crm.filters.allSources")} />
         </SelectTrigger>
         <SelectContent>
@@ -152,7 +175,7 @@ export function CrmLeadsFilters({
             }))
           }
         >
-          <SelectTrigger className="filter-control h-9 sm:w-[160px]">
+          <SelectTrigger className={cn(triggerClass, !stacked && "sm:w-[160px]")}>
             <SelectValue placeholder={t("crm.filters.allSales")} />
           </SelectTrigger>
           <SelectContent>
@@ -166,6 +189,7 @@ export function CrmLeadsFilters({
         </Select>
       ) : null}
 
+      {!locked.has("followUp") ? (
       <Select
         value={filters.followUp || "all"}
         onValueChange={(v) =>
@@ -176,7 +200,7 @@ export function CrmLeadsFilters({
           }))
         }
       >
-        <SelectTrigger className="filter-control h-9 sm:w-[150px]">
+        <SelectTrigger className={triggerClass}>
           <SelectValue placeholder={t("crm.filters.allFollowUps")} />
         </SelectTrigger>
         <SelectContent>
@@ -191,6 +215,7 @@ export function CrmLeadsFilters({
           <SelectItem value="none">{t("crm.filters.followUpNone")}</SelectItem>
         </SelectContent>
       </Select>
+      ) : null}
 
       <Select
         value={filters.sort ?? "createdAt"}
@@ -202,7 +227,7 @@ export function CrmLeadsFilters({
           }))
         }
       >
-        <SelectTrigger className="filter-control h-9 sm:w-[150px]">
+        <SelectTrigger className={triggerClass}>
           <SelectValue placeholder={t("crm.filters.sort")} />
         </SelectTrigger>
         <SelectContent>
@@ -228,7 +253,7 @@ export function CrmLeadsFilters({
           }))
         }
       >
-        <SelectTrigger className="filter-control h-9 sm:w-[130px]">
+        <SelectTrigger className={cn(triggerClass, !stacked && "sm:w-[130px]")}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -238,11 +263,96 @@ export function CrmLeadsFilters({
       </Select>
 
       {hasActiveFilters ? (
-        <Button type="button" size="sm" variant="ghost" onClick={onClearFilters}>
+        <Button
+          type="button"
+          size="sm"
+          variant={stacked ? "outline" : "ghost"}
+          className={cn(stacked && "min-h-11 w-full")}
+          onClick={onClearFilters}
+        >
           {t("crm.actions.clearFilters")}
         </Button>
       ) : null}
     </div>
-    </FilterShell>
+  );
+}
+
+/** Filter bar for the leads table: sheet on mobile, inline toolbar on desktop. */
+export function CrmLeadsFilters({
+  open,
+  onOpenChange,
+  filters,
+  stages,
+  employees,
+  canAssign,
+  canViewOthers = false,
+  hasActiveFilters,
+  lockedKeys,
+  onFiltersChange,
+  onClearFilters,
+}: CrmLeadsFiltersProps) {
+  const { t } = useTranslation();
+  const showOwnerFilter = canFilterCrmByOwner({ canAssign, canViewOthers });
+
+  const controls = (
+    <FilterControls
+      filters={filters}
+      stages={stages}
+      employees={employees}
+      showOwnerFilter={showOwnerFilter}
+      hasActiveFilters={hasActiveFilters}
+      lockedKeys={lockedKeys}
+      onFiltersChange={onFiltersChange}
+      onClearFilters={onClearFilters}
+    />
+  );
+
+  return (
+    <>
+      <FilterShell
+        compact
+        className="hidden rounded-none border-x-0 border-t-0 shadow-none lg:block"
+      >
+        {controls}
+      </FilterShell>
+
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent
+          className={cn(
+            "inset-x-0 bottom-0 top-auto h-auto max-h-[min(88dvh,40rem)] max-w-none gap-0 rounded-t-2xl border-s-0 border-t p-0",
+            "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+            "rtl:data-[state=closed]:slide-out-to-bottom rtl:data-[state=open]:slide-in-from-bottom"
+          )}
+        >
+          <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border/80" aria-hidden />
+          <SheetHeader className="border-b border-border/60 px-4 py-3 pe-14">
+            <SheetTitle>{t("crm.filters.title")}</SheetTitle>
+            <SheetDescription>{t("crm.filters.sheetHint")}</SheetDescription>
+          </SheetHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3">
+            <FilterControls
+              filters={filters}
+              stages={stages}
+              employees={employees}
+              showOwnerFilter={showOwnerFilter}
+              hasActiveFilters={hasActiveFilters}
+              lockedKeys={lockedKeys}
+              stacked
+              onFiltersChange={onFiltersChange}
+              onClearFilters={onClearFilters}
+            />
+          </div>
+          <div className="shrink-0 border-t border-border/60 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <Button
+              type="button"
+              className="min-h-11 w-full touch-manipulation"
+              onClick={() => onOpenChange(false)}
+            >
+              {t("crm.filters.done")}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

@@ -155,11 +155,11 @@ export function CrmLeadsOverview({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4">
         <button
           type="button"
           onClick={onOpenAllLeads}
-          className="group flex min-h-[132px] flex-col rounded-2xl border border-primary/20 bg-primary/[0.04] px-4 py-4 text-start transition-colors hover:bg-primary/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="group flex min-h-[118px] flex-col rounded-2xl border border-primary/20 bg-primary/[0.04] px-3.5 py-3.5 text-start transition-colors hover:bg-primary/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99] sm:min-h-[132px] sm:px-4 sm:py-4"
         >
           <span className="text-[13px] font-semibold text-primary">
             {t("crm.leads.allLeads")}
@@ -180,7 +180,7 @@ export function CrmLeadsOverview({
               key={stage.id}
               type="button"
               onClick={() => onOpenStage(stage.id)}
-              className="group flex min-h-[132px] flex-col rounded-2xl border border-border/70 bg-background px-4 py-4 text-start transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="group flex min-h-[118px] flex-col rounded-2xl border border-border/70 bg-background px-3.5 py-3.5 text-start transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99] sm:min-h-[132px] sm:px-4 sm:py-4"
             >
               <div className="flex items-start gap-2">
                 <span

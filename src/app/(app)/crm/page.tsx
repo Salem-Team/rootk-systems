@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, ChevronDown, Plus } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageTransition } from "@/components/shared/page-transition";
 import { PageSkeleton } from "@/components/shared/loading-state";
@@ -40,6 +40,8 @@ export default function CrmPage() {
         eyebrow={t("crm.page.eyebrow")}
         title={t("crm.page.title")}
         description={t("crm.page.description")}
+        className="[&_.type-subtitle]:hidden sm:[&_.type-subtitle]:block"
+        mobileActionsClassName="flex-col [&_button]:w-full [&_button]:flex-none [&_button]:min-w-0"
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <CrmLiveStatus
@@ -49,7 +51,7 @@ export default function CrmPage() {
             {hub.canCreate ? (
               <>
                 <CrmPhoneContactImport
-                  onOpenLead={(id) => hub.setViewLeadId(id)}
+                  onOpenLead={(id) => hub.openViewLead(id)}
                   onCreate={(draft) => {
                     hub.openCreate();
                     window.sessionStorage.setItem(
@@ -79,36 +81,44 @@ export default function CrmPage() {
             <CrmLiveStatus
               lastUpdatedAt={hub.lastUpdatedAt}
               syncing={hub.syncing}
-              className="w-full justify-center sm:w-auto"
+              className="w-full justify-center"
             />
             {hub.canCreate ? (
               <>
                 <Button
                   type="button"
-                  className="min-h-11 flex-[1.2]"
+                  className="min-h-11 w-full rounded-xl"
                   onClick={hub.openCreate}
                 >
                   <Plus className="h-4 w-4" />
                   {t("crm.actions.addLead")}
                 </Button>
-                <CrmLeadsBulkAdd
-                  stages={hub.safeStages}
-                  businessTypes={hub.safeBusinessTypes}
-                  employees={hub.safeEmployees}
-                  canAssign={hub.canAssign}
-                  onImported={() => void hub.reloadVisible()}
-                  className="min-h-11 min-w-[calc(50%-0.25rem)] flex-1"
-                />
-                <CrmPhoneContactImport
-                  onOpenLead={(id) => hub.setViewLeadId(id)}
-                  onCreate={(draft) => {
-                    hub.openCreate();
-                    window.sessionStorage.setItem(
-                      "rootk.crm.contact-draft",
-                      JSON.stringify(draft)
-                    );
-                  }}
-                />
+                <details className="group w-full rounded-xl border border-border/70 bg-card/60 open:bg-card">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3 text-[13px] font-semibold text-muted-foreground marker:content-none [&::-webkit-details-marker]:hidden">
+                    <span>{t("crm.actions.moreTools")}</span>
+                    <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="flex flex-wrap gap-2 border-t border-border/50 p-2.5">
+                    <CrmLeadsBulkAdd
+                      stages={hub.safeStages}
+                      businessTypes={hub.safeBusinessTypes}
+                      employees={hub.safeEmployees}
+                      canAssign={hub.canAssign}
+                      onImported={() => void hub.reloadVisible()}
+                      className="min-h-11 min-w-[calc(50%-0.25rem)] flex-1"
+                    />
+                    <CrmPhoneContactImport
+                      onOpenLead={(id) => hub.openViewLead(id)}
+                      onCreate={(draft) => {
+                        hub.openCreate();
+                        window.sessionStorage.setItem(
+                          "rootk.crm.contact-draft",
+                          JSON.stringify(draft)
+                        );
+                      }}
+                    />
+                  </div>
+                </details>
               </>
             ) : null}
           </>
@@ -134,7 +144,7 @@ export default function CrmPage() {
           }`}
         >
           {hub.tab === "leads" ? (
-            <CrmPhoneDuplicatesBanner onOpenLead={(id) => hub.setViewLeadId(id)} />
+            <CrmPhoneDuplicatesBanner onOpenLead={(id) => hub.openViewLead(id)} />
           ) : null}
           {hub.tab === "dashboard" && hub.canViewDashboard ? (
             <CrmDashboardPanel
@@ -192,7 +202,8 @@ export default function CrmPage() {
                 filters={hub.leadFilters}
                 onFiltersChange={hub.setLeadFilters}
                 loading={hub.loading}
-                onRowClick={(lead) => hub.setViewLeadId(lead.id)}
+                onRowClick={(lead) => hub.openViewLead(lead.id)}
+                onViewHistory={(lead) => hub.openViewLead(lead.id, "timeline")}
                 onAddLead={hub.canCreate ? hub.openCreate : undefined}
                 onImported={() => void hub.reloadVisible()}
                 canAssign={hub.canAssign}
@@ -210,19 +221,11 @@ export default function CrmPage() {
               stages={hub.safeStages}
               employees={hub.safeEmployees}
               filters={hub.leadFilters}
-              onFiltersChange={(next) =>
-                hub.setLeadFilters((prev) => {
-                  const resolved =
-                    typeof next === "function" ? next(prev) : next;
-                  return {
-                    ...resolved,
-                    followUp: "overdue",
-                    status: resolved.status || "active",
-                  };
-                })
-              }
+              onFiltersChange={hub.setDelayLeadFilters}
               loading={hub.loading}
-              onRowClick={(lead) => hub.setViewLeadId(lead.id)}
+              syncing={hub.syncing}
+              onRowClick={(lead) => hub.openViewLead(lead.id)}
+              onViewHistory={(lead) => hub.openViewLead(lead.id, "timeline")}
               canAssign={hub.canAssign}
               canViewOthers={hub.canViewOthers || hub.canViewTeam}
               feedbackTypes={hub.safeFeedbackTypes}
@@ -235,7 +238,7 @@ export default function CrmPage() {
               leads={hub.safePipelineLeads}
               employees={hub.safeEmployees}
               loading={hub.loading}
-              onLeadClick={(lead) => hub.setViewLeadId(lead.id)}
+              onLeadClick={(lead) => hub.openViewLead(lead.id)}
             />
           ) : null}
 
@@ -245,7 +248,7 @@ export default function CrmPage() {
               leads={hub.safeActivityLeads}
               employees={hub.safeEmployees}
               loading={hub.loading}
-              onLeadClick={(id) => hub.setViewLeadId(id)}
+              onLeadClick={(id) => hub.openViewLead(id)}
             />
           ) : null}
 
@@ -256,7 +259,7 @@ export default function CrmPage() {
               leads={hub.feedbackLeadPool}
               reasons={hub.safeDashboard?.feedbackReasons}
               loading={hub.loading}
-              onLeadClick={(id) => hub.setViewLeadId(id)}
+              onLeadClick={(id) => hub.openViewLead(id)}
             />
           ) : null}
 
@@ -308,15 +311,16 @@ export default function CrmPage() {
       <CrmLeadSheet
         leadId={hub.viewLeadId}
         open={Boolean(hub.viewLeadId)}
+        initialTab={hub.viewLeadTab}
         onOpenChange={(open) => {
-          if (!open) hub.setViewLeadId(null);
+          if (!open) hub.closeViewLead();
         }}
         stages={hub.safeStages}
         employees={hub.safeEmployees}
         feedbackTypes={hub.safeFeedbackTypes}
         businessTypes={hub.safeBusinessTypes}
         onEdit={(lead) => {
-          hub.setViewLeadId(null);
+          hub.closeViewLead();
           hub.openEdit(lead);
         }}
         onChanged={() => void hub.reloadVisible()}
@@ -335,7 +339,7 @@ export default function CrmPage() {
         }}
         onOpenExistingLead={(id) => {
           hub.setFormOpen(false);
-          hub.setViewLeadId(id);
+          hub.openViewLead(id);
         }}
       />
 

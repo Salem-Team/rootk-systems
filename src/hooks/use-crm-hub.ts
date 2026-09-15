@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CrmHubTab } from "@/components/crm/crm-hub-sidebar";
 import { useCrmHubLoaders } from "@/hooks/use-crm-hub-loaders";
 import { useLiveReload } from "@/hooks/use-live-reload";
 import { canCrm } from "@/lib/crm-policies";
+import { sameLeadFilters } from "@/lib/crm/lead-filters";
 import { resolveDataAccessScope } from "@/constants/permissions";
 import {
   ensureCrmDashboard,
@@ -58,6 +59,8 @@ export function useCrmHub() {
   const [syncing, setSyncing] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const [delayCount, setDelayCount] = useState(0);
+  /** After the first successful paint, refreshes stay soft (no table skeletons). */
+  const readyRef = useRef(false);
 
   const [stages, setStages] = useState<CrmStage[]>([]);
   const [feedbackTypes, setFeedbackTypes] = useState<CrmFeedbackType[]>([]);
@@ -92,22 +95,33 @@ export function useCrmHub() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<CrmLead | null>(null);
   const [viewLeadId, setViewLeadId] = useState<string | null>(null);
+  const [viewLeadTab, setViewLeadTab] = useState("overview");
   const [profileEmployeeId, setProfileEmployeeId] = useState<string | null>(
     null
   );
 
+  const openViewLead = useCallback((id: string, tab = "overview") => {
+    setViewLeadTab(tab);
+    setViewLeadId(id);
+  }, []);
+
+  const closeViewLead = useCallback(() => {
+    setViewLeadId(null);
+    setViewLeadTab("overview");
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const lead = new URLSearchParams(window.location.search).get("lead");
-    if (lead) setViewLeadId(lead);
+    if (lead) openViewLead(lead);
 
     function onOpenLead(event: Event) {
       const id = (event as CustomEvent<string>).detail?.trim();
-      if (id) setViewLeadId(id);
+      if (id) openViewLead(id);
     }
     window.addEventListener(CRM_OPEN_LEAD_EVENT, onOpenLead);
     return () => window.removeEventListener(CRM_OPEN_LEAD_EVENT, onOpenLead);
-  }, []);
+  }, [openViewLead]);
 
   const {
     loadCore,
@@ -141,8 +155,10 @@ export function useCrmHub() {
   });
 
   const reloadVisible = useCallback(async (opts?: { silent?: boolean }) => {
-    const silent = Boolean(opts?.silent);
-    if (silent) setSyncing(true);
+    // Soft = live poll / CRM event / any refresh after the first load.
+    // Hard loading skeletons only on the initial hub mount.
+    const soft = Boolean(opts?.silent) || readyRef.current;
+    if (soft) setSyncing(true);
     else setLoading(true);
     try {
       await loadCore();
@@ -166,6 +182,7 @@ export function useCrmHub() {
       await Promise.all(jobs);
       setLastUpdatedAt(Date.now());
     } finally {
+      readyRef.current = true;
       setLoading(false);
       setSyncing(false);
       setReady(true);
@@ -183,6 +200,32 @@ export function useCrmHub() {
     loadFeedback,
     loadPerformance,
   ]);
+
+  const setLeadFiltersStable = useCallback(
+    (next: Parameters<typeof setLeadFilters>[0]) => {
+      setLeadFilters((prev) => {
+        const resolved = typeof next === "function" ? next(prev) : next;
+        return sameLeadFilters(prev, resolved) ? prev : resolved;
+      });
+    },
+    []
+  );
+
+  /** Delay tab always stays locked to overdue + active without creating churn. */
+  const setDelayLeadFilters = useCallback(
+    (next: Parameters<typeof setLeadFilters>[0]) => {
+      setLeadFilters((prev) => {
+        const resolved = typeof next === "function" ? next(prev) : next;
+        const merged: CrmLeadFilters = {
+          ...resolved,
+          followUp: "overdue",
+          status: "active",
+        };
+        return sameLeadFilters(prev, merged) ? prev : merged;
+      });
+    },
+    []
+  );
 
   const pollIntervalMs = useMemo(() => {
     if (
@@ -210,6 +253,18 @@ export function useCrmHub() {
     void reloadVisible();
   }, [reloadVisible]);
 
+  // Drop stale lead pages when switching into Delay / Leads table so we never
+  // briefly show another tab's rows (soft reload keeps loading=false).
+  const leadsSurfaceRef = useRef(`${tab}:${leadsView}`);
+  useEffect(() => {
+    const next = `${tab}:${leadsView}`;
+    if (leadsSurfaceRef.current === next) return;
+    leadsSurfaceRef.current = next;
+    if (tab === "delay" || (tab === "leads" && leadsView === "table")) {
+      setLeadsPage(null);
+    }
+  }, [tab, leadsView]);
+
   /** Render-time normalization — never pass raw API envelopes into panels. */
   const safeStages = useMemo(() => ensureCrmList<CrmStage>(stages), [stages]);
   const safeFeedbackTypes = useMemo(
@@ -229,7 +284,7 @@ export function useCrmHub() {
     [dashboard]
   );
   const safeLeadsPage = useMemo(
-    () => ensurePaginatedLeads(leadsPage),
+    () => (leadsPage == null ? null : ensurePaginatedLeads(leadsPage)),
     [leadsPage]
   );
   const safePipelineLeads = useMemo(
@@ -262,7 +317,7 @@ export function useCrmHub() {
     const map = new Map<string, CrmLead>();
     for (const l of safeActivityLeads) map.set(l.id, l);
     for (const l of safePipelineLeads) map.set(l.id, l);
-    for (const l of safeLeadsPage.items) map.set(l.id, l);
+    for (const l of safeLeadsPage?.items ?? []) map.set(l.id, l);
     return [...map.values()];
   }, [safeActivityLeads, safePipelineLeads, safeLeadsPage]);
 
@@ -293,14 +348,19 @@ export function useCrmHub() {
   }
 
   function navigateDelay() {
-    setLeadFilters((prev) => ({
-      page: 1,
-      pageSize: prev.pageSize ?? 20,
-      sort: "nextFollowUpAt",
-      order: "asc",
-      followUp: "overdue",
-      status: "active",
-    }));
+    setLeadFilters((prev) => {
+      const next: CrmLeadFilters = {
+        page: 1,
+        pageSize: prev.pageSize ?? 20,
+        sort: "nextFollowUpAt",
+        order: "asc",
+        followUp: "overdue",
+        status: "active",
+        ownerEmployeeId: prev.ownerEmployeeId,
+        search: prev.search,
+      };
+      return sameLeadFilters(prev, next) ? prev : next;
+    });
     setTab("delay");
   }
 
@@ -350,16 +410,19 @@ export function useCrmHub() {
     if (next === "performance" && !canViewPerformance) return;
     if (next === "leads") setLeadsView("cards");
     if (next === "delay") {
-      setLeadFilters((prev) => ({
-        page: 1,
-        pageSize: prev.pageSize ?? 20,
-        sort: "nextFollowUpAt",
-        order: "asc",
-        followUp: "overdue",
-        status: "active",
-        ownerEmployeeId: prev.ownerEmployeeId,
-        search: prev.search,
-      }));
+      setLeadFilters((prev) => {
+        const merged: CrmLeadFilters = {
+          page: 1,
+          pageSize: prev.pageSize ?? 20,
+          sort: "nextFollowUpAt",
+          order: "asc",
+          followUp: "overdue",
+          status: "active",
+          ownerEmployeeId: prev.ownerEmployeeId,
+          search: prev.search,
+        };
+        return sameLeadFilters(prev, merged) ? prev : merged;
+      });
     }
     setTab(next);
   }
@@ -410,13 +473,17 @@ export function useCrmHub() {
     dashFilters,
     setDashFilters,
     leadFilters,
-    setLeadFilters,
+    setLeadFilters: setLeadFiltersStable,
+    setDelayLeadFilters,
     overviewOwnerEmployeeId,
     formOpen,
     setFormOpen,
     editingLead,
     viewLeadId,
+    viewLeadTab,
     setViewLeadId,
+    openViewLead,
+    closeViewLead,
     profileEmployeeId,
     setProfileEmployeeId,
     reloadVisible,

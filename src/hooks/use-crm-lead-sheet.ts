@@ -25,6 +25,7 @@ import type {
 interface UseCrmLeadSheetArgs {
   leadId: string | null;
   open: boolean;
+  initialTab?: string;
   stages: CrmStage[];
   employees: Employee[];
   feedbackTypes: CrmFeedbackType[];
@@ -34,6 +35,7 @@ interface UseCrmLeadSheetArgs {
 export function useCrmLeadSheet({
   leadId,
   open,
+  initialTab = "overview",
   stages,
   employees,
   feedbackTypes,
@@ -111,7 +113,7 @@ export function useCrmLeadSheet({
 
   useEffect(() => {
     if (open && leadId) {
-      setTab("overview");
+      setTab(initialTab || "overview");
       void reload();
     } else if (!open) {
       setLead(null);
@@ -120,7 +122,7 @@ export function useCrmLeadSheet({
       setLossReasonOpen(false);
       setPendingLostStageId(null);
     }
-  }, [open, leadId, reload]);
+  }, [open, leadId, reload, initialTab]);
 
   const stage = lead ? stageMap.get(lead.stageId) : undefined;
   const pendingLostStage = pendingLostStageId

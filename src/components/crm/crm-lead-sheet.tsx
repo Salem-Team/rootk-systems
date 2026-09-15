@@ -34,6 +34,7 @@ import type {
 interface CrmLeadSheetProps {
   leadId: string | null;
   open: boolean;
+  initialTab?: string;
   onOpenChange: (open: boolean) => void;
   stages: CrmStage[];
   employees: Employee[];
@@ -47,6 +48,7 @@ interface CrmLeadSheetProps {
 export function CrmLeadSheet({
   leadId,
   open,
+  initialTab = "overview",
   onOpenChange,
   stages,
   employees,
@@ -58,6 +60,7 @@ export function CrmLeadSheet({
   const sheet = useCrmLeadSheet({
     leadId,
     open,
+    initialTab,
     stages,
     employees,
     feedbackTypes,

@@ -76,6 +76,19 @@ function displayName(phone: PhoneNormalizeOk, leftover: string): string {
   return formatEgyptianNationalDisplay(phone.e164) ?? phone.nationalDigits;
 }
 
+/** Rebuild a paste line for a parsed row (keeps name when it isn't just the phone). */
+export function formatBulkLeadLine(row: ParsedBulkLead): string {
+  const digitsOnly = row.name.replace(/\D/g, "");
+  if (
+    !row.name.trim() ||
+    digitsOnly === row.phone ||
+    digitsOnly === row.e164.replace(/\D/g, "")
+  ) {
+    return row.phone;
+  }
+  return `${row.name}, ${row.phone}`;
+}
+
 /** Parse pasted CRM numbers (one per line, or comma/tab mixed with optional names). */
 export function parseBulkLeads(raw: string, maxRows = MAX_BULK_ADD_LEADS): ParsedBulkLeads {
   const text = raw.replace(/^\uFEFF/, "");

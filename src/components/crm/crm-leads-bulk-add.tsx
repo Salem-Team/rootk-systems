@@ -104,7 +104,11 @@ export function CrmLeadsBulkAdd({
                 value={bulk.raw}
                 onChange={(e) => bulk.setRaw(e.target.value)}
                 placeholder={t("crm.bulkAdd.placeholder")}
-                className="min-h-[160px] font-mono text-[13px]"
+                className={
+                  bulk.importFailures.length > 0
+                    ? "min-h-[160px] font-mono text-[13px] border-destructive/50 focus-visible:ring-destructive/40"
+                    : "min-h-[160px] font-mono text-[13px]"
+                }
               />
               <p className="text-[12px] text-muted-foreground">{t("crm.bulkAdd.hint")}</p>
             </div>
@@ -202,12 +206,21 @@ export function CrmLeadsBulkAdd({
                 {bulk.parsed.duplicates.length > 0
                   ? ` · ${t("crm.bulkAdd.duplicates", { count: String(bulk.parsed.duplicates.length) })}`
                   : ""}
+                {bulk.importFailures.length > 0
+                  ? ` · ${t("crm.bulkAdd.importFailed", { count: String(bulk.importFailures.length) })}`
+                  : ""}
               </p>
             ) : null}
 
             {bulk.parsed.truncated ? (
               <p className="text-[12px] text-amber-800 dark:text-amber-200">
                 {t("crm.bulkAdd.truncated")}
+              </p>
+            ) : null}
+
+            {bulk.importFailures.length > 0 ? (
+              <p className="text-[12px] text-destructive">
+                {t("crm.bulkAdd.importFailedHint")}
               </p>
             ) : null}
 
@@ -225,12 +238,31 @@ export function CrmLeadsBulkAdd({
                     </tr>
                   </thead>
                   <tbody>
-                    {bulk.parsed.rows.slice(0, 12).map((row) => (
-                      <tr key={row.e164} className="border-t border-border/50">
-                        <td className="px-2 py-1.5">{row.name}</td>
-                        <td className="px-2 py-1.5 font-mono">{row.phone}</td>
-                      </tr>
-                    ))}
+                    {bulk.parsed.rows.slice(0, 12).map((row) => {
+                      const failure = bulk.failureByE164.get(row.e164);
+                      return (
+                        <tr
+                          key={row.e164}
+                          className={
+                            failure
+                              ? "border-t border-destructive/30 bg-destructive/10 text-destructive"
+                              : "border-t border-border/50"
+                          }
+                        >
+                          <td className="px-2 py-1.5">
+                            <div>{row.name}</div>
+                            {failure ? (
+                              <div className="mt-0.5 text-[11px] font-normal opacity-90">
+                                {failure.message}
+                              </div>
+                            ) : null}
+                          </td>
+                          <td className="px-2 py-1.5 font-mono align-top">
+                            {row.phone}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

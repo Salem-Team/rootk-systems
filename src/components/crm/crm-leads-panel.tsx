@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, type Dispatch, type SetStateAction } from "react";
-import { Download, Search, SlidersHorizontal, Upload } from "lucide-react";
+import {
+  ChevronDown,
+  Download,
+  Search,
+  SlidersHorizontal,
+  Upload,
+} from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -33,14 +39,35 @@ interface CrmLeadsPanelProps {
   onFiltersChange: Dispatch<SetStateAction<CrmLeadFilters>>;
   loading?: boolean;
   onRowClick: (lead: CrmLead) => void;
+  onViewHistory?: (lead: CrmLead) => void;
   onAddLead?: () => void;
   onImported?: () => void;
   canAssign?: boolean;
   canViewOthers?: boolean;
   canImport?: boolean;
+  /** Keys that stay locked (e.g. Delay: status/followUp) — excluded from filter badge. */
+  filterBadgeExclude?: Array<keyof CrmLeadFilters>;
+  lockedFilterKeys?: Array<"status" | "followUp">;
   businessTypes?: CrmBusinessType[];
   feedbackTypes?: CrmFeedbackType[];
   className?: string;
+  /** Hide the panel title on dense mobile contexts (Delay embeds this panel). */
+  hideTitle?: boolean;
+}
+
+function countBadgeFilters(
+  filters: CrmLeadFilters,
+  exclude: Array<keyof CrmLeadFilters> = []
+): number {
+  const skip = new Set(exclude);
+  let n = 0;
+  if (!skip.has("search") && filters.search?.trim()) n += 1;
+  if (!skip.has("stageId") && filters.stageId) n += 1;
+  if (!skip.has("status") && filters.status) n += 1;
+  if (!skip.has("source") && filters.source) n += 1;
+  if (!skip.has("ownerEmployeeId") && filters.ownerEmployeeId) n += 1;
+  if (!skip.has("followUp") && filters.followUp) n += 1;
+  return n;
 }
 
 /** Searchable, filterable leads table with bulk actions + Excel IO. */
@@ -52,19 +79,32 @@ export function CrmLeadsPanel({
   onFiltersChange,
   loading = false,
   onRowClick,
+  onViewHistory,
   onAddLead,
   onImported,
   canAssign = false,
   canViewOthers = false,
   canImport = false,
+  filterBadgeExclude = [],
+  lockedFilterKeys,
   businessTypes = [],
   feedbackTypes = [],
   className,
+  hideTitle = false,
 }: CrmLeadsPanelProps) {
-  const panel = useCrmLeadsPanel({ leads, stages, employees, filters, onFiltersChange });
+  const panel = useCrmLeadsPanel({
+    leads,
+    stages,
+    employees,
+    filters,
+    onFiltersChange,
+    filterBadgeExclude,
+  });
   const { t } = panel;
   const [importOpen, setImportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const filterCount = countBadgeFilters(filters, filterBadgeExclude);
 
   async function onExport() {
     setExporting(true);
@@ -82,15 +122,60 @@ export function CrmLeadsPanel({
     toast.success(t("crm.toast.exported", { count: String(rows.length) }));
   }
 
+  const toolButtons = (
+    <>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="min-h-11 touch-manipulation sm:min-h-8"
+        disabled={exporting}
+        onClick={() => void onExport()}
+        aria-label={t("crm.actions.export")}
+      >
+        <Download className="h-3.5 w-3.5 sm:me-1.5" />
+        <span className="sm:inline">{t("crm.actions.export")}</span>
+      </Button>
+      {canImport ? (
+        <CrmLeadsBulkAdd
+          stages={stages}
+          businessTypes={businessTypes}
+          employees={employees}
+          canAssign={canAssign}
+          onImported={onImported}
+          size="sm"
+          className="min-h-11 sm:min-h-8"
+        />
+      ) : null}
+      {canImport ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="min-h-11 touch-manipulation sm:min-h-8"
+          onClick={() => setImportOpen(true)}
+          aria-label={t("crm.actions.import")}
+        >
+          <Upload className="h-3.5 w-3.5 sm:me-1.5" />
+          <span className="sm:inline">{t("crm.actions.import")}</span>
+        </Button>
+      ) : null}
+    </>
+  );
+
   return (
-    <section className={cn("surface-panel", className)}>
-      <div className="panel-header flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <h2 className="text-sm font-semibold tracking-tight">
-          {t("crm.leads.title")}
-        </h2>
-        <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
-          <div className="relative w-full min-w-0 sm:w-auto sm:flex-none">
-            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground sm:start-2.5 sm:h-3.5 sm:w-3.5" />
+    <section className={cn("surface-panel overflow-hidden", className)}>
+      <div className="panel-header flex flex-col gap-2.5 sm:gap-3">
+        {!hideTitle ? (
+          <h2 className="hidden text-sm font-semibold tracking-tight sm:block">
+            {t("crm.leads.title")}
+          </h2>
+        ) : null}
+
+        {/* Mobile app-style search + filter row */}
+        <div className="flex items-center gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               ref={panel.searchInputRef}
               type="search"
@@ -104,7 +189,7 @@ export function CrmLeadsPanel({
                 }
               }}
               placeholder={t("crm.filters.search")}
-              className="h-11 w-full ps-10 text-base sm:h-9 sm:w-[240px] sm:ps-8 sm:text-sm"
+              className="h-11 w-full rounded-xl border-border/70 bg-muted/30 ps-10 text-base shadow-none sm:h-9 sm:rounded-lg sm:bg-background sm:ps-8 sm:text-sm"
               aria-label={t("crm.filters.search")}
               autoComplete="off"
               enterKeyHint="search"
@@ -112,65 +197,62 @@ export function CrmLeadsPanel({
               dir="auto"
             />
           </div>
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="min-h-11 touch-manipulation sm:min-h-8"
-              disabled={exporting}
-              onClick={() => void onExport()}
-              aria-label={t("crm.actions.export")}
-            >
-              <Download className="h-3.5 w-3.5 sm:me-1.5" />
-              <span className="hidden sm:inline">{t("crm.actions.export")}</span>
-            </Button>
-            {canImport ? (
-              <CrmLeadsBulkAdd
-                stages={stages}
-                businessTypes={businessTypes}
-                employees={employees}
-                canAssign={canAssign}
-                onImported={onImported}
-                size="sm"
-                className="min-h-11 sm:min-h-8"
-              />
+          <Button
+            type="button"
+            size="sm"
+            variant={filterCount > 0 ? "default" : "outline"}
+            className="relative h-11 min-w-11 shrink-0 touch-manipulation rounded-xl px-3 lg:hidden"
+            onClick={() => panel.setFiltersOpen(true)}
+            aria-expanded={panel.filtersOpen}
+            aria-label={t("crm.filters.title")}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            {filterCount > 0 ? (
+              <span className="absolute -end-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 font-mono text-[10px] font-bold text-white">
+                {filterCount > 9 ? "9+" : filterCount}
+              </span>
             ) : null}
-            {canImport ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="min-h-11 touch-manipulation sm:min-h-8"
-                onClick={() => setImportOpen(true)}
-                aria-label={t("crm.actions.import")}
-              >
-                <Upload className="h-3.5 w-3.5 sm:me-1.5" />
-                <span className="hidden sm:inline">{t("crm.actions.import")}</span>
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="min-h-11 touch-manipulation lg:hidden sm:min-h-8"
-              onClick={() => panel.setFiltersOpen((v) => !v)}
-            >
-              <SlidersHorizontal className="me-1.5 h-3.5 w-3.5" />
-              {t("crm.filters.title")}
-            </Button>
-          </div>
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-11 shrink-0 touch-manipulation rounded-xl px-2.5 sm:hidden"
+            aria-expanded={toolsOpen}
+            aria-label={t("crm.actions.moreTools")}
+            onClick={() => setToolsOpen((v) => !v)}
+          >
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 transition-transform",
+                toolsOpen && "rotate-180"
+              )}
+            />
+          </Button>
+        </div>
+
+        {/* Collapsed tools on phones; always visible from sm+ */}
+        <div
+          className={cn(
+            "flex flex-wrap items-center gap-2",
+            toolsOpen ? "flex" : "hidden",
+            "sm:flex"
+          )}
+        >
+          {toolButtons}
         </div>
       </div>
 
       <CrmLeadsFilters
         open={panel.filtersOpen}
+        onOpenChange={panel.setFiltersOpen}
         filters={filters}
         stages={panel.safeStages}
         employees={panel.safeEmployees}
         canAssign={canAssign}
         canViewOthers={canViewOthers}
         hasActiveFilters={panel.hasActiveFilters}
+        lockedKeys={lockedFilterKeys}
         onFiltersChange={onFiltersChange}
         onClearFilters={panel.clearFilters}
       />
@@ -207,6 +289,7 @@ export function CrmLeadsPanel({
         hasActiveFilters={panel.hasActiveFilters}
         onAddLead={onAddLead}
         onRowClick={onRowClick}
+        onViewHistory={onViewHistory}
         onToggleAll={panel.toggleAll}
         onToggleOne={panel.toggleOne}
         onClearFilters={panel.clearFilters}

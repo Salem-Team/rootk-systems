@@ -10,6 +10,9 @@ import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
 import type { CrmFeedbackType, CrmLead, CrmLeadFilters, CrmStage, PaginatedLeads } from "@/types/crm";
 
+const DELAY_FILTER_EXCLUDE: Array<keyof CrmLeadFilters> = ["status", "followUp"];
+const DELAY_LOCKED_FILTERS: Array<"status" | "followUp"> = ["status", "followUp"];
+
 interface CrmDelayPanelProps {
   leads: PaginatedLeads | null;
   stages: CrmStage[];
@@ -17,7 +20,9 @@ interface CrmDelayPanelProps {
   filters: CrmLeadFilters;
   onFiltersChange: Dispatch<SetStateAction<CrmLeadFilters>>;
   loading?: boolean;
+  syncing?: boolean;
   onRowClick: (lead: CrmLead) => void;
+  onViewHistory?: (lead: CrmLead) => void;
   canAssign?: boolean;
   canViewOthers?: boolean;
   feedbackTypes?: CrmFeedbackType[];
@@ -34,7 +39,9 @@ export function CrmDelayPanel({
   filters,
   onFiltersChange,
   loading = false,
+  syncing = false,
   onRowClick,
+  onViewHistory,
   canAssign = false,
   canViewOthers = false,
   feedbackTypes = [],
@@ -42,31 +49,37 @@ export function CrmDelayPanel({
 }: CrmDelayPanelProps) {
   const { t } = useTranslation();
   const count = leads?.total ?? 0;
+  const hasData = leads != null;
+  // null page = switching tabs / first fetch — never flash another tab's rows
+  const showInitialSkeleton = !hasData;
+  const showEmpty = hasData && count === 0 && !loading && !syncing;
 
   return (
     <div className={cn("space-y-4", className)}>
       <section className="surface-panel overflow-hidden">
-        <div className="flex flex-wrap items-start gap-3 border-b border-border/60 px-4 py-3.5 sm:px-5">
-          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300">
+        <div className="flex items-start gap-3 px-3.5 py-3 sm:px-5 sm:py-3.5">
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300">
             <TimerReset className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="text-sm font-semibold tracking-tight">
-              {t("crm.delay.title")}
-            </h2>
-            <p className="mt-0.5 text-[13px] text-muted-foreground">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold tracking-tight">
+                {t("crm.delay.title")}
+              </h2>
+              <p className="shrink-0 font-mono text-sm tabular-nums text-muted-foreground">
+                {t("crm.delay.count", { count: String(count) })}
+              </p>
+            </div>
+            <p className="mt-0.5 line-clamp-2 text-[12px] text-muted-foreground sm:text-[13px]">
               {t("crm.delay.description")}
             </p>
           </div>
-          <p className="font-mono text-sm tabular-nums text-muted-foreground">
-            {t("crm.delay.count", { count: String(count) })}
-          </p>
         </div>
       </section>
 
-      {loading && !leads ? (
+      {showInitialSkeleton ? (
         <TableSkeleton rows={5} />
-      ) : !loading && count === 0 ? (
+      ) : showEmpty ? (
         <EmptyState
           title={t("crm.delay.empty")}
           description={t("crm.delay.emptyDesc")}
@@ -78,12 +91,16 @@ export function CrmDelayPanel({
           employees={employees}
           filters={filters}
           onFiltersChange={onFiltersChange}
-          loading={loading}
+          loading={loading && !hasData}
           onRowClick={onRowClick}
+          onViewHistory={onViewHistory}
           canAssign={canAssign}
           canViewOthers={canViewOthers}
           canImport={false}
+          filterBadgeExclude={DELAY_FILTER_EXCLUDE}
+          lockedFilterKeys={DELAY_LOCKED_FILTERS}
           feedbackTypes={feedbackTypes}
+          hideTitle
         />
       )}
     </div>

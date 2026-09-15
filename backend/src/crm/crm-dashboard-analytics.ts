@@ -9,12 +9,15 @@ import {
 import { subDays } from "date-fns";
 import { INACTIVE_DAYS_THRESHOLD, round1 } from "./crm-analytics";
 
+/** Build CRM dashboard KPI totals from period leads + full active pipeline. */
 export function buildDashboardKpis(
-  leads: CrmLead[],
+  rangeLeads: CrmLead[],
   allActiveLeads: CrmLead[],
   stageById: Map<string, CrmStage>
 ) {
-  const totalLeads = leads.length;
+  // TOTAL = current pipeline (not date-scoped). NEW = created inside the selected range.
+  const totalLeads = allActiveLeads.length;
+  const newLeads = rangeLeads.length;
   const activeLeads = allActiveLeads.filter(
     (l) =>
       l.status === CrmLeadStatus.active &&
@@ -31,7 +34,7 @@ export function buildDashboardKpis(
   const decided = converted + lostCount;
   return {
     totalLeads,
-    newLeads: totalLeads,
+    newLeads,
     activeLeads,
     converted,
     conversionRate: decided > 0 ? round1(converted / decided) : 0,
