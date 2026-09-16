@@ -1,43 +1,135 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { AdminSectionNav } from "@/components/admin/admin-section-nav";
-import { CompanyProfilePanel } from "@/components/admin/company-profile-panel";
-import { WorkDeductionRulesPanel } from "@/components/admin/work-deduction-rules-panel";
-import { WorkPoliciesPanel } from "@/components/admin/work-policies-panel";
-import { ShiftsPanel } from "@/components/admin/shifts-panel";
-import { WfhPolicyPanel } from "@/components/admin/wfh-policy-panel";
-import { DepartmentsAdminPanel } from "@/components/admin/departments-admin-panel";
-import { PositionsAdminPanel } from "@/components/admin/positions-admin-panel";
-import { LocationsAdminPanel } from "@/components/admin/locations-admin-panel";
-import { CompanyCalendarAdminPanel } from "@/components/admin/company-calendar-admin-panel";
-import { EmployeePreferencesPanel } from "@/components/admin/employee-preferences-panel";
-import { UserAccountsPanel } from "@/components/admin/user-accounts-panel";
-import {
-  ApprovalsPanel,
-  NotificationSettingsPanel,
-} from "@/components/admin/notifications-approvals-panels";
 import type { AdminSection } from "@/components/admin/admin-mock-data";
-import { CompanyAppearanceSection } from "@/components/admin/company-appearance-section";
-import { CompanyDemoDataSection } from "@/components/admin/company-demo-data-section";
 import {
   ADMIN_SECTION_PERMISSION,
   hasPermissionId,
   type PermissionId,
 } from "@/constants/permissions";
 import { useSessionStore } from "@/stores/session-store";
-import { SettingsForm } from "@/components/settings/settings-form";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useDemoData } from "@/hooks/use-demo-data";
 import { useTranslation } from "@/hooks/use-translation";
 import { normalizeCompanyNotifications } from "@/lib/notification-policy";
 import { cn } from "@/lib/utils";
 import type { CompanySettings } from "@/types";
+
+const panelLoading = () => <Skeleton className="h-64 w-full rounded-xl" />;
+
+const CompanyProfilePanel = dynamic(
+  () =>
+    import("@/components/admin/company-profile-panel").then(
+      (m) => m.CompanyProfilePanel
+    ),
+  { loading: panelLoading }
+);
+const WorkDeductionRulesPanel = dynamic(
+  () =>
+    import("@/components/admin/work-deduction-rules-panel").then(
+      (m) => m.WorkDeductionRulesPanel
+    ),
+  { loading: panelLoading }
+);
+const WorkPoliciesPanel = dynamic(
+  () =>
+    import("@/components/admin/work-policies-panel").then(
+      (m) => m.WorkPoliciesPanel
+    ),
+  { loading: panelLoading }
+);
+const ShiftsPanel = dynamic(
+  () => import("@/components/admin/shifts-panel").then((m) => m.ShiftsPanel),
+  { loading: panelLoading }
+);
+const WfhPolicyPanel = dynamic(
+  () =>
+    import("@/components/admin/wfh-policy-panel").then((m) => m.WfhPolicyPanel),
+  { loading: panelLoading }
+);
+const DepartmentsAdminPanel = dynamic(
+  () =>
+    import("@/components/admin/departments-admin-panel").then(
+      (m) => m.DepartmentsAdminPanel
+    ),
+  { loading: panelLoading }
+);
+const PositionsAdminPanel = dynamic(
+  () =>
+    import("@/components/admin/positions-admin-panel").then(
+      (m) => m.PositionsAdminPanel
+    ),
+  { loading: panelLoading }
+);
+const LocationsAdminPanel = dynamic(
+  () =>
+    import("@/components/admin/locations-admin-panel").then(
+      (m) => m.LocationsAdminPanel
+    ),
+  { loading: panelLoading }
+);
+const CompanyCalendarAdminPanel = dynamic(
+  () =>
+    import("@/components/admin/company-calendar-admin-panel").then(
+      (m) => m.CompanyCalendarAdminPanel
+    ),
+  { loading: panelLoading }
+);
+const EmployeePreferencesPanel = dynamic(
+  () =>
+    import("@/components/admin/employee-preferences-panel").then(
+      (m) => m.EmployeePreferencesPanel
+    ),
+  { loading: panelLoading }
+);
+const UserAccountsPanel = dynamic(
+  () =>
+    import("@/components/admin/user-accounts-panel").then(
+      (m) => m.UserAccountsPanel
+    ),
+  { loading: panelLoading }
+);
+const ApprovalsPanel = dynamic(
+  () =>
+    import("@/components/admin/notifications-approvals-panels").then(
+      (m) => m.ApprovalsPanel
+    ),
+  { loading: panelLoading }
+);
+const NotificationSettingsPanel = dynamic(
+  () =>
+    import("@/components/admin/notifications-approvals-panels").then(
+      (m) => m.NotificationSettingsPanel
+    ),
+  { loading: panelLoading }
+);
+const CompanyAppearanceSection = dynamic(
+  () =>
+    import("@/components/admin/company-appearance-section").then(
+      (m) => m.CompanyAppearanceSection
+    ),
+  { loading: panelLoading }
+);
+const CompanyDemoDataSection = dynamic(
+  () =>
+    import("@/components/admin/company-demo-data-section").then(
+      (m) => m.CompanyDemoDataSection
+    ),
+  { loading: panelLoading }
+);
+const SettingsForm = dynamic(
+  () =>
+    import("@/components/settings/settings-form").then((m) => m.SettingsForm),
+  { loading: panelLoading }
+);
 
 export function CompanyAdminWorkspace() {
   const { t } = useTranslation();

@@ -199,7 +199,7 @@ export async function resumeStickySessionAfterBiometrics(): Promise<{
       await Promise.race([
         useSessionStore.persist.rehydrate(),
         new Promise<void>((resolve) => {
-          window.setTimeout(resolve, 2_500);
+          window.setTimeout(resolve, 2_000);
         }),
       ]);
     } catch {
@@ -215,6 +215,14 @@ export async function resumeStickySessionAfterBiometrics(): Promise<{
       if (renewed === "transient") return { ok: false, reason: "transient" };
     }
     return { ok: true };
+  }
+
+  // Last chance: refresh token may exist without the authenticated flag.
+  if (state.refreshToken) {
+    const renewed = await refreshAccessToken();
+    if (renewed === null) return { ok: false, reason: "refresh_failed" };
+    if (renewed === "transient") return { ok: false, reason: "transient" };
+    if (hasActiveSession(useSessionStore.getState())) return { ok: true };
   }
 
   return { ok: false, reason: "no_session" };

@@ -3324,6 +3324,7 @@ export const en = {
       followUp: "Follow-up (optional)",
       notes: "Notes (optional)",
       duration: "Call duration",
+      talkDuration: "Talk time (excludes ring)",
       save: "Save result",
       skip: "Skip",
       saved: "Call recorded",

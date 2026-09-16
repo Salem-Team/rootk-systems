@@ -2,18 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { AnalyticsChartsStudio } from "@/components/reports/analytics-charts-studio";
-import { DepartmentAnalyticsPanel } from "@/components/reports/department-analytics-panel";
-import { AnalyticsHeatmaps } from "@/components/reports/analytics-heatmaps";
-import {
-  ExecutiveInsightsPanel,
-  ExportCenterPanel,
-} from "@/components/reports/insights-export-panels";
-import { EmployeeActivityTable } from "@/components/reports/employee-activity-table";
-import {
-  LeaveAnalyticsPanel,
-  PerformanceOverviewPanel,
-} from "@/components/reports/leave-performance-panels";
 import { ReportStats } from "@/components/reports/report-stats";
 import type { AnalyticsSection } from "@/components/reports/analytics-mock-data";
 import {
@@ -49,6 +37,8 @@ import type {
   WeeklyStat,
 } from "@/types";
 
+const sectionLoading = () => <Skeleton className="h-64 w-full rounded-xl" />;
+
 const ReportCharts = dynamic(
   () =>
     import("@/components/reports/report-charts").then((m) => m.ReportCharts),
@@ -56,6 +46,62 @@ const ReportCharts = dynamic(
     ssr: false,
     loading: () => <Skeleton className="h-[400px] rounded-xl" />,
   }
+);
+const AnalyticsChartsStudio = dynamic(
+  () =>
+    import("@/components/reports/analytics-charts-studio").then(
+      (m) => m.AnalyticsChartsStudio
+    ),
+  { ssr: false, loading: sectionLoading }
+);
+const DepartmentAnalyticsPanel = dynamic(
+  () =>
+    import("@/components/reports/department-analytics-panel").then(
+      (m) => m.DepartmentAnalyticsPanel
+    ),
+  { loading: sectionLoading }
+);
+const AnalyticsHeatmaps = dynamic(
+  () =>
+    import("@/components/reports/analytics-heatmaps").then(
+      (m) => m.AnalyticsHeatmaps
+    ),
+  { ssr: false, loading: sectionLoading }
+);
+const ExecutiveInsightsPanel = dynamic(
+  () =>
+    import("@/components/reports/insights-export-panels").then(
+      (m) => m.ExecutiveInsightsPanel
+    ),
+  { loading: sectionLoading }
+);
+const ExportCenterPanel = dynamic(
+  () =>
+    import("@/components/reports/insights-export-panels").then(
+      (m) => m.ExportCenterPanel
+    ),
+  { loading: sectionLoading }
+);
+const EmployeeActivityTable = dynamic(
+  () =>
+    import("@/components/reports/employee-activity-table").then(
+      (m) => m.EmployeeActivityTable
+    ),
+  { loading: sectionLoading }
+);
+const LeaveAnalyticsPanel = dynamic(
+  () =>
+    import("@/components/reports/leave-performance-panels").then(
+      (m) => m.LeaveAnalyticsPanel
+    ),
+  { loading: sectionLoading }
+);
+const PerformanceOverviewPanel = dynamic(
+  () =>
+    import("@/components/reports/leave-performance-panels").then(
+      (m) => m.PerformanceOverviewPanel
+    ),
+  { loading: sectionLoading }
 );
 
 export function ReportsSectionContent({

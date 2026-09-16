@@ -136,8 +136,12 @@ export function useLoginForm() {
   const submitting = form.formState.isSubmitting || success || biometricBusy;
 
   async function finishLoginNavigation() {
-    // Persist in the background — never block entry on Keychain stalls.
-    void flushSessionPersist(2_000).catch(() => undefined);
+    // Sync WebView only — Keychain mirrors in background.
+    try {
+      await flushSessionPersist();
+    } catch {
+      /* in-memory session still valid for this process */
+    }
     navigateToAppHome(router);
   }
 

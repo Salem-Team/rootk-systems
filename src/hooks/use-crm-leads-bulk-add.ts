@@ -9,6 +9,11 @@ import {
 } from "@/lib/crm/parse-bulk-leads";
 import { crmUserFacingMessage } from "@/lib/crm/client-error";
 import { importCrmLeads } from "@/services/crm.service";
+import { mustOwnCreatedCrmLead } from "@/lib/crm-policies";
+import {
+  authPermissionSet,
+  getSessionRole,
+} from "@/stores/session-store";
 import type { Employee } from "@/types";
 import type { CrmBusinessType, CrmLeadSource, CrmStage } from "@/types/crm";
 
@@ -35,6 +40,11 @@ export function useCrmLeadsBulkAdd({
   onImported,
 }: UseCrmLeadsBulkAddArgs) {
   const { t } = useTranslation();
+  const lockOwnerToSelf = mustOwnCreatedCrmLead(
+    getSessionRole(),
+    authPermissionSet()
+  );
+  const canPickOwner = canAssign && !lockOwnerToSelf;
   const [raw, setRawState] = useState("");
   const [source, setSource] = useState<CrmLeadSource>("other");
   const [stageId, setStageId] = useState("");
@@ -113,7 +123,7 @@ export function useCrmLeadsBulkAdd({
           businessTypeId !== "none" ? businessTypeId : "",
         source,
         stage: resolvedStageId,
-        owner: canAssign && ownerEmployeeId !== "none" ? ownerEmployeeId : "",
+        owner: canPickOwner && ownerEmployeeId !== "none" ? ownerEmployeeId : "",
         status: "active",
         tags: "",
         nextAction: "none",
@@ -183,7 +193,7 @@ export function useCrmLeadsBulkAdd({
     activeStages,
     activeBusinessTypes,
     safeEmployees,
-    canAssign,
+    canAssign: canPickOwner,
     reset,
     hydrateDefaults,
     submit,

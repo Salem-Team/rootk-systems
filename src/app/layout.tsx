@@ -32,12 +32,12 @@ const notoArabic = Noto_Sans_Arabic({
   preload: true,
 });
 
-/** Mono — IDs, timers, codes, tabular technical values. */
+/** Mono — IDs, timers, codes, tabular technical values (defer; not above-the-fold). */
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
   display: "swap",
-  preload: true,
+  preload: false,
 });
 
 export const metadata: Metadata = {

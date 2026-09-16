@@ -1,15 +1,16 @@
 "use client";
 
 import { useMemo } from "react";
+import dynamic from "next/dynamic";
 import { format, parseISO } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import { CrmDashboardAttention } from "@/components/crm/crm-dashboard-attention";
-import { CrmDashboardCharts } from "@/components/crm/crm-dashboard-charts";
 import { CrmDashboardFiltersBar } from "@/components/crm/crm-dashboard-filters";
 import { CrmDashboardKpis } from "@/components/crm/crm-dashboard-kpis";
 import { CrmDashboardStageCards } from "@/components/crm/crm-dashboard-stage-cards";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/hooks/use-translation";
 import { ensureCrmDashboard } from "@/lib/crm-dashboard-normalize";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,17 @@ import type {
   CrmDashboardFilters,
   CrmLeadFilters,
 } from "@/types/crm";
+
+const CrmDashboardCharts = dynamic(
+  () =>
+    import("@/components/crm/crm-dashboard-charts").then(
+      (m) => m.CrmDashboardCharts
+    ),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[320px] w-full rounded-xl" />,
+  }
+);
 
 interface CrmDashboardPanelProps {
   dashboard: CrmDashboard | null;

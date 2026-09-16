@@ -21,13 +21,14 @@ import { BRAND_NAVY, LOGO_SRC } from "@/constants";
 import { useLoginForm } from "@/app/login/use-login-form";
 import { fadeInUp, softSpring, staggerContainer } from "@/lib/animations";
 import { cn } from "@/lib/utils";
+import { isNativeApp } from "@/lib/native/platform";
 import { LoginAndroidAppLink } from "@/app/login/login-android-app-link";
 
 const fieldClass =
   "h-12 border-[#d0dae8] bg-white pe-3 ps-11 text-[16px] leading-normal text-[#0a1220] shadow-none placeholder:text-[#94a3b8] transition-[border-color,box-shadow,background-color] duration-200 hover:border-[#9eb3d4] focus-visible:border-[#082868] focus-visible:bg-white focus-visible:ring-[3px] focus-visible:ring-[#082868]/14 md:text-[15px]";
 
 export function LoginSignInPanel() {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotion() || isNativeApp();
   const {
     t,
     isRtl,
@@ -95,7 +96,10 @@ export function LoginSignInPanel() {
       <motion.div
         variants={reduceMotion ? undefined : fadeInUp}
         transition={softSpring}
-        className="relative overflow-hidden rounded-[1.65rem] border border-white/55 bg-[#f7f9fc]/97 text-[#0a1220] shadow-[0_36px_90px_rgba(0,0,0,0.48),0_0_0_1px_rgba(8,40,104,0.05)] backdrop-blur-sm"
+        className={cn(
+          "relative overflow-hidden rounded-[1.65rem] border border-white/55 bg-[#f7f9fc] text-[#0a1220] shadow-[0_36px_90px_rgba(0,0,0,0.48),0_0_0_1px_rgba(8,40,104,0.05)]",
+          !reduceMotion && "bg-[#f7f9fc]/97 backdrop-blur-sm"
+        )}
       >
         <div
           aria-hidden
@@ -251,21 +255,16 @@ export function LoginSignInPanel() {
               ) : null}
             </div>
 
-            <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2.5 transition-colors hover:border-[#c5d4ea] hover:bg-white">
+            <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2.5 transition-colors hover:border-[#c5d4ea] hover:bg-white">
               <input
                 type="checkbox"
                 checked={rememberMe}
                 disabled={submitting}
                 onChange={(event) => setRememberMe(event.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#9eb3d4] text-[#082868] accent-[#082868] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#082868]/30"
+                className="h-4 w-4 shrink-0 rounded border-[#9eb3d4] text-[#082868] accent-[#082868] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#082868]/30"
               />
-              <span className="min-w-0">
-                <span className="block text-[13px] font-semibold text-[#0a1220]">
-                  {t("auth.rememberMe")}
-                </span>
-                <span className="mt-0.5 block text-[11.5px] leading-snug text-[#64748b]">
-                  {t("auth.rememberMeHint")}
-                </span>
+              <span className="text-[13px] font-semibold text-[#0a1220]">
+                {t("auth.rememberMe")}
               </span>
             </label>
 

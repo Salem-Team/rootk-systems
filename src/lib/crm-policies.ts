@@ -41,3 +41,12 @@ export function canCrm(
   }
   return crmCapabilitiesForRole(role).includes(capability);
 }
+
+/** Employees always own leads they create (even if they have assign). */
+export function mustOwnCreatedCrmLead(
+  role: UserRole,
+  permissions?: readonly string[]
+): boolean {
+  if (role === AppRole.employee) return true;
+  return !canCrm(role, "assign", permissions);
+}

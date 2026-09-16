@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
-import { getDir } from "@/i18n";
+import {
+  ensureDictionary,
+  getDir,
+  preloadInactiveDictionary,
+} from "@/i18n";
 import { useLocaleStore } from "@/stores/locale-store";
 
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
@@ -13,6 +17,11 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     root.lang = locale;
     root.dir = dir;
     root.setAttribute("data-locale", locale);
+  }, [locale]);
+
+  useEffect(() => {
+    void ensureDictionary(locale);
+    preloadInactiveDictionary(locale);
   }, [locale]);
 
   return <>{children}</>;

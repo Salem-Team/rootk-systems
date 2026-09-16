@@ -7,13 +7,17 @@
 import { nativePlatform } from "@/lib/native/platform";
 
 const PREFIX = "rootk.secure.";
-const SECURE_TIMEOUT_MS = 2_500;
+/** Keep short — stalled Keychain must never block login / boot. */
+const SECURE_TIMEOUT_MS = 900;
 
 type SecurePlugin = {
   set: (options: { key: string; value: string }) => Promise<unknown>;
   get: (options: { key: string }) => Promise<{ value: string }>;
   remove: (options: { key: string }) => Promise<unknown>;
 };
+
+let cachedPlugin: SecurePlugin | null | undefined;
+let pluginLoad: Promise<SecurePlugin | null> | null = null;
 
 async function withTimeout<T>(
   promise: Promise<T>,
@@ -35,20 +39,27 @@ async function withTimeout<T>(
 
 async function plugin(): Promise<SecurePlugin | null> {
   if (nativePlatform() === "web") return null;
-  try {
-    const mod = (await import("capacitor-secure-storage-plugin")) as {
-      SecureStoragePlugin?: SecurePlugin;
-      default?: SecurePlugin;
-    };
-    return mod.SecureStoragePlugin ?? mod.default ?? null;
-  } catch {
-    return null;
+  if (cachedPlugin !== undefined) return cachedPlugin;
+  if (!pluginLoad) {
+    pluginLoad = (async () => {
+      try {
+        const mod = (await import("capacitor-secure-storage-plugin")) as {
+          SecureStoragePlugin?: SecurePlugin;
+          default?: SecurePlugin;
+        };
+        cachedPlugin = mod.SecureStoragePlugin ?? mod.default ?? null;
+      } catch {
+        cachedPlugin = null;
+      }
+      return cachedPlugin;
+    })();
   }
+  return withTimeout(pluginLoad, SECURE_TIMEOUT_MS, null);
 }
 
 /** @returns true when the value was written to the secure store. */
 export async function secureSet(name: string, value: string): Promise<boolean> {
-  const store = await withTimeout(plugin(), SECURE_TIMEOUT_MS, null);
+  const store = await plugin();
   if (!store) return false;
   try {
     return await withTimeout(
@@ -62,7 +73,7 @@ export async function secureSet(name: string, value: string): Promise<boolean> {
 }
 
 export async function secureGet(name: string): Promise<string | null> {
-  const store = await withTimeout(plugin(), SECURE_TIMEOUT_MS, null);
+  const store = await plugin();
   if (!store) return null;
   try {
     const result = await withTimeout(
@@ -77,7 +88,7 @@ export async function secureGet(name: string): Promise<string | null> {
 }
 
 export async function secureRemove(name: string): Promise<void> {
-  const store = await withTimeout(plugin(), SECURE_TIMEOUT_MS, null);
+  const store = await plugin();
   if (!store) return;
   try {
     await withTimeout(

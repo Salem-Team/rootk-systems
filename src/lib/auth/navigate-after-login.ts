@@ -7,6 +7,7 @@ export function navigateToAppHome(router: {
 }): void {
   router.replace("/dashboard");
   if (typeof window === "undefined") return;
+  // Soft SPA navigate first; hard assign quickly if App Router stalls on native.
   window.setTimeout(() => {
     const path = window.location.pathname || "";
     if (path.includes("/login")) {
@@ -16,5 +17,5 @@ export function navigateToAppHome(router: {
         window.location.href = "/dashboard";
       }
     }
-  }, 1_600);
+  }, 450);
 }

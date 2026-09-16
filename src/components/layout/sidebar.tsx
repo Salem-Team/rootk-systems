@@ -26,7 +26,8 @@ import { layoutSpring, sidebarItem, staggerContainer } from "@/lib/animations";
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { sidebarCollapsed, toggleSidebar } = useUiStore();
+  const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
+  const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const role = useSessionStore((s) => s.role);
   const permissions = useSessionStore((s) => s.permissions);
   const pendingLeave = usePendingLeaveCount();

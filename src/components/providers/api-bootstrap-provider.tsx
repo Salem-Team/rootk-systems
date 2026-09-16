@@ -80,11 +80,13 @@ export function ApiBootstrapProvider({
   }, [router, signOut, t]);
 
   useEffect(() => {
-    // Native Keystore reads can be slow; give more time before forcing hydrate.
-    const ms = isNativeApp() ? 8_000 : 4_000;
+    // Don't leave the app on an endless splash if persist stalls.
+    const ms = isNativeApp() ? 5_000 : 4_000;
     const id = window.setTimeout(() => {
       if (!useSessionStore.getState().hasHydrated) {
-        useSessionStore.setState({ hasHydrated: true });
+        void Promise.resolve(useSessionStore.persist.rehydrate()).finally(() => {
+          useSessionStore.setState({ hasHydrated: true });
+        });
       }
     }, ms);
     return () => window.clearTimeout(id);
@@ -94,6 +96,11 @@ export function ApiBootstrapProvider({
     if (!hasHydrated || !isApiMode()) return;
     if (!hasActiveSession()) {
       // Do not wipe storage here — AuthGate / login will handle unsigned state.
+      // Still try silent renew when only a refresh token survived a partial hydrate.
+      const refresh = useSessionStore.getState().refreshToken;
+      if (refresh) {
+        void refreshAccessToken();
+      }
       return;
     }
     kickLock.current = false;
@@ -127,8 +134,7 @@ export function ApiBootstrapProvider({
     async function keepAlive() {
       const state = useSessionStore.getState();
       if (!state.refreshToken) return;
-      if (!state.authenticated && !state.accessToken) return;
-      // Renew when missing or near expiry — keep the user signed in.
+      // Renew whenever we have a refresh token and access is missing/near expiry.
       if (
         state.accessToken &&
         !isAccessTokenExpiringSoon(state.accessToken, 15 * 60_000)

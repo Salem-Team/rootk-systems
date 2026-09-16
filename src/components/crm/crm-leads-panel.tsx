@@ -130,7 +130,7 @@ export function CrmLeadsPanel({
       return;
     }
     const rows = res.data ?? [];
-    downloadCrmLeadsWorkbook(
+    await downloadCrmLeadsWorkbook(
       `crm-leads-${format(new Date(), "yyyy-MM-dd")}.xlsx`,
       rows
     );

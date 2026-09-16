@@ -123,7 +123,8 @@ export function MobileBottomNav() {
 
 export function MobileDrawer() {
   const pathname = usePathname();
-  const { mobileMenuOpen, setMobileMenuOpen } = useUiStore();
+  const mobileMenuOpen = useUiStore((s) => s.mobileMenuOpen);
+  const setMobileMenuOpen = useUiStore((s) => s.setMobileMenuOpen);
   const role = useSessionStore((s) => s.role);
   const permissions = useSessionStore((s) => s.permissions);
   const pendingLeave = usePendingLeaveCount();

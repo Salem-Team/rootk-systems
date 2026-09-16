@@ -10,7 +10,7 @@ import { canonicalContactKeys } from "@/lib/crm/lead-contacts";
 import { canonicalPhoneOrNull } from "@/lib/phone-normalize";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { createId } from "@/lib/id";
-import { canCrm } from "@/lib/crm-policies";
+import { canCrm, mustOwnCreatedCrmLead } from "@/lib/crm-policies";
 import { emitCrmUpdated } from "@/lib/events";
 import {
   crmLeadActivityRepository,
@@ -174,7 +174,7 @@ export async function createCrmLead(
     const actorId = getSessionUserId() || "system";
     const empId = actorEmployeeId()?.trim() || null;
     let ownerEmployeeId = parsed.ownerEmployeeId ?? empId;
-    if (!canCrm(getSessionRole(), "assign", authPermissionSet())) {
+    if (mustOwnCreatedCrmLead(getSessionRole(), authPermissionSet())) {
       if (!empId) {
         throw new ForbiddenError("You can only create leads assigned to you");
       }

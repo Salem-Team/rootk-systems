@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Navbar } from "@/components/layout/navbar";
 import { UserViewBanner } from "@/components/layout/user-view-banner";
@@ -11,11 +12,17 @@ import { AuthGate } from "@/components/layout/auth-gate";
 import { RoleRedirect } from "@/components/layout/role-redirect";
 import { RouteProgress } from "@/components/layout/route-progress";
 import { PreferenceSync } from "@/components/shared/preference-sync";
-import { CrmPostCallHost } from "@/components/crm/crm-post-call-host";
 import { useCrmFollowUpReminders } from "@/hooks/use-crm-follow-up-reminders";
 import { useUiStore } from "@/stores/ui-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
+
+/** Post-call prompt — only needed after tel: dials; keep out of the main shell chunk. */
+const CrmPostCallHost = dynamic(
+  () =>
+    import("@/components/crm/crm-post-call-host").then((m) => m.CrmPostCallHost),
+  { ssr: false }
+);
 
 /**
  * App chrome (sidebar + navbar). Page enter polish lives in PageTransition /
@@ -24,7 +31,7 @@ import { cn } from "@/lib/utils";
  * (white screen while chrome still works).
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { sidebarCollapsed } = useUiStore();
+  const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
   const { t } = useTranslation();
   useCrmFollowUpReminders();
 

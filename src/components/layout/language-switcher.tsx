@@ -3,9 +3,9 @@
 import { Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
+import type { Locale } from "@/i18n";
 import { saveUserPreferences } from "@/services/user-preferences.service";
 import { useSessionStore } from "@/stores/session-store";
-import type { Locale } from "@/i18n";
 
 export function LanguageSwitcher({
   variant = "icon",

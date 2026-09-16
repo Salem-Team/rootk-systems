@@ -6,17 +6,7 @@ import { PageSkeleton } from "@/components/shared/loading-state";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Reveal } from "@/components/shared/reveal";
 import { DashboardHero } from "@/components/dashboard/dashboard-hero";
-import { EmployeeCallStats } from "@/components/dashboard/employee-call-stats";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
-import { ActivityFeed } from "@/components/dashboard/activity-feed";
-import { Announcements } from "@/components/dashboard/announcements";
-import {
-  BirthdaysPanel,
-  HolidaysPanel,
-} from "@/components/dashboard/holidays-birthdays";
-import { RecentLeavePanel } from "@/components/dashboard/recent-leave-panel";
-import { CompanyCalendarMini } from "@/components/dashboard/company-calendar-mini";
-import { TopDepartments } from "@/components/dashboard/top-departments";
 import {
   buildBirthdays,
   buildCompanyCalendarEvents,
@@ -42,6 +32,8 @@ import type {
   WeeklyStat,
 } from "@/types";
 
+const panelFallback = () => <Skeleton className="h-64 w-full rounded-xl" />;
+
 const WeeklyChart = dynamic(
   () =>
     import("@/components/dashboard/weekly-chart").then((m) => m.WeeklyChart),
@@ -49,6 +41,58 @@ const WeeklyChart = dynamic(
     ssr: false,
     loading: () => <Skeleton className="h-[360px] rounded-xl" />,
   }
+);
+const EmployeeCallStats = dynamic(
+  () =>
+    import("@/components/dashboard/employee-call-stats").then(
+      (m) => m.EmployeeCallStats
+    ),
+  { loading: panelFallback }
+);
+const ActivityFeed = dynamic(
+  () =>
+    import("@/components/dashboard/activity-feed").then((m) => m.ActivityFeed),
+  { loading: panelFallback }
+);
+const Announcements = dynamic(
+  () =>
+    import("@/components/dashboard/announcements").then((m) => m.Announcements),
+  { loading: panelFallback }
+);
+const RecentLeavePanel = dynamic(
+  () =>
+    import("@/components/dashboard/recent-leave-panel").then(
+      (m) => m.RecentLeavePanel
+    ),
+  { loading: panelFallback }
+);
+const TopDepartments = dynamic(
+  () =>
+    import("@/components/dashboard/top-departments").then(
+      (m) => m.TopDepartments
+    ),
+  { loading: panelFallback }
+);
+const CompanyCalendarMini = dynamic(
+  () =>
+    import("@/components/dashboard/company-calendar-mini").then(
+      (m) => m.CompanyCalendarMini
+    ),
+  { loading: panelFallback }
+);
+const HolidaysPanel = dynamic(
+  () =>
+    import("@/components/dashboard/holidays-birthdays").then(
+      (m) => m.HolidaysPanel
+    ),
+  { loading: panelFallback }
+);
+const BirthdaysPanel = dynamic(
+  () =>
+    import("@/components/dashboard/holidays-birthdays").then(
+      (m) => m.BirthdaysPanel
+    ),
+  { loading: panelFallback }
 );
 
 export function AdminDashboard() {

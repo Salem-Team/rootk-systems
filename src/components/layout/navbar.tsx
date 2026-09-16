@@ -33,7 +33,8 @@ import { demoNow } from "@/lib/mock-date";
 export function Navbar() {
   const router = useRouter();
   const { setTheme, resolvedTheme } = useTheme();
-  const { setMobileMenuOpen, sidebarCollapsed } = useUiStore();
+  const setMobileMenuOpen = useUiStore((s) => s.setMobileMenuOpen);
+  const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
   const user = useSessionStore((s) => s.user);
   const authenticated = useSessionStore((s) => s.authenticated);
   const role = useSessionStore((s) => s.role);

@@ -62,7 +62,7 @@ export function CrmLeadsImportDialog({
               type="button"
               size="sm"
               variant="outline"
-              onClick={() => downloadCrmLeadsTemplate()}
+              onClick={() => void downloadCrmLeadsTemplate()}
             >
               <Download className="me-1.5 h-3.5 w-3.5" />
               {t("crm.import.downloadTemplate")}

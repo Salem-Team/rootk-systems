@@ -20,7 +20,8 @@ import {
   allLeadContacts,
   type LeadFormContactDraft,
 } from "@/lib/crm/lead-contacts";
-import { getWorkEmployeeId } from "@/stores/session-store";
+import { getWorkEmployeeId, getSessionRole, authPermissionSet } from "@/stores/session-store";
+import { mustOwnCreatedCrmLead } from "@/lib/crm-policies";
 import type {
   CrmBusinessType,
   CrmDuplicateLeadSummary,
@@ -85,6 +86,10 @@ export function useCrmLeadForm({
   onOpenExistingLead,
 }: UseCrmLeadFormArgs) {
   const { t } = useTranslation();
+  const lockOwnerToSelf =
+    !editingLead &&
+    mustOwnCreatedCrmLead(getSessionRole(), authPermissionSet());
+  const canPickOwner = canAssign && !lockOwnerToSelf;
   const [name, setName] = useState("");
   const [contacts, setContacts] = useState<LeadFormContactDraft[]>([
     emptyContactDraft(),
@@ -145,7 +150,7 @@ export function useCrmLeadForm({
           ""
       );
       setSubStageId("none");
-      setOwnerEmployeeId(canAssign ? "none" : getWorkEmployeeId() || "none");
+      setOwnerEmployeeId(canPickOwner ? "none" : getWorkEmployeeId() || "none");
       setStatus("active");
       setTags([]);
       setNextAction("none");
@@ -281,7 +286,7 @@ export function useCrmLeadForm({
       source,
       stageId,
       subStageId: subStageId === "none" ? null : subStageId || null,
-      ownerEmployeeId: canAssign
+      ownerEmployeeId: canPickOwner
         ? ownerEmployeeId === "none"
           ? null
           : ownerEmployeeId || null
@@ -378,5 +383,6 @@ export function useCrmLeadForm({
     duplicateLead,
     duplicateOwnedByOther,
     onOpenExistingLead,
+    canPickOwner,
   };
 }

@@ -37,6 +37,26 @@ export function canFilterCrmByOwner(flags: {
   return Boolean(flags.canViewOthers || flags.canViewTeam || flags.canAssign);
 }
 
+/**
+ * Drop owner filters the actor is not allowed to use (anti-peek).
+ * Sales scoped to self: foreign owner ids are ignored so the list stays own-leads.
+ */
+function resolveEffectiveOwnerFilter(
+  requested: string | undefined,
+  opts?: CrmLeadScopeOpts
+): string | undefined {
+  if (!requested) return undefined;
+  if (requested === "__unassigned__") {
+    return opts?.canViewOthers ? requested : undefined;
+  }
+  if (opts?.canViewOthers) return requested;
+  if (opts?.teamOwnerIds && opts.teamOwnerIds.length > 0) {
+    return opts.teamOwnerIds.includes(requested) ? requested : undefined;
+  }
+  const actorId = opts?.actorEmployeeId?.trim() ?? "";
+  return requested === actorId ? requested : undefined;
+}
+
 export function isLeadOwnedByActor(
   ownerEmployeeId: string | null | undefined,
   opts?: CrmLeadScopeOpts
@@ -52,15 +72,13 @@ export function filterLeads(
   const now = new Date();
   const todayEnd = endOfDay(now);
   const q = filters.search?.trim().toLowerCase() ?? "";
+  const ownerFilter = resolveEffectiveOwnerFilter(filters.ownerEmployeeId, opts);
 
   return leads.filter((lead) => {
     if (!isInCrmScope(lead.ownerEmployeeId, opts)) return false;
-    if (filters.ownerEmployeeId === "__unassigned__") {
+    if (ownerFilter === "__unassigned__") {
       if (lead.ownerEmployeeId) return false;
-    } else if (
-      filters.ownerEmployeeId &&
-      lead.ownerEmployeeId !== filters.ownerEmployeeId
-    ) {
+    } else if (ownerFilter && lead.ownerEmployeeId !== ownerFilter) {
       return false;
     }
     if (filters.stageId && lead.stageId !== filters.stageId) return false;

@@ -8,12 +8,14 @@ import {
 } from "@/constants/permissions";
 import { AppRole } from "@/constants/roles";
 import { isApiMode } from "@/lib/env";
-import { crmSessionPersistStorage, writeSessionPersistSnapshot } from "@/lib/native/session-persist";
+import {
+  crmSessionPersistStorage,
+  writeSessionPersistSnapshotSync,
+} from "@/lib/native/session-persist";
 import {
   resolveAccountFirstName,
   resolveAccountFullName,
 } from "@/lib/user-display-name";
-import { usersSeed } from "@/mocks/users";
 import type { AppUser, UserRole } from "@/types";
 
 export interface SessionUser {
@@ -42,55 +44,48 @@ export interface ImpersonationState {
   impersonatorEmail: string;
 }
 
-function toSessionUser(role: UserRole): SessionUser {
-  const seed = usersSeed.find((u) => u.role === role) ?? usersSeed[0];
-  const displayName =
-    seed.displayName?.trim() ||
-    resolveAccountFullName(seed) ||
-    seed.email.split("@")[0];
-  const firstName =
-    seed.firstName?.trim() ||
-    resolveAccountFirstName({ ...seed, displayName }) ||
-    displayName;
+function emptySessionUser(): SessionUser {
   return {
-    id: seed.id,
-    employeeId: seed.employeeId,
-    displayName,
-    firstName,
-    lastName: seed.lastName?.trim() || "",
-    email: seed.email,
-    role: seed.role,
-    initials: seed.initials,
-    nameKey: seed.nameKey,
-    firstNameKey: seed.firstNameKey,
+    id: "",
+    employeeId: "",
+    displayName: "User",
+    firstName: "User",
+    lastName: "",
+    email: "",
+    role: AppRole.admin,
+    initials: "U",
+    nameKey: "",
+    firstNameKey: "",
   };
 }
 
 function fromAppUser(user: AppUser): SessionUser {
+  const email = typeof user.email === "string" ? user.email : "";
   const displayName =
     user.displayName?.trim() ||
     resolveAccountFullName(user) ||
-    user.email.split("@")[0] ||
-    user.email;
+    (email.includes("@") ? email.split("@")[0] : "") ||
+    email ||
+    "User";
   const firstName =
     user.firstName?.trim() ||
-    resolveAccountFirstName({ ...user, displayName }) ||
+    resolveAccountFirstName({ ...user, displayName, email }) ||
     displayName;
   return {
-    id: user.id,
-    employeeId: user.employeeId,
+    id: user.id || "",
+    employeeId: user.employeeId || "",
     displayName,
     firstName,
     lastName: user.lastName?.trim() || "",
-    email: user.email,
-    role: user.role,
-    initials: user.initials,
-    nameKey: user.nameKey,
-    firstNameKey: user.firstNameKey,
+    email,
+    role: user.role || AppRole.employee,
+    initials: user.initials || displayName.slice(0, 2).toUpperCase(),
+    nameKey: user.nameKey || "",
+    firstNameKey: user.firstNameKey || "",
   };
 }
 
-const EMPTY_USER: SessionUser = toSessionUser(AppRole.admin);
+const EMPTY_USER: SessionUser = emptySessionUser();
 
 interface SessionState {
   role: UserRole;
@@ -159,7 +154,12 @@ export const useSessionStore = create<SessionState>()(
         }),
       setPermissions: (permissions) => set({ permissions }),
       setTokens: ({ accessToken, refreshToken }) =>
-        set({ accessToken, refreshToken }),
+        set({
+          accessToken,
+          refreshToken,
+          // Sticky recover / silent refresh must restore a live session flag.
+          ...(accessToken || refreshToken ? { authenticated: true } : {}),
+        }),
       setImpersonation: (impersonation) => set({ impersonation }),
       signOut: () =>
         set({
@@ -204,7 +204,9 @@ export const useSessionStore = create<SessionState>()(
           | undefined;
         const rawUser = p?.user;
         const user =
-          rawUser && typeof rawUser === "object"
+          rawUser &&
+          typeof rawUser === "object" &&
+          typeof (rawUser as { email?: unknown }).email === "string"
             ? fromAppUser(rawUser as AppUser)
             : current.user;
         const role = p?.role ?? current.role;
@@ -232,11 +234,11 @@ export const useSessionStore = create<SessionState>()(
         ) {
           return current;
         }
-        // API mode: never restore a zombie "authenticated" flag without tokens.
-        const claimedAuth = Boolean(p?.authenticated);
-        const authenticated =
-          claimedAuth &&
-          (!isApiMode() || Boolean(accessToken || refreshToken));
+        // API mode: tokens are the source of truth (Keychain may rebuild without the flag).
+        const hasTokens = Boolean(accessToken || refreshToken);
+        const authenticated = isApiMode()
+          ? hasTokens
+          : Boolean(p?.authenticated);
         return {
           ...current,
           role,
@@ -316,7 +318,7 @@ export function getRefreshToken(): string | null {
 
 /**
  * True when the user should be treated as signed in.
- * API mode requires at least one token so AuthGate / login redirect stay consistent.
+ * API mode: any live token counts (flag alone is not enough; tokens alone are).
  */
 export function hasActiveSession(
   state: Pick<
@@ -324,8 +326,7 @@ export function hasActiveSession(
     "authenticated" | "accessToken" | "refreshToken"
   > = useSessionStore.getState()
 ): boolean {
-  if (!state.authenticated) return false;
-  if (!isApiMode()) return true;
+  if (!isApiMode()) return state.authenticated;
   return Boolean(state.accessToken || state.refreshToken);
 }
 
@@ -337,13 +338,12 @@ export function isImpersonatingSession(): boolean {
 export const SESSION_PERSIST_KEY = "rootk-session";
 
 /**
- * Force-write the current session to storage before navigation / reload.
- * Zustand's async persist can lag a tick behind `applyAuthSession`.
- * Never hangs forever — native Keychain can stall.
+ * Force-write the current session to WebView storage before navigation.
+ * Keychain mirror runs in the background — never blocks login.
  */
-export async function flushSessionPersist(timeoutMs = 2_500): Promise<void> {
+export async function flushSessionPersist(): Promise<void> {
   const s = useSessionStore.getState();
-  const write = writeSessionPersistSnapshot(SESSION_PERSIST_KEY, {
+  writeSessionPersistSnapshotSync(SESSION_PERSIST_KEY, {
     state: {
       role: s.role,
       authenticated: s.authenticated,
@@ -355,12 +355,6 @@ export async function flushSessionPersist(timeoutMs = 2_500): Promise<void> {
     },
     version: 0,
   });
-  await Promise.race([
-    write,
-    new Promise<void>((resolve) => {
-      window.setTimeout(resolve, timeoutMs);
-    }),
-  ]);
 }
 
 /** True when JWT is missing, malformed, or expires within `skewMs`. */

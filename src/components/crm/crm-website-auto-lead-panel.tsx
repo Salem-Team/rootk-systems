@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ export function CrmWebsiteAutoLeadPanel({
     return [...active].sort((a, b) => a.name.localeCompare(b.name));
   }, [employees]);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     const res = await getWebsiteAutoLead();
     setLoading(false);
@@ -46,11 +46,11 @@ export function CrmWebsiteAutoLeadPanel({
       return;
     }
     setConfig(res.data);
-  }
+  }, [t]);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   async function save(next: WebsiteAutoLeadConfig) {
     setSaving(true);

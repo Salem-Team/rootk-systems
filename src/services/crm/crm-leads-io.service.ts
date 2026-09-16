@@ -17,7 +17,7 @@ import { crmLeadRepository } from "@/repositories/crm.repository";
 import { fromError, ok } from "@/services/api-result";
 import { simulateDelay } from "@/services/fake-api";
 import { createCrmLead } from "@/services/crm/crm-lead-mutations.service";
-import { canCrm } from "@/lib/crm-policies";
+import { mustOwnCreatedCrmLead } from "@/lib/crm-policies";
 import {
   actorEmployeeId,
   assertCap,
@@ -112,7 +112,7 @@ export async function importCrmLeads(
             ownerByKey.get(row.owner.toLowerCase()) ||
             null;
         }
-        if (!canCrm(getSessionRole(), "assign", authPermissionSet())) {
+        if (mustOwnCreatedCrmLead(getSessionRole(), authPermissionSet())) {
           ownerEmployeeId = actorEmployeeId();
         } else if (ownerEmployeeId) {
           const allowed = await resolveCrmOwnerIds();

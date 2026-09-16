@@ -1,18 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { App } from "@capacitor/app";
 import { getMyPermissions } from "@/services/permissions.service";
-import { refreshAccessToken } from "@/services/auth.service";
-import { isApiMode } from "@/lib/env";
 import { isNativeApp } from "@/lib/native/platform";
 import { BiometricLockGate } from "@/components/auth/biometric-lock-gate";
 import { BiometricOptInHost } from "@/components/auth/biometric-opt-in-host";
 import { hasActiveSession, useSessionStore } from "@/stores/session-store";
 
 const PERMISSIONS_REFRESH_MIN_MS = 60_000;
-const RECOVER_TIMEOUT_MS = 4_000;
 
 async function hydratePermissions() {
   try {
@@ -29,58 +26,23 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const hasHydrated = useSessionStore((s) => s.hasHydrated);
-  const authenticated = useSessionStore((s) => s.authenticated);
-  const accessToken = useSessionStore((s) => s.accessToken);
-  const refreshToken = useSessionStore((s) => s.refreshToken);
   const userId = useSessionStore((s) => s.user.id);
-  const active = hasActiveSession({
-    authenticated,
-    accessToken,
-    refreshToken,
-  });
-  const [recovering, setRecovering] = useState(false);
+  /** Derived boolean — token refresh keeps `true` so chrome does not re-render. */
+  const active = useSessionStore((s) =>
+    hasActiveSession({
+      authenticated: s.authenticated,
+      accessToken: s.accessToken,
+      refreshToken: s.refreshToken,
+    })
+  );
   const lastPermissionsAt = useRef(0);
-  const recoverAttempted = useRef(false);
 
   useEffect(() => {
     if (!hasHydrated) return;
-    if (active) {
-      recoverAttempted.current = false;
-      setRecovering(false);
-      return;
-    }
-
-    // Sticky: if we still have a refresh token, try one silent renew before login.
-    if (isApiMode() && refreshToken && !recoverAttempted.current) {
-      recoverAttempted.current = true;
-      setRecovering(true);
-      let settled = false;
-      let cancelled = false;
-      const finish = () => {
-        if (cancelled || settled) return;
-        settled = true;
-        setRecovering(false);
-        const next = useSessionStore.getState();
-        if (
-          !hasActiveSession({
-            authenticated: next.authenticated,
-            accessToken: next.accessToken,
-            refreshToken: next.refreshToken,
-          })
-        ) {
-          router.replace("/login");
-        }
-      };
-      void refreshAccessToken().finally(finish);
-      const timeout = window.setTimeout(finish, RECOVER_TIMEOUT_MS);
-      return () => {
-        cancelled = true;
-        window.clearTimeout(timeout);
-      };
-    }
-
+    if (active) return;
+    // Tokens are the session — only redirect when both are gone.
     router.replace("/login");
-  }, [active, hasHydrated, refreshToken, router, pathname]);
+  }, [active, hasHydrated, router, pathname]);
 
   // Permissions are already on the session from login/persist — never block UI.
   useEffect(() => {
@@ -118,7 +80,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     };
   }, [active, hasHydrated, userId]);
 
-  if (!hasHydrated || recovering || !active) {
+  if (!hasHydrated || !active) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-background pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <div className="h-9 w-9 animate-pulse rounded-lg border border-border bg-card shadow-[var(--shadow-card)]" />

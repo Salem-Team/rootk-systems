@@ -1,18 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { PageHeader } from "@/components/shared/page-header";
 import { MobileSegmentedTabs } from "@/components/shared/mobile-segmented-tabs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PayrollKpiRow } from "@/components/payroll/payroll-kpi-row";
-import { PayrollTimeline } from "@/components/payroll/payroll-timeline";
-import { PayrollPoliciesPanel } from "@/components/payroll/payroll-policies-panel";
-import { PayrollRulesEngine } from "@/components/payroll/payroll-rules-engine";
-import { PayrollApprovalWorkflow } from "@/components/payroll/payroll-approval-workflow";
-import { PayrollReportsPanel } from "@/components/payroll/payroll-reports-panel";
-import { PayrollLedgerPanel } from "@/components/payroll/payroll-ledger-panel";
-import { PayslipStatementView } from "@/components/payroll/payslip-statement";
-import { PayrollSalaryTab } from "@/components/payroll/payroll-salary-tab";
-import { SalaryProfileEditorSheet } from "@/components/payroll/salary-profile-editor-sheet";
 import { formatEgp } from "@/lib/payroll";
 import {
   canApproveFinance,
@@ -35,6 +28,72 @@ import type {
   PayrollRun,
 } from "@/types/payroll";
 import { EmployeePicker, ImpactLists } from "./payroll-workspace-shared";
+
+const panelLoading = () => <Skeleton className="h-56 w-full rounded-xl" />;
+
+const PayrollTimeline = dynamic(
+  () =>
+    import("@/components/payroll/payroll-timeline").then(
+      (m) => m.PayrollTimeline
+    ),
+  { loading: panelLoading }
+);
+const PayrollPoliciesPanel = dynamic(
+  () =>
+    import("@/components/payroll/payroll-policies-panel").then(
+      (m) => m.PayrollPoliciesPanel
+    ),
+  { loading: panelLoading }
+);
+const PayrollRulesEngine = dynamic(
+  () =>
+    import("@/components/payroll/payroll-rules-engine").then(
+      (m) => m.PayrollRulesEngine
+    ),
+  { loading: panelLoading }
+);
+const PayrollApprovalWorkflow = dynamic(
+  () =>
+    import("@/components/payroll/payroll-approval-workflow").then(
+      (m) => m.PayrollApprovalWorkflow
+    ),
+  { loading: panelLoading }
+);
+const PayrollReportsPanel = dynamic(
+  () =>
+    import("@/components/payroll/payroll-reports-panel").then(
+      (m) => m.PayrollReportsPanel
+    ),
+  { ssr: false, loading: panelLoading }
+);
+const PayrollLedgerPanel = dynamic(
+  () =>
+    import("@/components/payroll/payroll-ledger-panel").then(
+      (m) => m.PayrollLedgerPanel
+    ),
+  { loading: panelLoading }
+);
+const PayslipStatementView = dynamic(
+  () =>
+    import("@/components/payroll/payslip-statement").then(
+      (m) => m.PayslipStatementView
+    ),
+  { loading: panelLoading }
+);
+const PayrollSalaryTab = dynamic(
+  () =>
+    import("@/components/payroll/payroll-salary-tab").then(
+      (m) => m.PayrollSalaryTab
+    ),
+  { loading: panelLoading }
+);
+const SalaryProfileEditorSheet = dynamic(
+  () =>
+    import("@/components/payroll/salary-profile-editor-sheet").then(
+      (m) => m.SalaryProfileEditorSheet
+    ),
+  { ssr: false }
+);
 
 export function PayrollAdminView({
   persona,
@@ -271,19 +330,21 @@ export function PayrollAdminView({
         </TabsContent>
       </Tabs>
 
-      <SalaryProfileEditorSheet
-        open={editProfileOpen}
-        onOpenChange={onEditProfileOpenChange}
-        profile={selectedProfileState}
-        employeeId={selectedEmployeeId}
-        employeeLabel={
-          employees.find((e) => e.id === selectedEmployeeId)?.name
-        }
-        onSaved={(profile) => {
-          onSelectedProfileStateChange(profile);
-          refreshPayslipsAndSummary();
-        }}
-      />
+      {editProfileOpen ? (
+        <SalaryProfileEditorSheet
+          open={editProfileOpen}
+          onOpenChange={onEditProfileOpenChange}
+          profile={selectedProfileState}
+          employeeId={selectedEmployeeId}
+          employeeLabel={
+            employees.find((e) => e.id === selectedEmployeeId)?.name
+          }
+          onSaved={(profile) => {
+            onSelectedProfileStateChange(profile);
+            refreshPayslipsAndSummary();
+          }}
+        />
+      ) : null}
 
       <p className="sr-only">
         {locale} {formatEgp(summary.netPayroll, locale === "ar" ? "ar" : "en")}

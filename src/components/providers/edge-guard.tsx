@@ -30,9 +30,25 @@ type GuardState =
   | { status: "ok"; edgeId: string }
   | { status: "stale"; edgeId: string | null; reason: string };
 
+async function readLiveEdge(): Promise<{
+  ok: boolean;
+  edgeId: string | null;
+}> {
+  const res = await fetchHealthLive();
+  if (!res.success) {
+    return { ok: false, edgeId: null };
+  }
+  const edgeId =
+    typeof res.data?.edgeId === "string" ? res.data.edgeId : null;
+  return { ok: true, edgeId };
+}
+
 /**
  * Blocks the UI when this browser is talking to a stale CRM edge
  * (e.g. DNS still pinned to a decommissioned VPS).
+ *
+ * Local / transient failures must NOT brick the app — only a successful
+ * health response from the wrong (or unmarked remote) edge does.
  */
 export function EdgeGuard({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<GuardState>({ status: "checking" });
@@ -47,13 +63,30 @@ export function EdgeGuard({ children }: { children: React.ReactNode }) {
 
     async function verify() {
       try {
-        const res = await fetchHealthLive();
-        const edgeId =
-          typeof res.data?.edgeId === "string" ? res.data.edgeId : null;
+        let result = await readLiveEdge();
+        // One quick retry — boot races with HttpClient / Nest watch restart.
+        if (!result.ok || !result.edgeId || result.edgeId === "unknown") {
+          await new Promise((r) => window.setTimeout(r, 400));
+          if (cancelled) return;
+          result = await readLiveEdge();
+        }
 
         if (cancelled) return;
 
+        if (!result.ok) {
+          // Network / parse failure — never treat as a stale edge.
+          setState({ status: "ok", edgeId: "unreachable" });
+          return;
+        }
+
+        const { edgeId } = result;
+
         if (!edgeId || edgeId === "unknown") {
+          // Local unmarked API: allow through (dev DX). Remote unmarked = stale VPS.
+          if (localDev) {
+            setState({ status: "ok", edgeId: edgeId || "local-unset" });
+            return;
+          }
           setState({
             status: "stale",
             edgeId,
@@ -75,7 +108,6 @@ export function EdgeGuard({ children }: { children: React.ReactNode }) {
         setState({ status: "ok", edgeId });
       } catch {
         if (!cancelled) {
-          // Network blip — don't hard-block; CRM may still work offline briefly.
           setState({ status: "ok", edgeId: "unreachable" });
         }
       }
@@ -85,7 +117,7 @@ export function EdgeGuard({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [localDev]);
 
   if (state.status === "checking") {
     return children;

@@ -93,7 +93,7 @@ export function CrmLeadFormSheet({
             ownerEmployeeId={form.ownerEmployeeId}
             onOwnerEmployeeIdChange={form.setOwnerEmployeeId}
             employees={safeEmployees}
-            canAssign={canAssign}
+            canAssign={form.canPickOwner}
             status={form.status}
             onStatusChange={form.setStatus}
             tags={form.tags}

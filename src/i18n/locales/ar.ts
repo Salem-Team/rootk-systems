@@ -3314,6 +3314,7 @@ export const ar: TranslationKeys = {
       followUp: "متابعة (اختياري)",
       notes: "ملاحظات (اختياري)",
       duration: "مدة المكالمة",
+      talkDuration: "مدة الرد (بدون رنين)",
       save: "حفظ النتيجة",
       skip: "تخطي",
       saved: "تم تسجيل المكالمة",

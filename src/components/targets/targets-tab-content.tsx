@@ -1,12 +1,9 @@
-import { CatalogManager } from "@/components/targets/catalog-manager";
-import { DelayedCenter } from "@/components/targets/delayed-center";
-import { EmployeePerformancePanel } from "@/components/targets/employee-performance-panel";
-import { PerformanceReportPanel } from "@/components/targets/performance-report-panel";
-import { TargetDashboardPanel } from "@/components/targets/target-dashboard-panel";
+"use client";
+
+import dynamic from "next/dynamic";
 import { TargetFiltersBar } from "@/components/targets/target-filters";
 import { TargetKpiCards } from "@/components/targets/target-kpi-cards";
-import { TargetsDataTable } from "@/components/targets/targets-data-table";
-import { WarningCenter } from "@/components/targets/warning-center";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Employee } from "@/types";
 import type {
   PerformanceTarget,
@@ -15,6 +12,52 @@ import type {
   TargetFilters,
 } from "@/types/targets";
 import type { TargetHubTab } from "@/components/targets/target-hub-sidebar";
+
+const panelLoading = () => <Skeleton className="h-72 w-full rounded-xl" />;
+
+const TargetDashboardPanel = dynamic(
+  () =>
+    import("@/components/targets/target-dashboard-panel").then(
+      (m) => m.TargetDashboardPanel
+    ),
+  { ssr: false, loading: panelLoading }
+);
+const TargetsDataTable = dynamic(
+  () =>
+    import("@/components/targets/targets-data-table").then(
+      (m) => m.TargetsDataTable
+    ),
+  { loading: panelLoading }
+);
+const EmployeePerformancePanel = dynamic(
+  () =>
+    import("@/components/targets/employee-performance-panel").then(
+      (m) => m.EmployeePerformancePanel
+    ),
+  { loading: panelLoading }
+);
+const PerformanceReportPanel = dynamic(
+  () =>
+    import("@/components/targets/performance-report-panel").then(
+      (m) => m.PerformanceReportPanel
+    ),
+  { loading: panelLoading }
+);
+const CatalogManager = dynamic(
+  () =>
+    import("@/components/targets/catalog-manager").then((m) => m.CatalogManager),
+  { loading: panelLoading }
+);
+const WarningCenter = dynamic(
+  () =>
+    import("@/components/targets/warning-center").then((m) => m.WarningCenter),
+  { loading: panelLoading }
+);
+const DelayedCenter = dynamic(
+  () =>
+    import("@/components/targets/delayed-center").then((m) => m.DelayedCenter),
+  { loading: panelLoading }
+);
 
 export function TargetsTabContent({
   tab,

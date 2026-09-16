@@ -1,32 +1,124 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { ArrowLeft, ChevronDown, Plus } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageTransition } from "@/components/shared/page-transition";
 import { PageSkeleton } from "@/components/shared/loading-state";
 import { Button } from "@/components/ui/button";
-import { CrmActivitiesPanel } from "@/components/crm/crm-activities-panel";
-import { CrmBusinessTypesPanel } from "@/components/crm/crm-business-types-panel";
-import { CrmDashboardPanel } from "@/components/crm/crm-dashboard-panel";
-import { CrmDelayPanel } from "@/components/crm/crm-delay-panel";
-import { CrmFeedbackPanel } from "@/components/crm/crm-feedback-panel";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CrmHubSidebar } from "@/components/crm/crm-hub-sidebar";
-import { CrmLeadFormSheet } from "@/components/crm/crm-lead-form-sheet";
-import { CrmLeadSheet } from "@/components/crm/crm-lead-sheet";
-import { CrmLeadsOverview } from "@/components/crm/crm-leads-overview";
-import { CrmLeadsPanel } from "@/components/crm/crm-leads-panel";
-import { CrmLeadsBulkAdd } from "@/components/crm/crm-leads-bulk-add";
 import { CrmLiveStatus } from "@/components/crm/crm-live-status";
-import { CrmPerformancePanel } from "@/components/crm/crm-performance-panel";
-import { CrmPhoneContactImport } from "@/components/crm/crm-phone-contact-import";
-import { CrmPhoneDuplicatesBanner } from "@/components/crm/crm-phone-duplicates-banner";
-import { CrmPipelinePanel } from "@/components/crm/crm-pipeline-panel";
-import { CrmReportsPanel } from "@/components/crm/crm-reports-panel";
-import { CrmSalesProfileSheet } from "@/components/crm/crm-sales-profile-sheet";
-import { CrmStagesPanel } from "@/components/crm/crm-stages-panel";
-import { CrmWebsiteAutoLeadPanel } from "@/components/crm/crm-website-auto-lead-panel";
 import { useCrmHub } from "@/hooks/use-crm-hub";
 import { useTranslation } from "@/hooks/use-translation";
+
+const panelLoading = () => <Skeleton className="h-72 w-full rounded-xl" />;
+
+const CrmPhoneDuplicatesBanner = dynamic(
+  () =>
+    import("@/components/crm/crm-phone-duplicates-banner").then(
+      (m) => m.CrmPhoneDuplicatesBanner
+    ),
+  { loading: panelLoading }
+);
+const CrmDashboardPanel = dynamic(
+  () =>
+    import("@/components/crm/crm-dashboard-panel").then(
+      (m) => m.CrmDashboardPanel
+    ),
+  { loading: panelLoading }
+);
+const CrmLeadsOverview = dynamic(
+  () =>
+    import("@/components/crm/crm-leads-overview").then((m) => m.CrmLeadsOverview),
+  { loading: panelLoading }
+);
+const CrmLeadsPanel = dynamic(
+  () => import("@/components/crm/crm-leads-panel").then((m) => m.CrmLeadsPanel),
+  { loading: panelLoading }
+);
+const CrmDelayPanel = dynamic(
+  () => import("@/components/crm/crm-delay-panel").then((m) => m.CrmDelayPanel),
+  { loading: panelLoading }
+);
+const CrmPipelinePanel = dynamic(
+  () =>
+    import("@/components/crm/crm-pipeline-panel").then((m) => m.CrmPipelinePanel),
+  { loading: panelLoading }
+);
+const CrmActivitiesPanel = dynamic(
+  () =>
+    import("@/components/crm/crm-activities-panel").then(
+      (m) => m.CrmActivitiesPanel
+    ),
+  { loading: panelLoading }
+);
+const CrmFeedbackPanel = dynamic(
+  () =>
+    import("@/components/crm/crm-feedback-panel").then((m) => m.CrmFeedbackPanel),
+  { loading: panelLoading }
+);
+const CrmPerformancePanel = dynamic(
+  () =>
+    import("@/components/crm/crm-performance-panel").then(
+      (m) => m.CrmPerformancePanel
+    ),
+  { loading: panelLoading }
+);
+const CrmStagesPanel = dynamic(
+  () =>
+    import("@/components/crm/crm-stages-panel").then((m) => m.CrmStagesPanel),
+  { loading: panelLoading }
+);
+const CrmWebsiteAutoLeadPanel = dynamic(
+  () =>
+    import("@/components/crm/crm-website-auto-lead-panel").then(
+      (m) => m.CrmWebsiteAutoLeadPanel
+    ),
+  { loading: panelLoading }
+);
+const CrmBusinessTypesPanel = dynamic(
+  () =>
+    import("@/components/crm/crm-business-types-panel").then(
+      (m) => m.CrmBusinessTypesPanel
+    ),
+  { loading: panelLoading }
+);
+const CrmReportsPanel = dynamic(
+  () =>
+    import("@/components/crm/crm-reports-panel").then((m) => m.CrmReportsPanel),
+  { loading: panelLoading }
+);
+const CrmLeadsBulkAdd = dynamic(
+  () =>
+    import("@/components/crm/crm-leads-bulk-add").then((m) => m.CrmLeadsBulkAdd),
+  { ssr: false }
+);
+const CrmPhoneContactImport = dynamic(
+  () =>
+    import("@/components/crm/crm-phone-contact-import").then(
+      (m) => m.CrmPhoneContactImport
+    ),
+  { ssr: false }
+);
+const CrmLeadSheet = dynamic(
+  () => import("@/components/crm/crm-lead-sheet").then((m) => m.CrmLeadSheet),
+  { ssr: false }
+);
+const CrmLeadFormSheet = dynamic(
+  () =>
+    import("@/components/crm/crm-lead-form-sheet").then(
+      (m) => m.CrmLeadFormSheet
+    ),
+  { ssr: false }
+);
+const CrmSalesProfileSheet = dynamic(
+  () =>
+    import("@/components/crm/crm-sales-profile-sheet").then(
+      (m) => m.CrmSalesProfileSheet
+    ),
+  { ssr: false }
+);
 
 export default function CrmPage() {
   const { t } = useTranslation();
@@ -310,48 +402,54 @@ export default function CrmPage() {
         </div>
       </div>
 
-      <CrmLeadSheet
-        leadId={hub.viewLeadId}
-        open={Boolean(hub.viewLeadId)}
-        initialTab={hub.viewLeadTab}
-        onOpenChange={(open) => {
-          if (!open) hub.closeViewLead();
-        }}
-        stages={hub.safeStages}
-        employees={hub.safeEmployees}
-        feedbackTypes={hub.safeFeedbackTypes}
-        businessTypes={hub.safeBusinessTypes}
-        onEdit={(lead) => {
-          hub.closeViewLead();
-          hub.openEdit(lead);
-        }}
-        onChanged={() => void hub.reloadVisible()}
-      />
+      {hub.viewLeadId ? (
+        <CrmLeadSheet
+          leadId={hub.viewLeadId}
+          open
+          initialTab={hub.viewLeadTab}
+          onOpenChange={(open) => {
+            if (!open) hub.closeViewLead();
+          }}
+          stages={hub.safeStages}
+          employees={hub.safeEmployees}
+          feedbackTypes={hub.safeFeedbackTypes}
+          businessTypes={hub.safeBusinessTypes}
+          onEdit={(lead) => {
+            hub.closeViewLead();
+            hub.openEdit(lead);
+          }}
+          onChanged={() => void hub.reloadVisible()}
+        />
+      ) : null}
 
-      <CrmLeadFormSheet
-        open={hub.formOpen}
-        onOpenChange={hub.setFormOpen}
-        stages={hub.safeStages}
-        businessTypes={hub.safeBusinessTypes}
-        employees={hub.safeEmployees}
-        editingLead={hub.editingLead}
-        canAssign={hub.canAssign}
-        onSaved={() => {
-          void hub.reloadVisible();
-        }}
-        onOpenExistingLead={(id) => {
-          hub.setFormOpen(false);
-          hub.openViewLead(id);
-        }}
-      />
+      {hub.formOpen ? (
+        <CrmLeadFormSheet
+          open={hub.formOpen}
+          onOpenChange={hub.setFormOpen}
+          stages={hub.safeStages}
+          businessTypes={hub.safeBusinessTypes}
+          employees={hub.safeEmployees}
+          editingLead={hub.editingLead}
+          canAssign={hub.canAssign}
+          onSaved={() => {
+            void hub.reloadVisible();
+          }}
+          onOpenExistingLead={(id) => {
+            hub.setFormOpen(false);
+            hub.openViewLead(id);
+          }}
+        />
+      ) : null}
 
-      <CrmSalesProfileSheet
-        employeeId={hub.profileEmployeeId}
-        open={Boolean(hub.profileEmployeeId)}
-        onOpenChange={(open) => {
-          if (!open) hub.setProfileEmployeeId(null);
-        }}
-      />
+      {hub.profileEmployeeId ? (
+        <CrmSalesProfileSheet
+          employeeId={hub.profileEmployeeId}
+          open
+          onOpenChange={(open) => {
+            if (!open) hub.setProfileEmployeeId(null);
+          }}
+        />
+      ) : null}
     </PageTransition>
   );
 }

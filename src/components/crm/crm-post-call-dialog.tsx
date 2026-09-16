@@ -57,10 +57,10 @@ export function CrmPostCallDialog({
 
   useEffect(() => {
     recordedRef.current = false;
-    setStatus("answered");
+    setStatus(pending?.detectedStatus ?? "answered");
     setNotes("");
     setFollowAt("");
-  }, [pending?.externalCallId]);
+  }, [pending?.externalCallId, pending?.detectedStatus]);
 
   async function persist(
     nextStatus: CrmCallStatus,
@@ -143,7 +143,8 @@ export function CrmPostCallDialog({
         </div>
         {pending ? (
           <p className="font-mono text-[13px] tabular-nums text-muted-foreground">
-            {t("crm.call.duration")}: {formatCallClock(pendingCallDurationSeconds(pending))}
+            {t(pending.osConfirmed ? "crm.call.talkDuration" : "crm.call.duration")}
+            : {formatCallClock(pendingCallDurationSeconds(pending))}
           </p>
         ) : null}
         <div className="space-y-2">

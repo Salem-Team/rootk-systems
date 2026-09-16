@@ -1,4 +1,5 @@
 import { elapsedCallSeconds } from "@/lib/crm/call-duration";
+import type { CrmCallStatus } from "@/types/crm";
 
 const KEY = "rootk.pending-call";
 const MAX_AGE_MS = 6 * 60 * 60 * 1000;
@@ -11,6 +12,12 @@ export type PendingCrmCall = {
   startedAt: string;
   endedAt?: string | null;
   source: "web" | "android" | "ios";
+  /** Connected/talk seconds from OS CallLog when available (excludes ring). */
+  talkDurationSeconds?: number | null;
+  /** Outcome detected from OS (or short-away heuristic). */
+  detectedStatus?: CrmCallStatus | null;
+  /** True when duration/outcome came from OS CallLog. */
+  osConfirmed?: boolean;
 };
 
 function storage(): Storage | null {
@@ -29,7 +36,16 @@ function writePending(pending: PendingCrmCall) {
 }
 
 export function beginPendingCall(
-  input: Omit<PendingCrmCall, "startedAt" | "externalCallId" | "source" | "endedAt"> & {
+  input: Omit<
+    PendingCrmCall,
+    | "startedAt"
+    | "externalCallId"
+    | "source"
+    | "endedAt"
+    | "talkDurationSeconds"
+    | "detectedStatus"
+    | "osConfirmed"
+  > & {
     source?: PendingCrmCall["source"];
   }
 ): PendingCrmCall {
@@ -44,6 +60,9 @@ export function beginPendingCall(
     startedAt: new Date().toISOString(),
     endedAt: null,
     externalCallId: `${source}:${id}`,
+    talkDurationSeconds: null,
+    detectedStatus: null,
+    osConfirmed: false,
   };
   writePending(pending);
   return pending;
@@ -68,7 +87,17 @@ export function readPendingCall(): PendingCrmCall | null {
   }
 }
 
-/** Freeze duration when the user returns from the dialer. */
+export function updatePendingCall(
+  patch: Partial<PendingCrmCall> & { externalCallId: string }
+): PendingCrmCall | null {
+  const current = readPendingCall();
+  if (!current || current.externalCallId !== patch.externalCallId) return null;
+  const next = { ...current, ...patch };
+  writePending(next);
+  return next;
+}
+
+/** Freeze wall-clock end when the user returns from the dialer. */
 export function markPendingCallReturned(): PendingCrmCall | null {
   const pending = readPendingCall();
   if (!pending) return null;
@@ -78,7 +107,15 @@ export function markPendingCallReturned(): PendingCrmCall | null {
   return next;
 }
 
+/** Prefer OS talk time; fall back to dial→return wall clock. */
 export function pendingCallDurationSeconds(pending: PendingCrmCall): number {
+  if (
+    typeof pending.talkDurationSeconds === "number" &&
+    Number.isFinite(pending.talkDurationSeconds) &&
+    pending.talkDurationSeconds >= 0
+  ) {
+    return Math.min(86_400, Math.round(pending.talkDurationSeconds));
+  }
   return elapsedCallSeconds(pending.startedAt, pending.endedAt);
 }
 

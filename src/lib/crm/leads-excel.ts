@@ -1,8 +1,18 @@
-import * as XLSX from "xlsx";
+import type { WorkBook, WorkSheet } from "xlsx";
 import {
   CRM_LEAD_CSV_HEADERS,
   type CrmLeadCsvHeader,
 } from "@/lib/crm/leads-csv";
+
+type XlsxNs = typeof import("xlsx");
+
+let xlsxPromise: Promise<XlsxNs> | null = null;
+
+/** Load xlsx only when import/export actually runs — keeps it out of the CRM hub chunk. */
+function loadXlsx(): Promise<XlsxNs> {
+  if (!xlsxPromise) xlsxPromise = import("xlsx");
+  return xlsxPromise;
+}
 
 const LEADS_SHEET_NAMES = new Set(["leads", "lead", "data", "العملاء", "ليدز"]);
 const MAPPING_SHEET_NAMES = new Set([
@@ -159,7 +169,7 @@ function isMappingSheet(name: string): boolean {
   return MAPPING_SHEET_NAMES.has(name.trim().toLowerCase());
 }
 
-function pickLeadsSheet(wb: XLSX.WorkBook): string {
+function pickLeadsSheet(wb: WorkBook): string {
   const names = wb.SheetNames.filter((name) => !isMappingSheet(name));
   const preferred = names.find((name) =>
     LEADS_SHEET_NAMES.has(name.trim().toLowerCase())
@@ -167,7 +177,7 @@ function pickLeadsSheet(wb: XLSX.WorkBook): string {
   return preferred ?? names[0] ?? wb.SheetNames[0] ?? "";
 }
 
-function sheetToRows(sheet: XLSX.WorkSheet): string[][] {
+function sheetToRows(XLSX: XlsxNs, sheet: WorkSheet): string[][] {
   const raw = XLSX.utils.sheet_to_json<(string | number | boolean | Date)[]>(
     sheet,
     {
@@ -184,12 +194,15 @@ function sheetToRows(sheet: XLSX.WorkSheet): string[][] {
     .filter((row) => row.some((cell) => cell.length > 0));
 }
 
-function workbookToSpreadsheet(wb: XLSX.WorkBook): CrmLeadSpreadsheet {
+function workbookToSpreadsheet(
+  XLSX: XlsxNs,
+  wb: WorkBook
+): CrmLeadSpreadsheet {
   const sheetName = pickLeadsSheet(wb);
   if (!sheetName || !wb.Sheets[sheetName]) {
     throw new Error("Workbook has no data sheet");
   }
-  const rows = sheetToRows(wb.Sheets[sheetName]);
+  const rows = sheetToRows(XLSX, wb.Sheets[sheetName]);
   const headers = (rows[0] ?? []).map((h) => h.replace(/^\uFEFF/, "").trim());
   return {
     sheetName,
@@ -198,25 +211,31 @@ function workbookToSpreadsheet(wb: XLSX.WorkBook): CrmLeadSpreadsheet {
   };
 }
 
-export function parseCrmLeadsSpreadsheet(
+export async function parseCrmLeadsSpreadsheet(
   buffer: ArrayBuffer
-): CrmLeadSpreadsheet {
+): Promise<CrmLeadSpreadsheet> {
+  const XLSX = await loadXlsx();
   return workbookToSpreadsheet(
+    XLSX,
     XLSX.read(buffer, { type: "array", cellDates: false })
   );
 }
 
 export async function parseCrmLeadsFile(file: File): Promise<CrmLeadSpreadsheet> {
+  const XLSX = await loadXlsx();
   const isCsv =
     file.name.toLowerCase().endsWith(".csv") ||
     file.type.includes("csv");
   if (isCsv) {
-    return workbookToSpreadsheet(XLSX.read(await file.text(), { type: "string" }));
+    return workbookToSpreadsheet(
+      XLSX,
+      XLSX.read(await file.text(), { type: "string" })
+    );
   }
   return parseCrmLeadsSpreadsheet(await file.arrayBuffer());
 }
 
-function mappingGuideSheet(): XLSX.WorkSheet {
+function mappingGuideSheet(XLSX: XlsxNs): WorkSheet {
   const aoa: (string | number)[][] = [
     [
       "field",
@@ -238,35 +257,37 @@ function mappingGuideSheet(): XLSX.WorkSheet {
   return XLSX.utils.aoa_to_sheet(aoa);
 }
 
-export function buildCrmLeadsWorkbook(
+export async function buildCrmLeadsWorkbook(
   leadRows: (string | number)[][]
-): XLSX.WorkBook {
+): Promise<WorkBook> {
+  const XLSX = await loadXlsx();
   const wb = XLSX.utils.book_new();
   const leadsSheet = XLSX.utils.aoa_to_sheet(leadRows);
   leadsSheet["!cols"] = CRM_LEAD_CSV_HEADERS.map((header) => ({
     wch: Math.min(28, Math.max(12, header.length + 4)),
   }));
   XLSX.utils.book_append_sheet(wb, leadsSheet, "Leads");
-  XLSX.utils.book_append_sheet(wb, mappingGuideSheet(), "Mapping");
+  XLSX.utils.book_append_sheet(wb, mappingGuideSheet(XLSX), "Mapping");
   return wb;
 }
 
-export function crmLeadExcelTemplate(): XLSX.WorkBook {
-  return buildCrmLeadsWorkbook([
-    [...CRM_LEAD_CSV_HEADERS],
-    SAMPLE_LEAD_ROW,
-  ]);
+export async function crmLeadExcelTemplate(): Promise<WorkBook> {
+  return buildCrmLeadsWorkbook([[...CRM_LEAD_CSV_HEADERS], SAMPLE_LEAD_ROW]);
 }
 
-export function downloadCrmLeadsWorkbook(
+export async function downloadCrmLeadsWorkbook(
   filename: string,
   records: Array<Record<string, string>>
-) {
+): Promise<void> {
+  const XLSX = await loadXlsx();
   const header = [...CRM_LEAD_CSV_HEADERS];
   const body = records.map((row) => header.map((key) => row[key] ?? ""));
-  XLSX.writeFile(buildCrmLeadsWorkbook([header, ...body]), filename);
+  XLSX.writeFile(await buildCrmLeadsWorkbook([header, ...body]), filename);
 }
 
-export function downloadCrmLeadsTemplate(filename = "crm-leads-template.xlsx") {
-  XLSX.writeFile(crmLeadExcelTemplate(), filename);
+export async function downloadCrmLeadsTemplate(
+  filename = "crm-leads-template.xlsx"
+): Promise<void> {
+  const XLSX = await loadXlsx();
+  XLSX.writeFile(await crmLeadExcelTemplate(), filename);
 }

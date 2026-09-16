@@ -22,7 +22,7 @@ import { useSessionStore } from "@/stores/session-store";
 import { useRouter } from "next/navigation";
 
 /** Relock after the app was backgrounded longer than this. */
-const BACKGROUND_RELOCK_MS = 12_000;
+const BACKGROUND_RELOCK_MS = 5 * 60_000;
 
 /**
  * Native-only gate: when biometric unlock is enabled, require Face ID /

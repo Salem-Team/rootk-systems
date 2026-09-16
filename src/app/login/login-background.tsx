@@ -2,9 +2,12 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { BRAND_NAVY } from "@/constants";
+import { isNativeApp } from "@/lib/native/platform";
 
 export function LoginBackground() {
   const reduceMotion = useReducedMotion();
+  // Heavy blur animations lag Capacitor WebViews — keep a static atmosphere on native.
+  const animateAtmosphere = !reduceMotion && !isNativeApp();
 
   return (
     <>
@@ -22,7 +25,7 @@ export function LoginBackground() {
         }}
       />
 
-      {!reduceMotion ? (
+      {animateAtmosphere ? (
         <>
           <motion.div
             aria-hidden
@@ -43,17 +46,30 @@ export function LoginBackground() {
             transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
           />
         </>
-      ) : null}
+      ) : (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -start-32 top-[-10%] h-[36rem] w-[36rem] rounded-full bg-[#2a6cc4]/20 blur-[120px]"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -end-24 bottom-[-5%] h-[28rem] w-[28rem] rounded-full bg-[#0a327c]/55 blur-[110px]"
+          />
+        </>
+      )}
 
-      {/* Fine grain + vignette */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-        }}
-      />
+      {/* Vignette — skip SVG noise on native (expensive in WebView). */}
+      {!isNativeApp() ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+          }}
+        />
+      ) : null}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,rgba(1,4,12,0.72)_100%)]"

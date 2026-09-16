@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
+import dynamic from "next/dynamic";
 import { Plus, Target } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageTransition } from "@/components/shared/page-transition";
@@ -13,17 +14,63 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AddAdvertisementSheet } from "@/components/organic-ads/add-advertisement-sheet";
-import { TargetAssignSheet } from "@/components/targets/target-assign-sheet";
-import { AdvertisementDetailsSheet } from "@/components/organic-ads/advertisement-details-sheet";
-import { AdvertisementList } from "@/components/organic-ads/advertisement-list";
+import { Skeleton } from "@/components/ui/skeleton";
 import { OrganicAdsHubSidebar } from "@/components/organic-ads/organic-ads-hub-sidebar";
-import { OrganicAdsOverviewTab } from "@/components/organic-ads/organic-ads-overview-tab";
-import { SalesPerformancePanel } from "@/components/organic-ads/sales-performance-panel";
-import { ValidationPanel } from "@/components/organic-ads/validation-panel";
 import { useOrganicAdsPage } from "@/components/organic-ads/use-organic-ads-page";
 import { getOrganicAds } from "@/services/organic-ads.service";
 import type { DateRangePreset } from "@/types/organic-ads";
+
+const panelLoading = () => <Skeleton className="h-72 w-full rounded-xl" />;
+
+const OrganicAdsOverviewTab = dynamic(
+  () =>
+    import("@/components/organic-ads/organic-ads-overview-tab").then(
+      (m) => m.OrganicAdsOverviewTab
+    ),
+  { loading: panelLoading }
+);
+const AdvertisementList = dynamic(
+  () =>
+    import("@/components/organic-ads/advertisement-list").then(
+      (m) => m.AdvertisementList
+    ),
+  { loading: panelLoading }
+);
+const SalesPerformancePanel = dynamic(
+  () =>
+    import("@/components/organic-ads/sales-performance-panel").then(
+      (m) => m.SalesPerformancePanel
+    ),
+  { loading: panelLoading }
+);
+const ValidationPanel = dynamic(
+  () =>
+    import("@/components/organic-ads/validation-panel").then(
+      (m) => m.ValidationPanel
+    ),
+  { loading: panelLoading }
+);
+const AddAdvertisementSheet = dynamic(
+  () =>
+    import("@/components/organic-ads/add-advertisement-sheet").then(
+      (m) => m.AddAdvertisementSheet
+    ),
+  { ssr: false }
+);
+const TargetAssignSheet = dynamic(
+  () =>
+    import("@/components/targets/target-assign-sheet").then(
+      (m) => m.TargetAssignSheet
+    ),
+  { ssr: false }
+);
+const AdvertisementDetailsSheet = dynamic(
+  () =>
+    import("@/components/organic-ads/advertisement-details-sheet").then(
+      (m) => m.AdvertisementDetailsSheet
+    ),
+  { ssr: false }
+);
 
 function OrganicAdsPageContent() {
   const page = useOrganicAdsPage();
@@ -159,18 +206,20 @@ function OrganicAdsPageContent() {
         </div>
       </div>
 
-      <AddAdvertisementSheet
-        open={page.addOpen}
-        onOpenChange={page.setAddOpen}
-        onCreated={() => void page.load()}
-        employeeNames={page.employeeMap}
-        onViewExisting={(id) => {
-          const ad = page.ads.find((a) => a.id === id);
-          if (ad) page.setViewing(ad);
-        }}
-      />
+      {page.addOpen ? (
+        <AddAdvertisementSheet
+          open={page.addOpen}
+          onOpenChange={page.setAddOpen}
+          onCreated={() => void page.load()}
+          employeeNames={page.employeeMap}
+          onViewExisting={(id) => {
+            const ad = page.ads.find((a) => a.id === id);
+            if (ad) page.setViewing(ad);
+          }}
+        />
+      ) : null}
 
-      {page.canViewTeam ? (
+      {page.canViewTeam && page.assignOpen ? (
         <TargetAssignSheet
           open={page.assignOpen}
           onOpenChange={page.setAssignOpen}
@@ -187,16 +236,16 @@ function OrganicAdsPageContent() {
         />
       ) : null}
 
-      <AdvertisementDetailsSheet
-        ad={page.viewing}
-        ownerName={
-          page.viewing ? page.employeeMap.get(page.viewing.ownerEmployeeId) : undefined
-        }
-        open={!!page.viewing}
-        onOpenChange={(open) => {
-          if (!open) page.setViewing(null);
-        }}
-      />
+      {page.viewing ? (
+        <AdvertisementDetailsSheet
+          ad={page.viewing}
+          ownerName={page.employeeMap.get(page.viewing.ownerEmployeeId)}
+          open
+          onOpenChange={(open) => {
+            if (!open) page.setViewing(null);
+          }}
+        />
+      ) : null}
 
       {page.canCreate ? (
         <div className="fixed inset-x-0 bottom-[var(--mobile-action-bottom)] z-30 px-3 lg:hidden">
