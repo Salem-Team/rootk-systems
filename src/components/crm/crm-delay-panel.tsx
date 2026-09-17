@@ -53,8 +53,9 @@ export function CrmDelayPanel({
   const count = leads?.total ?? 0;
   const hasData = leads != null;
   // null page = switching tabs / first fetch — never flash another tab's rows
-  const showInitialSkeleton = !hasData;
+  const showInitialSkeleton = !hasData || (hasData && count === 0 && (loading || syncing));
   const showEmpty = hasData && count === 0 && !loading && !syncing;
+  const showTable = hasData && count > 0;
 
   return (
     <div className={cn("space-y-4", className)}>
@@ -86,14 +87,14 @@ export function CrmDelayPanel({
           title={t("crm.delay.empty")}
           description={t("crm.delay.emptyDesc")}
         />
-      ) : (
+      ) : showTable && leads ? (
         <CrmLeadsPanel
           leads={leads}
           stages={stages}
           employees={employees}
           filters={filters}
           onFiltersChange={onFiltersChange}
-          loading={loading && !hasData}
+          loading={loading}
           onRowClick={onRowClick}
           onViewHistory={onViewHistory}
           canAssign={canAssign}
@@ -105,6 +106,8 @@ export function CrmDelayPanel({
           feedbackTypes={feedbackTypes}
           hideTitle
         />
+      ) : (
+        <TableSkeleton rows={5} />
       )}
     </div>
   );

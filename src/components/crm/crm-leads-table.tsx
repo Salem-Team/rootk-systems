@@ -367,7 +367,7 @@ export function CrmLeadsTable({
                 <DataTableCell>
                   {lead.budget ? (
                     <span
-                      className="inline-flex rounded-md bg-primary/8 px-1.5 py-0.5 font-mono text-[12px] font-semibold tabular-nums tracking-tight text-primary"
+                      className="inline-flex rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[12px] font-semibold tabular-nums tracking-tight text-primary"
                       title={lead.budget}
                     >
                       {budgetPreview(lead.budget) || "—"}

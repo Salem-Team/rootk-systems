@@ -60,7 +60,9 @@ export function ensurePaginatedLeads(raw: unknown): PaginatedLeads {
   const empty = emptyPaginatedLeads();
   if (!raw) return empty;
   if (Array.isArray(raw)) {
-    const items = (raw as CrmLead[]).map(normalizeLead);
+    const items = (raw as unknown[])
+      .filter((row): row is CrmLead => !!row && typeof row === "object")
+      .map(normalizeLead);
     return {
       items,
       total: items.length,
@@ -76,7 +78,9 @@ export function ensurePaginatedLeads(raw: unknown): PaginatedLeads {
     : Array.isArray(row.data)
       ? row.data
       : [];
-  const items = rawItems.map(normalizeLead);
+  const items = rawItems
+    .filter((item): item is CrmLead => !!item && typeof item === "object")
+    .map(normalizeLead);
   const page = typeof row.page === "number" ? row.page : 1;
   const pageSize = typeof row.pageSize === "number" ? row.pageSize : 20;
   const total = typeof row.total === "number" ? row.total : items.length;

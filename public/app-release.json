@@ -1,8 +1,8 @@
 {
   "android": {
-    "versionCode": 10020,
-    "versionName": "1.0.20",
+    "versionCode": 10021,
+    "versionName": "1.0.21",
     "url": "/downloads/rootk.apk"
   },
-  "version": "1.0.20"
+  "version": "1.0.21"
 }

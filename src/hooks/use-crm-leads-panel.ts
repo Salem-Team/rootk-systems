@@ -110,6 +110,11 @@ export function useCrmLeadsPanel({
     });
   }, [itemIdKey]);
 
+  const exclude = useMemo(
+    () => new Set(filterBadgeExclude),
+    [filterBadgeExclude]
+  );
+
   const items = page.items;
   const allSelected =
     items.length > 0 && items.every((l) => selected.has(l.id));
@@ -204,11 +209,6 @@ export function useCrmLeadsPanel({
     // (sameLeadFilters would otherwise no-op a `{ ...prev }` write).
     emitCrmUpdated();
   }
-
-  const exclude = useMemo(
-    () => new Set(filterBadgeExclude),
-    [filterBadgeExclude]
-  );
 
   const hasActiveFilters = Boolean(
     (!exclude.has("search") && filters.search) ||

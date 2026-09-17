@@ -1,6 +1,6 @@
 {
   "name": "rootk-systems",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -40,7 +40,7 @@
     "cap:sync": "npx cap sync",
     "cap:sync:release": "node scripts/cap-sync-release.mjs",
     "cap:icons": "python3 scripts/generate-store-icons.py",
-    "cap:version": "MOBILE_VERSION=${MOBILE_VERSION:-1.0.20} node scripts/sync-mobile-version.mjs",
+    "cap:version": "MOBILE_VERSION=${MOBILE_VERSION:-1.0.21} node scripts/sync-mobile-version.mjs",
     "android:bundle:release": "bash scripts/android-bundle-release.sh",
     "postinstall": "patch-package"
   },
