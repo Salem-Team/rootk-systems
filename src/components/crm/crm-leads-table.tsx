@@ -19,6 +19,11 @@ import {
   DataTableRow,
 } from "@/components/ui/data-table";
 import { useTranslation } from "@/hooks/use-translation";
+import {
+  formatBudgetCompact,
+  formatRequestCompact,
+  type CrmRequestProduct,
+} from "@/lib/crm/request-budget-presets";
 import { cn } from "@/lib/utils";
 import type { CrmLead, CrmLeadFilters, CrmStage, PaginatedLeads } from "@/types/crm";
 
@@ -71,6 +76,18 @@ export function CrmLeadsTable({
   const { t } = useTranslation();
   const items = page.items;
   const openHistory = onViewHistory ?? onRowClick;
+
+  function productLabel(id: CrmRequestProduct) {
+    return t(`crm.requestBudget.products.${id}`);
+  }
+
+  function requestPreview(raw: string | undefined) {
+    return formatRequestCompact(raw ?? "", productLabel);
+  }
+
+  function budgetPreview(raw: string | undefined) {
+    return formatBudgetCompact(raw ?? "");
+  }
 
   function SelectAllCheckbox({ className }: { className?: string }) {
     return (
@@ -211,6 +228,21 @@ export function CrmLeadsTable({
                     ) : null}
                   </div>
 
+                  {(lead.request || lead.budget) ? (
+                    <div className="mt-2 flex items-start gap-2 rounded-xl bg-muted/40 px-2.5 py-1.5">
+                      {lead.budget ? (
+                        <span className="shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold tabular-nums text-primary">
+                          {budgetPreview(lead.budget) || "—"}
+                        </span>
+                      ) : null}
+                      {lead.request ? (
+                        <p className="min-w-0 flex-1 truncate text-[11px] leading-snug text-muted-foreground">
+                          {requestPreview(lead.request)}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+
                   <div
                     className="mt-2.5 flex items-center justify-between gap-2 border-t border-border/40 pt-2"
                     onClick={(e) => e.stopPropagation()}
@@ -249,20 +281,28 @@ export function CrmLeadsTable({
             <DataTableHead className="hidden sm:table-cell">
               {t("crm.leads.colPhone")}
             </DataTableHead>
+            <DataTableHead className="max-w-[11rem]">
+              {t("crm.leads.colRequest")}
+            </DataTableHead>
+            <DataTableHead className="w-[5.5rem]">
+              {t("crm.leads.colBudget")}
+            </DataTableHead>
             <DataTableHead className="hidden md:table-cell">
               {t("crm.leads.colSource")}
             </DataTableHead>
-            <DataTableHead className="hidden lg:table-cell">
+            <DataTableHead className="hidden xl:table-cell">
               {t("crm.leads.colSales")}
             </DataTableHead>
             <DataTableHead>{t("crm.leads.colStage")}</DataTableHead>
-            <DataTableHead className="hidden xl:table-cell">
+            <DataTableHead className="hidden 2xl:table-cell">
               {t("crm.leads.colLastActivity")}
             </DataTableHead>
-            <DataTableHead className="hidden lg:table-cell">
+            <DataTableHead className="hidden xl:table-cell">
               {t("crm.leads.colNextFollowUp")}
             </DataTableHead>
-            <DataTableHead>{t("crm.leads.colStatus")}</DataTableHead>
+            <DataTableHead className="hidden lg:table-cell">
+              {t("crm.leads.colStatus")}
+            </DataTableHead>
             <DataTableHead className="w-[7.5rem] text-end">
               {t("crm.leads.colActions")}
             </DataTableHead>
@@ -312,10 +352,34 @@ export function CrmLeadsTable({
                 >
                   <CrmLeadContactList lead={lead} compact />
                 </DataTableCell>
+                <DataTableCell className="max-w-[11rem]">
+                  {lead.request ? (
+                    <p
+                      className="truncate text-[12px] leading-snug text-muted-foreground"
+                      title={lead.request}
+                    >
+                      {requestPreview(lead.request)}
+                    </p>
+                  ) : (
+                    <span className="text-[12px] text-muted-foreground/50">—</span>
+                  )}
+                </DataTableCell>
+                <DataTableCell>
+                  {lead.budget ? (
+                    <span
+                      className="inline-flex rounded-md bg-primary/8 px-1.5 py-0.5 font-mono text-[12px] font-semibold tabular-nums tracking-tight text-primary"
+                      title={lead.budget}
+                    >
+                      {budgetPreview(lead.budget) || "—"}
+                    </span>
+                  ) : (
+                    <span className="text-[12px] text-muted-foreground/50">—</span>
+                  )}
+                </DataTableCell>
                 <DataTableCell className="hidden text-[12px] md:table-cell">
                   {t(`crm.source.${lead.source}`)}
                 </DataTableCell>
-                <DataTableCell className="hidden text-[12px] lg:table-cell">
+                <DataTableCell className="hidden text-[12px] xl:table-cell">
                   {lead.ownerEmployeeId
                     ? (employeeMap.get(lead.ownerEmployeeId) ??
                       t("crm.leads.unassigned"))
@@ -344,13 +408,13 @@ export function CrmLeadsTable({
                     ) : null}
                   </div>
                 </DataTableCell>
-                <DataTableCell className="hidden text-[12px] text-muted-foreground xl:table-cell">
+                <DataTableCell className="hidden text-[12px] text-muted-foreground 2xl:table-cell">
                   {formatMaybeDate(lead.lastActivityAt)}
                 </DataTableCell>
-                <DataTableCell className="hidden text-[12px] text-muted-foreground lg:table-cell">
+                <DataTableCell className="hidden text-[12px] text-muted-foreground xl:table-cell">
                   {formatMaybeDate(lead.nextFollowUpAt)}
                 </DataTableCell>
-                <DataTableCell>
+                <DataTableCell className="hidden lg:table-cell">
                   <span className="text-[12px]">
                     {t(`crm.status.${lead.status}`)}
                   </span>

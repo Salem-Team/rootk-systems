@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import {
   Activity,
   Building2,
@@ -92,7 +92,7 @@ const VIEW_ITEMS: {
   },
 ];
 
-/** In-module rail for CRM hub views. */
+/** Horizontal top rail for CRM hub views — keeps the main panel full-width. */
 export function CrmHubSidebar({
   tab,
   onTabChange,
@@ -133,35 +133,27 @@ export function CrmHubSidebar({
     <nav
       aria-label={t("crm.sidebar.label")}
       className={cn(
-        "surface-panel hub-mobile-nav overflow-hidden",
+        "surface-panel hub-top-nav overflow-hidden",
         className
       )}
     >
-      <div className="hidden border-b border-border/60 px-4 py-3 lg:block">
-        <p className="section-label text-primary/70">{t("crm.page.eyebrow")}</p>
-        <p className="mt-1 text-sm font-semibold tracking-tight">
-          {t("crm.sidebar.views")}
-        </p>
-      </div>
-
-      <div className="relative lg:static">
-        {/* Scroll affordance — soft edge fades on phones */}
+      <div className="relative">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 start-0 z-[1] w-5 bg-gradient-to-r from-background to-transparent lg:hidden rtl:bg-gradient-to-l"
+          className="pointer-events-none absolute inset-y-0 start-0 z-[1] w-5 bg-gradient-to-r from-background to-transparent sm:from-card rtl:bg-gradient-to-l"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 end-0 z-[1] w-7 bg-gradient-to-l from-background to-transparent lg:hidden rtl:bg-gradient-to-r"
+          className="pointer-events-none absolute inset-y-0 end-0 z-[1] w-7 bg-gradient-to-l from-background to-transparent sm:from-card rtl:bg-gradient-to-r"
         />
 
         <ul
           role="tablist"
           aria-orientation="horizontal"
           className={cn(
-            "scroll-x flex snap-x snap-mandatory gap-1.5 p-2 pe-5 ps-2",
+            "scroll-x flex snap-x snap-mandatory gap-1 p-1.5 pe-5 ps-2",
             "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-            "lg:grid lg:snap-none lg:gap-0.5 lg:overflow-visible lg:p-2"
+            "sm:gap-1.5 sm:p-2 sm:pe-4"
           )}
         >
           {views.map((item) => {
@@ -169,10 +161,7 @@ export function CrmHubSidebar({
             const isActive = tab === item.id;
             const showDelayBadge = item.id === "delay" && delayCount > 0;
             return (
-              <li
-                key={item.id}
-                className="shrink-0 snap-center first:ms-0 last:me-1 lg:w-full"
-              >
+              <li key={item.id} className="shrink-0 snap-center">
                 <button
                   ref={isActive ? activeBtnRef : undefined}
                   type="button"
@@ -181,43 +170,19 @@ export function CrmHubSidebar({
                   aria-current={isActive ? "page" : undefined}
                   onClick={() => onTabChange(item.id)}
                   className={cn(
-                    "relative touch-manipulation transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    // Mobile: compact vertical chip — more tabs visible, clearer taps
-                    "flex min-h-[3.65rem] w-[4.35rem] flex-col items-center justify-center gap-1 rounded-2xl px-1.5 py-1.5 text-center sm:min-h-[3.85rem] sm:w-[4.75rem]",
-                    // Desktop sidebar: horizontal row
-                    "lg:min-h-10 lg:w-full lg:flex-row lg:items-center lg:justify-start lg:gap-2.5 lg:rounded-lg lg:px-2.5 lg:py-2 lg:text-start",
+                    "relative flex touch-manipulation items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    "min-h-11 min-w-[3.25rem] sm:min-h-10 sm:min-w-0 sm:rounded-lg sm:px-3",
                     isActive
-                      ? "bg-primary text-primary-foreground shadow-sm lg:bg-primary/[0.08] lg:text-primary lg:shadow-none"
-                      : "bg-muted/55 text-muted-foreground active:bg-muted lg:bg-transparent lg:hover:bg-muted lg:hover:text-foreground"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted"
                   )}
                 >
-                  {isActive && !reduceMotion ? (
-                    <motion.span
-                      layoutId="crm-hub-nav"
-                      className="absolute inset-y-1 start-0 hidden w-0.5 rounded-full bg-primary lg:block"
-                      transition={{
-                        type: "spring",
-                        stiffness: 420,
-                        damping: 34,
-                      }}
-                    />
-                  ) : isActive ? (
-                    <span className="absolute inset-y-1 start-0 hidden w-0.5 rounded-full bg-primary lg:block" />
-                  ) : null}
-
-                  <span
-                    className={cn(
-                      "relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border sm:h-8 sm:w-8 lg:h-7 lg:w-7 lg:rounded-md",
-                      isActive
-                        ? "border-white/25 bg-white/15 text-primary-foreground lg:border-primary/15 lg:bg-primary/10 lg:text-primary"
-                        : "border-border/70 bg-card lg:bg-muted/40"
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5" aria-hidden />
+                  <span className="relative flex shrink-0 items-center justify-center">
+                    <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden />
                     {showDelayBadge ? (
                       <span
                         className={cn(
-                          "absolute -end-1.5 -top-1.5 inline-flex min-w-[1.1rem] items-center justify-center rounded-full px-1 py-px font-mono text-[9px] font-bold leading-none tabular-nums lg:hidden",
+                          "absolute -end-2 -top-2 inline-flex min-w-[1.05rem] items-center justify-center rounded-full px-1 py-px font-mono text-[9px] font-bold leading-none tabular-nums sm:hidden",
                           isActive
                             ? "bg-white text-primary"
                             : "bg-amber-500 text-white"
@@ -228,21 +193,16 @@ export function CrmHubSidebar({
                     ) : null}
                   </span>
 
-                  <span
-                    className={cn(
-                      "w-full truncate text-[10.5px] font-semibold leading-tight tracking-tight sm:text-[11px]",
-                      "lg:w-auto lg:max-w-none lg:flex-1 lg:text-start lg:text-[13px] lg:font-medium lg:leading-normal"
-                    )}
-                  >
+                  <span className="hidden max-w-[9rem] truncate text-[12px] font-semibold tracking-tight sm:inline lg:text-[13px]">
                     {t(item.labelKey)}
                   </span>
 
                   {showDelayBadge ? (
                     <span
                       className={cn(
-                        "ms-auto hidden min-w-5 items-center justify-center rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold tabular-nums lg:inline-flex",
+                        "ms-0.5 hidden min-w-5 items-center justify-center rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold tabular-nums sm:inline-flex",
                         isActive
-                          ? "bg-amber-500/15 text-amber-800 dark:text-amber-200"
+                          ? "bg-white/20 text-primary-foreground"
                           : "bg-amber-500/15 text-amber-800 dark:text-amber-200"
                       )}
                     >

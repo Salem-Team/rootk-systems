@@ -41,18 +41,80 @@ export class CrmSharedService {
     const count = await this.prisma.crmStage.count({
       where: { companyId, deletedAt: null },
     });
-    if (count > 0) return;
-    await this.prisma.crmStage.createMany({
-      data: DEFAULT_STAGES.map((s) => ({
+    if (count === 0) {
+      await this.prisma.crmStage.createMany({
+        data: DEFAULT_STAGES.map((s) => ({
+          companyId,
+          name: s.name,
+          color: s.color,
+          sortOrder: s.sortOrder,
+          category: s.category,
+          conversionProbability: s.conversionProbability,
+          createdBy: actorId,
+          updatedBy: actorId,
+        })),
+      });
+      return;
+    }
+
+    // Existing tenants: always keep a Lost stage so feedback can close deals.
+    await this.ensureLostStage(companyId, actorId);
+  }
+
+  /** Create or repair an active Lost stage when the pipeline has none (category = lost). */
+  async ensureLostStage(companyId: string, actorId = CRM_SYSTEM_ACTOR_ID) {
+    const lostCount = await this.prisma.crmStage.count({
+      where: { companyId, deletedAt: null, category: "lost" },
+    });
+    if (lostCount > 0) return;
+
+    // Prefer repairing an existing "Lost" row that was saved with the wrong category.
+    const namedLost = await this.prisma.crmStage.findFirst({
+      where: {
         companyId,
-        name: s.name,
-        color: s.color,
-        sortOrder: s.sortOrder,
-        category: s.category,
-        conversionProbability: s.conversionProbability,
+        deletedAt: null,
+        name: { equals: "Lost", mode: "insensitive" },
+      },
+    });
+    if (namedLost) {
+      await this.prisma.crmStage.update({
+        where: { id: namedLost.id },
+        data: {
+          category: "lost",
+          active: true,
+          color: namedLost.color || "#ef4444",
+          conversionProbability: 0,
+          updatedBy: actorId,
+        },
+      });
+      return;
+    }
+
+    const maxSort = await this.prisma.crmStage.aggregate({
+      where: { companyId, deletedAt: null },
+      _max: { sortOrder: true },
+    });
+    const lostDefault =
+      DEFAULT_STAGES.find((s) => s.category === "lost") ?? {
+        name: "Lost",
+        color: "#ef4444",
+        sortOrder: 8,
+        category: "lost" as const,
+        conversionProbability: 0,
+      };
+
+    await this.prisma.crmStage.create({
+      data: {
+        companyId,
+        name: lostDefault.name,
+        color: lostDefault.color,
+        sortOrder: (maxSort._max.sortOrder ?? -1) + 1,
+        category: lostDefault.category,
+        conversionProbability: lostDefault.conversionProbability,
+        active: true,
         createdBy: actorId,
         updatedBy: actorId,
-      })),
+      },
     });
   }
 

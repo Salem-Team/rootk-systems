@@ -175,6 +175,42 @@ export async function ensureCatalog(): Promise<{
     }
     subStages = await crmSubStageRepository.findAll();
   }
+
+  // Existing local catalogs: always keep a Lost stage for closing deals.
+  if (stages.length > 0 && !stages.some((s) => s.category === "lost")) {
+    const namedLost = stages.find(
+      (s) => s.name.trim().toLowerCase() === "lost"
+    );
+    if (namedLost) {
+      await crmStageRepository.update(namedLost.id, {
+        ...namedLost,
+        category: "lost",
+        active: true,
+        color: namedLost.color || "#ef4444",
+        conversionProbability: 0,
+      });
+    } else {
+      const maxSort = stages.reduce((m, s) => Math.max(m, s.sortOrder), -1);
+      await crmStageRepository.create(
+        enrichWithAudit(
+          {
+            id: createId("crm-stage"),
+            name: "Lost",
+            description: "Closed lost",
+            color: "#ef4444",
+            sortOrder: maxSort + 1,
+            active: true,
+            conversionProbability: 0,
+            category: "lost" as const,
+            subStages: [],
+          },
+          "system"
+        )
+      );
+    }
+    stages = await crmStageRepository.findAll();
+  }
+
   return {
     stages: stages.sort((a, b) => a.sortOrder - b.sortOrder),
     subStages: subStages.sort((a, b) => a.sortOrder - b.sortOrder),

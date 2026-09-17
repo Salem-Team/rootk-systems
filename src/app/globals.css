@@ -860,13 +860,33 @@
     isolation: isolate;
   }
 
+  /* CRM (and similar) full-width top nav — sticky on all breakpoints */
+  .hub-top-nav {
+    position: sticky;
+    top: var(--chrome-sticky-top);
+    z-index: 20;
+    margin-inline: -0.75rem;
+    border-radius: 0 !important;
+    border-inline-width: 0 !important;
+    border-top-width: 0 !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: color-mix(in oklab, var(--border) 70%, transparent) !important;
+    background: color-mix(in oklab, var(--background) 94%, var(--card)) !important;
+    box-shadow: none !important;
+    backdrop-filter: blur(12px) saturate(1.1);
+    -webkit-backdrop-filter: blur(12px) saturate(1.1);
+    isolation: isolate;
+  }
+
+  .hub-top-nav .scroll-x,
   .hub-mobile-nav .scroll-x {
     scroll-padding-inline: 1rem;
     touch-action: pan-x;
   }
 
   @media (min-width: 640px) {
-    .hub-mobile-nav {
+    .hub-mobile-nav,
+    .hub-top-nav {
       margin-inline: -1rem;
     }
   }
@@ -889,6 +909,23 @@
     .hub-mobile-nav .scroll-x {
       scroll-padding-inline: 0;
       touch-action: auto;
+    }
+
+    .hub-top-nav {
+      margin-inline: 0;
+      border-radius: var(--radius-xl) !important;
+      border-width: 1px !important;
+      border-inline-width: 1px !important;
+      border-top-width: 1px !important;
+      border-bottom-color: var(--border) !important;
+      background: color-mix(in oklab, var(--card) 98%, white) !important;
+      box-shadow: var(--shadow-card) !important;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+
+    .hub-top-nav .scroll-x {
+      scroll-padding-inline: 0.5rem;
     }
   }
 

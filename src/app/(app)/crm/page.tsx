@@ -217,18 +217,16 @@ export default function CrmPage() {
         }
       />
 
-      <div className="grid gap-3 sm:gap-4 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-6">
-        <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start">
-          <CrmHubSidebar
-            tab={hub.tab}
-            onTabChange={hub.onTabChange}
-            canViewPerformance={hub.canViewPerformance}
-            canManageStages={hub.canManageStages}
-            canManageBusinessTypes={hub.canManageBusinessTypes}
-            canViewReports={hub.canViewReports}
-            delayCount={hub.delayCount}
-          />
-        </aside>
+      <div className="grid gap-3 sm:gap-4">
+        <CrmHubSidebar
+          tab={hub.tab}
+          onTabChange={hub.onTabChange}
+          canViewPerformance={hub.canViewPerformance}
+          canManageStages={hub.canManageStages}
+          canManageBusinessTypes={hub.canManageBusinessTypes}
+          canViewReports={hub.canViewReports}
+          delayCount={hub.delayCount}
+        />
 
         <div
           className={`min-w-0 space-y-3 transition-opacity duration-300 sm:space-y-4 md:space-y-5 ${
