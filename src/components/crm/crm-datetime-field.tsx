@@ -6,13 +6,13 @@ import { ar as arLocale, enUS } from "date-fns/locale";
 import { CalendarDays, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Time12Input } from "@/components/ui/time-12-input";
 import { useTranslation } from "@/hooks/use-translation";
 import { toLocalInput } from "@/lib/crm/lead-form-options";
 import { cn } from "@/lib/utils";
@@ -157,13 +157,11 @@ export function CrmDateTimeField({
               <Label htmlFor={`${id ?? "crm-dt"}-time`} className="text-[12px]">
                 {t("crm.feedback.time")}
               </Label>
-              <Input
+              <Time12Input
                 id={`${id ?? "crm-dt"}-time`}
-                type="time"
-                dir="ltr"
                 value={timeValue}
-                onChange={(e) => applyTime(e.target.value)}
-                className="h-11 touch-manipulation tabular-nums sm:h-10"
+                onChange={applyTime}
+                aria-label={t("crm.feedback.time")}
               />
             </div>
             <div className="flex items-center justify-between gap-2">

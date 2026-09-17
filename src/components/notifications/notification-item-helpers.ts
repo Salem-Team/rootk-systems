@@ -1,4 +1,5 @@
 import { formatHmDuration } from "@/lib/duration-format";
+import { formatIsoDateTime } from "@/lib/format-time";
 import type { TranslationPath } from "@/i18n";
 import type { AppNotification } from "@/types";
 
@@ -9,12 +10,8 @@ const DURATION_BODY_KEYS = new Set([
 
 export function formatAtTimestamp(raw: unknown, locale: "en" | "ar"): string {
   if (typeof raw !== "string" || !raw) return String(raw ?? "");
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return raw;
-  return new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
+  const formatted = formatIsoDateTime(raw, locale);
+  return formatted === "—" ? raw : formatted;
 }
 
 const CRM_NEXT_ACTION_KEYS: Record<string, TranslationPath> = {

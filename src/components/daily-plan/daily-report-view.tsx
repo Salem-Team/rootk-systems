@@ -16,16 +16,11 @@ import {
 import { DepartmentBadge } from "@/components/employees/department-badge";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatWorkedHours } from "@/lib/daily-report";
+import { formatIsoClock } from "@/lib/format-time";
 import type { DailyReportFact, DailyReportRow } from "@/types";
 
 export function formatReportClock(iso: string | null, locale: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleTimeString(locale === "ar" ? "ar-EG" : "en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatIsoClock(iso, locale);
 }
 
 export function attendanceBadgeVariant(status: string | null) {

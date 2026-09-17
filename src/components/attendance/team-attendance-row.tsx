@@ -4,6 +4,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { DepartmentBadge } from "@/components/employees/department-badge";
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp } from "@/lib/animations";
+import { formatIsoClock } from "@/lib/format-time";
 import { getInitials } from "@/lib/utils";
 import { locationKey, positionKey, translateOrFallback } from "@/lib/i18n-content";
 import type { AttendanceRecord, Employee } from "@/types";
@@ -19,16 +20,12 @@ export function TeamAttendanceRow({
   selected?: boolean;
   onSelect?: (employeeId: string) => void;
 }) {
-  const { t } = useTranslation();
-  const timeOpts: Intl.DateTimeFormatOptions = {
-    hour: "2-digit",
-    minute: "2-digit",
-  };
+  const { t, locale } = useTranslation();
   const checkInLabel = record?.checkIn
-    ? `${t("attendance.checkedInAt")} ${new Date(record.checkIn).toLocaleTimeString([], timeOpts)}`
+    ? `${t("attendance.checkedInAt")} ${formatIsoClock(record.checkIn, locale)}`
     : t("attendance.notCheckedIn");
   const checkOutLabel = record?.checkOut
-    ? `${t("attendance.checkedOutAt")} ${new Date(record.checkOut).toLocaleTimeString([], timeOpts)}`
+    ? `${t("attendance.checkedOutAt")} ${formatIsoClock(record.checkOut, locale)}`
     : null;
 
   return (

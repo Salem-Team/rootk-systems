@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Time12Input } from "@/components/ui/time-12-input";
 import { useTranslation } from "@/hooks/use-translation";
 import type { DailyPlanSlot, DailyPlanSlotInput } from "@/types/daily-plan";
 
@@ -66,27 +67,23 @@ export function DailyPlanSlotSheet({
               className="h-11 text-base sm:h-9 sm:text-sm"
             />
           </div>
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3">
             <div className="grid gap-1.5">
               <Label htmlFor="dp-start">{t("dailyPlan.fieldStart")}</Label>
-              <Input
+              <Time12Input
                 id="dp-start"
-                type="time"
-                step={60}
                 value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="h-11 text-base sm:h-9 sm:text-sm"
+                onChange={setStartTime}
+                aria-label={t("dailyPlan.fieldStart")}
               />
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="dp-end">{t("dailyPlan.fieldEnd")}</Label>
-              <Input
+              <Time12Input
                 id="dp-end"
-                type="time"
-                step={60}
                 value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="h-11 text-base sm:h-9 sm:text-sm"
+                onChange={setEndTime}
+                aria-label={t("dailyPlan.fieldEnd")}
               />
             </div>
           </div>
