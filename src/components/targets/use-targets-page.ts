@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { getWorkforceEmployees } from "@/services/employees.service";
 import {
@@ -26,6 +27,7 @@ import type { TargetHubTab } from "@/components/targets/target-hub-sidebar";
 
 export function useTargetsPage() {
   const { t } = useTranslation();
+  const searchParams = useSearchParams();
   const role = useSessionStore((s) => s.role);
   const permissions = useSessionStore((s) =>
     s.authenticated ? s.permissions : undefined
@@ -174,6 +176,19 @@ export function useTargetsPage() {
   function openView(target: PerformanceTarget) {
     setViewingTarget(target);
   }
+
+  useEffect(() => {
+    if (!ready || targetsLoading) return;
+    const targetId =
+      searchParams.get("target") ?? searchParams.get("id") ?? "";
+    if (!targetId) return;
+    const match = targets.find((x) => x.id === targetId);
+    if (!match) return;
+    setTab("targets");
+    setViewingTarget((current) =>
+      current?.id === match.id ? current : match
+    );
+  }, [ready, targetsLoading, targets, searchParams]);
 
   async function onDeleteTarget(target: PerformanceTarget) {
     const res = await removeTarget(target.id);

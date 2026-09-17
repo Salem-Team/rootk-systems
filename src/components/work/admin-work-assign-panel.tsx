@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { PageSkeleton } from "@/components/shared/loading-state";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { AdminWorkHero } from "@/components/work/admin-work-hero";
@@ -21,6 +23,8 @@ import { ar as arLocale, enUS } from "date-fns/locale";
 
 export function AdminWorkAssignPanel() {
   const { locale } = useTranslation();
+  const searchParams = useSearchParams();
+  const deepLinkKey = useRef<string>("");
   const workEmployeeId = useSessionStore((s) =>
     getWorkEmployeeIdFromUser(s.user)
   );
@@ -32,6 +36,41 @@ export function AdminWorkAssignPanel() {
     workEmployeeId,
     reload: data.reload,
   });
+
+  useEffect(() => {
+    if (data.loading) return;
+    const taskId = searchParams.get("task");
+    const meetingId = searchParams.get("meeting");
+    const qTab = searchParams.get("tab");
+    const key = `${qTab ?? ""}|${taskId ?? ""}|${meetingId ?? ""}`;
+    if (!taskId && !meetingId && qTab !== "meetings" && qTab !== "tasks") return;
+    if (deepLinkKey.current === key) return;
+
+    if (qTab === "meetings" || qTab === "tasks") {
+      data.setTab(qTab);
+    }
+
+    if (taskId) {
+      const task = data.tasks.find((t) => t.id === taskId);
+      if (!task) return;
+      deepLinkKey.current = key;
+      data.setTab("tasks");
+      forms.openViewTask(task);
+      return;
+    }
+
+    if (meetingId) {
+      const meeting = data.meetings.find((m) => m.id === meetingId);
+      if (!meeting) return;
+      deepLinkKey.current = key;
+      data.setTab("meetings");
+      forms.openEditMeeting(meeting);
+      return;
+    }
+
+    deepLinkKey.current = key;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.loading, data.tasks, data.meetings, searchParams]);
 
   if (data.loading) {
     return <PageSkeleton />;

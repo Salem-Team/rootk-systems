@@ -1,4 +1,8 @@
 import {
+  attendanceNotificationHref,
+  leaveNotificationHref,
+} from "@/lib/notification-href";
+import {
   notifyQuietly,
   resolveEmployeeName,
 } from "@/services/notification-core.service";
@@ -22,7 +26,7 @@ export async function notifyLeaveSubmitted(opts: {
     category: "leave",
     priority: "high",
     audience: "admin",
-    href: "/leave",
+    href: leaveNotificationHref(opts.leaveId),
     entityType: "leave",
     entityId: opts.leaveId,
     actorId: opts.employeeId,
@@ -46,7 +50,7 @@ export async function notifyLeaveDecision(opts: {
     priority: "high",
     audience: "employee",
     recipientIds: [opts.employeeId],
-    href: "/leave",
+    href: leaveNotificationHref(opts.leaveId),
     entityType: "leave",
     entityId: opts.leaveId,
     actorId: opts.actorId,
@@ -66,7 +70,7 @@ export async function notifyLeaveCancelled(opts: {
     category: "leave",
     priority: "normal",
     audience: "admin",
-    href: "/leave",
+    href: leaveNotificationHref(opts.leaveId),
     entityType: "leave",
     entityId: opts.leaveId,
     actorId: opts.employeeId,
@@ -90,7 +94,10 @@ export async function notifyLateCheckIn(opts: {
     category: "attendance",
     priority: "high",
     audience: "admin",
-    href: "/attendance",
+    href: attendanceNotificationHref({
+      employeeId: opts.employeeId,
+      recordId: opts.recordId,
+    }),
     entityType: "attendance",
     entityId: opts.recordId,
     actorId: opts.employeeId,
@@ -114,7 +121,10 @@ export async function notifyEarlyLeave(opts: {
     category: "attendance",
     priority: "high",
     audience: "admin",
-    href: "/attendance",
+    href: attendanceNotificationHref({
+      employeeId: opts.employeeId,
+      recordId: opts.recordId,
+    }),
     entityType: "attendance",
     entityId: opts.recordId,
     actorId: opts.employeeId,

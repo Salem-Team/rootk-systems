@@ -5,6 +5,8 @@ import type { ComponentType } from "react";
 import {
   Briefcase,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   Megaphone,
   Plane,
@@ -16,6 +18,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "@/hooks/use-translation";
+import { resolveNotificationHref } from "@/lib/notification-href";
 import {
   formatNotificationTime,
   isNotificationUnread,
@@ -53,6 +56,19 @@ const CATEGORY_TONE: Record<NotificationCategory, string> = {
   mention: "bg-primary/12 text-primary",
   target: "bg-primary/12 text-primary",
   organic_ad: "bg-primary/12 text-primary",
+};
+
+const CATEGORY_ACCENT: Record<NotificationCategory, string> = {
+  leave: "border-s-violet-500/70",
+  attendance: "border-s-amber-500/70",
+  work: "border-s-sky-500/70",
+  payroll: "border-s-emerald-500/70",
+  schedule: "border-s-teal-500/70",
+  announcement: "border-s-rose-500/70",
+  system: "border-s-muted-foreground/40",
+  mention: "border-s-primary/70",
+  target: "border-s-primary/70",
+  organic_ad: "border-s-primary/70",
 };
 
 export function NotificationCategoryIcon({
@@ -107,6 +123,8 @@ export function NotificationListItem({
     item.bodyKey,
     vars
   );
+  const href = resolveNotificationHref(item);
+  const Chevron = locale === "ar" ? ChevronLeft : ChevronRight;
 
   const content = (
     <>
@@ -116,7 +134,9 @@ export function NotificationListItem({
           <span
             className={cn(
               "text-[13px] leading-snug",
-              unread ? "font-semibold text-foreground" : "font-medium text-foreground/90"
+              unread
+                ? "font-semibold text-foreground"
+                : "font-medium text-foreground/90"
             )}
           >
             {title}
@@ -148,45 +168,44 @@ export function NotificationListItem({
           <span>{time}</span>
         </span>
       </span>
+      {href ? (
+        <Chevron
+          className="mt-2.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/70 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+          aria-hidden
+        />
+      ) : null}
     </>
   );
 
   const className = cn(
-    "flex w-full gap-3 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
-    dense ? "rounded-xl px-2.5 py-2.5" : "rounded-2xl border px-3 py-3",
+    "group flex w-full gap-3 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
+    dense ? "rounded-xl px-2.5 py-2.5" : "rounded-2xl border border-s-[3px] px-3 py-3",
+    !dense && CATEGORY_ACCENT[item.category],
     unread
       ? dense
         ? "bg-primary/[0.04]"
         : "border-primary/20 bg-primary/[0.04]"
       : dense
         ? "hover:bg-muted/40"
-        : "border-border/60 bg-card hover:bg-muted/25"
+        : "border-border/60 bg-card hover:bg-muted/25",
+    href && "cursor-pointer active:scale-[0.995]"
   );
 
-  if (item.href) {
+  const handleActivate = () => {
+    if (unread) void onRead(item.id);
+    onNavigate?.();
+  };
+
+  if (href) {
     return (
-      <Link
-        href={item.href}
-        className={className}
-        onClick={() => {
-          if (unread) void onRead(item.id);
-          onNavigate?.();
-        }}
-      >
+      <Link href={href} className={className} onClick={handleActivate}>
         {content}
       </Link>
     );
   }
 
   return (
-    <button
-      type="button"
-      className={className}
-      onClick={() => {
-        if (unread) void onRead(item.id);
-        onNavigate?.();
-      }}
-    >
+    <button type="button" className={className} onClick={handleActivate}>
       {content}
     </button>
   );

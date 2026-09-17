@@ -1,5 +1,8 @@
 "use client";
 
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Plus } from "lucide-react";
 import { MobileSegmentedTabs } from "@/components/shared/mobile-segmented-tabs";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageTransition } from "@/components/shared/page-transition";
@@ -33,11 +36,10 @@ import { useHasAnyPermission, useHasPermission } from "@/hooks/use-permission";
 import { useTranslation } from "@/hooks/use-translation";
 import { computeLeaveBalance } from "@/lib/leave-balance";
 import type { Employee, LeaveRequest } from "@/types";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus } from "lucide-react";
 
-export default function LeavePage() {
+function LeavePageContent() {
   const { t } = useTranslation();
+  const searchParams = useSearchParams();
   const workEmployeeId = useSessionStore((s) =>
     getWorkEmployeeIdFromUser(s.user)
   );
@@ -54,6 +56,8 @@ export default function LeavePage() {
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
+  const [tab, setTab] = useState(canManageLeave ? "workflow" : "mine");
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const [leaveRes, empRes] = await Promise.all([
@@ -69,6 +73,27 @@ export default function LeavePage() {
     setLoading(true);
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (loading) return;
+    const id = searchParams.get("id");
+    if (!id) return;
+    const match = requests.find((r) => r.id === id);
+    if (!match) return;
+    setHighlightId(id);
+    if (canManageLeave) {
+      if (match.status === "pending") setTab("pending");
+      else if (match.employeeId === workEmployeeId) setTab("mine");
+      else setTab("all");
+    } else {
+      setTab("mine");
+    }
+    requestAnimationFrame(() => {
+      document
+        .getElementById(`leave-${id}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, [loading, requests, searchParams, canManageLeave, workEmployeeId]);
 
   const employeeMap = useMemo(
     () => new Map(employees.map((e) => [e.id, e])),
@@ -144,11 +169,7 @@ export default function LeavePage() {
         />
       </div>
 
-      <Tabs
-        key={canManageLeave ? "manage" : "mine"}
-        defaultValue={canManageLeave ? "workflow" : "mine"}
-        className="space-y-6"
-      >
+      <Tabs value={tab} onValueChange={setTab} className="space-y-6">
         {canManageLeave ? (
           <MobileSegmentedTabs className="lg:contents">
             <TabsList className="scroll-x flex h-auto w-full flex-nowrap justify-start gap-1 [scrollbar-width:none] sm:w-auto sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden lg:inline-flex">
@@ -197,6 +218,7 @@ export default function LeavePage() {
                   <LeaveRequestGrid
                     requests={requests}
                     employeeMap={employeeMap}
+                    highlightedId={highlightId ?? undefined}
                     showActions={(request) => request.status === "pending"}
                     onUpdated={handleUpdated}
                     emptyTitle={t("leave.empty")}
@@ -224,6 +246,7 @@ export default function LeavePage() {
               <LeaveRequestGrid
                 requests={pending}
                 employeeMap={employeeMap}
+                highlightedId={highlightId ?? undefined}
                 showActions
                 onUpdated={handleUpdated}
                 emptyTitle={t("leave.emptyPending")}
@@ -240,6 +263,7 @@ export default function LeavePage() {
               <LeaveRequestGrid
                 requests={mine}
                 employeeMap={employeeMap}
+                highlightedId={highlightId ?? undefined}
                 onUpdated={handleUpdated}
                 emptyTitle={t("leave.empty")}
                 emptyDescription={t("leave.emptyDesc")}
@@ -273,5 +297,13 @@ function DepartmentAndCoverage() {
       <DepartmentLeaveCalendar />
       <LeaveCoverageOverview />
     </div>
+  );
+}
+
+export default function LeavePage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <LeavePageContent />
+    </Suspense>
   );
 }

@@ -42,6 +42,7 @@ interface LeaveCardProps {
   request: LeaveRequest;
   employee?: Employee;
   showActions?: boolean;
+  highlighted?: boolean;
   onUpdated?: (request: LeaveRequest) => void;
 }
 
@@ -49,6 +50,7 @@ export function LeaveCard({
   request,
   employee,
   showActions = false,
+  highlighted = false,
   onUpdated,
 }: LeaveCardProps) {
   const { t, locale } = useTranslation();
@@ -107,8 +109,13 @@ export function LeaveCard({
     : null;
 
   return (
-    <motion.div variants={fadeInUp}>
-      <article className="surface-panel surface-panel-interactive relative overflow-hidden transition-[transform,box-shadow] duration-200">
+    <motion.div variants={fadeInUp} id={`leave-${request.id}`}>
+      <article
+        className={cn(
+          "surface-panel surface-panel-interactive relative overflow-hidden transition-[transform,box-shadow,ring] duration-200",
+          highlighted && "ring-2 ring-primary/40 ring-offset-2 ring-offset-background"
+        )}
+      >
         <span
           aria-hidden
           className={cn(

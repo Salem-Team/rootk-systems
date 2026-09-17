@@ -119,7 +119,7 @@ export class WorkTasksWriteService {
         titleKey: "notifications.taskAssignedTitle",
         bodyKey: "notifications.taskAssignedBody",
         vars: { title: row.title },
-        href: "/tasks",
+        href: `/tasks?tab=tasks&task=${row.id}`,
         entityType: "work_task",
         entityId: row.id,
         recipientIds: users.map((u) => u.id),

@@ -355,7 +355,7 @@ export class WorkTasksStatusService {
           pendingCount: String(summary.pendingCount),
           total: String(summary.total),
         },
-        href: "/tasks",
+        href: `/tasks?tab=tasks&task=${row.id}`,
         entityType: "work_task",
         entityId: row.id,
       });

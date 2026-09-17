@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageTransition } from "@/components/shared/page-transition";
@@ -12,7 +13,7 @@ import { TargetViewSheet } from "@/components/targets/target-view-sheet";
 import { useTargetsPage } from "@/components/targets/use-targets-page";
 import { useTranslation } from "@/hooks/use-translation";
 
-export default function TargetsPage() {
+function TargetsPageContent() {
   const { t } = useTranslation();
   const page = useTargetsPage();
 
@@ -103,5 +104,13 @@ export default function TargetsPage() {
         }}
       />
     </PageTransition>
+  );
+}
+
+export default function TargetsPage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <TargetsPageContent />
+    </Suspense>
   );
 }

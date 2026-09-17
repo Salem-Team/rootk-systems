@@ -30,12 +30,13 @@ import {
 } from "@/components/ui/data-table";
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
-import { formatHours } from "@/lib/utils";
+import { cn, formatHours } from "@/lib/utils";
 import type { AttendanceRecord, AttendanceStatus } from "@/types";
 
 interface AttendanceHistoryProps {
   records: AttendanceRecord[];
   loading?: boolean;
+  highlightedRecordId?: string;
 }
 
 type StatusFilter = AttendanceStatus | "all";
@@ -48,6 +49,7 @@ function formatTime(iso: string | undefined, dateLocale: typeof enUS): string {
 export function AttendanceHistory({
   records,
   loading = false,
+  highlightedRecordId,
 }: AttendanceHistoryProps) {
   const { t, locale } = useTranslation();
   const dateLocale = locale === "ar" ? arLocale : enUS;
@@ -121,7 +123,14 @@ export function AttendanceHistory({
                 </DataTableHeader>
                 <DataTableBody>
                   {filtered.map((record) => (
-                    <DataTableRow key={record.id}>
+                    <DataTableRow
+                      key={record.id}
+                      id={`attendance-record-${record.id}`}
+                      className={cn(
+                        highlightedRecordId === record.id &&
+                          "bg-primary/8 ring-1 ring-inset ring-primary/30"
+                      )}
+                    >
                       <DataTableCell className="font-medium">
                         {format(parseISO(record.date), "EEE, MMM d", {
                           locale: dateLocale,
@@ -186,7 +195,15 @@ export function AttendanceHistory({
               aria-label={t("attendance.history")}
             >
               {filtered.map((record) => (
-                <motion.li key={record.id} variants={fadeInUp}>
+                <motion.li
+                  key={record.id}
+                  id={`attendance-record-${record.id}`}
+                  variants={fadeInUp}
+                  className={cn(
+                    highlightedRecordId === record.id &&
+                      "rounded-xl ring-2 ring-primary/40"
+                  )}
+                >
                   <SoftListRow>
                     <div className="flex items-start justify-between gap-3">
                       <div>

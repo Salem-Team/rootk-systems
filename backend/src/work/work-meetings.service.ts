@@ -109,7 +109,7 @@ export class WorkMeetingsService {
           titleKey: "notifications.meetingInviteTitle",
           bodyKey: "notifications.meetingInviteBody",
           vars: { title: row.title },
-          href: "/tasks?tab=meetings",
+          href: `/tasks?tab=meetings&meeting=${row.id}`,
           entityType: "work_meeting",
           entityId: row.id,
           recipientIds: recipients,

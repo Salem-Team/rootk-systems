@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageTransition } from "@/components/shared/page-transition";
 import { PageSkeleton } from "@/components/shared/loading-state";
@@ -25,8 +26,9 @@ import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import type { AttendanceRecord, Employee } from "@/types";
 
-export default function AttendancePage() {
+function AttendancePageContent() {
   const { t } = useTranslation();
+  const searchParams = useSearchParams();
   const workEmployeeId = useSessionStore((s) =>
     getWorkEmployeeIdFromUser(s.user)
   );
@@ -44,6 +46,9 @@ export default function AttendancePage() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [ready, setReady] = useState(false);
   const [mobileTab, setMobileTab] = useState("today");
+  const [highlightRecordId, setHighlightRecordId] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     setViewEmployeeId(workEmployeeId);
@@ -126,6 +131,30 @@ export default function AttendancePage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!ready) return;
+    const employeeId = searchParams.get("employeeId");
+    const recordId = searchParams.get("record");
+    if (employeeId && canViewTeamBoard) {
+      setViewEmployeeId(employeeId);
+      setMobileTab("more");
+      requestAnimationFrame(() => {
+        document
+          .getElementById("attendance-insights")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+    if (recordId) {
+      setHighlightRecordId(recordId);
+      setMobileTab(canViewTeamBoard ? "more" : "history");
+      requestAnimationFrame(() => {
+        document
+          .getElementById(`attendance-record-${recordId}`)
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    }
+  }, [ready, searchParams, canViewTeamBoard]);
+
   if (!ready && (isLoadingToday || historyLoading)) {
     return <PageSkeleton />;
   }
@@ -165,6 +194,7 @@ export default function AttendancePage() {
       <AttendanceHistory
         records={viewHistory}
         loading={historyLoading && !ready}
+        highlightedRecordId={highlightRecordId ?? undefined}
       />
     </div>
   );
@@ -249,6 +279,7 @@ export default function AttendancePage() {
               <AttendanceHistory
                 records={viewHistory}
                 loading={historyLoading && !ready}
+                highlightedRecordId={highlightRecordId ?? undefined}
               />
             )}
           </TabsContent>
@@ -258,6 +289,7 @@ export default function AttendancePage() {
               <AttendanceHistory
                 records={viewHistory}
                 loading={historyLoading && !ready}
+                highlightedRecordId={highlightRecordId ?? undefined}
               />
             </TabsContent>
           ) : null}
@@ -285,5 +317,13 @@ export default function AttendancePage() {
         </section>
       </div>
     </PageTransition>
+  );
+}
+
+export default function AttendancePage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <AttendancePageContent />
+    </Suspense>
   );
 }

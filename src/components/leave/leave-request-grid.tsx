@@ -8,6 +8,7 @@ export function LeaveRequestGrid({
   requests,
   employeeMap,
   showActions,
+  highlightedId,
   onUpdated,
   emptyTitle,
   emptyDescription,
@@ -18,6 +19,7 @@ export function LeaveRequestGrid({
   requests: LeaveRequest[];
   employeeMap: Map<string, Employee>;
   showActions?: boolean | ((request: LeaveRequest) => boolean);
+  highlightedId?: string;
   onUpdated: (updated: LeaveRequest) => void;
   emptyTitle: string;
   emptyDescription: string;
@@ -48,6 +50,7 @@ export function LeaveRequestGrid({
           key={request.id}
           request={request}
           employee={employeeMap.get(request.employeeId)}
+          highlighted={highlightedId === request.id}
           showActions={
             typeof showActions === "function"
               ? showActions(request)

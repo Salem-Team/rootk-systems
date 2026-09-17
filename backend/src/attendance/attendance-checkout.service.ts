@@ -90,7 +90,7 @@ export class AttendanceCheckoutService {
           name: employee?.name ?? employeeId,
           minutes: settled.earlyLeaveMinutes,
         },
-        href: "/attendance",
+        href: `/attendance?employeeId=${employeeId}&record=${row.id}`,
         entityType: "attendance",
         entityId: row.id,
         recipientIds: [],

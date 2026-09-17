@@ -187,7 +187,7 @@ export class EmployeesCreateService {
         titleKey: "notifications.employeeCreatedTitle",
         bodyKey: "notifications.employeeCreatedBody",
         vars: { name: row.name },
-        href: "/employees",
+        href: `/employees?id=${row.id}`,
         entityType: "employee",
         entityId: row.id,
       });

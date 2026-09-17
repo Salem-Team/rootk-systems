@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageTransition } from "@/components/shared/page-transition";
@@ -53,7 +54,16 @@ function sortEmployees(list: Employee[], sort: EmployeeSort): Employee[] {
 }
 
 export default function EmployeesPage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <EmployeesPageContent />
+    </Suspense>
+  );
+}
+
+function EmployeesPageContent() {
   const { t } = useTranslation();
+  const searchParams = useSearchParams();
   const viewMode = useUiStore((s) => s.viewMode);
   const setViewMode = useUiStore((s) => s.setViewMode);
 
@@ -151,6 +161,19 @@ export default function EmployeesPage() {
     setSelected(employee);
     setDrawerOpen(true);
   };
+
+  const deepLinkedEmployeeId = useRef<string | null>(null);
+  useEffect(() => {
+    if (initialLoading) return;
+    const id = searchParams.get("id");
+    if (!id || deepLinkedEmployeeId.current === id) return;
+    const match =
+      employees.find((e) => e.id === id) ??
+      roster.find((e) => e.id === id);
+    if (!match) return;
+    deepLinkedEmployeeId.current = id;
+    openEmployee(match);
+  }, [initialLoading, employees, roster, searchParams]);
 
   async function handleSaved() {
     await reloadEmployees();

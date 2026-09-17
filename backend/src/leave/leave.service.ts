@@ -179,8 +179,8 @@ export class LeaveService {
       audience: "admin",
       titleKey: "notifications.leaveSubmittedTitle",
       bodyKey: "notifications.leaveSubmittedBody",
-      vars: { name: employee?.name ?? employeeId, type: body.type },
-      href: "/leave",
+      vars: { name: employee?.name ?? employeeId, type: body.type, days: body.days },
+      href: `/leave?id=${row.id}`,
       entityType: "leave",
       entityId: row.id,
     });
@@ -299,7 +299,7 @@ export class LeaveService {
           ? "notifications.leaveApprovedBody"
           : "notifications.leaveRejectedBody",
       vars: { type: current.type },
-      href: "/leave",
+      href: `/leave?id=${row.id}`,
       entityType: "leave",
       entityId: row.id,
       recipientIds: employeeUser ? [employeeUser.id] : [],
@@ -332,6 +332,10 @@ export class LeaveService {
       },
     });
 
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: current.employeeId, companyId },
+    });
+
     await this.notifications.notifyDomain({
       companyId,
       actorId,
@@ -340,8 +344,11 @@ export class LeaveService {
       audience: "admin",
       titleKey: "notifications.leaveCancelledTitle",
       bodyKey: "notifications.leaveCancelledBody",
-      vars: { type: current.type },
-      href: "/leave",
+      vars: {
+        type: current.type,
+        name: employee?.name ?? current.employeeId,
+      },
+      href: `/leave?id=${row.id}`,
       entityType: "leave",
       entityId: row.id,
     });
