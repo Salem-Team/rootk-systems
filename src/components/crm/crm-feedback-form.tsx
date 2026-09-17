@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useHydrateOnOpen } from "@/hooks/use-hydrate-on-open";
-import { Loader2 } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { CrmDateTimeField } from "@/components/crm/crm-datetime-field";
 import { CrmMentionTextarea } from "@/components/crm/crm-mention-textarea";
@@ -16,20 +16,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/hooks/use-translation";
+import { appendLossReasonNote } from "@/lib/crm/loss-reason";
 import { NEXT_ACTIONS, TAGS, toLocalInput } from "@/lib/crm/lead-form-options";
 import type { MentionableUser } from "@/lib/mentions";
 import { resolveAccountFullName } from "@/lib/user-display-name";
 import { cn } from "@/lib/utils";
-import { addCrmLeadFeedback } from "@/services/crm.service";
+import { addCrmLeadFeedback, updateCrmLead } from "@/services/crm.service";
 import { getUsers } from "@/services/user.service";
 import { getSessionUserId } from "@/stores/session-store";
 import type {
@@ -56,11 +52,13 @@ function ChoiceChip({
   onClick,
   children,
   className,
+  tone = "default",
 }: {
   active: boolean;
   onClick: () => void;
   children: ReactNode;
   className?: string;
+  tone?: "default" | "danger" | "success";
 }) {
   return (
     <button
@@ -69,13 +67,78 @@ function ChoiceChip({
       aria-pressed={active}
       className={cn(
         "inline-flex min-h-11 touch-manipulation items-center justify-center rounded-xl border px-3 py-2.5 text-[13px] font-semibold transition-colors active:scale-[0.98] sm:min-h-10 sm:rounded-lg sm:py-2 sm:font-medium",
-        active
-          ? "border-primary/45 bg-primary text-primary-foreground shadow-sm"
-          : "border-border/70 bg-card text-muted-foreground hover:bg-muted/55 hover:text-foreground",
+        tone === "danger" &&
+          (active
+            ? "border-destructive/55 bg-destructive text-destructive-foreground shadow-sm"
+            : "border-destructive/25 bg-destructive/[0.04] text-destructive hover:bg-destructive/10"),
+        tone === "success" &&
+          (active
+            ? "border-emerald-500/55 bg-emerald-600 text-white shadow-sm"
+            : "border-emerald-500/25 bg-emerald-500/[0.06] text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300"),
+        tone === "default" &&
+          (active
+            ? "border-primary/45 bg-primary text-primary-foreground shadow-sm"
+            : "border-border/70 bg-card text-muted-foreground hover:bg-muted/55 hover:text-foreground"),
         className
       )}
     >
       {children}
+    </button>
+  );
+}
+
+function StagePickButton({
+  stage,
+  active,
+  onClick,
+}: {
+  stage: CrmStage;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const isLost = stage.category === "lost";
+  const isWon = stage.category === "won";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "flex min-h-12 touch-manipulation items-center gap-2.5 rounded-xl border px-3 py-2.5 text-start transition-colors active:scale-[0.98] sm:min-h-11",
+        active && isLost && "border-destructive/50 bg-destructive/10 shadow-sm",
+        active && isWon && "border-emerald-500/45 bg-emerald-500/10 shadow-sm",
+        active &&
+          !isLost &&
+          !isWon &&
+          "border-primary/45 bg-primary/10 shadow-sm",
+        !active &&
+          "border-border/70 bg-card hover:bg-muted/45 hover:border-border"
+      )}
+    >
+      <span
+        className="h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-background"
+        style={{ backgroundColor: stage.color }}
+        aria-hidden
+      />
+      <span
+        className={cn(
+          "min-w-0 flex-1 truncate text-[13px] font-semibold leading-tight",
+          active ? "text-foreground" : "text-muted-foreground"
+        )}
+      >
+        {stage.name}
+      </span>
+      {active ? (
+        <Check
+          className={cn(
+            "h-4 w-4 shrink-0",
+            isLost && "text-destructive",
+            isWon && "text-emerald-600 dark:text-emerald-400",
+            !isLost && !isWon && "text-primary"
+          )}
+          aria-hidden
+        />
+      ) : null}
     </button>
   );
 }
@@ -93,6 +156,9 @@ export function CrmFeedbackForm({
   const [tags, setTags] = useState<CrmLeadTag[]>([]);
   const [stageId, setStageId] = useState("");
   const [lossReasonTypeId, setLossReasonTypeId] = useState("");
+  const [lossReasonDetails, setLossReasonDetails] = useState("");
+  const [request, setRequest] = useState("");
+  const [budget, setBudget] = useState("");
   const [nextAction, setNextAction] = useState<CrmNextAction>("follow_up");
   const [nextFollowUpAt, setNextFollowUpAt] = useState("");
   const [customerFeedback, setCustomerFeedback] = useState("");
@@ -104,24 +170,32 @@ export function CrmFeedbackForm({
     useState<CrmMeetingLocation>("our_company");
   const [saving, setSaving] = useState(false);
 
-  const activeStages = useMemo(
-    () =>
-      (Array.isArray(stages) ? stages : []).filter(
-        (s) => s.active || s.id === lead?.stageId
-      ),
-    [stages, lead?.stageId]
-  );
+  /** All pipeline stages — always keep won/lost visible even if inactive. */
+  const selectableStages = useMemo(() => {
+    const list = Array.isArray(stages) ? [...stages] : [];
+    return list
+      .filter(
+        (s) =>
+          s.active ||
+          s.id === lead?.stageId ||
+          s.category === "lost" ||
+          s.category === "won"
+      )
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+  }, [stages, lead?.stageId]);
+
   const lossReasons = useMemo(
     () =>
-      (Array.isArray(feedbackTypes) ? feedbackTypes : []).filter(
-        (ft) => ft.active && ft.isLossReason
-      ),
+      (Array.isArray(feedbackTypes) ? feedbackTypes : [])
+        .filter((ft) => ft.active && ft.isLossReason)
+        .sort((a, b) => a.sortOrder - b.sortOrder),
     [feedbackTypes]
   );
-  const selectedStage = activeStages.find((s) => s.id === stageId);
+
+  const selectedStage = selectableStages.find((s) => s.id === stageId);
   const needsLossReason = selectedStage?.category === "lost";
   const selfUserId = getSessionUserId();
-  const needsSchedule = nextAction !== "none";
+  const needsSchedule = !needsLossReason && nextAction !== "none";
 
   useEffect(() => {
     if (!open) return;
@@ -150,6 +224,9 @@ export function CrmFeedbackForm({
     setTags([...(lead.tags ?? [])]);
     setStageId(lead.stageId);
     setLossReasonTypeId(lead.lossReasonTypeId ?? "");
+    setLossReasonDetails("");
+    setRequest(lead.request ?? "");
+    setBudget(lead.budget ?? "");
     setNextAction(lead.nextAction === "none" ? "follow_up" : lead.nextAction);
     setNextFollowUpAt(toLocalInput(lead.nextFollowUpAt));
     setCustomerFeedback("");
@@ -166,6 +243,18 @@ export function CrmFeedbackForm({
     );
   }
 
+  function selectStage(next: CrmStage) {
+    setStageId(next.id);
+    if (next.category === "lost") {
+      setNextAction("none");
+      setNextFollowUpAt("");
+      return;
+    }
+    setLossReasonTypeId("");
+    setLossReasonDetails("");
+    setNextAction((prev) => (prev === "none" ? "follow_up" : prev));
+  }
+
   async function submit() {
     if (!lead) return;
     if (!stageId) {
@@ -176,6 +265,14 @@ export function CrmFeedbackForm({
       toast.error(t("crm.lossReason.required"));
       return;
     }
+
+    const reasonName =
+      lossReasons.find((r) => r.id === lossReasonTypeId)?.name ?? "Lost";
+    const resolvedNextAction: CrmNextAction = needsLossReason
+      ? "none"
+      : nextAction;
+    const detailsTrim = lossReasonDetails.trim();
+
     setSaving(true);
     const res = await addCrmLeadFeedback(lead.id, {
       feedbackTypeId: needsLossReason ? lossReasonTypeId : undefined,
@@ -183,23 +280,49 @@ export function CrmFeedbackForm({
       callAnswered,
       stageId,
       tags,
-      nextAction,
-      nextFollowUpAt: nextFollowUpAt
-        ? new Date(nextFollowUpAt).toISOString()
-        : null,
-      meetingMode: nextAction === "meeting" ? meetingMode : null,
+      nextAction: resolvedNextAction,
+      nextFollowUpAt:
+        resolvedNextAction === "none" || !nextFollowUpAt
+          ? null
+          : new Date(nextFollowUpAt).toISOString(),
+      meetingMode: resolvedNextAction === "meeting" ? meetingMode : null,
       meetingLocation:
-        nextAction === "meeting" && meetingMode === "offline"
+        resolvedNextAction === "meeting" && meetingMode === "offline"
           ? meetingLocation
           : null,
-      notes: "",
+      notes: needsLossReason && detailsTrim ? detailsTrim : "",
       mentionedUserIds: mentionedUsers.map((user) => user.id),
     });
-    setSaving(false);
+
     if (!res.success) {
+      setSaving(false);
       toast.error(res.message ?? t("crm.errors.saveFailed"));
       return;
     }
+
+    const nextNotes =
+      needsLossReason && detailsTrim
+        ? appendLossReasonNote(lead.notes ?? "", reasonName, detailsTrim)
+        : undefined;
+    const requestTrim = request.trim();
+    const budgetTrim = budget.trim();
+    const requestDirty = requestTrim !== (lead.request ?? "").trim();
+    const budgetDirty = budgetTrim !== (lead.budget ?? "").trim();
+
+    if (nextNotes !== undefined || requestDirty || budgetDirty) {
+      const patch = await updateCrmLead(lead.id, {
+        ...(nextNotes !== undefined ? { notes: nextNotes } : {}),
+        ...(requestDirty ? { request: requestTrim } : {}),
+        ...(budgetDirty ? { budget: budgetTrim } : {}),
+      });
+      if (!patch.success) {
+        setSaving(false);
+        toast.error(patch.message ?? t("crm.errors.saveFailed"));
+        return;
+      }
+    }
+
+    setSaving(false);
     toast.success(t("crm.toast.feedbackAdded"));
     onOpenChange(false);
     onSaved?.();
@@ -207,7 +330,7 @@ export function CrmFeedbackForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[min(94dvh,920px)] flex-col gap-0 overflow-hidden sm:max-w-lg">
+      <DialogContent className="flex max-h-[min(94dvh,960px)] flex-col gap-0 overflow-hidden sm:max-w-xl">
         <DialogHeader className="shrink-0 border-b border-border/50 pb-3">
           <DialogTitle>{t("crm.feedback.formTitle")}</DialogTitle>
           <DialogDescription className="line-clamp-2 sm:line-clamp-none">
@@ -236,6 +359,33 @@ export function CrmFeedbackForm({
                 </p>
               ) : null}
             </div>
+
+            <div className="grid gap-2.5 rounded-2xl border border-primary/20 bg-primary/[0.03] p-3 sm:rounded-xl sm:p-3.5">
+              <div className="grid gap-1.5">
+                <Label htmlFor="crm-fb-request">
+                  {t("crm.leadForm.request")}
+                </Label>
+                <Textarea
+                  id="crm-fb-request"
+                  value={request}
+                  onChange={(e) => setRequest(e.target.value)}
+                  placeholder={t("crm.leadForm.requestPlaceholder")}
+                  rows={2}
+                  className="min-h-[72px] resize-y text-[15px] sm:min-h-[64px] sm:text-sm"
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="crm-fb-budget">{t("crm.leadForm.budget")}</Label>
+                <Input
+                  id="crm-fb-budget"
+                  value={budget}
+                  onChange={(e) => setBudget(e.target.value)}
+                  placeholder={t("crm.leadForm.budgetPlaceholder")}
+                  className="h-12 touch-manipulation text-base sm:h-10 sm:text-sm"
+                />
+              </div>
+            </div>
+
             <div className="grid gap-2">
               <Label>{t("crm.leadForm.tags")}</Label>
               <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
@@ -257,145 +407,171 @@ export function CrmFeedbackForm({
           </section>
 
           <section className="grid gap-3">
-            <h3 className="text-[13px] font-semibold tracking-tight">
-              {t("crm.feedback.sectionAction")}
-            </h3>
-            <div className="grid gap-1.5">
-              <Label htmlFor="crm-fb-stage">{t("crm.feedback.newStage")}</Label>
-              <Select
-                value={stageId || undefined}
-                onValueChange={(value) => {
-                  setStageId(value);
-                  const next = activeStages.find((s) => s.id === value);
-                  if (next?.category !== "lost") setLossReasonTypeId("");
-                }}
-                disabled={activeStages.length === 0}
-              >
-                <SelectTrigger
-                  id="crm-fb-stage"
-                  className="h-12 touch-manipulation text-base sm:h-10 sm:text-sm"
-                >
-                  <SelectValue placeholder={t("crm.leadForm.selectStage")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {activeStages.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      <span className="inline-flex items-center gap-2">
-                        <span
-                          className="h-2 w-2 rounded-full"
-                          style={{ backgroundColor: s.color }}
-                          aria-hidden
-                        />
-                        {s.name}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex items-end justify-between gap-2">
+              <h3 className="text-[13px] font-semibold tracking-tight">
+                {t("crm.feedback.sectionAction")}
+              </h3>
+              <span className="text-[11px] text-muted-foreground sm:text-[12px]">
+                {t("crm.feedback.pickStage")}
+              </span>
             </div>
-            {needsLossReason ? (
-              <div className="grid gap-1.5">
-                <Label htmlFor="crm-fb-loss-reason">
-                  {t("crm.lossReason.select")}
-                </Label>
-                <Select
-                  value={lossReasonTypeId || undefined}
-                  onValueChange={setLossReasonTypeId}
-                  disabled={lossReasons.length === 0}
-                >
-                  <SelectTrigger
-                    id="crm-fb-loss-reason"
-                    className="h-12 touch-manipulation text-base sm:h-10 sm:text-sm"
-                  >
-                    <SelectValue
-                      placeholder={t("crm.lossReason.placeholder")}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {lossReasons.map((reason) => (
-                      <SelectItem key={reason.id} value={reason.id}>
-                        {reason.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : null}
 
             <div className="grid gap-2">
-              <Label>{t("crm.feedback.nextAction")}</Label>
-              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-                {NEXT_ACTIONS.map((action) => (
-                  <ChoiceChip
-                    key={action}
-                    active={nextAction === action}
-                    onClick={() => setNextAction(action)}
-                    className="w-full sm:w-auto"
-                  >
-                    {t(`crm.nextAction.${action}`)}
-                  </ChoiceChip>
-                ))}
-              </div>
+              <Label>{t("crm.feedback.newStage")}</Label>
+              {selectableStages.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-border/70 px-3 py-4 text-center text-[13px] text-muted-foreground">
+                  {t("crm.leadForm.selectStage")}
+                </p>
+              ) : (
+                <div className="grid max-h-[min(42dvh,280px)] grid-cols-2 gap-2 overflow-y-auto overscroll-contain pe-0.5 sm:max-h-none sm:grid-cols-3">
+                  {selectableStages.map((s) => (
+                    <StagePickButton
+                      key={s.id}
+                      stage={s}
+                      active={stageId === s.id}
+                      onClick={() => selectStage(s)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
-            {needsSchedule ? (
-              <div className="grid gap-2">
-                <CrmDateTimeField
-                  id="crm-fb-next-at"
-                  label={t("crm.feedback.nextFollowUp")}
-                  value={nextFollowUpAt}
-                  onChange={setNextFollowUpAt}
-                />
-                <p className="text-[11px] leading-relaxed text-muted-foreground sm:text-[12px]">
-                  {t("crm.feedback.nextActionHint")}
-                </p>
+            {needsLossReason ? (
+              <div className="grid gap-3 rounded-2xl border border-destructive/30 bg-destructive/[0.06] p-3.5 sm:rounded-xl">
+                <div className="grid gap-1">
+                  <p className="text-[13px] font-semibold text-destructive">
+                    {t("crm.feedback.sectionLost")}
+                  </p>
+                  <p className="text-[12px] leading-relaxed text-muted-foreground">
+                    {selectedStage
+                      ? t("crm.lossReason.descWithStage", {
+                          stage: selectedStage.name,
+                        })
+                      : t("crm.lossReason.desc")}
+                  </p>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>{t("crm.lossReason.select")}</Label>
+                  {lossReasons.length === 0 ? (
+                    <p className="text-[12px] text-muted-foreground">
+                      {t("crm.lossReason.empty")}
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {lossReasons.map((reason) => (
+                        <ChoiceChip
+                          key={reason.id}
+                          active={lossReasonTypeId === reason.id}
+                          tone="danger"
+                          onClick={() => setLossReasonTypeId(reason.id)}
+                          className="w-full justify-start text-start"
+                        >
+                          {reason.name}
+                        </ChoiceChip>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid gap-1.5">
+                  <Label htmlFor="crm-fb-loss-details">
+                    {t("crm.lossReason.details")}
+                  </Label>
+                  <Textarea
+                    id="crm-fb-loss-details"
+                    value={lossReasonDetails}
+                    onChange={(e) => setLossReasonDetails(e.target.value)}
+                    placeholder={t("crm.lossReason.detailsPlaceholder")}
+                    rows={3}
+                    className="min-h-[88px] resize-y text-[15px] sm:text-sm"
+                  />
+                </div>
               </div>
             ) : null}
 
-            {nextAction === "meeting" ? (
-              <div className="grid gap-3">
+            {!needsLossReason ? (
+              <>
                 <div className="grid gap-2">
-                  <Label>{t("crm.feedback.meetingMode")}</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <ChoiceChip
-                      active={meetingMode === "online"}
-                      onClick={() => setMeetingMode("online")}
-                      className="w-full justify-center"
-                    >
-                      {t("crm.feedback.meetingOnline")}
-                    </ChoiceChip>
-                    <ChoiceChip
-                      active={meetingMode === "offline"}
-                      onClick={() => setMeetingMode("offline")}
-                      className="w-full justify-center"
-                    >
-                      {t("crm.feedback.meetingOffline")}
-                    </ChoiceChip>
+                  <Label>{t("crm.feedback.nextAction")}</Label>
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                    {NEXT_ACTIONS.map((action) => (
+                      <ChoiceChip
+                        key={action}
+                        active={nextAction === action}
+                        onClick={() => setNextAction(action)}
+                        className="w-full sm:w-auto"
+                      >
+                        {t(`crm.nextAction.${action}`)}
+                      </ChoiceChip>
+                    ))}
                   </div>
                 </div>
-                {meetingMode === "offline" ? (
+
+                {needsSchedule ? (
                   <div className="grid gap-2">
-                    <Label>{t("crm.feedback.meetingLocation")}</Label>
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                      <ChoiceChip
-                        active={meetingLocation === "our_company"}
-                        onClick={() => setMeetingLocation("our_company")}
-                        className="w-full justify-center"
-                      >
-                        {t("crm.feedback.locationOurCompany")}
-                      </ChoiceChip>
-                      <ChoiceChip
-                        active={meetingLocation === "client_company"}
-                        onClick={() => setMeetingLocation("client_company")}
-                        className="w-full justify-center"
-                      >
-                        {t("crm.feedback.locationClientCompany")}
-                      </ChoiceChip>
-                    </div>
+                    <CrmDateTimeField
+                      id="crm-fb-next-at"
+                      label={t("crm.feedback.nextFollowUp")}
+                      value={nextFollowUpAt}
+                      onChange={setNextFollowUpAt}
+                    />
+                    <p className="text-[11px] leading-relaxed text-muted-foreground sm:text-[12px]">
+                      {t("crm.feedback.nextActionHint")}
+                    </p>
                   </div>
                 ) : null}
-              </div>
-            ) : null}
+
+                {nextAction === "meeting" ? (
+                  <div className="grid gap-3">
+                    <div className="grid gap-2">
+                      <Label>{t("crm.feedback.meetingMode")}</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <ChoiceChip
+                          active={meetingMode === "online"}
+                          onClick={() => setMeetingMode("online")}
+                          className="w-full justify-center"
+                        >
+                          {t("crm.feedback.meetingOnline")}
+                        </ChoiceChip>
+                        <ChoiceChip
+                          active={meetingMode === "offline"}
+                          onClick={() => setMeetingMode("offline")}
+                          className="w-full justify-center"
+                        >
+                          {t("crm.feedback.meetingOffline")}
+                        </ChoiceChip>
+                      </div>
+                    </div>
+                    {meetingMode === "offline" ? (
+                      <div className="grid gap-2">
+                        <Label>{t("crm.feedback.meetingLocation")}</Label>
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <ChoiceChip
+                            active={meetingLocation === "our_company"}
+                            onClick={() => setMeetingLocation("our_company")}
+                            className="w-full justify-center"
+                          >
+                            {t("crm.feedback.locationOurCompany")}
+                          </ChoiceChip>
+                          <ChoiceChip
+                            active={meetingLocation === "client_company"}
+                            onClick={() => setMeetingLocation("client_company")}
+                            className="w-full justify-center"
+                          >
+                            {t("crm.feedback.locationClientCompany")}
+                          </ChoiceChip>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <p className="rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5 text-[12px] leading-relaxed text-muted-foreground">
+                {t("crm.feedback.lostNoFollowUp")}
+              </p>
+            )}
           </section>
 
           <section className="grid gap-3">
@@ -407,6 +583,7 @@ export function CrmFeedbackForm({
               <div className="grid grid-cols-2 gap-2">
                 <ChoiceChip
                   active={callAnswered}
+                  tone="success"
                   onClick={() => setCallAnswered(true)}
                   className="min-h-11 w-full justify-center"
                 >
@@ -414,6 +591,7 @@ export function CrmFeedbackForm({
                 </ChoiceChip>
                 <ChoiceChip
                   active={!callAnswered}
+                  tone="danger"
                   onClick={() => setCallAnswered(false)}
                   className="min-h-11 w-full justify-center"
                 >
@@ -451,12 +629,18 @@ export function CrmFeedbackForm({
           </Button>
           <Button
             type="button"
-            className="w-full sm:w-auto"
+            className={cn(
+              "w-full sm:w-auto",
+              needsLossReason &&
+                "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            )}
             disabled={saving || !lead}
             onClick={() => void submit()}
           >
             {saving ? (
               <Loader2 className="h-4 w-4 animate-spin" />
+            ) : needsLossReason ? (
+              t("crm.lossReason.confirm")
             ) : (
               t("crm.actions.save")
             )}

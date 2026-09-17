@@ -30,6 +30,8 @@ const FIELD_LABEL: Record<CrmLeadCsvHeader, TranslationPath> = {
   status: "crm.import.fields.status",
   tags: "crm.import.fields.tags",
   nextAction: "crm.import.fields.nextAction",
+  request: "crm.import.fields.request",
+  budget: "crm.import.fields.budget",
   notes: "crm.import.fields.notes",
 };
 

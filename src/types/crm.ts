@@ -167,6 +167,10 @@ export interface CrmLead extends BaseEntity {
   lastActivityAt: string | null;
   lossReasonTypeId: string | null;
   notes: string;
+  /** What the customer asked for / product interest. */
+  request: string;
+  /** Free-text budget (e.g. "50 ألف", "تحت التفاوض"). */
+  budget: string;
   convertedAt: string | null;
 }
 

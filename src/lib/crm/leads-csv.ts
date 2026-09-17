@@ -13,6 +13,8 @@ export const CRM_LEAD_CSV_HEADERS = [
   "status",
   "tags",
   "nextAction",
+  "request",
+  "budget",
   "notes",
 ] as const;
 
@@ -30,6 +32,8 @@ export interface CrmLeadCsvRow {
   status: string;
   tags: string;
   nextAction: string;
+  request: string;
+  budget: string;
   notes: string;
 }
 
@@ -113,6 +117,12 @@ const HEADER_ALIASES: Record<string, CrmLeadCsvHeader> = {
   followup: "nextAction",
   "الإجراء التالي": "nextAction",
   "الخطوة التالية": "nextAction",
+  request: "request",
+  الطلب: "request",
+  "طلب العميل": "request",
+  budget: "budget",
+  البادجيت: "budget",
+  الميزانية: "budget",
   notes: "notes",
   note: "notes",
   comment: "notes",
@@ -179,6 +189,8 @@ export function applyLeadColumnMapping(
       status: read("status"),
       tags: read("tags"),
       nextAction: read("nextAction"),
+      request: read("request"),
+      budget: read("budget"),
       notes: read("notes"),
     });
   });

@@ -106,6 +106,8 @@ export function useCrmLeadForm({
   const [nextAction, setNextAction] = useState<CrmNextAction>("none");
   const [nextFollowUpAt, setNextFollowUpAt] = useState("");
   const [notes, setNotes] = useState("");
+  const [request, setRequest] = useState("");
+  const [budget, setBudget] = useState("");
   const [saving, setSaving] = useState(false);
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [duplicateLead, setDuplicateLead] = useState<CrmDuplicateLeadSummary | null>(null);
@@ -136,6 +138,8 @@ export function useCrmLeadForm({
       setNextAction(editingLead.nextAction);
       setNextFollowUpAt(toLocalInput(editingLead.nextFollowUpAt));
       setNotes(editingLead.notes ?? "");
+      setRequest(editingLead.request ?? "");
+      setBudget(editingLead.budget ?? "");
     } else {
       setName("");
       setContacts([emptyContactDraft()]);
@@ -156,6 +160,8 @@ export function useCrmLeadForm({
       setNextAction("none");
       setNextFollowUpAt("");
       setNotes("");
+      setRequest("");
+      setBudget("");
       try {
         const raw = window.sessionStorage.getItem("rootk.crm.contact-draft");
         if (raw) {
@@ -298,6 +304,8 @@ export function useCrmLeadForm({
         ? new Date(nextFollowUpAt).toISOString()
         : null,
       notes,
+      request: request.trim(),
+      budget: budget.trim(),
     };
 
     const parsed = createLeadSchema.safeParse(payload);
@@ -374,6 +382,10 @@ export function useCrmLeadForm({
     setNextFollowUpAt,
     notes,
     setNotes,
+    request,
+    setRequest,
+    budget,
+    setBudget,
     saving,
     activeStages,
     activeBusinessTypes,

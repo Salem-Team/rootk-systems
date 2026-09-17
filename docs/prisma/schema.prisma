@@ -1349,6 +1349,10 @@ model CrmLead {
   lastActivityAt   DateTime?
   lossReasonTypeId String?
   notes            String         @default("")
+  /** What the lead asked for / product interest. */
+  request          String         @default("")
+  /** Free-text budget (e.g. "50k", "under negotiation"). */
+  budget           String         @default("")
   convertedAt      DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt

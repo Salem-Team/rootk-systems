@@ -50,6 +50,8 @@ function normalizeLead(lead: CrmLead): CrmLead {
     contactKind:
       lead.contactKind ?? detectContactKind(lead.phone, lead.phoneNormalized),
     contacts: Array.isArray(lead.contacts) ? lead.contacts : [],
+    request: typeof lead.request === "string" ? lead.request : "",
+    budget: typeof lead.budget === "string" ? lead.budget : "",
   };
 }
 

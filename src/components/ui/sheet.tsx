@@ -52,8 +52,8 @@ const SheetContent = React.forwardRef<
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute end-4 top-4 z-10 rounded-md border border-transparent p-2 opacity-70 ring-offset-background transition-all hover:border-border hover:bg-muted hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring/30 focus:ring-offset-2 disabled:pointer-events-none">
-          <X className="h-4 w-4" />
+        <DialogPrimitive.Close className="absolute end-3 top-[max(0.65rem,env(safe-area-inset-top))] z-10 rounded-xl border border-transparent p-2.5 opacity-70 ring-offset-background transition-all hover:border-border hover:bg-muted hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring/30 focus:ring-offset-2 disabled:pointer-events-none touch-manipulation sm:end-4 sm:top-4 sm:rounded-md sm:p-2">
+          <X className="h-5 w-5 sm:h-4 sm:w-4" />
           <span className="sr-only">{t("common.close")}</span>
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>

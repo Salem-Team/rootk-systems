@@ -208,6 +208,8 @@ export async function createCrmLead(
         lastActivityAt: now,
         lossReasonTypeId: null,
         notes: parsed.notes ?? "",
+        request: parsed.request ?? "",
+        budget: parsed.budget ?? "",
         convertedAt: null,
       },
       actorId

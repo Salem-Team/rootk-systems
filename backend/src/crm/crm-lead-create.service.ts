@@ -168,6 +168,8 @@ export class CrmLeadCreateService {
           lastActivityAt: now,
           lossReasonTypeId: patch.lossReasonTypeId ?? lossReasonTypeId,
           notes: String(body.notes ?? ""),
+          request: String(body.request ?? "").trim(),
+          budget: String(body.budget ?? "").trim(),
           convertedAt: patch.convertedAt ?? null,
           createdBy: actor.userId,
           updatedBy: actor.userId,

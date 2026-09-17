@@ -139,6 +139,8 @@ export async function importCrmLeads(
           nextAction: NEXT_ACTIONS.has(row.nextAction as CrmNextAction)
             ? (row.nextAction as CrmNextAction)
             : "none",
+          request: row.request ?? "",
+          budget: row.budget ?? "",
           notes: row.notes,
         });
         if (!res.success || !res.data) {

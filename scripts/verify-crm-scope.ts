@@ -76,6 +76,8 @@ function lead(
     nextFollowUpAt: extras.nextFollowUpAt ?? null,
     lastActivityAt: extras.lastActivityAt ?? NOW,
     lossReasonTypeId: null,
+    request: "",
+    budget: "",
     notes: "",
     convertedAt: extras.convertedAt ?? null,
     ...entity(),

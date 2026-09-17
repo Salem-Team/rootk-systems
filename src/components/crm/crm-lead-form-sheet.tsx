@@ -12,6 +12,7 @@ import {
 import { CrmLeadFormFields } from "@/components/crm/crm-lead-form-fields";
 import { CrmDuplicateLeadDialog } from "@/components/crm/crm-duplicate-lead-dialog";
 import { useCrmLeadForm } from "@/hooks/use-crm-lead-form";
+import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
 import type { CrmBusinessType, CrmLead, CrmStage } from "@/types/crm";
 
@@ -57,87 +58,107 @@ export function CrmLeadFormSheet({
 
   return (
     <>
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>
-            {editingLead ? t("crm.leadForm.editTitle") : t("crm.leadForm.title")}
-          </SheetTitle>
-          <SheetDescription>{t("crm.leadForm.description")}</SheetDescription>
-        </SheetHeader>
-
-        <div className="mt-6 grid gap-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <CrmLeadFormFields
-            name={form.name}
-            onNameChange={form.setName}
-            contacts={form.contacts}
-            onPatchContact={form.patchContact}
-            onAddContact={form.addContact}
-            onRemoveContact={form.removeContact}
-            canAddContact={form.canAddContact}
-            email={form.email}
-            onEmailChange={form.setEmail}
-            companyName={form.companyName}
-            onCompanyNameChange={form.setCompanyName}
-            businessTypeId={form.businessTypeId}
-            onBusinessTypeIdChange={form.setBusinessTypeId}
-            activeBusinessTypes={form.activeBusinessTypes}
-            source={form.source}
-            onSourceChange={form.setSource}
-            stageId={form.stageId}
-            onStageIdChange={form.onStageIdChange}
-            activeStages={form.activeStages}
-            subStageId={form.subStageId}
-            onSubStageIdChange={form.setSubStageId}
-            activeSubStages={form.activeSubStages}
-            ownerEmployeeId={form.ownerEmployeeId}
-            onOwnerEmployeeIdChange={form.setOwnerEmployeeId}
-            employees={safeEmployees}
-            canAssign={form.canPickOwner}
-            status={form.status}
-            onStatusChange={form.setStatus}
-            tags={form.tags}
-            onToggleTag={form.toggleTag}
-            nextAction={form.nextAction}
-            onNextActionChange={form.setNextAction}
-            nextFollowUpAt={form.nextFollowUpAt}
-            onNextFollowUpAtChange={form.setNextFollowUpAt}
-            notes={form.notes}
-            onNotesChange={form.setNotes}
-          />
-
-          <div className="sticky bottom-0 -mx-4 mt-2 grid grid-cols-2 gap-2 border-t border-border/60 bg-card/95 px-4 py-3 backdrop-blur-xl sm:static sm:mx-0 sm:flex sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 sm:pt-2 sm:backdrop-blur-none">
-            <Button
-              type="button"
-              variant="outline"
-              className="h-12 min-h-12 touch-manipulation rounded-xl sm:h-9 sm:min-h-9 sm:rounded-lg"
-              onClick={() => onOpenChange(false)}
-            >
-              {t("crm.actions.cancel")}
-            </Button>
-            <Button
-              type="button"
-              className="h-12 min-h-12 touch-manipulation rounded-xl sm:h-9 sm:min-h-9 sm:rounded-lg"
-              disabled={form.saving}
-              onClick={() => void form.submit()}
-            >
-              {form.saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                t("crm.actions.save")
-              )}
-            </Button>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent
+          className={cn(
+            "flex w-full flex-col gap-0 overflow-hidden p-0",
+            "max-sm:h-dvh max-sm:max-h-dvh max-sm:rounded-none",
+            "sm:max-w-md"
+          )}
+        >
+          <div className="shrink-0 border-b border-border/60 px-4 pb-3 pt-[max(0.85rem,env(safe-area-inset-top))] pe-14 sm:px-6 sm:pb-4 sm:pt-6 sm:pe-14">
+            <SheetHeader className="space-y-1 text-start">
+              <SheetTitle className="text-[1.1rem] sm:text-lg">
+                {editingLead
+                  ? t("crm.leadForm.editTitle")
+                  : t("crm.leadForm.title")}
+              </SheetTitle>
+              <SheetDescription className="line-clamp-2 text-[13px] sm:line-clamp-none sm:text-sm">
+                {t("crm.leadForm.description")}
+              </SheetDescription>
+            </SheetHeader>
           </div>
-        </div>
-      </SheetContent>
-    </Sheet>
-    <CrmDuplicateLeadDialog
-      open={form.duplicateOpen}
-      onOpenChange={form.setDuplicateOpen}
-      lead={form.duplicateLead}
-      ownedByOther={form.duplicateOwnedByOther}
-      onOpenLead={form.onOpenExistingLead}
-    />
+
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5">
+            <div className="grid gap-4 pb-2">
+              <CrmLeadFormFields
+                name={form.name}
+                onNameChange={form.setName}
+                contacts={form.contacts}
+                onPatchContact={form.patchContact}
+                onAddContact={form.addContact}
+                onRemoveContact={form.removeContact}
+                canAddContact={form.canAddContact}
+                email={form.email}
+                onEmailChange={form.setEmail}
+                companyName={form.companyName}
+                onCompanyNameChange={form.setCompanyName}
+                businessTypeId={form.businessTypeId}
+                onBusinessTypeIdChange={form.setBusinessTypeId}
+                activeBusinessTypes={form.activeBusinessTypes}
+                source={form.source}
+                onSourceChange={form.setSource}
+                stageId={form.stageId}
+                onStageIdChange={form.onStageIdChange}
+                activeStages={form.activeStages}
+                subStageId={form.subStageId}
+                onSubStageIdChange={form.setSubStageId}
+                activeSubStages={form.activeSubStages}
+                ownerEmployeeId={form.ownerEmployeeId}
+                onOwnerEmployeeIdChange={form.setOwnerEmployeeId}
+                employees={safeEmployees}
+                canAssign={form.canPickOwner}
+                status={form.status}
+                onStatusChange={form.setStatus}
+                tags={form.tags}
+                onToggleTag={form.toggleTag}
+                nextAction={form.nextAction}
+                onNextActionChange={form.setNextAction}
+                nextFollowUpAt={form.nextFollowUpAt}
+                onNextFollowUpAtChange={form.setNextFollowUpAt}
+                request={form.request}
+                onRequestChange={form.setRequest}
+                budget={form.budget}
+                onBudgetChange={form.setBudget}
+                notes={form.notes}
+                onNotesChange={form.setNotes}
+              />
+            </div>
+          </div>
+
+          <div className="shrink-0 border-t border-border/60 bg-card/95 px-3 py-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl sm:px-6 sm:py-3">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12 min-h-12 touch-manipulation rounded-xl sm:h-9 sm:min-h-9 sm:w-auto sm:rounded-lg"
+                onClick={() => onOpenChange(false)}
+              >
+                {t("crm.actions.cancel")}
+              </Button>
+              <Button
+                type="button"
+                className="h-12 min-h-12 touch-manipulation rounded-xl sm:h-9 sm:min-h-9 sm:w-auto sm:rounded-lg"
+                disabled={form.saving}
+                onClick={() => void form.submit()}
+              >
+                {form.saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  t("crm.actions.save")
+                )}
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+      <CrmDuplicateLeadDialog
+        open={form.duplicateOpen}
+        onOpenChange={form.setDuplicateOpen}
+        lead={form.duplicateLead}
+        ownedByOther={form.duplicateOwnedByOther}
+        onOpenLead={form.onOpenExistingLead}
+      />
     </>
   );
 }

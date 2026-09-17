@@ -123,6 +123,12 @@ export class CrmLeadUpdateService {
       data.metadata = clearFollowUpReminderMeta(meta);
     }
     if (body.notes !== undefined) data.notes = String(body.notes ?? "");
+    if (body.request !== undefined) {
+      data.request = String(body.request ?? "").trim();
+    }
+    if (body.budget !== undefined) {
+      data.budget = String(body.budget ?? "").trim();
+    }
     if (body.lossReasonTypeId !== undefined) {
       data.lossReasonTypeId =
         typeof body.lossReasonTypeId === "string" && body.lossReasonTypeId

@@ -86,6 +86,8 @@ export function mapLead(row: CrmLead) {
     lastActivityAt: isoOrNull(row.lastActivityAt),
     lossReasonTypeId: row.lossReasonTypeId,
     notes: row.notes,
+    request: row.request ?? "",
+    budget: row.budget ?? "",
     convertedAt: isoOrNull(row.convertedAt),
     ...auditFields(row),
   };

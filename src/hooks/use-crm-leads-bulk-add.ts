@@ -127,6 +127,8 @@ export function useCrmLeadsBulkAdd({
         status: "active",
         tags: "",
         nextAction: "none",
+        request: "",
+        budget: "",
         notes: "",
       }))
     );

@@ -98,6 +98,8 @@ export const createLeadSchema = z.object({
   nextAction: nextAction.default("none"),
   nextFollowUpAt: z.string().nullable().optional(),
   notes: z.string().optional().default(""),
+  request: z.string().optional().default(""),
+  budget: z.string().optional().default(""),
 });
 
 export const updateLeadSchema = createLeadSchema.partial().extend({

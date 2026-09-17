@@ -67,6 +67,10 @@ interface CrmLeadFormFieldsProps {
   onNextActionChange: (v: CrmNextAction) => void;
   nextFollowUpAt: string;
   onNextFollowUpAtChange: (v: string) => void;
+  request: string;
+  onRequestChange: (v: string) => void;
+  budget: string;
+  onBudgetChange: (v: string) => void;
   notes: string;
   onNotesChange: (v: string) => void;
 }
@@ -107,6 +111,10 @@ export function CrmLeadFormFields({
   onNextActionChange,
   nextFollowUpAt,
   onNextFollowUpAtChange,
+  request,
+  onRequestChange,
+  budget,
+  onBudgetChange,
   notes,
   onNotesChange,
 }: CrmLeadFormFieldsProps) {
@@ -320,7 +328,7 @@ export function CrmLeadFormFields({
       <div className="grid gap-1.5">
         <Label>{t("crm.leadForm.status")}</Label>
         <Select value={status} onValueChange={(v) => onStatusChange(v as CrmLeadStatus)}>
-          <SelectTrigger>
+          <SelectTrigger className="h-11 touch-manipulation text-base sm:h-9 sm:text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -335,7 +343,7 @@ export function CrmLeadFormFields({
 
       <div className="grid gap-1.5">
         <Label>{t("crm.leadForm.tags")}</Label>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-1.5">
           {TAGS.map((tag) => {
             const on = tags.includes(tag);
             return (
@@ -343,12 +351,12 @@ export function CrmLeadFormFields({
                 key={tag}
                 type="button"
                 onClick={() => onToggleTag(tag)}
+                aria-pressed={on}
                 className={
                   on
-                    ? "rounded-md border border-primary/25 bg-primary/[0.08] px-2 py-1 text-[12px] font-medium text-primary"
-                    : "rounded-md border border-border/70 px-2 py-1 text-[12px] text-muted-foreground hover:bg-muted/50"
+                    ? "min-h-11 touch-manipulation rounded-xl border border-primary/25 bg-primary/[0.08] px-3 py-2 text-[13px] font-semibold text-primary sm:min-h-0 sm:rounded-md sm:px-2 sm:py-1 sm:text-[12px] sm:font-medium"
+                    : "min-h-11 touch-manipulation rounded-xl border border-border/70 px-3 py-2 text-[13px] text-muted-foreground hover:bg-muted/50 sm:min-h-0 sm:rounded-md sm:px-2 sm:py-1 sm:text-[12px]"
                 }
-                aria-pressed={on}
               >
                 {t(`crm.tags.${tag}`)}
               </button>
@@ -396,6 +404,34 @@ export function CrmLeadFormFields({
         </div>
       </div>
 
+      <div className="grid gap-3.5 rounded-2xl border border-primary/20 bg-primary/[0.03] p-3.5 sm:gap-3 sm:rounded-xl sm:p-3.5">
+        <p className="text-[13px] font-semibold text-primary sm:text-[12px]">
+          {t("crm.leadForm.requestBudgetSection")}
+        </p>
+        <div className="grid gap-1.5">
+          <Label htmlFor="crm-lead-request">{t("crm.leadForm.request")}</Label>
+          <Textarea
+            id="crm-lead-request"
+            value={request}
+            onChange={(e) => onRequestChange(e.target.value)}
+            rows={4}
+            placeholder={t("crm.leadForm.requestPlaceholder")}
+            className="min-h-[7rem] rounded-xl text-base leading-relaxed sm:min-h-[5.5rem] sm:rounded-lg sm:text-sm"
+          />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="crm-lead-budget">{t("crm.leadForm.budget")}</Label>
+          <Input
+            id="crm-lead-budget"
+            value={budget}
+            onChange={(e) => onBudgetChange(e.target.value)}
+            placeholder={t("crm.leadForm.budgetPlaceholder")}
+            className="h-12 rounded-xl text-base sm:h-10 sm:rounded-lg sm:text-sm"
+            enterKeyHint="done"
+          />
+        </div>
+      </div>
+
       <div className="grid gap-1.5">
         <Label htmlFor="crm-lead-notes">{t("crm.leadForm.notes")}</Label>
         <Textarea
@@ -403,6 +439,7 @@ export function CrmLeadFormFields({
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
           rows={3}
+          className="min-h-[5.5rem] rounded-xl text-base sm:min-h-[96px] sm:rounded-lg sm:text-sm"
         />
       </div>
     </>
