@@ -176,20 +176,12 @@ export async function ensureCatalog(): Promise<{
     subStages = await crmSubStageRepository.findAll();
   }
 
-  // Existing local catalogs: always keep a Lost stage for closing deals.
-  if (stages.length > 0 && !stages.some((s) => s.category === "lost")) {
+  // Existing local catalogs: always keep a stage named "Lost".
+  if (stages.length > 0) {
     const namedLost = stages.find(
       (s) => s.name.trim().toLowerCase() === "lost"
     );
-    if (namedLost) {
-      await crmStageRepository.update(namedLost.id, {
-        ...namedLost,
-        category: "lost",
-        active: true,
-        color: namedLost.color || "#ef4444",
-        conversionProbability: 0,
-      });
-    } else {
+    if (!namedLost) {
       const maxSort = stages.reduce((m, s) => Math.max(m, s.sortOrder), -1);
       await crmStageRepository.create(
         enrichWithAudit(
@@ -207,8 +199,17 @@ export async function ensureCatalog(): Promise<{
           "system"
         )
       );
+      stages = await crmStageRepository.findAll();
+    } else if (namedLost.category !== "lost" || !namedLost.active) {
+      await crmStageRepository.update(namedLost.id, {
+        ...namedLost,
+        category: "lost",
+        active: true,
+        color: namedLost.color || "#ef4444",
+        conversionProbability: 0,
+      });
+      stages = await crmStageRepository.findAll();
     }
-    stages = await crmStageRepository.findAll();
   }
 
   return {

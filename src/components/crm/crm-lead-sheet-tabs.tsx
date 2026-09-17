@@ -86,22 +86,22 @@ export function CrmLeadSheetTabs({
       className="mt-0 flex min-h-0 flex-1 flex-col"
     >
       <div className="sticky top-0 z-10 -mx-3 bg-card/95 px-3 pb-2 pt-2 backdrop-blur-xl supports-[backdrop-filter]:bg-card/90 sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:pb-0 sm:pt-3 sm:backdrop-blur-none">
-        <TabsList className="mobile-seg-list grid h-auto w-full grid-cols-3 gap-1 p-1 sm:inline-flex sm:h-9 sm:w-auto sm:grid-cols-none">
+        <TabsList className="!grid h-11 w-full !grid-cols-3 gap-1 rounded-xl border border-border/70 bg-muted/55 p-1 shadow-none sm:!w-full sm:h-10 sm:!justify-stretch">
           <TabsTrigger
             value="overview"
-            className="min-h-11 touch-manipulation rounded-xl text-[12px] font-semibold sm:min-h-0 sm:rounded-md sm:text-sm sm:font-medium"
+            className="min-h-0 w-full touch-manipulation truncate rounded-lg px-1.5 text-[11.5px] font-semibold leading-tight sm:text-[13px] sm:font-medium"
           >
             {t("crm.leadSheet.overview")}
           </TabsTrigger>
           <TabsTrigger
             value="timeline"
-            className="min-h-11 touch-manipulation rounded-xl text-[12px] font-semibold sm:min-h-0 sm:rounded-md sm:text-sm sm:font-medium"
+            className="min-h-0 w-full touch-manipulation truncate rounded-lg px-1.5 text-[11.5px] font-semibold leading-tight sm:text-[13px] sm:font-medium"
           >
             {t("crm.leadSheet.timeline")}
           </TabsTrigger>
           <TabsTrigger
             value="feedback"
-            className="min-h-11 touch-manipulation rounded-xl text-[12px] font-semibold sm:min-h-0 sm:rounded-md sm:text-sm sm:font-medium"
+            className="min-h-0 w-full touch-manipulation truncate rounded-lg px-1.5 text-[11.5px] font-semibold leading-tight sm:text-[13px] sm:font-medium"
           >
             {t("crm.leadSheet.feedback")}
           </TabsTrigger>

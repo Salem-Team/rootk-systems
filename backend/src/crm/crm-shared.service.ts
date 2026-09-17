@@ -61,14 +61,11 @@ export class CrmSharedService {
     await this.ensureLostStage(companyId, actorId);
   }
 
-  /** Create or repair an active Lost stage when the pipeline has none (category = lost). */
+  /**
+   * Ensure an active stage named "Lost" (category=lost) exists.
+   * Other lost stages (e.g. "Not interested") are left alone.
+   */
   async ensureLostStage(companyId: string, actorId = CRM_SYSTEM_ACTOR_ID) {
-    const lostCount = await this.prisma.crmStage.count({
-      where: { companyId, deletedAt: null, category: "lost" },
-    });
-    if (lostCount > 0) return;
-
-    // Prefer repairing an existing "Lost" row that was saved with the wrong category.
     const namedLost = await this.prisma.crmStage.findFirst({
       where: {
         companyId,
@@ -76,17 +73,24 @@ export class CrmSharedService {
         name: { equals: "Lost", mode: "insensitive" },
       },
     });
+
     if (namedLost) {
-      await this.prisma.crmStage.update({
-        where: { id: namedLost.id },
-        data: {
-          category: "lost",
-          active: true,
-          color: namedLost.color || "#ef4444",
-          conversionProbability: 0,
-          updatedBy: actorId,
-        },
-      });
+      if (
+        namedLost.category !== "lost" ||
+        !namedLost.active ||
+        namedLost.conversionProbability !== 0
+      ) {
+        await this.prisma.crmStage.update({
+          where: { id: namedLost.id },
+          data: {
+            category: "lost",
+            active: true,
+            color: namedLost.color || "#ef4444",
+            conversionProbability: 0,
+            updatedBy: actorId,
+          },
+        });
+      }
       return;
     }
 
@@ -107,6 +111,7 @@ export class CrmSharedService {
       data: {
         companyId,
         name: lostDefault.name,
+        description: "Closed lost",
         color: lostDefault.color,
         sortOrder: (maxSort._max.sortOrder ?? -1) + 1,
         category: lostDefault.category,
