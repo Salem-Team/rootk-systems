@@ -81,7 +81,15 @@ export async function listPermissionUsers(): Promise<
   try {
     if (isApiMode()) return fetchPermissionUsers();
     await simulateDelay(120);
-    const users = await userRepository.findAll();
+    const { employeeRepository } = await import("@/repositories");
+    const employees = await employeeRepository.list();
+    const employeeIds = new Set(employees.map((e) => e.id));
+    const users = (await userRepository.findAll()).filter(
+      (user) =>
+        isProtectedUser(user) ||
+        !user.employeeId ||
+        employeeIds.has(user.employeeId)
+    );
     const rows: UserPermissionSummary[] = [];
     for (const user of users) {
       const detail = await localDetail(user);

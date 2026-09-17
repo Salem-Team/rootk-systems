@@ -100,6 +100,7 @@ export function CrmMentionTextarea({
         rows={rows}
         disabled={disabled}
         placeholder={placeholder}
+        className="min-h-[7.5rem] text-base leading-relaxed sm:min-h-[96px] sm:text-sm"
         onChange={(e) => {
           const next = e.target.value;
           onChange(next);

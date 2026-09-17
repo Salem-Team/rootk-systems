@@ -84,7 +84,7 @@ export function CrmDateTimeField({
             variant="outline"
             aria-label={label}
             className={cn(
-              "h-11 min-w-0 justify-start gap-2 touch-manipulation px-3 font-normal sm:h-10",
+              "h-12 min-w-0 justify-start gap-2 touch-manipulation rounded-xl px-3 text-base font-normal sm:h-10 sm:rounded-lg sm:text-sm",
               !selected && "text-muted-foreground"
             )}
           >
@@ -101,16 +101,16 @@ export function CrmDateTimeField({
         <PopoverContent
           align="start"
           sideOffset={6}
-          className="z-[70] w-[min(calc(100vw-2rem),20.5rem)] p-0"
+          className="z-[70] w-[min(calc(100vw-1.25rem),22rem)] p-0"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          <div className="border-b border-border/60 p-2">
-            <div className="flex flex-wrap gap-1.5">
+          <div className="border-b border-border/60 p-2.5 sm:p-2">
+            <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap">
               <Button
                 type="button"
                 size="sm"
                 variant="secondary"
-                className="h-8 touch-manipulation"
+                className="h-10 min-h-10 touch-manipulation sm:h-8 sm:min-h-8"
                 onClick={() => applyQuick(0, Math.max(new Date().getHours() + 1, 9), 0)}
               >
                 {t("crm.feedback.quickToday")}
@@ -119,7 +119,7 @@ export function CrmDateTimeField({
                 type="button"
                 size="sm"
                 variant="secondary"
-                className="h-8 touch-manipulation"
+                className="h-10 min-h-10 touch-manipulation sm:h-8 sm:min-h-8"
                 onClick={() => applyQuick(1)}
               >
                 {t("crm.feedback.quickTomorrow")}
@@ -128,7 +128,7 @@ export function CrmDateTimeField({
                 type="button"
                 size="sm"
                 variant="secondary"
-                className="h-8 touch-manipulation"
+                className="h-10 min-h-10 touch-manipulation sm:h-8 sm:min-h-8"
                 onClick={() => applyQuick(2)}
               >
                 {t("crm.feedback.quickIn2Days")}
@@ -137,7 +137,7 @@ export function CrmDateTimeField({
                 type="button"
                 size="sm"
                 variant="secondary"
-                className="h-8 touch-manipulation"
+                className="h-10 min-h-10 touch-manipulation sm:h-8 sm:min-h-8"
                 onClick={() => applyQuick(7)}
               >
                 {t("crm.feedback.quickIn1Week")}
@@ -169,7 +169,7 @@ export function CrmDateTimeField({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-9 touch-manipulation text-muted-foreground"
+                className="h-11 min-h-11 touch-manipulation text-muted-foreground sm:h-9 sm:min-h-9"
                 disabled={!value}
                 onClick={() => {
                   onChange("");
@@ -182,7 +182,7 @@ export function CrmDateTimeField({
               <Button
                 type="button"
                 size="sm"
-                className="h-9 touch-manipulation"
+                className="h-11 min-h-11 touch-manipulation sm:h-9 sm:min-h-9"
                 onClick={() => setOpen(false)}
               >
                 {t("crm.feedback.done")}

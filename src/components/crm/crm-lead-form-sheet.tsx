@@ -66,7 +66,7 @@ export function CrmLeadFormSheet({
           <SheetDescription>{t("crm.leadForm.description")}</SheetDescription>
         </SheetHeader>
 
-        <div className="mt-6 grid gap-4">
+        <div className="mt-6 grid gap-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <CrmLeadFormFields
             name={form.name}
             onNameChange={form.setName}
@@ -106,11 +106,21 @@ export function CrmLeadFormSheet({
             onNotesChange={form.setNotes}
           />
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <div className="sticky bottom-0 -mx-4 mt-2 grid grid-cols-2 gap-2 border-t border-border/60 bg-card/95 px-4 py-3 backdrop-blur-xl sm:static sm:mx-0 sm:flex sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 sm:pt-2 sm:backdrop-blur-none">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 min-h-12 touch-manipulation rounded-xl sm:h-9 sm:min-h-9 sm:rounded-lg"
+              onClick={() => onOpenChange(false)}
+            >
               {t("crm.actions.cancel")}
             </Button>
-            <Button type="button" disabled={form.saving} onClick={() => void form.submit()}>
+            <Button
+              type="button"
+              className="h-12 min-h-12 touch-manipulation rounded-xl sm:h-9 sm:min-h-9 sm:rounded-lg"
+              disabled={form.saving}
+              onClick={() => void form.submit()}
+            >
               {form.saving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (

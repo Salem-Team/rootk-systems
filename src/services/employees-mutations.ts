@@ -183,6 +183,26 @@ export async function updateEmployee(
       }
     }
 
+    // Keep login account + permissions list in sync with employee profile.
+    const { userRepository } = await import("@/repositories");
+    const linkedAccounts = await userRepository.findLinkedToEmployee(
+      id,
+      previous.email
+    );
+    for (const account of linkedAccounts) {
+      const displayName = updated.name.trim();
+      await userRepository.update(account.id, {
+        ...account,
+        email: nextEmail,
+        displayName: displayName || account.displayName,
+        firstName:
+          displayName.split(/\s+/)[0] || account.firstName,
+        updatedAt: new Date().toISOString(),
+        updatedBy: actor,
+        version: account.version + 1,
+      });
+    }
+
     return ok(updated, "Employee updated");
   } catch (error) {
     return fromError(error, emptyEmployee());
@@ -231,34 +251,57 @@ export async function deleteEmployee(
     if (!employee) throw new NotFoundError("Employee not found");
 
     const { userRepository } = await import("@/repositories");
+    const { permissionsRepository } = await import(
+      "@/repositories/permissions.repository"
+    );
+    const { userPreferencesRepository } = await import(
+      "@/repositories/user-preferences.repository"
+    );
     const { removeLocalCredential } = await import(
       "@/lib/local-credentials"
     );
     const { isProtectedAdminAccount } = await import(
       "@/lib/protected-accounts"
     );
-    const account = await userRepository.findByEmail(employee.email, {
-      includeInactive: true,
-    });
+    const linkedAccounts = await userRepository.findLinkedToEmployee(
+      employee.id,
+      employee.email
+    );
     if (
       isProtectedAdminAccount({
         employeeId: employee.id,
-        userId: account?.id,
+        userId: linkedAccounts[0]?.id,
         email: employee.email,
-      })
+      }) ||
+      linkedAccounts.some((account) =>
+        isProtectedAdminAccount({
+          employeeId: employee.id,
+          userId: account.id,
+          email: account.email,
+        })
+      )
     ) {
       throw new ForbiddenError("The system admin account cannot be deleted");
     }
     const sessionEmployeeId = getWorkEmployeeId();
+    const sessionEmail = (
+      useSessionStore.getState().user.email ?? ""
+    ).trim().toLowerCase();
     if (
       employee.id === sessionEmployeeId ||
-      employee.email.trim().toLowerCase() ===
-        (useSessionStore.getState().user.email ?? "").trim().toLowerCase()
+      employee.email.trim().toLowerCase() === sessionEmail ||
+      linkedAccounts.some(
+        (account) => account.email.trim().toLowerCase() === sessionEmail
+      )
     ) {
       throw new ForbiddenError("You cannot delete your own account");
     }
-    if (account) {
+
+    for (const account of linkedAccounts) {
+      await permissionsRepository.deleteForUser(account.id);
+      await userPreferencesRepository.deleteForUser(account.id);
       await userRepository.delete(account.id, false);
+      removeLocalCredential(account.email);
     }
     removeLocalCredential(employee.email);
 

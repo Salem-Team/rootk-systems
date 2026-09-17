@@ -68,7 +68,7 @@ function ChoiceChip({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "inline-flex min-h-10 touch-manipulation items-center rounded-lg border px-3 py-2 text-[13px] font-medium transition-colors",
+        "inline-flex min-h-11 touch-manipulation items-center justify-center rounded-xl border px-3 py-2.5 text-[13px] font-semibold transition-colors active:scale-[0.98] sm:min-h-10 sm:rounded-lg sm:py-2 sm:font-medium",
         active
           ? "border-primary/45 bg-primary text-primary-foreground shadow-sm"
           : "border-border/70 bg-card text-muted-foreground hover:bg-muted/55 hover:text-foreground",
@@ -207,35 +207,47 @@ export function CrmFeedbackForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[min(92dvh,880px)] flex-col gap-0 overflow-hidden sm:max-w-lg">
+      <DialogContent className="flex max-h-[min(94dvh,920px)] flex-col gap-0 overflow-hidden sm:max-w-lg">
         <DialogHeader className="shrink-0 border-b border-border/50 pb-3">
           <DialogTitle>{t("crm.feedback.formTitle")}</DialogTitle>
-          <DialogDescription>{t("crm.feedback.formDesc")}</DialogDescription>
+          <DialogDescription className="line-clamp-2 sm:line-clamp-none">
+            {t("crm.feedback.formDesc")}
+          </DialogDescription>
         </DialogHeader>
 
-        <DialogBody className="grid gap-5 py-4">
+        <DialogBody className="grid gap-4 py-3.5 sm:gap-5 sm:py-4">
           <section className="grid gap-3">
             <h3 className="text-[13px] font-semibold tracking-tight">
               {t("crm.feedback.sectionLead")}
             </h3>
-            <div className="rounded-xl border border-border/70 bg-muted/25 px-3.5 py-3">
-              <p className="text-sm font-semibold">{lead?.name ?? "—"}</p>
-              <p className="mt-0.5 font-mono text-[12px] text-muted-foreground" dir="ltr">
+            <div className="rounded-2xl border border-border/70 bg-muted/25 px-3.5 py-3.5 sm:rounded-xl sm:py-3">
+              <p className="text-[0.95rem] font-semibold sm:text-sm">
+                {lead?.name ?? "—"}
+              </p>
+              <p
+                className="mt-0.5 font-mono text-[13px] text-muted-foreground sm:text-[12px]"
+                dir="ltr"
+              >
                 {lead?.phone ?? "—"}
               </p>
               {lead?.companyName ? (
-                <p className="mt-0.5 text-[12px] text-muted-foreground">
+                <p className="mt-0.5 text-[13px] text-muted-foreground sm:text-[12px]">
                   {lead.companyName}
                 </p>
               ) : null}
             </div>
             <div className="grid gap-2">
               <Label>{t("crm.leadForm.tags")}</Label>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                 {TAGS.map((tag) => {
                   const on = tags.includes(tag);
                   return (
-                    <ChoiceChip key={tag} active={on} onClick={() => toggleTag(tag)}>
+                    <ChoiceChip
+                      key={tag}
+                      active={on}
+                      onClick={() => toggleTag(tag)}
+                      className="w-full sm:w-auto"
+                    >
                       {t(`crm.tags.${tag}`)}
                     </ChoiceChip>
                   );
@@ -261,7 +273,7 @@ export function CrmFeedbackForm({
               >
                 <SelectTrigger
                   id="crm-fb-stage"
-                  className="h-11 touch-manipulation sm:h-10"
+                  className="h-12 touch-manipulation text-base sm:h-10 sm:text-sm"
                 >
                   <SelectValue placeholder={t("crm.leadForm.selectStage")} />
                 </SelectTrigger>
@@ -293,7 +305,7 @@ export function CrmFeedbackForm({
                 >
                   <SelectTrigger
                     id="crm-fb-loss-reason"
-                    className="h-11 touch-manipulation sm:h-10"
+                    className="h-12 touch-manipulation text-base sm:h-10 sm:text-sm"
                   >
                     <SelectValue
                       placeholder={t("crm.lossReason.placeholder")}
@@ -312,12 +324,13 @@ export function CrmFeedbackForm({
 
             <div className="grid gap-2">
               <Label>{t("crm.feedback.nextAction")}</Label>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                 {NEXT_ACTIONS.map((action) => (
                   <ChoiceChip
                     key={action}
                     active={nextAction === action}
                     onClick={() => setNextAction(action)}
+                    className="w-full sm:w-auto"
                   >
                     {t(`crm.nextAction.${action}`)}
                   </ChoiceChip>
@@ -427,18 +440,18 @@ export function CrmFeedbackForm({
           </section>
         </DialogBody>
 
-        <DialogFooter className="shrink-0 gap-2">
+        <DialogFooter className="shrink-0 gap-2 sm:gap-2 [&_button]:min-h-12 [&_button]:touch-manipulation [&_button]:rounded-xl sm:[&_button]:min-h-10 sm:[&_button]:rounded-lg">
           <Button
             type="button"
             variant="outline"
-            className="min-h-11 touch-manipulation sm:min-h-10"
+            className="w-full sm:w-auto"
             onClick={() => onOpenChange(false)}
           >
             {t("crm.actions.cancel")}
           </Button>
           <Button
             type="button"
-            className="min-h-11 touch-manipulation sm:min-h-10"
+            className="w-full sm:w-auto"
             disabled={saving || !lead}
             onClick={() => void submit()}
           >

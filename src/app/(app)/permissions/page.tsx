@@ -13,7 +13,7 @@ export default function PermissionsPage() {
     <PermissionGate anyOf={["settings.managePermissions"]}>
       <PageTransition>
         <PageHeader
-          className="mb-4 sm:mb-7"
+          className="mb-3 max-lg:[&_.type-subtitle]:line-clamp-2 sm:mb-7"
           eyebrow={t("permissions.nav")}
           title={t("permissions.title")}
           description={t("permissions.description")}

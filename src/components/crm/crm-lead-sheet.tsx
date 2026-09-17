@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Pencil } from "lucide-react";
+import { Loader2, MessageSquarePlus, Pencil } from "lucide-react";
 import { CrmFeedbackForm } from "@/components/crm/crm-feedback-form";
 import { CrmLeadSheetTabs } from "@/components/crm/crm-lead-sheet-tabs";
 import { CrmLeadContactList } from "@/components/crm/crm-lead-contact-list";
@@ -71,91 +71,115 @@ export function CrmLeadSheet({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="flex w-full flex-col overflow-hidden sm:max-w-lg">
-          <SheetHeader className="shrink-0">
-            <div className="flex items-start justify-between gap-3 pe-6">
-              <div className="min-w-0">
-                <SheetTitle className="truncate">{lead?.name ?? "…"}</SheetTitle>
-                <SheetDescription asChild>
-                  <div className="mt-1">
+        <SheetContent className="flex w-full flex-col overflow-hidden p-0 sm:max-w-lg sm:p-0">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 sm:pt-6">
+            <SheetHeader className="shrink-0 pe-8 text-start sm:pe-10">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <SheetTitle className="truncate text-[1.1rem] sm:text-lg">
+                    {lead?.name ?? "…"}
+                  </SheetTitle>
+                  <SheetDescription asChild>
                     <div className="mt-1">
-                      {lead ? <CrmLeadContactList lead={lead} /> : null}
+                      <div className="mt-1">
+                        {lead ? <CrmLeadContactList lead={lead} /> : null}
+                      </div>
                     </div>
-                  </div>
-                </SheetDescription>
+                  </SheetDescription>
+                </div>
+                {sheet.stage ? (
+                  <Badge
+                    variant="outline"
+                    className="shrink-0"
+                    style={{
+                      borderColor: `${sheet.stage.color}55`,
+                      color: sheet.stage.color,
+                    }}
+                  >
+                    {sheet.stage.name}
+                  </Badge>
+                ) : null}
               </div>
-              {sheet.stage ? (
-                <Badge
-                  variant="outline"
-                  className="shrink-0"
-                  style={{
-                    borderColor: `${sheet.stage.color}55`,
-                    color: sheet.stage.color,
-                  }}
-                >
-                  {sheet.stage.name}
-                </Badge>
-              ) : null}
-            </div>
-            <p className="text-[12px] text-muted-foreground">{sheet.ownerName}</p>
-          </SheetHeader>
+              <p className="text-[12px] text-muted-foreground">{sheet.ownerName}</p>
+            </SheetHeader>
 
-          {sheet.loading && !lead ? (
-            <div className="flex min-h-0 flex-1 items-center justify-center py-16">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : lead ? (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <div className="mt-3 flex shrink-0 flex-wrap gap-1.5">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => sheet.setFeedbackOpen(true)}
-                >
-                  {t("crm.actions.addFeedback")}
-                </Button>
-                {onEdit ? (
+            {sheet.loading && !lead ? (
+              <div className="flex min-h-0 flex-1 items-center justify-center py-16">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : lead ? (
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <div className="mt-3 grid shrink-0 grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-1.5">
                   <Button
                     type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onEdit(lead)}
+                    className="col-span-2 hidden h-9 min-h-9 touch-manipulation rounded-lg text-sm sm:inline-flex"
+                    onClick={() => sheet.setFeedbackOpen(true)}
                   >
-                    <Pencil className="me-1.5 h-3.5 w-3.5" />
-                    {t("crm.actions.editLead")}
+                    <MessageSquarePlus className="h-4 w-4" />
+                    {t("crm.actions.addFeedback")}
                   </Button>
-                ) : null}
-                <Select value={lead.stageId} onValueChange={sheet.changeStage}>
-                  <SelectTrigger className="h-8 w-full min-w-0 sm:w-[150px]">
-                    <SelectValue placeholder={t("crm.actions.changeStage")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sheet.safeStages
-                      .filter((s) => s.active || s.id === lead.stageId)
-                      .map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  {onEdit ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-11 min-h-11 touch-manipulation rounded-xl sm:h-9 sm:min-h-9 sm:rounded-lg"
+                      onClick={() => onEdit(lead)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      {t("crm.actions.editLead")}
+                    </Button>
+                  ) : null}
+                  <Select value={lead.stageId} onValueChange={sheet.changeStage}>
+                    <SelectTrigger
+                      className={
+                        onEdit
+                          ? "h-11 min-h-11 w-full touch-manipulation rounded-xl text-base sm:h-9 sm:min-h-9 sm:w-[150px] sm:rounded-lg sm:text-sm"
+                          : "col-span-2 h-11 min-h-11 w-full touch-manipulation rounded-xl text-base sm:col-auto sm:h-9 sm:min-h-9 sm:w-[150px] sm:rounded-lg sm:text-sm"
+                      }
+                    >
+                      <SelectValue placeholder={t("crm.actions.changeStage")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sheet.safeStages
+                        .filter((s) => s.active || s.id === lead.stageId)
+                        .map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <CrmLeadSheetTabs
-                tab={sheet.tab}
-                onTabChange={sheet.setTab}
-                lead={lead}
-                timeline={sheet.timeline}
-                feedback={sheet.feedback}
-                businessTypes={businessTypes}
-                employees={employees}
-                lossReasonName={sheet.lossReasonName}
-                stageCategory={sheet.stage?.category}
-              />
+                <CrmLeadSheetTabs
+                  tab={sheet.tab}
+                  onTabChange={sheet.setTab}
+                  lead={lead}
+                  timeline={sheet.timeline}
+                  feedback={sheet.feedback}
+                  businessTypes={businessTypes}
+                  employees={employees}
+                  lossReasonName={sheet.lossReasonName}
+                  stageCategory={sheet.stage?.category}
+                />
+              </div>
+            ) : (
+              <EmptyState className="mt-8" title={t("crm.errors.loadFailed")} />
+            )}
+          </div>
+
+          {lead ? (
+            <div className="shrink-0 border-t border-border/60 bg-card/95 px-3 py-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl sm:hidden">
+              <Button
+                type="button"
+                className="h-12 w-full touch-manipulation rounded-xl text-[0.95rem]"
+                onClick={() => sheet.setFeedbackOpen(true)}
+              >
+                <MessageSquarePlus className="h-4 w-4" />
+                {t("crm.actions.addFeedback")}
+              </Button>
             </div>
-          ) : (
-            <EmptyState className="mt-8" title={t("crm.errors.loadFailed")} />
-          )}
+          ) : null}
         </SheetContent>
       </Sheet>
 

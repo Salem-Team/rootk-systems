@@ -75,14 +75,29 @@ export function CrmLeadSheetTabs({
   const employeeNameById = new Map(employees.map((e) => [e.id, e.name]));
 
   return (
-    <Tabs value={tab} onValueChange={onTabChange} className="mt-4 flex min-h-0 flex-1 flex-col">
-      <TabsList className="shrink-0">
-        <TabsTrigger value="overview">{t("crm.leadSheet.overview")}</TabsTrigger>
-        <TabsTrigger value="timeline">{t("crm.leadSheet.timeline")}</TabsTrigger>
-        <TabsTrigger value="feedback">{t("crm.leadSheet.feedback")}</TabsTrigger>
+    <Tabs value={tab} onValueChange={onTabChange} className="mt-3 flex min-h-0 flex-1 flex-col sm:mt-4">
+      <TabsList className="mobile-seg-list shrink-0 h-auto w-full grid grid-cols-3 gap-1 p-1 sm:inline-flex sm:h-9 sm:w-auto sm:grid-cols-none">
+        <TabsTrigger
+          value="overview"
+          className="min-h-10 touch-manipulation text-[12px] sm:min-h-0 sm:text-sm"
+        >
+          {t("crm.leadSheet.overview")}
+        </TabsTrigger>
+        <TabsTrigger
+          value="timeline"
+          className="min-h-10 touch-manipulation text-[12px] sm:min-h-0 sm:text-sm"
+        >
+          {t("crm.leadSheet.timeline")}
+        </TabsTrigger>
+        <TabsTrigger
+          value="feedback"
+          className="min-h-10 touch-manipulation text-[12px] sm:min-h-0 sm:text-sm"
+        >
+          {t("crm.leadSheet.feedback")}
+        </TabsTrigger>
       </TabsList>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pb-6">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-20 sm:pb-6">
         <TabsContent value="overview" className="mt-3 space-y-3">
           <section className="rounded-xl border border-border/60 p-3">
             <h3 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">

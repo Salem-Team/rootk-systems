@@ -20,6 +20,11 @@ export class UserPreferencesRepository extends CollectionRepository<UserPreferen
     return all.find((p) => p.userId === userId) ?? null;
   }
 
+  async deleteForUser(userId: string): Promise<void> {
+    const existing = await this.getByUserId(userId);
+    if (existing) await this.delete(existing.id, false);
+  }
+
   async upsertForUser(
     userId: string,
     patch: Partial<

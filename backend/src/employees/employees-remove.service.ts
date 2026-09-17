@@ -60,6 +60,9 @@ export class EmployeesRemoveService {
         await tx.userPreferences.deleteMany({
           where: { userId: { in: userIds } },
         });
+        await tx.userPermissionOverride.deleteMany({
+          where: { userId: { in: userIds } },
+        });
         await tx.user.deleteMany({
           where: { id: { in: userIds } },
         });

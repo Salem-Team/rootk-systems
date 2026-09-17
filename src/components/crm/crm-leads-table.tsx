@@ -146,11 +146,11 @@ export function CrmLeadsTable({
           return (
             <li key={lead.id}>
               <article
-                className="flex cursor-pointer gap-2.5 rounded-2xl border border-border/60 bg-card/80 px-3 py-3 shadow-[0_1px_0_rgba(255,255,255,0.03)_inset] transition-colors active:bg-muted/40"
+                className="flex cursor-pointer gap-2.5 rounded-2xl border border-border/60 bg-card/80 px-3 py-3.5 shadow-[0_1px_0_rgba(255,255,255,0.03)_inset] transition-colors touch-manipulation active:bg-muted/40"
                 onClick={() => onRowClick(lead)}
               >
                 <div
-                  className="flex min-h-11 min-w-10 items-start justify-center pt-1"
+                  className="flex min-h-12 min-w-11 items-start justify-center pt-1"
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
@@ -159,7 +159,7 @@ export function CrmLeadsTable({
                     checked={selected.has(lead.id)}
                     onChange={() => onToggleOne(lead.id)}
                     aria-label={lead.name}
-                    className="mt-0.5 h-4 w-4 accent-primary"
+                    className="mt-0.5 h-5 w-5 accent-primary"
                   />
                 </div>
                 <div className="min-w-0 flex-1">

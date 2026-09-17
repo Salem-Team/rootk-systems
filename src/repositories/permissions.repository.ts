@@ -42,6 +42,13 @@ export class PermissionsRepository {
     await this.writeAll([...others, ...next]);
     return next;
   }
+
+  async deleteForUser(userId: string): Promise<void> {
+    const remaining = (await this.readAll()).filter(
+      (row) => row.userId !== userId
+    );
+    await this.writeAll(remaining);
+  }
 }
 
 export const permissionsRepository = new PermissionsRepository();

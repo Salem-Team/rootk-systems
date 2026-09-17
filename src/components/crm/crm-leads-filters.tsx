@@ -83,7 +83,7 @@ function FilterControls({
   const locked = new Set(lockedKeys ?? []);
   const triggerClass = stacked
     ? "filter-control h-11 w-full"
-    : "filter-control h-9 sm:w-[150px]";
+    : "filter-control h-11 touch-manipulation text-base sm:h-9 sm:w-[150px] sm:text-sm";
 
   return (
     <div

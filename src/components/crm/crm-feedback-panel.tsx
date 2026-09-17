@@ -116,7 +116,7 @@ export function CrmFeedbackPanel({
             {t("crm.feedback.reasonsChartDesc")}
           </p>
         </div>
-        <div className="panel-body h-[240px]">
+        <div className="panel-body h-[220px] sm:h-[240px]">
           {localReasons.length === 0 ? (
             <EmptyState compact title={t("crm.empty.chart")} />
           ) : (
@@ -124,7 +124,7 @@ export function CrmFeedbackPanel({
               <BarChart
                 data={localReasons}
                 layout="vertical"
-                margin={{ top: 8, right: 16, left: 8, bottom: 0 }}
+                margin={{ top: 8, right: 12, left: 4, bottom: 0 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -141,10 +141,13 @@ export function CrmFeedbackPanel({
                 <YAxis
                   type="category"
                   dataKey="label"
-                  width={110}
+                  width={80}
                   tickLine={false}
                   axisLine={false}
-                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                  tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                  tickFormatter={(value: string) =>
+                    value.length > 12 ? `${value.slice(0, 12)}…` : value
+                  }
                 />
                 <Tooltip contentStyle={chartTooltipStyle} />
                 <Bar
@@ -165,7 +168,10 @@ export function CrmFeedbackPanel({
             {t("crm.feedback.title")}
           </h2>
           <Select value={typeId} onValueChange={setTypeId}>
-            <SelectTrigger className="filter-control h-9 w-full sm:w-[180px]" aria-label={t("crm.feedback.filterType")}>
+            <SelectTrigger
+              className="filter-control h-11 w-full touch-manipulation text-base sm:h-9 sm:w-[180px] sm:text-sm"
+              aria-label={t("crm.feedback.filterType")}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -195,9 +201,9 @@ export function CrmFeedbackPanel({
                   disabled={!onLeadClick}
                   onClick={() => onLeadClick?.(item.leadId)}
                   className={cn(
-                    "flex w-full flex-col gap-0.5 px-3 py-3 text-start sm:px-4",
+                    "flex w-full flex-col gap-1 px-3 py-3.5 text-start touch-manipulation sm:gap-0.5 sm:px-4 sm:py-3",
                     onLeadClick
-                      ? "transition-colors hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                      ? "transition-colors hover:bg-muted/45 active:bg-muted/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                       : "cursor-default"
                   )}
                 >

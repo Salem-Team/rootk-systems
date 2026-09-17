@@ -94,6 +94,22 @@ export function UserPermissionsPanel() {
     };
   }, [selectedId]);
 
+  useEffect(() => {
+    if (!mobileDetailOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileDetailOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.classList.add("permissions-mobile-detail");
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+      document.documentElement.classList.remove("permissions-mobile-detail");
+    };
+  }, [mobileDetailOpen]);
+
   const filteredUsers = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return users;
@@ -121,16 +137,10 @@ export function UserPermissionsPanel() {
   function openUser(id: string) {
     setSelectedId(id);
     setMobileDetailOpen(true);
-    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
   }
 
   function closeMobileDetail() {
     setMobileDetailOpen(false);
-    if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
   }
 
   async function handleSave() {
@@ -162,13 +172,13 @@ export function UserPermissionsPanel() {
     return <HubSkeleton />;
   }
 
-  const actions = detail ? (
+  const desktopActions = detail ? (
     <>
       <Button
         type="button"
         variant="outline"
         size="sm"
-        className="min-h-11 flex-1 sm:min-h-8 sm:flex-none"
+        className="min-h-8"
         disabled={detail.isProtected}
         title={t("permissions.grantAdminAllHint")}
         onClick={grantAdminAll}
@@ -180,7 +190,7 @@ export function UserPermissionsPanel() {
         type="button"
         variant="outline"
         size="sm"
-        className="min-h-11 flex-1 sm:min-h-8 sm:flex-none"
+        className="min-h-8"
         disabled={detail.isProtected}
         onClick={resetDefaults}
       >
@@ -190,7 +200,7 @@ export function UserPermissionsPanel() {
       <Button
         type="button"
         size="sm"
-        className="min-h-11 flex-1 sm:min-h-8 sm:flex-none"
+        className="min-h-8"
         disabled={!dirty || saving || detail.isProtected}
         onClick={() => void handleSave()}
       >
@@ -205,20 +215,20 @@ export function UserPermissionsPanel() {
       variants={fadeInUp}
       initial="hidden"
       animate="visible"
-      className="grid gap-4 lg:grid-cols-[minmax(16.5rem,19rem)_minmax(0,1fr)]"
+      className="grid gap-3 sm:gap-4 lg:grid-cols-[minmax(16.5rem,19rem)_minmax(0,1fr)]"
     >
       <div
         className={cn(
-          "surface-panel overflow-hidden",
+          "surface-panel overflow-hidden max-lg:-mx-3 max-lg:rounded-none max-lg:border-x-0 max-lg:border-t-0 max-lg:shadow-none sm:max-lg:-mx-4",
           mobileDetailOpen && "hidden lg:block"
         )}
       >
-        <div className="border-b border-border/60 px-3 py-3 sm:px-4">
-          <h3 className="flex items-center gap-2 text-[0.95rem] font-semibold">
+        <div className="sticky top-[var(--chrome-sticky-top)] z-10 border-b border-border/60 bg-card/95 px-3 py-3 backdrop-blur-xl supports-[backdrop-filter]:bg-card/90 sm:px-4 lg:static lg:bg-transparent lg:backdrop-blur-none">
+          <h3 className="flex items-center gap-2 text-[0.95rem] font-semibold lg:text-[0.95rem]">
             <Shield className="h-4 w-4 text-primary" aria-hidden />
             {t("permissions.title")}
           </h3>
-          <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+          <p className="mt-1 hidden text-[12px] leading-relaxed text-muted-foreground sm:block">
             {t("permissions.usersHint")}
           </p>
           <div className="relative mt-3">
@@ -227,11 +237,13 @@ export function UserPermissionsPanel() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("permissions.searchUsers")}
-              className="h-11 ps-10 text-base sm:h-9 sm:ps-8 sm:text-sm"
+              className="h-12 rounded-xl ps-10 text-base sm:h-9 sm:rounded-lg sm:ps-8 sm:text-sm"
+              inputMode="search"
+              enterKeyHint="search"
             />
           </div>
         </div>
-        <ul className="max-h-none space-y-0.5 p-2 lg:max-h-[70vh] lg:overflow-y-auto">
+        <ul className="max-h-none space-y-0 p-1.5 sm:p-2 lg:max-h-[70vh] lg:overflow-y-auto">
           {filteredUsers.length === 0 ? (
             <li>
               <EmptyState
@@ -256,18 +268,18 @@ export function UserPermissionsPanel() {
                     aria-current={active ? "true" : undefined}
                     aria-label={t("permissions.openUser", { name })}
                     className={cn(
-                      "list-row flex min-h-[3.75rem] w-full touch-manipulation items-center gap-3 px-2.5 py-2.5 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      "list-row flex min-h-16 w-full touch-manipulation items-center gap-3 rounded-xl px-3 py-3 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:bg-muted/60 sm:min-h-[3.75rem] sm:rounded-lg sm:px-2.5 sm:py-2.5",
                       active && "list-row-active"
                     )}
                   >
-                    <Avatar className="h-10 w-10 border border-border/60">
+                    <Avatar className="h-11 w-11 border border-border/60 sm:h-10 sm:w-10">
                       <AvatarFallback className="text-[11px]">
                         {row.user.initials || name.slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center justify-between gap-2">
-                        <span className="truncate text-sm font-semibold">
+                        <span className="truncate text-[0.95rem] font-semibold sm:text-sm">
                           {name}
                         </span>
                         <Badge
@@ -279,7 +291,7 @@ export function UserPermissionsPanel() {
                             : t("permissions.roleEmployee")}
                         </Badge>
                       </span>
-                      <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                      <span className="mt-0.5 block truncate text-[12px] text-muted-foreground sm:text-[11px]">
                         {row.user.email}
                       </span>
                       <span className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -297,7 +309,7 @@ export function UserPermissionsPanel() {
                       </span>
                     </span>
                     <ChevronRight
-                      className="h-4 w-4 shrink-0 text-muted-foreground lg:hidden rtl:rotate-180"
+                      className="h-5 w-5 shrink-0 text-muted-foreground lg:hidden rtl:rotate-180"
                       aria-hidden
                     />
                   </button>
@@ -311,7 +323,9 @@ export function UserPermissionsPanel() {
       <div
         className={cn(
           "surface-panel min-w-0 overflow-hidden",
-          !mobileDetailOpen && "hidden lg:block"
+          !mobileDetailOpen && "hidden lg:block",
+          mobileDetailOpen &&
+            "max-lg:fixed max-lg:inset-x-0 max-lg:top-[var(--chrome-h)] max-lg:bottom-0 max-lg:z-30 max-lg:flex max-lg:flex-col max-lg:rounded-none max-lg:border-0 max-lg:bg-background max-lg:shadow-none"
         )}
       >
         {!detail ? (
@@ -319,35 +333,35 @@ export function UserPermissionsPanel() {
             {t("permissions.selectUser")}
           </div>
         ) : (
-          <div className="flex flex-col">
-            <div className="sticky top-[var(--chrome-sticky-top)] z-20 border-b border-border/60 bg-card/95 px-3 py-3 backdrop-blur-xl supports-[backdrop-filter]:bg-card/90 sm:px-5 sm:py-4">
-              <div className="flex items-start gap-2.5">
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="sticky top-0 z-20 border-b border-border/60 bg-card/95 px-2 py-2.5 backdrop-blur-xl supports-[backdrop-filter]:bg-card/90 sm:px-5 sm:py-4 lg:top-[var(--chrome-sticky-top)]">
+              <div className="flex items-center gap-1.5 sm:items-start sm:gap-2.5">
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="mt-0.5 h-11 w-11 shrink-0 touch-manipulation lg:hidden"
+                  className="h-11 w-11 shrink-0 touch-manipulation lg:hidden"
                   onClick={closeMobileDetail}
                   aria-label={t("permissions.backToUsers")}
                 >
                   <ChevronLeft className="h-5 w-5 rtl:rotate-180" />
                 </Button>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-start gap-3">
-                    <Avatar className="mt-0.5 hidden h-11 w-11 border border-border/60 sm:flex">
+                  <div className="flex items-center gap-2.5 sm:items-start sm:gap-3">
+                    <Avatar className="hidden h-11 w-11 border border-border/60 sm:mt-0.5 sm:flex">
                       <AvatarFallback className="text-xs">
                         {detail.user.initials ||
                           displayName(detail.user).slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                      <h3 className="truncate text-[1.02rem] font-semibold leading-snug sm:text-[0.95rem]">
+                      <h3 className="truncate text-[1.05rem] font-semibold leading-snug sm:text-[0.95rem]">
                         {displayName(detail.user)}
                       </h3>
                       <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
                         {detail.user.email}
                       </p>
-                      <p className="mt-1 text-[12px] text-muted-foreground">
+                      <p className="mt-1 hidden text-[12px] text-muted-foreground sm:block">
                         {t("permissions.enabledCount", {
                           enabled: draft.size,
                           total: ALL_PERMISSION_IDS.length,
@@ -361,15 +375,38 @@ export function UserPermissionsPanel() {
                     </div>
                   </div>
                 </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="ms-1 hidden h-11 min-w-[5.5rem] shrink-0 touch-manipulation px-3 sm:inline-flex lg:hidden"
+                  disabled={!dirty || saving || detail.isProtected}
+                  onClick={() => void handleSave()}
+                >
+                  {saving ? <Loader2 className="animate-spin" /> : <Save />}
+                  {t("common.save")}
+                </Button>
                 <div className="hidden flex-wrap justify-end gap-2 lg:flex">
-                  {actions}
+                  {desktopActions}
                 </div>
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-2 px-1 sm:hidden">
+                <p className="text-[12px] text-muted-foreground">
+                  {t("permissions.enabledCount", {
+                    enabled: draft.size,
+                    total: ALL_PERMISSION_IDS.length,
+                  })}
+                </p>
+                {dirty ? (
+                  <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:text-amber-200">
+                    {t("permissions.unsaved")}
+                  </span>
+                ) : null}
               </div>
             </div>
 
-            <div className="space-y-4 p-3 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] sm:p-5 lg:pb-5">
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-3 pb-[calc(6.75rem+env(safe-area-inset-bottom,0px))] sm:space-y-4 sm:p-5 lg:pb-5">
               {detail.isProtected ? (
-                <div className="rounded-xl border border-amber-300/70 bg-amber-50 px-3 py-2.5 text-[12px] leading-relaxed text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100 sm:rounded-lg">
+                <div className="rounded-2xl border border-amber-300/70 bg-amber-50 px-3.5 py-3 text-[13px] leading-relaxed text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100 sm:rounded-lg sm:px-3 sm:py-2.5 sm:text-[12px]">
                   <p className="font-medium">{t("permissions.protectedTitle")}</p>
                   <p className="mt-0.5 opacity-90">
                     {t("permissions.protectedDesc")}
@@ -378,40 +415,40 @@ export function UserPermissionsPanel() {
               ) : null}
 
               {!detail.isProtected ? (
-                <div className="rounded-xl border border-border/70 bg-muted/30 px-3 py-3 sm:rounded-lg sm:px-4">
+                <div className="rounded-2xl border border-border/70 bg-muted/30 px-3 py-3 sm:rounded-lg sm:px-4">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                     {t("permissions.quickActions")}
                   </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <div className="mt-2 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                     <Button
                       type="button"
                       size="sm"
                       variant="secondary"
-                      className="min-h-10"
+                      className="h-11 min-h-11 touch-manipulation sm:h-10 sm:min-h-10"
                       onClick={grantAdminAll}
                     >
                       <ShieldCheck />
-                      {t("permissions.grantAdminAll")}
+                      <span className="truncate">{t("permissions.grantAdminAll")}</span>
                     </Button>
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
-                      className="min-h-10"
+                      className="h-11 min-h-11 touch-manipulation sm:h-10 sm:min-h-10"
                       onClick={resetDefaults}
                     >
                       <RotateCcw />
-                      {t("permissions.resetDefaults")}
+                      <span className="truncate">{t("permissions.resetDefaults")}</span>
                     </Button>
                   </div>
-                  <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
+                  <p className="mt-2 hidden text-[12px] leading-relaxed text-muted-foreground sm:block">
                     {t("permissions.grantAdminAllHint")}
                   </p>
                 </div>
               ) : null}
 
               {!draft.has("dataAccess.viewOtherUsers") ? (
-                <p className="rounded-xl border border-border/70 bg-muted/40 px-3 py-2.5 text-[12px] leading-relaxed text-muted-foreground sm:rounded-lg">
+                <p className="rounded-2xl border border-border/70 bg-muted/40 px-3.5 py-3 text-[13px] leading-relaxed text-muted-foreground sm:rounded-lg sm:px-3 sm:py-2.5 sm:text-[12px]">
                   {t("permissions.masterOffHint")}
                 </p>
               ) : null}
@@ -427,8 +464,30 @@ export function UserPermissionsPanel() {
         )}
       </div>
 
-      {mobileDetailOpen && detail ? (
-        <MobileActionBar>{actions}</MobileActionBar>
+      {mobileDetailOpen && detail && !detail.isProtected ? (
+        <MobileActionBar className="px-2 sm:px-3 [&_button]:!flex-none">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-12 min-h-12 w-[38%] touch-manipulation rounded-xl"
+            disabled={detail.isProtected}
+            onClick={resetDefaults}
+          >
+            <RotateCcw />
+            <span className="truncate">{t("permissions.resetDefaults")}</span>
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            className="h-12 min-h-12 flex-1 touch-manipulation rounded-xl text-[0.95rem]"
+            disabled={!dirty || saving || detail.isProtected}
+            onClick={() => void handleSave()}
+          >
+            {saving ? <Loader2 className="animate-spin" /> : <Save />}
+            {t("common.save")}
+          </Button>
+        </MobileActionBar>
       ) : null}
     </motion.section>
   );

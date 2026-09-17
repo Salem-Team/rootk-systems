@@ -67,7 +67,7 @@ function DashboardFilterFields({
   const { t, locale } = useTranslation();
   const triggerClass = stacked
     ? "filter-control h-11 w-full"
-    : "filter-control h-9 sm:w-[160px]";
+    : "filter-control h-11 touch-manipulation text-base sm:h-9 sm:w-[160px] sm:text-sm";
 
   return (
     <div className={cn(stacked ? "grid gap-2.5" : "filter-toolbar")}>

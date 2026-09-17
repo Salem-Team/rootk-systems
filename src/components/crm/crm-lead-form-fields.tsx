@@ -121,6 +121,7 @@ export function CrmLeadFormFields({
           value={name}
           onChange={(e) => onNameChange(e.target.value)}
           autoFocus
+          className="h-11 text-base sm:h-9 sm:text-sm"
         />
       </div>
 
@@ -136,7 +137,7 @@ export function CrmLeadFormFields({
                     onPatchContact(row.id, { kind: v as CrmContactKind })
                   }
                 >
-                  <SelectTrigger className="w-[9.25rem] shrink-0">
+                  <SelectTrigger className="h-11 w-[8.5rem] shrink-0 touch-manipulation text-base sm:h-9 sm:w-[9.25rem] sm:text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -238,11 +239,11 @@ export function CrmLeadFormFields({
         </Select>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="grid gap-1.5">
           <Label>{t("crm.leadForm.source")}</Label>
           <Select value={source} onValueChange={(v) => onSourceChange(v as CrmLeadSource)}>
-            <SelectTrigger>
+            <SelectTrigger className="h-11 touch-manipulation text-base sm:h-9 sm:text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -261,7 +262,7 @@ export function CrmLeadFormFields({
             onValueChange={onStageIdChange}
             disabled={activeStages.length === 0}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-11 touch-manipulation text-base sm:h-9 sm:text-sm">
               <SelectValue placeholder={t("crm.leadForm.selectStage")} />
             </SelectTrigger>
             <SelectContent>
@@ -273,14 +274,14 @@ export function CrmLeadFormFields({
             </SelectContent>
           </Select>
         </div>
-        <div className="grid gap-1.5">
+        <div className="grid gap-1.5 sm:col-span-2">
           <Label>{t("crm.leadForm.subStage")}</Label>
           <Select
             value={subStageId}
             onValueChange={onSubStageIdChange}
             disabled={!stageId || activeSubStages.length === 0}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-11 touch-manipulation text-base sm:h-9 sm:text-sm">
               <SelectValue placeholder={t("crm.leadForm.selectSubStage")} />
             </SelectTrigger>
             <SelectContent>

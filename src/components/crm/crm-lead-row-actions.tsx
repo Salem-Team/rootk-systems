@@ -25,7 +25,7 @@ interface CrmLeadRowActionsProps {
 }
 
 const actionBtnClass =
-  "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-35";
+  "inline-flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-xl text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-35 md:h-8 md:w-8 md:rounded-md";
 
 function ActionTip({
   label,
@@ -80,7 +80,7 @@ export function CrmLeadRowActions({
   return (
     <TooltipProvider delayDuration={250}>
       <div
-        className={cn("inline-flex items-center justify-end gap-0.5", className)}
+        className={cn("inline-flex items-center justify-end gap-1 md:gap-0.5", className)}
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
       >
@@ -92,7 +92,7 @@ export function CrmLeadRowActions({
               className={cn(actionBtnClass, "hover:bg-muted hover:text-foreground")}
               onClick={onDial}
             >
-              <Phone className="h-3.5 w-3.5" aria-hidden />
+              <Phone className="h-4 w-4 md:h-3.5 md:w-3.5" aria-hidden />
             </a>
           ) : (
             <button
@@ -101,7 +101,7 @@ export function CrmLeadRowActions({
               aria-label={t("crm.nextAction.call")}
               className={actionBtnClass}
             >
-              <Phone className="h-3.5 w-3.5" aria-hidden />
+              <Phone className="h-4 w-4 md:h-3.5 md:w-3.5" aria-hidden />
             </button>
           )}
         </ActionTip>
@@ -118,7 +118,7 @@ export function CrmLeadRowActions({
                 "hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400"
               )}
             >
-              <MessageCircle className="h-3.5 w-3.5" aria-hidden />
+              <MessageCircle className="h-4 w-4 md:h-3.5 md:w-3.5" aria-hidden />
             </a>
           ) : (
             <button
@@ -127,7 +127,7 @@ export function CrmLeadRowActions({
               aria-label={t("crm.nextAction.whatsapp")}
               className={actionBtnClass}
             >
-              <MessageCircle className="h-3.5 w-3.5" aria-hidden />
+              <MessageCircle className="h-4 w-4 md:h-3.5 md:w-3.5" aria-hidden />
             </button>
           )}
         </ActionTip>
@@ -139,7 +139,7 @@ export function CrmLeadRowActions({
             className={cn(actionBtnClass, "hover:bg-muted hover:text-foreground")}
             onClick={() => onViewHistory(lead)}
           >
-            <History className="h-3.5 w-3.5" aria-hidden />
+            <History className="h-4 w-4 md:h-3.5 md:w-3.5" aria-hidden />
           </button>
         </ActionTip>
       </div>

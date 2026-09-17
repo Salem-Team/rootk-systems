@@ -59,7 +59,7 @@ interface CrmLeadsBulkBarProps {
 }
 
 const actionBtn =
-  "h-8 gap-1.5 rounded-lg px-2.5 text-[12px] font-medium text-white/90 shadow-none hover:bg-white/12 hover:text-white";
+  "h-11 min-h-11 gap-1.5 rounded-xl px-3 text-[13px] font-medium text-white/90 shadow-none hover:bg-white/12 hover:text-white touch-manipulation sm:h-8 sm:min-h-8 sm:rounded-lg sm:px-2.5 sm:text-[12px]";
 
 /** Fixed floating bulk-action bar for selected CRM leads. */
 export function CrmLeadsBulkBar({
@@ -139,7 +139,7 @@ export function CrmLeadsBulkBar({
             aria-label={t("crm.actions.selected", {
               count: String(selectedCount),
             })}
-            className="pointer-events-auto flex w-full max-w-3xl items-center gap-1 rounded-2xl border border-white/10 bg-[#082868] px-2 py-1.5 text-white shadow-[var(--shadow-float)] lg:w-auto dark:border-white/12 dark:bg-[#071a42]"
+            className="pointer-events-auto flex w-full max-w-3xl items-center gap-1 rounded-2xl border border-white/10 bg-[#082868] px-2 py-2 text-white shadow-[var(--shadow-float)] lg:w-auto lg:py-1.5 dark:border-white/12 dark:bg-[#071a42]"
           >
             <div className="flex shrink-0 items-center gap-2 ps-1 pe-1">
               <span className="flex h-7 min-w-7 items-center justify-center rounded-lg bg-white/15 px-2 text-[12px] font-semibold tabular-nums">

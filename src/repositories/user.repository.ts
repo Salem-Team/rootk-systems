@@ -31,6 +31,24 @@ export class UserRepository extends CollectionRepository<AppUser> {
       );
     });
   }
+
+  /** Login accounts linked to an employee (by employeeId and/or email). */
+  async findLinkedToEmployee(
+    employeeId: string,
+    email?: string
+  ): Promise<AppUser[]> {
+    return this.withLatency(async () => {
+      const users = await this.readAll();
+      const needle = email?.trim().toLowerCase();
+      const matched = users.filter((u) => {
+        if (u.deletedAt) return false;
+        if (u.employeeId === employeeId) return true;
+        return Boolean(needle && u.email.toLowerCase() === needle);
+      });
+      const byId = new Map(matched.map((u) => [u.id, u]));
+      return [...byId.values()];
+    });
+  }
 }
 
 export const userRepository = new UserRepository();
