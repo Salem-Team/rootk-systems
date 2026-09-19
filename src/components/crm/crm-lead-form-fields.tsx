@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { CrmEgPhoneInput } from "@/components/crm/crm-eg-phone-input";
+import { CrmIntlPhoneInput } from "@/components/crm/crm-intl-phone-input";
 import { useTranslation } from "@/hooks/use-translation";
 import { CRM_CONTACT_KINDS } from "@/lib/crm/contact-identity";
 import { NEXT_ACTIONS, SOURCES, STATUSES, TAGS } from "@/lib/crm/lead-form-options";
@@ -35,7 +35,7 @@ interface CrmLeadFormFieldsProps {
   contacts: LeadFormContactDraft[];
   onPatchContact: (
     id: string,
-    patch: Partial<Pick<LeadFormContactDraft, "kind" | "value">>
+    patch: Partial<Pick<LeadFormContactDraft, "kind" | "value" | "country">>
   ) => void;
   onAddContact: () => void;
   onRemoveContact: (id: string) => void;
@@ -157,10 +157,14 @@ export function CrmLeadFormFields({
                   </SelectContent>
                 </Select>
                 {row.kind === "phone" ? (
-                  <CrmEgPhoneInput
+                  <CrmIntlPhoneInput
                     id={index === 0 ? "crm-lead-phone" : undefined}
                     value={row.value}
+                    country={row.country || "EG"}
                     onChange={(value) => onPatchContact(row.id, { value })}
+                    onCountryChange={(next) =>
+                      onPatchContact(row.id, { country: next })
+                    }
                     className="min-w-0 w-auto flex-1"
                   />
                 ) : (
@@ -204,6 +208,9 @@ export function CrmLeadFormFields({
             {t("crm.leadForm.addContact")}
           </Button>
         ) : null}
+        <p className="text-[12px] text-muted-foreground">
+          {t("crm.leadForm.phoneHint")}
+        </p>
         <p className="text-[12px] text-muted-foreground">
           {t("crm.leadForm.contactsHint")}
         </p>

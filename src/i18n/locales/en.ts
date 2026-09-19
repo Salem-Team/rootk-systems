@@ -3312,7 +3312,7 @@ export const en = {
       stageHasLeads: "Move {count} leads to another stage before deleting.",
     },
     phone: {
-      invalid: "Enter a valid Egyptian mobile number.",
+      invalid: "Enter a valid number for the selected country.",
     },
     contact: {
       invalidHandle: "Enter a valid username (letters required).",
@@ -3533,7 +3533,10 @@ export const en = {
       selectOwner: "Select sales user",
       validation: "Name, contact, and stage are required.",
       phonePlaceholder: "10xxxxxxxx",
-      phoneHint: "Egypt +20 is added automatically. Type the rest of the number.",
+      phoneHint: "Pick a country (its flag and code show up), then type the number without the code.",
+      country: "Country",
+      countrySearch: "Search country or code",
+      countryEmpty: "No matching country",
     },
     contactKind: {
       phone: "Phone",

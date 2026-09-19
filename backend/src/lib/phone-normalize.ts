@@ -1,9 +1,14 @@
 /**
- * Authoritative Egyptian mobile canonicalization for Rootk CRM.
+ * Authoritative phone canonicalization for Rootk CRM.
  * Used by backend, frontend, and Capacitor WebView — keep this the only implementation.
  *
- * Canonical form: E.164 `+20` + 10-digit NSN (e.g. +201012345678).
+ * Canonical form: E.164 (e.g. +201012345678, +966501234567).
+ * Egyptian mobiles stay on the strict local rules; other countries use libphonenumber.
  */
+import {
+  parsePhoneNumberFromString,
+  type CountryCode,
+} from "libphonenumber-js";
 
 export type PhoneNormalizeOk = {
   ok: true;
@@ -93,9 +98,60 @@ export function isEgyptianMobile(input: unknown): boolean {
   return normalizeEgyptianMobile(input).ok;
 }
 
-/** Indexed lookup key, or null when the input is not a valid EG mobile. */
+/**
+ * Any country. Default region is Egypt so local numbers like 010… still resolve.
+ * Indexed lookup key, or null when the input is not a valid phone.
+ */
+export function normalizePhone(
+  input: unknown,
+  defaultCountry: CountryCode = "EG"
+): PhoneNormalizeResult {
+  if (input === null || input === undefined) {
+    return { ok: false, code: "empty", reason: "Phone is required" };
+  }
+  const folded = foldDigits(String(input)).trim();
+  if (!folded) {
+    return { ok: false, code: "empty", reason: "Phone is required" };
+  }
+
+  const compact = folded.replace(/[\s\-().]/g, "");
+  if (!/^\+?\d+$/.test(compact)) {
+    return {
+      ok: false,
+      code: "invalid",
+      reason: "Phone contains invalid characters",
+    };
+  }
+
+  const parsed = parsePhoneNumberFromString(compact, defaultCountry);
+  if (!parsed?.isValid()) {
+    return {
+      ok: false,
+      code: "invalid",
+      reason: "Not a valid phone number",
+    };
+  }
+
+  const national = String(parsed.nationalNumber);
+  return {
+    ok: true,
+    e164: parsed.number,
+    nationalDigits: parsed.country === "EG" ? `0${national}` : national,
+    digits: parsed.number.replace(/^\+/, ""),
+  };
+}
+
+export function formatPhoneInternational(input: unknown): string | null {
+  const result = normalizePhone(input);
+  if (!result.ok) return null;
+  return (
+    parsePhoneNumberFromString(result.e164)?.formatInternational() ?? result.e164
+  );
+}
+
+/** Indexed lookup key, or null when the input is not a valid phone. */
 export function canonicalPhoneOrNull(input: unknown): string | null {
-  const result = normalizeEgyptianMobile(input);
+  const result = normalizePhone(input);
   return result.ok ? result.e164 : null;
 }
 

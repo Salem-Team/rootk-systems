@@ -1,4 +1,4 @@
-import { normalizeEgyptianMobile } from "./phone-normalize";
+import { normalizePhone } from "./phone-normalize";
 
 export const CRM_CONTACT_KINDS = [
   "phone",
@@ -124,7 +124,7 @@ export function resolveCrmContact(input: {
       : null;
   if (!kind && prev) kind = prev.kind;
 
-  const asPhone = normalizeEgyptianMobile(trimmed);
+  const asPhone = normalizePhone(trimmed);
   if (asPhone.ok && (!kind || kind === "phone" || kind === "whatsapp")) {
     return {
       kind: "phone",
@@ -153,7 +153,7 @@ export function resolveCrmContact(input: {
     }
     throw new ContactIdentityError(
       "invalid_phone",
-      "Not a valid Egyptian mobile number"
+      "Not a valid phone number"
     );
   }
 
@@ -176,7 +176,7 @@ export function detectContactKind(
 ): CrmContactKind {
   const parsed = parseHandleCanonical(phoneNormalized);
   if (parsed) return parsed.kind;
-  if (normalizeEgyptianMobile(phone).ok) return "phone";
+  if (normalizePhone(phone).ok) return "phone";
   if (looksLikeHandle(phone)) {
     return stripHandleNoise(phone).kind ?? "whatsapp";
   }
@@ -206,7 +206,7 @@ export function telHrefForContact(
   phoneNormalized?: string | null
 ): string | null {
   if (detectContactKind(phone, phoneNormalized) !== "phone") return null;
-  const parsed = normalizeEgyptianMobile(phoneNormalized || phone);
+  const parsed = normalizePhone(phoneNormalized || phone);
   if (parsed.ok) return `tel:${parsed.e164}`;
   const digits = phone.replace(/\D/g, "");
   return digits ? `tel:+${digits.replace(/^00/, "")}` : null;
@@ -218,7 +218,7 @@ export function contactProfileHref(
 ): string | null {
   const kind = detectContactKind(phone, phoneNormalized);
   if (kind === "phone") {
-    const parsed = normalizeEgyptianMobile(phoneNormalized || phone);
+    const parsed = normalizePhone(phoneNormalized || phone);
     return parsed.ok ? `https://wa.me/${parsed.digits}` : null;
   }
   const handle =

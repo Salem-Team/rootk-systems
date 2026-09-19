@@ -155,7 +155,7 @@ export async function createCrmLead(
     const { primary, extras } = resolvePayloadContacts(parsed);
     const phoneNormalized = primary.phoneNormalized;
     if (!phoneNormalized) {
-      throw new ValidationError("Not a valid Egyptian mobile number", {
+      throw new ValidationError("Not a valid phone number", {
         code: "INVALID_PHONE",
       });
     }

@@ -16,6 +16,8 @@ export type LeadFormContactDraft = {
   id: string;
   kind: CrmContactKind;
   value: string;
+  /** ISO country when kind is phone. Defaults to Egypt in the form. */
+  country?: string;
 };
 
 function asMeta(raw: unknown): Record<string, unknown> {

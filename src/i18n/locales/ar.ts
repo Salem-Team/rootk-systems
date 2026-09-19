@@ -3302,7 +3302,7 @@ export const ar: TranslationKeys = {
       stageHasLeads: "انقل {count} عميل لمرحلة تانية قبل الحذف.",
     },
     phone: {
-      invalid: "دخل رقم موبايل مصري صحيح.",
+      invalid: "دخل رقم صحيح للدولة اللي اخترتها.",
     },
     contact: {
       invalidHandle: "دخل يوزرنيم صحيح (لازم حروف).",
@@ -3523,7 +3523,10 @@ export const ar: TranslationKeys = {
       selectOwner: "اختر السيلز",
       validation: "الاسم ووسيلة التواصل والمرحلة مطلوبين.",
       phonePlaceholder: "10xxxxxxxx",
-      phoneHint: "كود مصر +20 بيتضاف لوحده. اكتب باقي الرقم بس.",
+      phoneHint: "اختار الدولة (هيظهر علمها وكودها) واكتب الرقم من غير الكود.",
+      country: "الدولة",
+      countrySearch: "ابحث عن دولة أو كود",
+      countryEmpty: "مفيش دولة بالاسم ده",
     },
     contactKind: {
       phone: "هاتف",

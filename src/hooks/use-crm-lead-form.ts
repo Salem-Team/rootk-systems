@@ -7,7 +7,7 @@ import { createLeadSchema } from "@/schemas/crm.schema";
 import { createCrmLead, updateCrmLead } from "@/services/crm.service";
 import { duplicateFromError } from "@/services/crm/crm-calls.service";
 import { crmUserFacingMessage } from "@/lib/crm/client-error";
-import { egyptianMobileFormValue, egyptianMobileLocalDigits } from "@/lib/crm/eg-phone-input";
+import { phoneFormValue, splitStoredPhone } from "@/lib/crm/intl-phone";
 import {
   ContactIdentityError,
   contactFieldValue,
@@ -34,17 +34,19 @@ import type {
 } from "@/types/crm";
 
 function emptyContactDraft(): LeadFormContactDraft {
-  return { id: "c-0", kind: "phone", value: "" };
+  return { id: "c-0", kind: "phone", value: "", country: "EG" };
 }
 
 function valueForContact(
   kind: CrmContactKind,
   phone: string,
   phoneNormalized?: string | null
-) {
-  return kind === "phone"
-    ? egyptianMobileLocalDigits(phone)
-    : contactFieldValue(phone, phoneNormalized);
+): Pick<LeadFormContactDraft, "value" | "country"> {
+  if (kind !== "phone") {
+    return { value: contactFieldValue(phone, phoneNormalized) };
+  }
+  const parts = splitStoredPhone(phone, phoneNormalized);
+  return { value: parts.national, country: parts.country };
 }
 
 function draftsFromLead(lead: CrmLead): LeadFormContactDraft[] {
@@ -55,11 +57,15 @@ function draftsFromLead(lead: CrmLead): LeadFormContactDraft[] {
     lead.contactKind
   );
   if (rows.length === 0) return [emptyContactDraft()];
-  return rows.map((row, index) => ({
-    id: `c-${index}-${row.phoneNormalized || row.phone}`,
-    kind: row.kind,
-    value: valueForContact(row.kind, row.phone, row.phoneNormalized),
-  }));
+  return rows.map((row, index) => {
+    const parts = valueForContact(row.kind, row.phone, row.phoneNormalized);
+    return {
+      id: `c-${index}-${row.phoneNormalized || row.phone}`,
+      kind: row.kind,
+      value: parts.value,
+      country: parts.country,
+    };
+  });
 }
 
 interface UseCrmLeadFormArgs {
@@ -169,11 +175,13 @@ export function useCrmLeadForm({
           if (draft.name) setName(draft.name);
           if (draft.phone) {
             const kind = detectContactKind(draft.phone, null);
+            const parts = valueForContact(kind, draft.phone, null);
             setContacts([
               {
                 id: "c-0",
                 kind,
-                value: valueForContact(kind, draft.phone, null),
+                value: parts.value,
+                country: parts.country ?? "EG",
               },
             ]);
           }
@@ -226,6 +234,7 @@ export function useCrmLeadForm({
           id: `c-${Date.now()}`,
           kind: "phone" as const,
           value: "",
+          country: "EG",
         },
       ];
     });
@@ -247,7 +256,9 @@ export function useCrmLeadForm({
     const seen = new Set<string>();
     for (const [index, row] of filled.entries()) {
       const raw =
-        row.kind === "phone" ? egyptianMobileFormValue(row.value) : row.value.trim();
+        row.kind === "phone"
+          ? phoneFormValue(row.country || "EG", row.value)
+          : row.value.trim();
       try {
         const resolved = resolveCrmContact({
           raw,

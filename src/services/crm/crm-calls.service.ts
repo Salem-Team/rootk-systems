@@ -36,7 +36,7 @@ export async function matchCrmLeadByPhone(
     assertCap("view");
     await simulateDelay();
     const canonical = canonicalPhoneOrNull(phone);
-    if (!canonical) throw new ValidationError("Not a valid Egyptian mobile number");
+    if (!canonical) throw new ValidationError("Not a valid phone number");
     const all = await crmLeadRepository.findAll();
     const allowed = await resolveCrmOwnerIds();
     const match = all.find(

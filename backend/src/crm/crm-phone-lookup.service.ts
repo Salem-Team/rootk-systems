@@ -21,7 +21,7 @@ export class CrmPhoneLookupService {
     const canonical = searchCanonicalFromQuery(String(phone ?? ""));
     if (!canonical) {
       throw new BadRequestException({
-        message: "Not a valid Egyptian mobile number",
+        message: "Not a valid phone number",
         code: "INVALID_PHONE",
       });
     }

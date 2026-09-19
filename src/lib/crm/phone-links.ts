@@ -2,7 +2,8 @@ import { detectContactKind, displayCrmContact } from "@/lib/crm/contact-identity
 import {
   canonicalPhoneOrNull,
   formatEgyptianNationalDisplay,
-  normalizeEgyptianMobile,
+  formatPhoneInternational,
+  normalizePhone,
 } from "@/lib/phone-normalize";
 
 /** Display-friendly contact: national phone, or `@handle` for usernames. */
@@ -10,21 +11,21 @@ export function displayCrmPhone(phone: string, phoneNormalized?: string | null):
   if (detectContactKind(phone, phoneNormalized) !== "phone") {
     return displayCrmContact(phone, phoneNormalized);
   }
-  const formatted =
-    formatEgyptianNationalDisplay(phoneNormalized || phone) ??
-    phone.trim();
-  return formatted || "—";
+  const source = phoneNormalized || phone;
+  const egyptian = formatEgyptianNationalDisplay(source);
+  if (egyptian) return egyptian;
+  return formatPhoneInternational(source) ?? (phone.trim() || "—");
 }
 
 export function telHref(phone: string): string | null {
-  const parsed = normalizeEgyptianMobile(phone);
+  const parsed = normalizePhone(phone);
   if (parsed.ok) return `tel:${parsed.e164}`;
   const digits = phone.replace(/\D/g, "");
   return digits ? `tel:+${digits.replace(/^00/, "")}` : null;
 }
 
 export function whatsappHref(phone: string): string | null {
-  const parsed = normalizeEgyptianMobile(phone);
+  const parsed = normalizePhone(phone);
   if (parsed.ok) return `https://wa.me/${parsed.digits}`;
   return null;
 }
