@@ -5,6 +5,7 @@ import { useReducedMotion } from "framer-motion";
 import {
   Activity,
   Building2,
+  CalendarDays,
   Columns3,
   FileBarChart2,
   Gauge,
@@ -22,6 +23,7 @@ export type CrmHubTab =
   | "dashboard"
   | "leads"
   | "delay"
+  | "agenda"
   | "pipeline"
   | "activities"
   | "feedback"
@@ -48,6 +50,7 @@ const VIEW_ITEMS: {
     | "crm.nav.dashboard"
     | "crm.nav.leads"
     | "crm.nav.delay"
+    | "crm.nav.agenda"
     | "crm.nav.pipeline"
     | "crm.nav.activities"
     | "crm.nav.feedback"
@@ -63,6 +66,7 @@ const VIEW_ITEMS: {
   { id: "dashboard", icon: LayoutDashboard, labelKey: "crm.nav.dashboard" },
   { id: "leads", icon: ListChecks, labelKey: "crm.nav.leads" },
   { id: "delay", icon: TimerReset, labelKey: "crm.nav.delay" },
+  { id: "agenda", icon: CalendarDays, labelKey: "crm.nav.agenda" },
   { id: "pipeline", icon: Columns3, labelKey: "crm.nav.pipeline" },
   { id: "activities", icon: Activity, labelKey: "crm.nav.activities" },
   { id: "feedback", icon: MessageSquareText, labelKey: "crm.nav.feedback" },

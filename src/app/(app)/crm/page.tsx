@@ -41,6 +41,13 @@ const CrmDelayPanel = dynamic(
   () => import("@/components/crm/crm-delay-panel").then((m) => m.CrmDelayPanel),
   { loading: panelLoading }
 );
+const CrmDayAgendaPanel = dynamic(
+  () =>
+    import("@/components/crm/crm-day-agenda-panel").then(
+      (m) => m.CrmDayAgendaPanel
+    ),
+  { loading: panelLoading }
+);
 const CrmPipelinePanel = dynamic(
   () =>
     import("@/components/crm/crm-pipeline-panel").then((m) => m.CrmPipelinePanel),
@@ -321,6 +328,13 @@ export default function CrmPage() {
               canViewOthers={hub.canViewOthers}
               canViewTeam={hub.canViewTeam}
               feedbackTypes={hub.safeFeedbackTypes}
+            />
+          ) : null}
+
+          {hub.tab === "agenda" ? (
+            <CrmDayAgendaPanel
+              employees={hub.safeEmployees}
+              onOpenLead={(id) => hub.openViewLead(id)}
             />
           ) : null}
 
