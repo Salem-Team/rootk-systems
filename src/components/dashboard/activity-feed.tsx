@@ -7,6 +7,7 @@ import { ar as arLocale, enUS } from "date-fns/locale";
 import { ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
+import { BidiText } from "@/components/shared/bidi-text";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SoftListRow } from "@/components/shared/meta-chip";
 import { groupActivitiesByDay } from "@/components/dashboard/dashboard-mock-data";
@@ -116,7 +117,7 @@ export function ActivityFeed({
                               {copy.title}
                             </p>
                             <p className="truncate text-xs text-muted-foreground">
-                              {copy.description}
+                              <BidiText text={copy.description} />
                             </p>
                           </div>
                           <time

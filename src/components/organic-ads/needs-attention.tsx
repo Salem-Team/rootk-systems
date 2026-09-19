@@ -2,6 +2,7 @@
 
 import { AlertTriangle, CircleAlert, Info } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
+import { BidiText } from "@/components/shared/bidi-text";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import type { NeedsAttentionItem } from "@/types/organic-ads";
@@ -65,7 +66,7 @@ export function NeedsAttention({ items, onSelect }: NeedsAttentionProps) {
                         {item.title}
                       </span>
                       <span className="mt-0.5 block text-[12px] leading-relaxed text-muted-foreground">
-                        {item.description}
+                        <BidiText text={item.description} />
                       </span>
                     </span>
                   </button>

@@ -79,7 +79,7 @@ export function CrmIntlPhoneInput({
     <div
       dir="ltr"
       className={cn(
-        "flex h-11 w-full overflow-hidden rounded-xl border border-border/85 bg-card shadow-[0_1px_2px_rgba(11,20,36,0.03)] transition-[border-color,box-shadow] duration-150 sm:h-9 sm:rounded-lg",
+        "flex h-11 w-full min-w-0 overflow-hidden rounded-xl border border-border/85 bg-card shadow-[0_1px_2px_rgba(11,20,36,0.03)] transition-[border-color,box-shadow] duration-150 sm:h-11 sm:rounded-xl",
         "hover:border-border focus-within:border-primary/45 focus-within:ring-[3px] focus-within:ring-ring/18",
         disabled && "cursor-not-allowed bg-muted/50 opacity-55",
         className
@@ -96,7 +96,7 @@ export function CrmIntlPhoneInput({
           <button
             type="button"
             disabled={disabled}
-            className="flex shrink-0 items-center gap-1 border-e border-border/80 bg-muted/55 px-2 text-[13px] font-semibold tabular-nums text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed"
+            className="flex h-full shrink-0 items-center gap-1 border-e border-border/80 bg-muted/55 px-2 text-[13px] font-semibold tabular-nums text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed"
             aria-label={t("crm.leadForm.country")}
           >
             <span className="text-base leading-none" aria-hidden>
@@ -164,7 +164,7 @@ export function CrmIntlPhoneInput({
         placeholder={t("crm.leadForm.phonePlaceholder")}
         value={value}
         onChange={(event) => onNationalChange(event.target.value)}
-        className="min-w-0 flex-1 bg-transparent px-3 text-sm tabular-nums outline-none placeholder:text-muted-foreground/55 disabled:cursor-not-allowed"
+        className="min-w-0 flex-1 bg-transparent px-3 text-base tabular-nums outline-none placeholder:text-muted-foreground/55 disabled:cursor-not-allowed sm:text-sm"
       />
     </div>
   );

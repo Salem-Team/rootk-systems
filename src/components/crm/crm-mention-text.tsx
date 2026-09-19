@@ -1,3 +1,5 @@
+import { Fragment } from "react";
+import { bidiNodes } from "@/components/shared/bidi-text";
 import { splitMentionText } from "@/lib/mentions";
 import { cn } from "@/lib/utils";
 
@@ -17,14 +19,18 @@ export function CrmMentionText({
   if (parts.length === 0) return null;
 
   return (
-    <span className={cn("whitespace-pre-wrap", className)}>
+    <span dir="auto" className={cn("bidi-plain whitespace-pre-wrap", className)}>
       {parts.map((part, index) =>
         part.type === "mention" ? (
-          <span key={`${part.value}-${index}`} className="font-medium text-primary">
+          <bdi
+            key={`${part.value}-${index}`}
+            dir="auto"
+            className="font-medium text-primary"
+          >
             {part.value}
-          </span>
+          </bdi>
         ) : (
-          <span key={`t-${index}`}>{part.value}</span>
+          <Fragment key={`t-${index}`}>{bidiNodes(part.value)}</Fragment>
         )
       )}
     </span>

@@ -2,6 +2,7 @@
 
 import { CrmMentionChips, CrmMentionText } from "@/components/crm/crm-mention-text";
 import { CrmLeadRequestBudgetEditor } from "@/components/crm/crm-lead-request-budget-editor";
+import { BidiText } from "@/components/shared/bidi-text";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/hooks/use-translation";
@@ -42,7 +43,7 @@ function Row({
             : "min-w-0 break-words text-[0.92rem] font-medium text-foreground sm:text-[13px]"
         }
       >
-        {value}
+        {value ? <BidiText text={value} /> : value}
       </dd>
     </div>
   );
@@ -176,7 +177,7 @@ export function CrmLeadSheetTabs({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-[0.92rem] font-semibold leading-snug sm:text-[13px]">
-                      {item.title}
+                      <BidiText text={item.title} />
                     </p>
                     <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
                       {formatMaybeDateTime(item.occurredAt)}

@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CrmRequestBudgetFields } from "@/components/crm/crm-request-budget-fields";
 import { Textarea } from "@/components/ui/textarea";
 import { CrmIntlPhoneInput } from "@/components/crm/crm-intl-phone-input";
 import { useTranslation } from "@/hooks/use-translation";
@@ -129,7 +130,7 @@ export function CrmLeadFormFields({
           value={name}
           onChange={(e) => onNameChange(e.target.value)}
           autoFocus
-          className="h-11 text-base sm:h-9 sm:text-sm"
+          className="h-11 w-full min-w-0 text-base sm:h-9 sm:text-sm"
         />
       </div>
 
@@ -138,14 +139,14 @@ export function CrmLeadFormFields({
         <div className="grid gap-2">
           {contacts.map((row, index) => (
             <div key={row.id} className="grid gap-1">
-              <div className="flex items-stretch gap-2">
+              <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-stretch">
                 <Select
                   value={row.kind}
                   onValueChange={(v) =>
                     onPatchContact(row.id, { kind: v as CrmContactKind })
                   }
                 >
-                  <SelectTrigger className="h-11 w-[8.5rem] shrink-0 touch-manipulation text-base sm:h-9 sm:w-[9.25rem] sm:text-sm">
+                  <SelectTrigger className="h-11 w-full shrink-0 touch-manipulation text-base sm:h-11 sm:w-[9.25rem] sm:text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -156,42 +157,44 @@ export function CrmLeadFormFields({
                     ))}
                   </SelectContent>
                 </Select>
-                {row.kind === "phone" ? (
-                  <CrmIntlPhoneInput
-                    id={index === 0 ? "crm-lead-phone" : undefined}
-                    value={row.value}
-                    country={row.country || "EG"}
-                    onChange={(value) => onPatchContact(row.id, { value })}
-                    onCountryChange={(next) =>
-                      onPatchContact(row.id, { country: next })
-                    }
-                    className="min-w-0 w-auto flex-1"
-                  />
-                ) : (
-                  <Input
-                    id={index === 0 ? "crm-lead-phone" : undefined}
-                    dir="ltr"
-                    className="min-w-0 flex-1"
-                    value={row.value}
-                    onChange={(e) =>
-                      onPatchContact(row.id, { value: e.target.value })
-                    }
-                    placeholder={t("crm.leadForm.handlePlaceholder")}
-                    autoComplete="username"
-                  />
-                )}
-                {contacts.length > 1 ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={() => onRemoveContact(row.id)}
-                    aria-label={t("crm.leadForm.removeContact")}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                ) : null}
+                <div className="flex min-w-0 flex-1 items-stretch gap-1.5">
+                  {row.kind === "phone" ? (
+                    <CrmIntlPhoneInput
+                      id={index === 0 ? "crm-lead-phone" : undefined}
+                      value={row.value}
+                      country={row.country || "EG"}
+                      onChange={(value) => onPatchContact(row.id, { value })}
+                      onCountryChange={(next) =>
+                        onPatchContact(row.id, { country: next })
+                      }
+                      className="min-w-0 w-full flex-1"
+                    />
+                  ) : (
+                    <Input
+                      id={index === 0 ? "crm-lead-phone" : undefined}
+                      dir="ltr"
+                      className="h-11 min-w-0 flex-1 text-base sm:text-sm"
+                      value={row.value}
+                      onChange={(e) =>
+                        onPatchContact(row.id, { value: e.target.value })
+                      }
+                      placeholder={t("crm.leadForm.handlePlaceholder")}
+                      autoComplete="username"
+                    />
+                  )}
+                  {contacts.length > 1 ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-11 w-11 shrink-0"
+                      onClick={() => onRemoveContact(row.id)}
+                      aria-label={t("crm.leadForm.removeContact")}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  ) : null}
+                </div>
               </div>
             </div>
           ))}
@@ -201,7 +204,7 @@ export function CrmLeadFormFields({
             type="button"
             variant="outline"
             size="sm"
-            className="w-fit"
+            className="h-11 w-full touch-manipulation sm:h-9 sm:w-fit"
             onClick={onAddContact}
           >
             <Plus className="h-4 w-4" />
@@ -223,6 +226,7 @@ export function CrmLeadFormFields({
           type="email"
           value={email}
           onChange={(e) => onEmailChange(e.target.value)}
+          className="h-11 w-full min-w-0 text-base sm:h-9 sm:text-sm"
         />
       </div>
 
@@ -232,13 +236,14 @@ export function CrmLeadFormFields({
           id="crm-lead-company"
           value={companyName}
           onChange={(e) => onCompanyNameChange(e.target.value)}
+          className="h-11 w-full min-w-0 text-base sm:h-9 sm:text-sm"
         />
       </div>
 
       <div className="grid gap-1.5">
         <Label>{t("crm.leadForm.businessType")}</Label>
         <Select value={businessTypeId} onValueChange={onBusinessTypeIdChange}>
-          <SelectTrigger>
+          <SelectTrigger className="h-11 w-full min-w-0 touch-manipulation text-base sm:h-9 sm:text-sm">
             <SelectValue placeholder={t("crm.leadForm.selectBusinessType")} />
           </SelectTrigger>
           <SelectContent>
@@ -254,7 +259,7 @@ export function CrmLeadFormFields({
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div className="grid gap-1.5">
           <Label>{t("crm.leadForm.source")}</Label>
           <Select value={source} onValueChange={(v) => onSourceChange(v as CrmLeadSource)}>
@@ -289,7 +294,7 @@ export function CrmLeadFormFields({
             </SelectContent>
           </Select>
         </div>
-        <div className="grid gap-1.5 sm:col-span-2">
+        <div className="grid gap-1.5 md:col-span-2">
           <Label>{t("crm.leadForm.subStage")}</Label>
           <Select
             value={subStageId}
@@ -317,7 +322,7 @@ export function CrmLeadFormFields({
         <div className="grid gap-1.5">
           <Label>{t("crm.leadForm.owner")}</Label>
           <Select value={ownerEmployeeId} onValueChange={onOwnerEmployeeIdChange}>
-            <SelectTrigger>
+            <SelectTrigger className="h-11 w-full min-w-0 touch-manipulation text-base sm:h-9 sm:text-sm">
               <SelectValue placeholder={t("crm.leadForm.selectOwner")} />
             </SelectTrigger>
             <SelectContent>
@@ -350,7 +355,7 @@ export function CrmLeadFormFields({
 
       <div className="grid gap-1.5">
         <Label>{t("crm.leadForm.tags")}</Label>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-1.5">
+        <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:flex sm:flex-wrap sm:gap-1.5">
           {TAGS.map((tag) => {
             const on = tags.includes(tag);
             return (
@@ -372,7 +377,7 @@ export function CrmLeadFormFields({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3.5">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-3.5">
         <div className="grid min-w-0 gap-1.5">
           <Label className="text-[13px] leading-snug sm:text-sm">
             {t("crm.leadForm.nextAction")}
@@ -412,31 +417,22 @@ export function CrmLeadFormFields({
       </div>
 
       <div className="grid gap-3.5 rounded-2xl border border-primary/20 bg-primary/[0.03] p-3.5 sm:gap-3 sm:rounded-xl sm:p-3.5">
-        <p className="text-[13px] font-semibold text-primary sm:text-[12px]">
-          {t("crm.leadForm.requestBudgetSection")}
-        </p>
-        <div className="grid gap-1.5">
-          <Label htmlFor="crm-lead-request">{t("crm.leadForm.request")}</Label>
-          <Textarea
-            id="crm-lead-request"
-            value={request}
-            onChange={(e) => onRequestChange(e.target.value)}
-            rows={4}
-            placeholder={t("crm.leadForm.requestPlaceholder")}
-            className="min-h-[7rem] rounded-xl text-base leading-relaxed sm:min-h-[5.5rem] sm:rounded-lg sm:text-sm"
-          />
+        <div>
+          <p className="text-[13px] font-semibold text-primary sm:text-[12px]">
+            {t("crm.leadForm.requestBudgetSection")}
+          </p>
+          <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+            {t("crm.leadSheet.requestBudgetHint")}
+          </p>
         </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="crm-lead-budget">{t("crm.leadForm.budget")}</Label>
-          <Input
-            id="crm-lead-budget"
-            value={budget}
-            onChange={(e) => onBudgetChange(e.target.value)}
-            placeholder={t("crm.leadForm.budgetPlaceholder")}
-            className="h-12 rounded-xl text-base sm:h-10 sm:rounded-lg sm:text-sm"
-            enterKeyHint="done"
-          />
-        </div>
+        <CrmRequestBudgetFields
+          request={request}
+          budget={budget}
+          onRequestChange={onRequestChange}
+          onBudgetChange={onBudgetChange}
+          notesId="crm-lead-request-notes"
+          budgetId="crm-lead-budget"
+        />
       </div>
 
       <div className="grid gap-1.5">

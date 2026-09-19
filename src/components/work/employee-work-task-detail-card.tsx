@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { MetaChip } from "@/components/shared/meta-chip";
+import { BidiText } from "@/components/shared/bidi-text";
 import { OriginBadge } from "@/components/work/employee-work-composer";
 import {
   TaskEvidenceBadge,
@@ -143,7 +144,7 @@ export function TaskDetailCard({
 
       {task.description ? (
         <p className="mt-4 text-[14px] leading-relaxed text-muted-foreground">
-          {task.description}
+          <BidiText text={task.description} />
         </p>
       ) : null}
 

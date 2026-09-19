@@ -2,6 +2,7 @@
 
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
+import { BidiText } from "@/components/shared/bidi-text";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -67,7 +68,7 @@ export function CrmBusinessTypesPanel({ className }: { className?: string }) {
                 </div>
                 {row.description ? (
                   <p className="mt-0.5 text-[12px] text-muted-foreground">
-                    {row.description}
+                    <BidiText text={row.description} />
                   </p>
                 ) : null}
               </div>

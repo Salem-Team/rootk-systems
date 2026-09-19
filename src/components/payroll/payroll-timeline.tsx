@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 import { formatEgp } from "@/lib/payroll";
 import { useTranslation } from "@/hooks/use-translation";
+import { BidiText } from "@/components/shared/bidi-text";
 import { cn } from "@/lib/utils";
 import type { PayrollTimelineEvent } from "@/types/payroll";
 
@@ -55,7 +56,7 @@ export function PayrollTimeline({
                 {event.title}
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                {event.description}
+                <BidiText text={event.description} />
               </p>
               <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                 <time dateTime={event.at} className="tabular-nums">

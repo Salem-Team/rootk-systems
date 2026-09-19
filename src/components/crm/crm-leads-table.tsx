@@ -5,6 +5,7 @@ import { format, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CrmLeadContactList } from "@/components/crm/crm-lead-contact-list";
 import { CrmLeadRowActions } from "@/components/crm/crm-lead-row-actions";
+import { BidiText } from "@/components/shared/bidi-text";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import { Badge } from "@/components/ui/badge";
@@ -183,7 +184,7 @@ export function CrmLeadsTable({
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="truncate text-[14px] font-semibold leading-snug tracking-tight">
-                        {lead.name}
+                        <BidiText text={lead.name} />
                       </p>
                       <div
                         className="mt-1"
@@ -237,7 +238,7 @@ export function CrmLeadsTable({
                       ) : null}
                       {lead.request ? (
                         <p className="min-w-0 flex-1 truncate text-[11px] leading-snug text-muted-foreground">
-                          {requestPreview(lead.request)}
+                          <BidiText text={requestPreview(lead.request)} />
                         </p>
                       ) : null}
                     </div>
@@ -336,11 +337,11 @@ export function CrmLeadsTable({
                 <DataTableCell>
                   <div className="min-w-0">
                     <p className="truncate text-[13px] font-semibold">
-                      {lead.name}
+                      <BidiText text={lead.name} />
                     </p>
                     {lead.companyName ? (
                       <p className="truncate text-[11px] text-muted-foreground">
-                        {lead.companyName}
+                        <BidiText text={lead.companyName} />
                       </p>
                     ) : null}
                   </div>
@@ -358,7 +359,7 @@ export function CrmLeadsTable({
                       className="truncate text-[12px] leading-snug text-muted-foreground"
                       title={lead.request}
                     >
-                      {requestPreview(lead.request)}
+                      <BidiText text={requestPreview(lead.request)} />
                     </p>
                   ) : (
                     <span className="text-[12px] text-muted-foreground/50">—</span>

@@ -272,6 +272,18 @@
     }
   }
 
+  /* Mixed Arabic/English: each field follows its own text, English stays an island. */
+  .bidi-plain {
+    unicode-bidi: isolate;
+    text-align: start;
+  }
+
+  html[dir="rtl"] textarea:not([dir="ltr"]),
+  html[dir="rtl"] input[dir="auto"] {
+    unicode-bidi: plaintext;
+    text-align: start;
+  }
+
   p {
     text-wrap: pretty;
   }

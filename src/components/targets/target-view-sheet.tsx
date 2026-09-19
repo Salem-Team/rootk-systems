@@ -12,6 +12,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import { BidiText } from "@/components/shared/bidi-text";
 import { Button } from "@/components/ui/button";
 import { EmployeeAvatarStack } from "@/components/work/employee-multi-picker";
 import {
@@ -166,7 +167,7 @@ export function TargetViewSheet({
 
               {target.description ? (
                 <p className="text-[13px] leading-relaxed text-muted-foreground">
-                  {target.description}
+                  <BidiText text={target.description} />
                 </p>
               ) : null}
 

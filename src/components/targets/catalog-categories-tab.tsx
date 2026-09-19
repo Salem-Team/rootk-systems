@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { BidiText } from "@/components/shared/bidi-text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -129,7 +130,7 @@ export function CategoriesTab({
                   <p className="truncate text-sm font-medium">{cat.name}</p>
                   {cat.description ? (
                     <p className="truncate text-[11px] text-muted-foreground">
-                      {cat.description}
+                      <BidiText text={cat.description} />
                     </p>
                   ) : null}
                 </div>

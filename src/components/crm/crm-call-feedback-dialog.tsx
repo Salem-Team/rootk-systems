@@ -2,6 +2,7 @@
 
 import { format, parseISO } from "date-fns";
 import { CrmMentionText } from "@/components/crm/crm-mention-text";
+import { BidiText } from "@/components/shared/bidi-text";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -104,7 +105,8 @@ export function CrmCallFeedbackDialog({
 
                   {item.notes ? (
                     <p className="mt-1.5 text-[12px] text-muted-foreground">
-                      {t("crm.feedback.notes")}: {item.notes}
+                      {t("crm.feedback.notes")}:{" "}
+                      <BidiText text={item.notes} />
                     </p>
                   ) : null}
 

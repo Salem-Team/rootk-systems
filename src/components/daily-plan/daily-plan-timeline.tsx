@@ -2,6 +2,7 @@
 
 import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BidiText } from "@/components/shared/bidi-text";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatClockRange } from "@/lib/format-time";
 import type { DailyPlanNow } from "@/lib/daily-plan";
@@ -86,7 +87,7 @@ export function DailyPlanTimeline({
                   </p>
                   {slot.description ? (
                     <p className="mt-0.5 text-[13px] leading-relaxed text-muted-foreground">
-                      {slot.description}
+                      <BidiText text={slot.description} />
                     </p>
                   ) : null}
                 </div>

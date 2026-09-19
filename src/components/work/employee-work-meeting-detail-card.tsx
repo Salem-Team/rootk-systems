@@ -7,6 +7,7 @@ import { Pencil, Sparkles, Trash2, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MetaChip } from "@/components/shared/meta-chip";
+import { BidiText } from "@/components/shared/bidi-text";
 import { OriginBadge } from "@/components/work/employee-work-composer";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatClockRange } from "@/lib/format-time";
@@ -140,7 +141,7 @@ export function MeetingDetailCard({
         <div className="mt-5">
           <h3 className="mb-2 text-[13px] font-semibold">{t("workHub.notes")}</h3>
           <p className="rounded-xl border border-border/60 bg-muted/20 px-3.5 py-3 text-[13px] leading-relaxed text-muted-foreground">
-            {meeting.notes}
+            <BidiText text={meeting.notes} />
           </p>
         </div>
       ) : null}

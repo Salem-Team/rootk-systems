@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
+import { BidiText } from "@/components/shared/bidi-text";
 import type { CrmStage, CrmSubStage } from "@/types/crm";
 
 interface CrmStageListItemProps {
@@ -82,7 +83,7 @@ export function CrmStageListItem({
           </div>
           {stage.description ? (
             <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
-              {stage.description}
+              <BidiText text={stage.description} />
             </p>
           ) : null}
         </div>
@@ -195,7 +196,7 @@ export function CrmStageListItem({
                     </div>
                     {sub.description ? (
                       <p className="truncate text-[11px] text-muted-foreground">
-                        {sub.description}
+                        <BidiText text={sub.description} />
                       </p>
                     ) : null}
                   </div>

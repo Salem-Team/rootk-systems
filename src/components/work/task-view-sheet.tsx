@@ -17,6 +17,7 @@ import {
   TargetProgressRing,
   type ProgressRingTone,
 } from "@/components/targets/target-progress-ring";
+import { BidiText } from "@/components/shared/bidi-text";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import {
@@ -118,7 +119,7 @@ export function TaskViewSheet({
 
               {task.description ? (
                 <p className="text-[13px] leading-relaxed text-muted-foreground">
-                  {task.description}
+                  <BidiText text={task.description} />
                 </p>
               ) : null}
 

@@ -61,9 +61,10 @@ export function CrmLeadFormSheet({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
           className={cn(
-            "flex w-full flex-col gap-0 overflow-hidden p-0",
-            "max-sm:h-dvh max-sm:max-h-dvh max-sm:rounded-none",
-            "sm:max-w-md"
+            "flex w-full max-w-none flex-col gap-0 overflow-hidden !p-0",
+            "h-dvh max-h-dvh rounded-none",
+            "sm:h-dvh sm:max-h-dvh sm:max-w-[min(40rem,calc(100vw-1.5rem))]",
+            "lg:max-w-[min(52rem,calc(100vw-3rem))]"
           )}
         >
           <div className="shrink-0 border-b border-border/60 px-4 pb-3 pt-[max(0.85rem,env(safe-area-inset-top))] pe-14 sm:px-6 sm:pb-4 sm:pt-6 sm:pe-14">
@@ -79,8 +80,8 @@ export function CrmLeadFormSheet({
             </SheetHeader>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5">
-            <div className="grid gap-4 pb-2">
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-3.5 py-4 sm:px-6 sm:py-5">
+            <div className="mx-auto grid w-full min-w-0 max-w-3xl gap-4 pb-2">
               <CrmLeadFormFields
                 name={form.name}
                 onNameChange={form.setName}
@@ -127,18 +128,18 @@ export function CrmLeadFormSheet({
           </div>
 
           <div className="shrink-0 border-t border-border/60 bg-card/95 px-3 py-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl sm:px-6 sm:py-3">
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
               <Button
                 type="button"
                 variant="outline"
-                className="h-12 min-h-12 touch-manipulation rounded-xl sm:h-9 sm:min-h-9 sm:w-auto sm:rounded-lg"
+                className="h-12 min-h-12 w-full touch-manipulation rounded-xl sm:h-10 sm:min-h-10 sm:w-auto sm:min-w-28 sm:rounded-lg"
                 onClick={() => onOpenChange(false)}
               >
                 {t("crm.actions.cancel")}
               </Button>
               <Button
                 type="button"
-                className="h-12 min-h-12 touch-manipulation rounded-xl sm:h-9 sm:min-h-9 sm:w-auto sm:rounded-lg"
+                className="h-12 min-h-12 w-full touch-manipulation rounded-xl sm:h-10 sm:min-h-10 sm:w-auto sm:min-w-28 sm:rounded-lg"
                 disabled={form.saving}
                 onClick={() => void form.submit()}
               >

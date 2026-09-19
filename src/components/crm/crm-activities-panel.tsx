@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-state";
+import { BidiText } from "@/components/shared/bidi-text";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatIsoDateTime } from "@/lib/format-time";
 import { ensureCrmList } from "@/lib/crm-normalize";
@@ -93,7 +94,7 @@ export function CrmActivitiesPanel({
                   </div>
                   {item.description ? (
                     <p className="text-[12px] text-muted-foreground">
-                      {item.description}
+                      <BidiText text={item.description} />
                     </p>
                   ) : null}
                   <p className="text-[11px] text-muted-foreground/80">
