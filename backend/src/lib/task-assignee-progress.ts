@@ -1,5 +1,13 @@
 import { TaskStatus } from "@prisma/client";
 
+export type EvidenceMediaRef = {
+  id: string;
+  kind: "image" | "video";
+  mime: string;
+  name: string;
+  sizeBytes: number;
+};
+
 /** Per-person completion state on a shared work task. */
 export type TaskAssigneeProgress = {
   employeeId: string;
@@ -7,6 +15,7 @@ export type TaskAssigneeProgress = {
   completedAt?: string | null;
   evidenceLinks?: string[];
   evidenceNotes?: string;
+  evidenceMedia?: EvidenceMediaRef[];
 };
 
 export type TaskAssigneeCompletionSummary = {
@@ -20,6 +29,7 @@ type ProgressSeed = {
   completedAt?: string | null;
   evidenceLinks?: string[];
   evidenceNotes?: string;
+  evidenceMedia?: EvidenceMediaRef[];
 };
 
 function coerceTaskStatus(value: unknown): TaskStatus {
@@ -27,6 +37,28 @@ function coerceTaskStatus(value: unknown): TaskStatus {
   if (raw === "completed") return TaskStatus.completed;
   if (raw === "in_progress") return TaskStatus.in_progress;
   return TaskStatus.todo;
+}
+
+function asEvidenceMedia(raw: unknown): EvidenceMediaRef[] {
+  if (!Array.isArray(raw)) return [];
+  const out: EvidenceMediaRef[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const row = entry as Record<string, unknown>;
+    const id = String(row.id ?? "").trim();
+    const kind =
+      row.kind === "video" ? "video" : row.kind === "image" ? "image" : null;
+    const mime = String(row.mime ?? "").trim();
+    if (!id || !kind || !mime) continue;
+    out.push({
+      id,
+      kind,
+      mime,
+      name: String(row.name ?? "media").slice(0, 120),
+      sizeBytes: Math.max(0, Number(row.sizeBytes ?? 0) || 0),
+    });
+  }
+  return out.slice(0, 8);
 }
 
 function asProgressList(raw: unknown): TaskAssigneeProgress[] {
@@ -49,6 +81,7 @@ function asProgressList(raw: unknown): TaskAssigneeProgress[] {
         ? r.evidenceLinks.map(String)
         : [],
       evidenceNotes: String(r.evidenceNotes ?? ""),
+      evidenceMedia: asEvidenceMedia(r.evidenceMedia),
     });
   }
   return rows;
@@ -74,6 +107,7 @@ export function syncAssigneeProgress(
         ...current,
         evidenceLinks: current.evidenceLinks ?? [],
         evidenceNotes: current.evidenceNotes ?? "",
+        evidenceMedia: current.evidenceMedia ?? [],
       };
     }
     return {
@@ -82,6 +116,7 @@ export function syncAssigneeProgress(
       completedAt: fallbackCompletedAt,
       evidenceLinks: seed.evidenceLinks ?? [],
       evidenceNotes: seed.evidenceNotes ?? "",
+      evidenceMedia: seed.evidenceMedia ?? [],
     };
   });
 }
@@ -139,7 +174,11 @@ export function applyAssigneeStatusChange(
   progress: TaskAssigneeProgress[],
   employeeId: string,
   status: TaskStatus | string,
-  evidence?: { links?: string[]; notes?: string },
+  evidence?: {
+    links?: string[];
+    notes?: string;
+    media?: EvidenceMediaRef[];
+  },
   now = new Date()
 ): TaskAssigneeProgress[] {
   const nowIso = now.toISOString();
@@ -153,6 +192,7 @@ export function applyAssigneeStatusChange(
     };
     if (evidence?.links !== undefined) next.evidenceLinks = evidence.links;
     if (evidence?.notes !== undefined) next.evidenceNotes = evidence.notes;
+    if (evidence?.media !== undefined) next.evidenceMedia = evidence.media;
     return next;
   });
 }
@@ -160,7 +200,11 @@ export function applyAssigneeStatusChange(
 export function applyStatusToAllAssignees(
   progress: TaskAssigneeProgress[],
   status: TaskStatus | string,
-  evidence?: { links?: string[]; notes?: string },
+  evidence?: {
+    links?: string[];
+    notes?: string;
+    media?: EvidenceMediaRef[];
+  },
   now = new Date()
 ): TaskAssigneeProgress[] {
   const nowIso = now.toISOString();
@@ -173,6 +217,8 @@ export function applyStatusToAllAssignees(
       evidence?.links !== undefined ? evidence.links : row.evidenceLinks,
     evidenceNotes:
       evidence?.notes !== undefined ? evidence.notes : row.evidenceNotes,
+    evidenceMedia:
+      evidence?.media !== undefined ? evidence.media : row.evidenceMedia,
   }));
 }
 
@@ -190,6 +236,7 @@ export function progressFromTaskFields(task: {
   completedAt?: Date | string | null;
   evidenceLinks?: string[] | null;
   evidenceNotes?: string | null;
+  evidenceMedia?: unknown;
 }): TaskAssigneeProgress[] {
   return syncAssigneeProgress(task.assigneeIds, task.assigneeProgress, {
     status: task.status,
@@ -200,5 +247,6 @@ export function progressFromTaskFields(task: {
       : null,
     evidenceLinks: task.evidenceLinks ?? [],
     evidenceNotes: task.evidenceNotes ?? "",
+    evidenceMedia: asEvidenceMedia(task.evidenceMedia),
   });
 }

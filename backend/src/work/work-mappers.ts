@@ -52,18 +52,23 @@ export function sanitizeEvidenceLinks(links: unknown): string[] {
     .slice(0, 10);
 }
 
-/** Employees must always leave notes; links stay optional unless the admin requires them. */
+/** Employees must always leave notes; links/media stay optional unless the admin requires them. */
 export function assertCompletionEvidence(
   task: {
     requireEvidenceLinks?: boolean | null;
+    requireEvidenceMedia?: boolean | null;
     evidenceLinks?: string[] | null;
     evidenceNotes?: string | null;
+    evidenceMedia?: unknown;
   },
-  evidence: { links?: string[]; notes?: string } | undefined,
+  evidence:
+    | { links?: string[]; notes?: string; media?: unknown }
+    | undefined,
   actorRole: Actor["role"]
 ) {
   if (actorRole === "admin") return;
   const requireLinks = task.requireEvidenceLinks;
+  const requireMedia = task.requireEvidenceMedia;
   const links = sanitizeEvidenceLinks(
     evidence?.links !== undefined ? evidence.links : task.evidenceLinks
   );
@@ -72,10 +77,18 @@ export function assertCompletionEvidence(
       ? evidence.notes
       : (task.evidenceNotes ?? "")
   ).trim();
+  const media = parseStoredMedia(
+    evidence?.media !== undefined ? evidence.media : task.evidenceMedia
+  );
 
   if (requireLinks && links.length === 0) {
     throw new BadRequestException(
       "Proof links are required before completing this task"
+    );
+  }
+  if (requireMedia && media.length === 0) {
+    throw new BadRequestException(
+      "Proof images are required before completing this task"
     );
   }
   if (notes.length < 3) {
@@ -109,6 +122,7 @@ export function resolveTaskAssigneeProgress(
     | "completedAt"
     | "evidenceLinks"
     | "evidenceNotes"
+    | "evidenceMedia"
   >
 ): TaskAssigneeProgress[] {
   return progressFromTaskFields({
@@ -118,6 +132,7 @@ export function resolveTaskAssigneeProgress(
     completedAt: row.completedAt,
     evidenceLinks: row.evidenceLinks,
     evidenceNotes: row.evidenceNotes,
+    evidenceMedia: row.evidenceMedia,
   });
 }
 
@@ -141,6 +156,7 @@ export function mapTask(row: WorkTask, actor?: Actor) {
   const status = (mine?.status as TaskStatus | undefined) ?? row.status;
   const evidenceLinks = mine?.evidenceLinks ?? row.evidenceLinks ?? [];
   const evidenceNotes = mine?.evidenceNotes ?? row.evidenceNotes ?? "";
+  const evidenceMediaRaw = mine?.evidenceMedia ?? parseStoredMedia(row.evidenceMedia);
   const completedAt = mine
     ? mine.completedAt ?? null
     : isoOrNull(row.completedAt);
@@ -165,8 +181,13 @@ export function mapTask(row: WorkTask, actor?: Actor) {
     origin: row.origin,
     requireEvidenceLinks: row.requireEvidenceLinks,
     requireEvidenceNotes: row.requireEvidenceNotes,
+    requireEvidenceMedia: row.requireEvidenceMedia,
     evidenceLinks,
     evidenceNotes,
+    evidenceMedia: evidenceMediaRaw.map((item) => ({
+      ...item,
+      url: mediaUrlForTask(row.id, item.id),
+    })),
     media: parseStoredMedia(row.media).map((item) => ({
       ...item,
       url: mediaUrlForTask(row.id, item.id),

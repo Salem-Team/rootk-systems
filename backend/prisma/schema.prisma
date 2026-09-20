@@ -575,8 +575,15 @@ model WorkTask {
   requireEvidenceLinks  Boolean      @default(false)
   /** Admin requires written notes before the assignee can mark complete. */
   requireEvidenceNotes  Boolean      @default(false)
+  /** Admin requires proof images/videos before the assignee can mark complete. */
+  requireEvidenceMedia  Boolean      @default(false)
   evidenceLinks         String[]     @default([])
   evidenceNotes         String       @default("")
+  /**
+   * Completion proof media: [{ id, kind, mime, name, sizeBytes }].
+   * Files live under uploads/task-media/{companyId}/ (same stream as brief media).
+   */
+  evidenceMedia         Json         @default("[]")
   /**
    * Task brief media: [{ id, kind: "image"|"video", mime, name, sizeBytes }].
    * Files live under uploads/task-media/{companyId}/.

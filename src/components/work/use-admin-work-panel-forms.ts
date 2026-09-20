@@ -136,6 +136,7 @@ export function useAdminWorkPanelForms({
       origin: "assigned" as const,
       requireEvidenceLinks: Boolean(taskForm.requireEvidenceLinks),
       requireEvidenceNotes: Boolean(taskForm.requireEvidenceNotes),
+      requireEvidenceMedia: Boolean(taskForm.requireEvidenceMedia),
       media: mediaDraftsToPayload(taskForm.mediaDrafts),
       subItems: taskForm.subItemsText
         .split("\n")

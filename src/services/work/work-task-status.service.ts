@@ -36,7 +36,7 @@ import {
   emptyTask,
   presentWorkTaskForActor,
 } from "@/services/work/work-shared";
-import { updateWorkTask } from "@/services/work/work-task-mutations.service";
+import { updateWorkTask, localEvidenceMediaFromPayload } from "@/services/work/work-task-mutations.service";
 import type { ApiResponse } from "@/types";
 import type { TaskStatus, WorkTask } from "@/types/work";
 
@@ -74,6 +74,9 @@ export async function updateWorkTaskStatus(
       const check = validateTaskEvidence(current, {
         links: parsed.data.evidence?.links ?? mine?.evidenceLinks ?? current.evidenceLinks,
         notes: parsed.data.evidence?.notes ?? mine?.evidenceNotes ?? current.evidenceNotes,
+        mediaCount:
+          parsed.data.evidence?.media?.length ??
+          (mine?.evidenceMedia ?? current.evidenceMedia ?? []).length,
       });
       if (!check.ok) {
         throw new ValidationError(
@@ -81,7 +84,9 @@ export async function updateWorkTaskStatus(
             ? "Completion notes are required"
             : check.code === "links"
               ? "Proof links are required"
-              : "Proof links and notes are required"
+              : check.code === "media"
+                ? "Proof images are required"
+                : "Proof links and notes are required"
         );
       }
     }
@@ -91,16 +96,32 @@ export async function updateWorkTaskStatus(
         status: parsed.data.status,
         evidenceLinks: parsed.data.evidence?.links,
         evidenceNotes: parsed.data.evidence?.notes,
+        ...(parsed.data.evidence?.media !== undefined
+          ? {
+              evidenceMedia: localEvidenceMediaFromPayload(
+                parsed.data.evidence.media,
+                mine?.evidenceMedia ?? current.evidenceMedia ?? []
+              ),
+            }
+          : {}),
       });
     }
 
     const actor = getSessionUserId();
+    const evidenceMediaResolved =
+      parsed.data.evidence?.media !== undefined
+        ? localEvidenceMediaFromPayload(
+            parsed.data.evidence.media,
+            mine?.evidenceMedia ?? current.evidenceMedia ?? []
+          )
+        : undefined;
     const evidencePatch = {
       links:
         parsed.data.evidence?.links !== undefined
           ? parsed.data.evidence.links.filter(isValidEvidenceUrl)
           : undefined,
       notes: parsed.data.evidence?.notes,
+      media: evidenceMediaResolved,
     };
 
     const nextProgress =
@@ -138,6 +159,10 @@ export async function updateWorkTaskStatus(
         evidencePatch.notes !== undefined
           ? evidencePatch.notes
           : (primaryEvidence?.evidenceNotes ?? current.evidenceNotes),
+      evidenceMedia:
+        evidencePatch.media !== undefined
+          ? evidencePatch.media
+          : (primaryEvidence?.evidenceMedia ?? current.evidenceMedia),
     });
     const saved = await workTaskRepository.update(id, next);
     if (!saved) throw new NotFoundError("Task not found");

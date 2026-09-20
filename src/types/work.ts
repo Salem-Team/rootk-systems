@@ -19,6 +19,7 @@ export interface TaskAssigneeProgress {
   completedAt?: string | null;
   evidenceLinks?: string[];
   evidenceNotes?: string;
+  evidenceMedia?: WorkTaskMediaItem[];
 }
 
 /** Work item for one or more employees (admin or personal). */
@@ -50,10 +51,14 @@ export interface WorkTask extends BaseEntity {
   requireEvidenceLinks?: boolean;
   /** When true, assignee must write completion notes to complete. */
   requireEvidenceNotes?: boolean;
+  /** When true, assignee must attach proof images/videos to complete. */
+  requireEvidenceMedia?: boolean;
   /** Proof URLs submitted on completion (PR, doc, drive, etc.). */
   evidenceLinks?: string[];
   /** Written proof / handoff notes submitted on completion. */
   evidenceNotes?: string;
+  /** Proof images/videos submitted on completion. */
+  evidenceMedia?: WorkTaskMediaItem[];
   /** Brief images/videos attached to the task. */
   media?: WorkTaskMediaItem[];
   /** ISO timestamp when the task was assigned / became actionable. */

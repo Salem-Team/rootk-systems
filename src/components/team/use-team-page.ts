@@ -180,6 +180,7 @@ export function useTeamPage() {
       origin: "assigned",
       requireEvidenceLinks: Boolean(taskForm.requireEvidenceLinks),
       requireEvidenceNotes: Boolean(taskForm.requireEvidenceNotes),
+      requireEvidenceMedia: Boolean(taskForm.requireEvidenceMedia),
       subItems: taskForm.subItemsText
         .split("\n")
         .map((line) => line.trim())

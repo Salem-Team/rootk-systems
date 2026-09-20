@@ -209,6 +209,12 @@ export class WorkTasksStatusService {
             : typeof body.requireEvidenceNotes === "boolean"
               ? body.requireEvidenceNotes
               : undefined,
+        requireEvidenceMedia:
+          actor.role === "employee"
+            ? undefined
+            : typeof body.requireEvidenceMedia === "boolean"
+              ? body.requireEvidenceMedia
+              : undefined,
         evidenceLinks:
           body.evidenceLinks !== undefined
             ? sanitizeEvidenceLinks(body.evidenceLinks)
@@ -217,6 +223,18 @@ export class WorkTasksStatusService {
           body.evidenceNotes !== undefined
             ? String(body.evidenceNotes)
             : primaryEvidence?.evidenceNotes,
+        ...(body.evidenceMedia !== undefined
+          ? {
+              evidenceMedia: (Array.isArray(body.evidenceMedia)
+                ? body.evidenceMedia
+                : parseStoredMedia(body.evidenceMedia)) as unknown as Prisma.InputJsonValue,
+            }
+          : primaryEvidence?.evidenceMedia
+            ? {
+                evidenceMedia:
+                  primaryEvidence.evidenceMedia as unknown as Prisma.InputJsonValue,
+              }
+            : {}),
         ...(media !== undefined
           ? { media: media as unknown as Prisma.InputJsonValue }
           : {}),
@@ -242,7 +260,7 @@ export class WorkTasksStatusService {
     actor: Actor,
     id: string,
     status: string,
-    evidence?: { links?: string[]; notes?: string }
+    evidence?: { links?: string[]; notes?: string; media?: unknown }
   ) {
     const current = await this.prisma.workTask.findFirst({
       where: { id, companyId, deletedAt: null },
@@ -255,10 +273,21 @@ export class WorkTasksStatusService {
       throw new ForbiddenException("You can only update tasks assigned to you");
     }
     if (actor.role === "employee" && ownsPersonalTask(current, actor)) {
+      let evidenceMediaResolved: ReturnType<typeof parseStoredMedia> | undefined;
+      if (evidence?.media !== undefined) {
+        evidenceMediaResolved = await resolveTaskMediaPayload(
+          companyId,
+          evidence.media,
+          parseStoredMedia(current.evidenceMedia)
+        );
+      }
       return this.updateTask(companyId, actor, id, {
         status,
         evidenceLinks: evidence?.links,
         evidenceNotes: evidence?.notes,
+        ...(evidenceMediaResolved !== undefined
+          ? { evidenceMedia: evidenceMediaResolved }
+          : {}),
       });
     }
 
@@ -270,6 +299,16 @@ export class WorkTasksStatusService {
     const evidenceNotes =
       evidence?.notes !== undefined ? String(evidence.notes).trim() : undefined;
 
+    const mineBefore = findAssigneeProgress(progress, actor.employeeId);
+    let evidenceMediaResolved: ReturnType<typeof parseStoredMedia> | undefined;
+    if (evidence?.media !== undefined) {
+      evidenceMediaResolved = await resolveTaskMediaPayload(
+        companyId,
+        evidence.media,
+        mineBefore?.evidenceMedia ?? parseStoredMedia(current.evidenceMedia)
+      );
+    }
+
     if (actor.role === "admin") {
       if (
         status === TaskStatus.completed &&
@@ -280,6 +319,7 @@ export class WorkTasksStatusService {
       progress = applyStatusToAllAssignees(progress, status, {
         links: evidenceLinks,
         notes: evidenceNotes,
+        media: evidenceMediaResolved,
       });
     } else {
       const mine = findAssigneeProgress(progress, actor.employeeId);
@@ -292,8 +332,13 @@ export class WorkTasksStatusService {
             ...current,
             evidenceLinks: mine?.evidenceLinks ?? current.evidenceLinks,
             evidenceNotes: mine?.evidenceNotes ?? current.evidenceNotes,
+            evidenceMedia: mine?.evidenceMedia ?? current.evidenceMedia,
           },
-          evidence,
+          {
+            links: evidence?.links,
+            notes: evidence?.notes,
+            media: evidenceMediaResolved ?? evidence?.media,
+          },
           actor.role
         );
       }
@@ -301,7 +346,11 @@ export class WorkTasksStatusService {
         progress,
         actor.employeeId,
         status,
-        { links: evidenceLinks, notes: evidenceNotes }
+        {
+          links: evidenceLinks,
+          notes: evidenceNotes,
+          media: evidenceMediaResolved,
+        }
       );
     }
 
@@ -333,6 +382,17 @@ export class WorkTasksStatusService {
           ? { evidenceNotes }
           : primaryEvidence?.evidenceNotes !== undefined
             ? { evidenceNotes: primaryEvidence.evidenceNotes }
+            : {}),
+        ...(evidenceMediaResolved !== undefined
+          ? {
+              evidenceMedia:
+                evidenceMediaResolved as unknown as Prisma.InputJsonValue,
+            }
+          : primaryEvidence?.evidenceMedia
+            ? {
+                evidenceMedia:
+                  primaryEvidence.evidenceMedia as unknown as Prisma.InputJsonValue,
+              }
             : {}),
         completedAt: rolledCompletedAt,
         updatedBy: actor.userId,

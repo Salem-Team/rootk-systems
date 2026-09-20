@@ -67,7 +67,28 @@ export function useAdminWorkPanelData() {
     ).length;
     const done = tasks.filter((x) => x.status === "completed").length;
     const today = meetings.filter((m) => meetingWhen(m.date) === "today").length;
-    return { open, overdue, done, today, total: tasks.length };
+    let todo = 0;
+    let inProgress = 0;
+    let high = 0;
+    let medium = 0;
+    let low = 0;
+    for (const task of tasks) {
+      if (task.status === "todo") todo += 1;
+      else if (task.status === "in_progress") inProgress += 1;
+      if (task.status === "completed") continue;
+      if (task.priority === "high") high += 1;
+      else if (task.priority === "low") low += 1;
+      else medium += 1;
+    }
+    return {
+      open,
+      overdue,
+      done,
+      today,
+      total: tasks.length,
+      byStatus: { todo, in_progress: inProgress, completed: done },
+      byPriority: { high, medium, low },
+    };
   }, [tasks, meetings]);
 
   const filteredTasks = useMemo(() => {

@@ -3,6 +3,7 @@ import type { TaskStatus, WorkTask } from "@/types/work";
 export interface TaskEvidenceInput {
   links?: string[];
   notes?: string;
+  mediaCount?: number;
 }
 
 const URL_RE = /^https?:\/\/.+/i;
@@ -78,49 +79,61 @@ export function addEvidenceLink(
   return { links: [...current, normalized] };
 }
 
-/** Notes are always required for employee completion; links stay optional unless flagged. */
+/** Notes are always required for employee completion; links/media stay optional unless flagged. */
 export function taskRequiresEvidence(
-  _task?: Pick<WorkTask, "requireEvidenceLinks" | "requireEvidenceNotes">
+  _task?: Pick<
+    WorkTask,
+    "requireEvidenceLinks" | "requireEvidenceNotes" | "requireEvidenceMedia"
+  >
 ): boolean {
   void _task;
   return true;
 }
 
 export function resolveTaskEvidence(
-  task: Pick<WorkTask, "evidenceLinks" | "evidenceNotes">,
+  task: Pick<WorkTask, "evidenceLinks" | "evidenceNotes" | "evidenceMedia">,
   override?: TaskEvidenceInput
-): { links: string[]; notes: string } {
+): { links: string[]; notes: string; mediaCount: number } {
   return {
     links: (override?.links ?? task.evidenceLinks ?? [])
       .map(normalizeEvidenceUrl)
       .filter(isValidEvidenceUrl)
       .slice(0, EVIDENCE_LINKS_MAX),
     notes: (override?.notes ?? task.evidenceNotes ?? "").trim(),
+    mediaCount:
+      override?.mediaCount ??
+      (Array.isArray(task.evidenceMedia) ? task.evidenceMedia.length : 0),
   };
 }
 
 export function validateTaskEvidence(
-  task: Pick<WorkTask, "requireEvidenceLinks" | "requireEvidenceNotes">,
+  task: Pick<
+    WorkTask,
+    "requireEvidenceLinks" | "requireEvidenceNotes" | "requireEvidenceMedia"
+  >,
   evidence: TaskEvidenceInput
-): { ok: true } | { ok: false; code: "links" | "notes" | "both" } {
+): { ok: true } | { ok: false; code: "links" | "notes" | "media" | "both" } {
   const links = (evidence.links ?? [])
     .map(normalizeEvidenceUrl)
     .filter(isValidEvidenceUrl);
   const notes = (evidence.notes ?? "").trim();
+  const mediaCount = evidence.mediaCount ?? 0;
   const linksOk = !task.requireEvidenceLinks || links.length > 0;
+  const mediaOk = !task.requireEvidenceMedia || mediaCount > 0;
   const notesOk = notes.length >= EVIDENCE_NOTES_MIN;
 
   if (!linksOk && !notesOk) return { ok: false, code: "both" };
   if (!linksOk) return { ok: false, code: "links" };
+  if (!mediaOk) return { ok: false, code: "media" };
   if (!notesOk) return { ok: false, code: "notes" };
   return { ok: true };
 }
 
 export function taskHasSubmittedEvidence(
-  task: Pick<WorkTask, "evidenceLinks" | "evidenceNotes">
+  task: Pick<WorkTask, "evidenceLinks" | "evidenceNotes" | "evidenceMedia">
 ): boolean {
-  const { links, notes } = resolveTaskEvidence(task);
-  return links.length > 0 || notes.length > 0;
+  const { links, notes, mediaCount } = resolveTaskEvidence(task);
+  return links.length > 0 || notes.length > 0 || mediaCount > 0;
 }
 
 export function nextTaskStatus(status: TaskStatus): TaskStatus {
@@ -140,8 +153,10 @@ export function resolveEvidenceBadgeState(
     WorkTask,
     | "requireEvidenceLinks"
     | "requireEvidenceNotes"
+    | "requireEvidenceMedia"
     | "evidenceLinks"
     | "evidenceNotes"
+    | "evidenceMedia"
     | "status"
   >
 ): EvidenceBadgeState {

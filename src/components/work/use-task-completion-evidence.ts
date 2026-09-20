@@ -8,10 +8,15 @@ import {
   resolveTaskEvidence,
   validateTaskEvidence,
 } from "@/lib/task-evidence";
+import {
+  mediaDraftsToPayload,
+  mediaItemsToDrafts,
+  type WorkTaskMediaDraft,
+} from "@/lib/task-media";
 import { updateWorkTaskStatus } from "@/services/work.service";
 import type { WorkTask } from "@/types/work";
 
-/** Owns link/notes draft state and completion submission for the evidence dialog. */
+/** Owns link/notes/media draft state and completion submission for the evidence dialog. */
 export function useTaskCompletionEvidence({
   task,
   open,
@@ -27,6 +32,7 @@ export function useTaskCompletionEvidence({
   const [links, setLinks] = useState<string[]>([]);
   const [linkDraft, setLinkDraft] = useState("");
   const [notes, setNotes] = useState("");
+  const [mediaDrafts, setMediaDrafts] = useState<WorkTaskMediaDraft[]>([]);
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
@@ -36,6 +42,7 @@ export function useTaskCompletionEvidence({
     const existing = resolveTaskEvidence(task);
     setLinks(existing.links);
     setNotes(existing.notes);
+    setMediaDrafts(mediaItemsToDrafts(task.evidenceMedia ?? []));
     setLinkDraft("");
     setLinkError(null);
     setBusy(false);
@@ -43,13 +50,18 @@ export function useTaskCompletionEvidence({
   });
 
   const requireLinks = Boolean(task?.requireEvidenceLinks);
+  const requireMedia = Boolean(task?.requireEvidenceMedia);
   /** Notes are always mandatory when an employee marks Done. */
   const requireNotes = true;
 
   const validation = useMemo(() => {
     if (!task) return { ok: true as const };
-    return validateTaskEvidence(task, { links, notes });
-  }, [task, links, notes]);
+    return validateTaskEvidence(task, {
+      links,
+      notes,
+      mediaCount: mediaDrafts.length,
+    });
+  }, [task, links, notes, mediaDrafts.length]);
 
   function tryAddLink(raw = linkDraft) {
     const result = addEvidenceLink(links, raw);
@@ -108,14 +120,20 @@ export function useTaskCompletionEvidence({
       }
     }
 
-    const check = validateTaskEvidence(task, { links: nextLinks, notes });
+    const check = validateTaskEvidence(task, {
+      links: nextLinks,
+      notes,
+      mediaCount: mediaDrafts.length,
+    });
     if (!check.ok) {
       toast.error(
         check.code === "notes"
           ? t("workEvidence.validationNotes")
           : check.code === "links"
             ? t("workEvidence.validationLinks")
-            : t("workEvidence.validationBoth")
+            : check.code === "media"
+              ? t("workEvidence.validationMedia")
+              : t("workEvidence.validationBoth")
       );
       return;
     }
@@ -124,6 +142,7 @@ export function useTaskCompletionEvidence({
     const res = await updateWorkTaskStatus(task.id, "completed", {
       links: nextLinks,
       notes: notes.trim(),
+      media: mediaDraftsToPayload(mediaDrafts),
     });
     setBusy(false);
     if (!res.success) {
@@ -141,11 +160,14 @@ export function useTaskCompletionEvidence({
     setLinkDraft,
     notes,
     setNotes,
+    mediaDrafts,
+    setMediaDrafts,
     busy,
     touched,
     linkError,
     setLinkError,
     requireLinks,
+    requireMedia,
     requireNotes,
     validation,
     tryAddLink,

@@ -12,6 +12,7 @@ import { syncAssigneeProgress } from "../lib/task-assignee-progress";
 import {
   mapTask,
   sanitizeEvidenceLinks,
+  resolveTaskAssigneeProgress,
   type Actor,
 } from "./work-mappers";
 import { assertCanAssignToTeam } from "../lib/team";
@@ -75,6 +76,10 @@ export class WorkTasksWriteService {
       isEmployee && !wantsTeamAssign
         ? false
         : Boolean(body.requireEvidenceNotes);
+    const requireEvidenceMedia =
+      isEmployee && !wantsTeamAssign
+        ? false
+        : Boolean(body.requireEvidenceMedia);
     const now = new Date();
     const initialStatus = (body.status as TaskStatus) ?? TaskStatus.todo;
     const evidenceLinks = sanitizeEvidenceLinks(body.evidenceLinks);
@@ -109,8 +114,10 @@ export class WorkTasksWriteService {
         origin,
         requireEvidenceLinks,
         requireEvidenceNotes,
+        requireEvidenceMedia,
         evidenceLinks,
         evidenceNotes,
+        evidenceMedia: [] as unknown as Prisma.InputJsonValue,
         media: media as unknown as Prisma.InputJsonValue,
         assignedAt: now,
         completedAt: initialStatus === TaskStatus.completed ? now : null,
@@ -188,12 +195,16 @@ export class WorkTasksWriteService {
     for (const item of parseStoredMedia(current.media)) {
       await deleteCompanyTaskMedia(companyId, item.id);
     }
+    for (const item of parseStoredMedia(current.evidenceMedia)) {
+      await deleteCompanyTaskMedia(companyId, item.id);
+    }
     await this.prisma.workTask.update({
       where: { id },
       data: {
         deletedAt: new Date(),
         isArchived: true,
         media: [] as unknown as Prisma.InputJsonValue,
+        evidenceMedia: [] as unknown as Prisma.InputJsonValue,
         updatedBy: actor.userId,
         version: { increment: 1 },
       },
@@ -217,7 +228,14 @@ export class WorkTasksWriteService {
     ) {
       throw new ForbiddenException("You can only view media for your tasks");
     }
-    const item = parseStoredMedia(current.media).find((m) => m.id === fileId);
+    const fromBrief = parseStoredMedia(current.media).find((m) => m.id === fileId);
+    const fromEvidence = parseStoredMedia(current.evidenceMedia).find(
+      (m) => m.id === fileId
+    );
+    const fromProgress = resolveTaskAssigneeProgress(current)
+      .flatMap((p) => p.evidenceMedia ?? [])
+      .find((m) => m.id === fileId);
+    const item = fromBrief ?? fromEvidence ?? fromProgress;
     if (!item) throw new NotFoundException("Media not found");
     const buffer = await readCompanyTaskMedia(companyId, fileId);
     return {

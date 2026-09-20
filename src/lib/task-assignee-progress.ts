@@ -7,6 +7,13 @@ export interface TaskAssigneeProgress {
   completedAt?: string | null;
   evidenceLinks?: string[];
   evidenceNotes?: string;
+  evidenceMedia?: Array<{
+    id: string;
+    kind: "image" | "video";
+    mime: string;
+    name: string;
+    sizeBytes: number;
+  }>;
 }
 
 export interface TaskAssigneeCompletionSummary {
@@ -20,7 +27,29 @@ type ProgressSeed = {
   completedAt?: string | null;
   evidenceLinks?: string[];
   evidenceNotes?: string;
+  evidenceMedia?: TaskAssigneeProgress["evidenceMedia"];
 };
+
+function asEvidenceMedia(raw: unknown): TaskAssigneeProgress["evidenceMedia"] {
+  if (!Array.isArray(raw)) return [];
+  const out: NonNullable<TaskAssigneeProgress["evidenceMedia"]> = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const row = entry as Record<string, unknown>;
+    const id = String(row.id ?? "").trim();
+    const kind = row.kind === "video" ? "video" : row.kind === "image" ? "image" : null;
+    const mime = String(row.mime ?? "").trim();
+    if (!id || !kind || !mime) continue;
+    out.push({
+      id,
+      kind,
+      mime,
+      name: String(row.name ?? "media").slice(0, 120),
+      sizeBytes: Math.max(0, Number(row.sizeBytes ?? 0) || 0),
+    });
+  }
+  return out.slice(0, 8);
+}
 
 function asProgressList(raw: unknown): TaskAssigneeProgress[] {
   if (!Array.isArray(raw)) return [];
@@ -48,6 +77,7 @@ function asProgressList(raw: unknown): TaskAssigneeProgress[] {
         ? r.evidenceLinks.map(String)
         : [],
       evidenceNotes: String(r.evidenceNotes ?? ""),
+      evidenceMedia: asEvidenceMedia(r.evidenceMedia),
     });
   }
   return rows;
@@ -74,6 +104,7 @@ export function syncAssigneeProgress(
         ...current,
         evidenceLinks: current.evidenceLinks ?? [],
         evidenceNotes: current.evidenceNotes ?? "",
+        evidenceMedia: current.evidenceMedia ?? [],
       };
     }
     return {
@@ -82,6 +113,7 @@ export function syncAssigneeProgress(
       completedAt: fallbackCompletedAt,
       evidenceLinks: seed.evidenceLinks ?? [],
       evidenceNotes: seed.evidenceNotes ?? "",
+      evidenceMedia: seed.evidenceMedia ?? [],
     };
   });
 }
@@ -133,7 +165,11 @@ export function applyAssigneeStatusChange(
   progress: TaskAssigneeProgress[],
   employeeId: string,
   status: TaskStatus,
-  evidence?: { links?: string[]; notes?: string },
+  evidence?: {
+    links?: string[];
+    notes?: string;
+    media?: TaskAssigneeProgress["evidenceMedia"];
+  },
   nowIso = new Date().toISOString()
 ): TaskAssigneeProgress[] {
   return progress.map((row) => {
@@ -149,6 +185,9 @@ export function applyAssigneeStatusChange(
     if (evidence?.notes !== undefined) {
       next.evidenceNotes = evidence.notes;
     }
+    if (evidence?.media !== undefined) {
+      next.evidenceMedia = evidence.media;
+    }
     return next;
   });
 }
@@ -157,7 +196,11 @@ export function applyAssigneeStatusChange(
 export function applyStatusToAllAssignees(
   progress: TaskAssigneeProgress[],
   status: TaskStatus,
-  evidence?: { links?: string[]; notes?: string },
+  evidence?: {
+    links?: string[];
+    notes?: string;
+    media?: TaskAssigneeProgress["evidenceMedia"];
+  },
   nowIso = new Date().toISOString()
 ): TaskAssigneeProgress[] {
   return progress.map((row) => ({
@@ -168,6 +211,8 @@ export function applyStatusToAllAssignees(
       evidence?.links !== undefined ? evidence.links : row.evidenceLinks,
     evidenceNotes:
       evidence?.notes !== undefined ? evidence.notes : row.evidenceNotes,
+    evidenceMedia:
+      evidence?.media !== undefined ? evidence.media : row.evidenceMedia,
   }));
 }
 
@@ -187,6 +232,7 @@ export function ensureTaskAssigneeProgress<
     | "completedAt"
     | "evidenceLinks"
     | "evidenceNotes"
+    | "evidenceMedia"
   > & { assigneeProgress?: TaskAssigneeProgress[] },
 >(task: T): T & { assigneeProgress: TaskAssigneeProgress[] } {
   const assigneeProgress = syncAssigneeProgress(
@@ -197,6 +243,7 @@ export function ensureTaskAssigneeProgress<
       completedAt: task.completedAt,
       evidenceLinks: task.evidenceLinks,
       evidenceNotes: task.evidenceNotes,
+      evidenceMedia: task.evidenceMedia,
     }
   );
   return { ...task, assigneeProgress };
@@ -214,6 +261,7 @@ export function presentAssigneeProgressForEmployee<
     | "completedAt"
     | "evidenceLinks"
     | "evidenceNotes"
+    | "evidenceMedia"
   > & { assigneeProgress?: TaskAssigneeProgress[] },
 >(task: T, employeeId: string): T {
   if (!employeeId || !task.assigneeIds.includes(employeeId)) return task;
@@ -228,5 +276,6 @@ export function presentAssigneeProgressForEmployee<
     completedAt: mine.completedAt ?? null,
     evidenceLinks: mine.evidenceLinks ?? [],
     evidenceNotes: mine.evidenceNotes ?? "",
+    evidenceMedia: mine.evidenceMedia ?? [],
   };
 }

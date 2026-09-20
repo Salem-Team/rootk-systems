@@ -1,6 +1,6 @@
 "use client";
 
-import { FileCheck2, Link2, StickyNote } from "lucide-react";
+import { FileCheck2, ImagePlus, Link2, StickyNote } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { TaskEvidenceDisplay } from "@/components/work/task-completion-evidence-dialog";
@@ -9,6 +9,14 @@ import { taskHasSubmittedEvidence } from "@/lib/task-evidence";
 import { cn } from "@/lib/utils";
 import type { WorkTask } from "@/types/work";
 import type { TaskFormState } from "@/components/work/admin-work-panel-types";
+
+function anyEvidenceOn(form: TaskFormState) {
+  return (
+    form.requireEvidenceLinks ||
+    form.requireEvidenceNotes ||
+    form.requireEvidenceMedia
+  );
+}
 
 export function AdminWorkTaskEvidenceFields({
   taskForm,
@@ -20,7 +28,7 @@ export function AdminWorkTaskEvidenceFields({
   editingTask?: WorkTask;
 }) {
   const { t } = useTranslation();
-  const evidenceOn = taskForm.requireEvidenceLinks || taskForm.requireEvidenceNotes;
+  const evidenceOn = anyEvidenceOn(taskForm);
 
   return (
     <div
@@ -62,11 +70,13 @@ export function AdminWorkTaskEvidenceFields({
                     ...p,
                     requireEvidenceLinks: true,
                     requireEvidenceNotes: false,
+                    requireEvidenceMedia: false,
                   }
                 : {
                     ...p,
                     requireEvidenceLinks: false,
                     requireEvidenceNotes: false,
+                    requireEvidenceMedia: false,
                   }
             )
           }
@@ -115,15 +125,13 @@ export function AdminWorkTaskEvidenceFields({
               checked={taskForm.requireEvidenceLinks}
               onCheckedChange={(checked) =>
                 setTaskForm((p) => {
-                  const next = {
-                    ...p,
-                    requireEvidenceLinks: checked,
-                  };
-                  if (!checked && !p.requireEvidenceNotes) {
-                    return {
-                      ...next,
-                      requireEvidenceNotes: true,
-                    };
+                  const next = { ...p, requireEvidenceLinks: checked };
+                  if (
+                    !checked &&
+                    !p.requireEvidenceNotes &&
+                    !p.requireEvidenceMedia
+                  ) {
+                    return { ...next, requireEvidenceNotes: true };
                   }
                   return next;
                 })
@@ -154,20 +162,55 @@ export function AdminWorkTaskEvidenceFields({
               checked={taskForm.requireEvidenceNotes}
               onCheckedChange={(checked) =>
                 setTaskForm((p) => {
-                  const next = {
-                    ...p,
-                    requireEvidenceNotes: checked,
-                  };
-                  if (!checked && !p.requireEvidenceLinks) {
-                    return {
-                      ...next,
-                      requireEvidenceLinks: true,
-                    };
+                  const next = { ...p, requireEvidenceNotes: checked };
+                  if (
+                    !checked &&
+                    !p.requireEvidenceLinks &&
+                    !p.requireEvidenceMedia
+                  ) {
+                    return { ...next, requireEvidenceLinks: true };
                   }
                   return next;
                 })
               }
               aria-label={t("workAdmin.requireEvidenceNotes")}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-card px-3 py-2.5">
+            <div className="flex min-w-0 items-start gap-2.5">
+              <ImagePlus
+                className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary"
+                aria-hidden
+              />
+              <div className="min-w-0">
+                <Label
+                  htmlFor="req-evidence-media"
+                  className="text-sm font-medium"
+                >
+                  {t("workAdmin.requireEvidenceMedia")}
+                </Label>
+                <p className="text-[11px] text-muted-foreground">
+                  {t("workAdmin.requireEvidenceMediaDesc")}
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="req-evidence-media"
+              checked={taskForm.requireEvidenceMedia}
+              onCheckedChange={(checked) =>
+                setTaskForm((p) => {
+                  const next = { ...p, requireEvidenceMedia: checked };
+                  if (
+                    !checked &&
+                    !p.requireEvidenceLinks &&
+                    !p.requireEvidenceNotes
+                  ) {
+                    return { ...next, requireEvidenceLinks: true };
+                  }
+                  return next;
+                })
+              }
+              aria-label={t("workAdmin.requireEvidenceMedia")}
             />
           </div>
         </div>
@@ -176,6 +219,7 @@ export function AdminWorkTaskEvidenceFields({
       {editingTask &&
       (editingTask.requireEvidenceLinks ||
         editingTask.requireEvidenceNotes ||
+        editingTask.requireEvidenceMedia ||
         taskHasSubmittedEvidence(editingTask)) ? (
         <TaskEvidenceDisplay task={editingTask} className="mt-3" />
       ) : null}

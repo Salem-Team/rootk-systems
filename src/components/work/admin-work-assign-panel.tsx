@@ -126,6 +126,16 @@ export function AdminWorkAssignPanel() {
               ?.scrollIntoView({ behavior: "smooth", block: "start" });
           });
         }}
+        onStatusFilter={(status) => {
+          data.setTab("tasks");
+          data.setMeetingFilter("all");
+          data.setTaskFilter(data.taskFilter === status ? "all" : status);
+          window.requestAnimationFrame(() => {
+            document
+              .getElementById("admin-work-board")
+              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        }}
       />
 
       <Tabs

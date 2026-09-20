@@ -34,7 +34,7 @@ import {
 import type { ApiResponse } from "@/types";
 import type { WorkTask, WorkTaskMediaItem } from "@/types/work";
 
-function localMediaFromPayload(
+export function localMediaFromPayload(
   media: CreateWorkTaskDto["media"],
   previous: WorkTaskMediaItem[] = []
 ): WorkTaskMediaItem[] {
@@ -64,6 +64,9 @@ function localMediaFromPayload(
   }
   return items.slice(0, 8);
 }
+
+/** Alias for completion proof media in local mode. */
+export const localEvidenceMediaFromPayload = localMediaFromPayload;
 
 /** POST /work/tasks */
 export async function createWorkTask(
@@ -139,8 +142,13 @@ export async function createWorkTask(
           role === AppRole.employee && !teamAssign
             ? false
             : Boolean(parsed.data.requireEvidenceNotes),
+        requireEvidenceMedia:
+          role === AppRole.employee && !teamAssign
+            ? false
+            : Boolean(parsed.data.requireEvidenceMedia),
         evidenceLinks,
         evidenceNotes,
+        evidenceMedia: [],
         media: localMediaFromPayload(parsed.data.media),
         assignedAt: now,
         completedAt: status === "completed" ? now : null,
@@ -212,6 +220,12 @@ export async function updateWorkTask(
         : parsed.data.requireEvidenceNotes !== undefined
           ? parsed.data.requireEvidenceNotes
           : current.requireEvidenceNotes;
+    const nextRequireMedia =
+      role === AppRole.employee
+        ? false
+        : parsed.data.requireEvidenceMedia !== undefined
+          ? parsed.data.requireEvidenceMedia
+          : current.requireEvidenceMedia;
 
     if (
       parsed.data.status === "completed" &&
@@ -224,10 +238,12 @@ export async function updateWorkTask(
         {
           requireEvidenceLinks: nextRequireLinks,
           requireEvidenceNotes: nextRequireNotes,
+          requireEvidenceMedia: nextRequireMedia,
         },
         {
           links: parsed.data.evidenceLinks ?? mine?.evidenceLinks ?? current.evidenceLinks,
           notes: parsed.data.evidenceNotes ?? mine?.evidenceNotes ?? current.evidenceNotes,
+          mediaCount: (mine?.evidenceMedia ?? current.evidenceMedia ?? []).length,
         }
       );
       if (!check.ok) {
@@ -236,7 +252,9 @@ export async function updateWorkTask(
             ? "Completion notes are required"
             : check.code === "links"
               ? "Proof links are required"
-              : "Proof links and notes are required"
+              : check.code === "media"
+                ? "Proof images are required"
+                : "Proof links and notes are required"
         );
       }
     }
@@ -309,6 +327,7 @@ export async function updateWorkTask(
       status: nextStatus,
       requireEvidenceLinks: nextRequireLinks,
       requireEvidenceNotes: nextRequireNotes,
+      requireEvidenceMedia: nextRequireMedia,
       evidenceLinks:
         parsed.data.evidenceLinks !== undefined
           ? parsed.data.evidenceLinks.filter(isValidEvidenceUrl)
@@ -317,6 +336,13 @@ export async function updateWorkTask(
         parsed.data.evidenceNotes !== undefined
           ? parsed.data.evidenceNotes
           : (primaryEvidence?.evidenceNotes ?? current.evidenceNotes),
+      evidenceMedia:
+        parsed.data.evidenceMedia !== undefined
+          ? localMediaFromPayload(
+              parsed.data.evidenceMedia,
+              current.evidenceMedia ?? []
+            )
+          : (primaryEvidence?.evidenceMedia ?? current.evidenceMedia),
       media:
         parsed.data.media !== undefined
           ? localMediaFromPayload(parsed.data.media, current.media ?? [])

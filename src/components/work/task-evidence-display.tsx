@@ -2,6 +2,7 @@
 
 import { ExternalLink, FileCheck2 } from "lucide-react";
 import { TaskEvidenceBadge } from "@/components/work/task-evidence-badge";
+import { TaskMediaGallery } from "@/components/work/task-media-gallery";
 import { useTranslation } from "@/hooks/use-translation";
 import { evidenceLinkLabel, resolveEvidenceBadgeState } from "@/lib/task-evidence";
 import { BidiBlocks } from "@/components/shared/bidi-text";
@@ -18,13 +19,29 @@ export function TaskEvidenceDisplay({
   const { t } = useTranslation();
   const links = task.evidenceLinks ?? [];
   const notes = (task.evidenceNotes ?? "").trim();
+  const media = task.evidenceMedia ?? [];
   const requires = Boolean(
-    task.requireEvidenceLinks || task.requireEvidenceNotes
+    task.requireEvidenceLinks ||
+      task.requireEvidenceNotes ||
+      task.requireEvidenceMedia
   );
-  const hasContent = links.length > 0 || notes.length > 0;
+  const hasContent = links.length > 0 || notes.length > 0 || media.length > 0;
   const badgeState = resolveEvidenceBadgeState(task);
 
   if (!requires && !hasContent) return null;
+
+  const pendingLabel = () => {
+    const wantsLinks = Boolean(task.requireEvidenceLinks);
+    const wantsNotes = Boolean(task.requireEvidenceNotes);
+    const wantsMedia = Boolean(task.requireEvidenceMedia);
+    if (wantsLinks && wantsNotes && wantsMedia) return t("workEvidence.pendingAll");
+    if (wantsLinks && wantsMedia) return t("workEvidence.pendingLinksMedia");
+    if (wantsLinks && wantsNotes) return t("workEvidence.pendingBoth");
+    if (wantsNotes && wantsMedia) return t("workEvidence.pendingNotesMedia");
+    if (wantsMedia) return t("workEvidence.pendingMedia");
+    if (wantsLinks) return t("workEvidence.pendingLinks");
+    return t("workEvidence.pendingNotes");
+  };
 
   return (
     <section
@@ -57,11 +74,7 @@ export function TaskEvidenceDisplay({
 
           {requires && !hasContent ? (
             <p className="mt-1 text-[12px] text-muted-foreground">
-              {task.requireEvidenceLinks && task.requireEvidenceNotes
-                ? t("workEvidence.pendingBoth")
-                : task.requireEvidenceLinks
-                  ? t("workEvidence.pendingLinks")
-                  : t("workEvidence.pendingNotes")}
+              {pendingLabel()}
             </p>
           ) : null}
 
@@ -83,6 +96,15 @@ export function TaskEvidenceDisplay({
                 </li>
               ))}
             </ul>
+          ) : null}
+
+          {media.length > 0 ? (
+            <div className="mt-3">
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {t("workEvidence.fieldMedia")}
+              </p>
+              <TaskMediaGallery items={media} />
+            </div>
           ) : null}
 
           {notes ? (

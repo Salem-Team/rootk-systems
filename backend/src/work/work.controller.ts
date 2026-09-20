@@ -96,7 +96,7 @@ export class WorkController {
     @Body()
     body: {
       status: string;
-      evidence?: { links?: string[]; notes?: string };
+      evidence?: { links?: string[]; notes?: string; media?: unknown };
     }
   ) {
     return this.service.updateTaskStatus(

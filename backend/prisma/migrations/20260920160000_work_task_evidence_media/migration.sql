@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "WorkTask" ADD COLUMN IF NOT EXISTS "requireEvidenceMedia" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "WorkTask" ADD COLUMN IF NOT EXISTS "evidenceMedia" JSONB NOT NULL DEFAULT '[]';

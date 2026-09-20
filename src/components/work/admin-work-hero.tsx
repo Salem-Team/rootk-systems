@@ -1,21 +1,42 @@
 "use client";
 
 import type { ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { motion, useReducedMotion } from "framer-motion";
 import { AlertTriangle, CalendarDays, CheckCircle2, ListTodo } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 import type { AdminWorkHeroFilter } from "@/components/work/admin-work-panel-types";
+import type { AdminWorkHeroChartStats } from "@/components/work/admin-work-hero-charts";
+import type { TaskStatus } from "@/types/work";
+
+const AdminWorkHeroCharts = dynamic(
+  () =>
+    import("@/components/work/admin-work-hero-charts").then(
+      (m) => m.AdminWorkHeroCharts
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="grid gap-2.5 sm:grid-cols-2">
+        <div className="h-[172px] animate-pulse rounded-2xl bg-white/10" />
+        <div className="h-[172px] animate-pulse rounded-2xl bg-white/10" />
+      </div>
+    ),
+  }
+);
 
 export function AdminWorkHero({
   stats,
   activeFilter = null,
   onFilter,
+  onStatusFilter,
 }: {
-  stats: { open: number; overdue: number; done: number; today: number };
+  stats: AdminWorkHeroChartStats;
   activeFilter?: AdminWorkHeroFilter;
   onFilter?: (filter: Exclude<AdminWorkHeroFilter, null>) => void;
+  onStatusFilter?: (status: TaskStatus) => void;
 }) {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
@@ -35,57 +56,65 @@ export function AdminWorkHero({
             "radial-gradient(circle at 90% 12%, rgba(255,255,255,0.16), transparent 34%), radial-gradient(circle at 8% 88%, rgba(56,189,248,0.16), transparent 40%)",
         }}
       />
-      <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div className="max-w-2xl">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">
-            {t("workAdmin.eyebrow")}
-          </p>
-          <h1 className="font-display mt-2 text-[1.45rem] font-bold leading-tight tracking-tight text-white sm:text-[2rem]">
-            {t("workAdmin.title")}
-          </h1>
-          <p className="mt-2 hidden text-[14px] leading-relaxed text-white/72 sm:block">
-            {t("workAdmin.description")}
-          </p>
+      <div className="relative space-y-5">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">
+              {t("workAdmin.eyebrow")}
+            </p>
+            <h1 className="font-display mt-2 text-[1.45rem] font-bold leading-tight tracking-tight text-white sm:text-[2rem]">
+              {t("workAdmin.title")}
+            </h1>
+            <p className="mt-2 hidden text-[14px] leading-relaxed text-white/72 sm:block">
+              {t("workAdmin.description")}
+            </p>
+          </div>
+          <div
+            className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4 lg:w-auto"
+            role="toolbar"
+            aria-label={t("workAdmin.kpiFilterLabel")}
+          >
+            <StatChip
+              icon={<ListTodo className="h-3.5 w-3.5" />}
+              label={t("workAdmin.kpiOpen")}
+              value={String(stats.open)}
+              active={activeFilter === "open"}
+              tone="sky"
+              onClick={onFilter ? () => onFilter("open") : undefined}
+            />
+            <StatChip
+              icon={<AlertTriangle className="h-3.5 w-3.5" />}
+              label={t("workAdmin.kpiOverdue")}
+              value={String(stats.overdue)}
+              active={activeFilter === "overdue"}
+              tone="amber"
+              warn={stats.overdue > 0}
+              onClick={onFilter ? () => onFilter("overdue") : undefined}
+            />
+            <StatChip
+              icon={<CheckCircle2 className="h-3.5 w-3.5" />}
+              label={t("workAdmin.kpiDone")}
+              value={String(stats.done)}
+              active={activeFilter === "completed"}
+              tone="emerald"
+              onClick={onFilter ? () => onFilter("completed") : undefined}
+            />
+            <StatChip
+              icon={<CalendarDays className="h-3.5 w-3.5" />}
+              label={t("workAdmin.kpiTodayMeetings")}
+              value={String(stats.today)}
+              active={activeFilter === "today"}
+              tone="violet"
+              onClick={onFilter ? () => onFilter("today") : undefined}
+            />
+          </div>
         </div>
-        <div
-          className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4 lg:w-auto"
-          role="toolbar"
-          aria-label={t("workAdmin.kpiFilterLabel")}
-        >
-          <StatChip
-            icon={<ListTodo className="h-3.5 w-3.5" />}
-            label={t("workAdmin.kpiOpen")}
-            value={String(stats.open)}
-            active={activeFilter === "open"}
-            tone="sky"
-            onClick={onFilter ? () => onFilter("open") : undefined}
-          />
-          <StatChip
-            icon={<AlertTriangle className="h-3.5 w-3.5" />}
-            label={t("workAdmin.kpiOverdue")}
-            value={String(stats.overdue)}
-            active={activeFilter === "overdue"}
-            tone="amber"
-            warn={stats.overdue > 0}
-            onClick={onFilter ? () => onFilter("overdue") : undefined}
-          />
-          <StatChip
-            icon={<CheckCircle2 className="h-3.5 w-3.5" />}
-            label={t("workAdmin.kpiDone")}
-            value={String(stats.done)}
-            active={activeFilter === "completed"}
-            tone="emerald"
-            onClick={onFilter ? () => onFilter("completed") : undefined}
-          />
-          <StatChip
-            icon={<CalendarDays className="h-3.5 w-3.5" />}
-            label={t("workAdmin.kpiTodayMeetings")}
-            value={String(stats.today)}
-            active={activeFilter === "today"}
-            tone="violet"
-            onClick={onFilter ? () => onFilter("today") : undefined}
-          />
-        </div>
+
+        <AdminWorkHeroCharts
+          stats={stats}
+          activeFilter={activeFilter}
+          onStatusFilter={onStatusFilter}
+        />
       </div>
     </motion.section>
   );
