@@ -28,6 +28,7 @@ export const StorageKeys = {
   approvalRules: key("approval-rules"),
   userPreferences: key("user-preferences"),
   workTasks: key("work-tasks"),
+  workTaskComments: key("work-task-comments"),
   workMeetings: key("work-meetings"),
   payrollState: key("payroll-state"),
   targetCategories: key("target-categories"),

@@ -9,11 +9,13 @@ import {
 import { useSessionStore } from "@/stores/session-store";
 import { NOTIFICATION_UPDATED_EVENT } from "@/lib/events";
 import { isNotificationUnread } from "@/lib/notification-utils";
+import { useLiveReload } from "@/hooks/use-live-reload";
 import type { AppNotification, NotificationCategory } from "@/types";
 
 /**
  * Unified notification inbox — live across the whole app via
- * NOTIFICATION_UPDATED_EVENT.
+ * NOTIFICATION_UPDATED_EVENT, plus a short poll so server-side CRM reminders
+ * appear on phone and desktop without a manual refresh.
  */
 export function useNotifications(options?: {
   category?: NotificationCategory | "all";
@@ -38,13 +40,10 @@ export function useNotifications(options?: {
     void load();
   }, [load]);
 
-  useEffect(() => {
-    const onUpdate = () => {
-      void load();
-    };
-    window.addEventListener(NOTIFICATION_UPDATED_EVENT, onUpdate);
-    return () => window.removeEventListener(NOTIFICATION_UPDATED_EVENT, onUpdate);
-  }, [load]);
+  useLiveReload(load, [NOTIFICATION_UPDATED_EVENT], {
+    intervalMs: 30_000,
+    skipInitial: true,
+  });
 
   const visible = useMemo(() => {
     if (category === "all") return items;

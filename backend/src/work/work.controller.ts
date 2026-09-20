@@ -7,10 +7,13 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
 } from "@nestjs/common";
+import type { Response } from "express";
 import { AuthGuard } from "@nestjs/passport";
 import { WorkService } from "./work.service";
+import { WorkTaskCommentsService } from "./work-task-comments.service";
 import { CompanyId, requireUser } from "../common/tenant";
 import {
   CurrentUser,
@@ -28,7 +31,10 @@ function toActor(user: JwtPayload | undefined) {
 @Controller("work")
 @UseGuards(AuthGuard("jwt"), RolesGuard)
 export class WorkController {
-  constructor(private readonly service: WorkService) {}
+  constructor(
+    private readonly service: WorkService,
+    private readonly comments: WorkTaskCommentsService
+  ) {}
 
   @Get("tasks")
   @RequirePermission("tasks.viewOwn", "tasks.viewTeam", "tasks.viewAll")
@@ -121,6 +127,63 @@ export class WorkController {
     @Param("id") id: string
   ) {
     return this.service.deleteTask(companyId, toActor(user), id);
+  }
+
+  @Get("tasks/:id/comments")
+  @RequirePermission("tasks.viewOwn", "tasks.viewTeam", "tasks.viewAll")
+  listComments(
+    @CompanyId() companyId: string,
+    @CurrentUser() user: JwtPayload | undefined,
+    @Param("id") id: string
+  ) {
+    return this.comments.listComments(companyId, toActor(user), id);
+  }
+
+  @Post("tasks/:id/comments")
+  @RequirePermission("tasks.viewOwn", "tasks.viewTeam", "tasks.viewAll")
+  createComment(
+    @CompanyId() companyId: string,
+    @CurrentUser() user: JwtPayload | undefined,
+    @Param("id") id: string,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.comments.createComment(companyId, toActor(user), id, body);
+  }
+
+  @Delete("tasks/:id/comments/:commentId")
+  @RequirePermission("tasks.viewOwn", "tasks.viewTeam", "tasks.viewAll")
+  deleteComment(
+    @CompanyId() companyId: string,
+    @CurrentUser() user: JwtPayload | undefined,
+    @Param("id") id: string,
+    @Param("commentId") commentId: string
+  ) {
+    return this.comments.deleteComment(
+      companyId,
+      toActor(user),
+      id,
+      commentId
+    );
+  }
+
+  @Get("tasks/:id/voice/:fileId")
+  @RequirePermission("tasks.viewOwn", "tasks.viewTeam", "tasks.viewAll")
+  async streamVoice(
+    @CompanyId() companyId: string,
+    @CurrentUser() user: JwtPayload | undefined,
+    @Param("id") id: string,
+    @Param("fileId") fileId: string,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const { file, mime } = await this.comments.streamVoice(
+      companyId,
+      toActor(user),
+      id,
+      fileId
+    );
+    res.setHeader("Content-Type", mime);
+    res.setHeader("Cache-Control", "private, max-age=3600");
+    return file;
   }
 
   @Get("meetings")

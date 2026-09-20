@@ -18,6 +18,7 @@ import {
   type ProgressRingTone,
 } from "@/components/targets/target-progress-ring";
 import { BidiText } from "@/components/shared/bidi-text";
+import { TaskCommentsPanel } from "@/components/work/task-comments-panel";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import {
@@ -79,7 +80,7 @@ export function TaskViewSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+      <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
         {task ? (
           <>
             <SheetHeader>
@@ -232,6 +233,10 @@ export function TaskViewSheet({
                   </dd>
                 </div>
               </dl>
+
+              <div className="pt-1">
+                <TaskCommentsPanel taskId={task.id} />
+              </div>
 
               <div className="flex flex-wrap gap-2 border-t border-border/60 pt-4">
                 {onEdit ? (

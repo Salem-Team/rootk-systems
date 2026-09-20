@@ -10,26 +10,26 @@ import {
   ListTodo,
   PhoneCall,
 } from "lucide-react";
-import Link from "next/link";
-import { BidiText } from "@/components/shared/bidi-text";
+import { ACTION_TONE, ActionGroups, FilterChip, TaskRow } from "@/components/crm/crm-agenda-action-groups";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/hooks/use-translation";
 import {
+  agendaAction,
+  groupLeadsByAction,
   leadsOnDay,
   localDayKey,
   overdueLeads,
   tasksOnDay,
   weekFrom,
 } from "@/lib/crm/day-agenda";
-import { dateFnsLocale, TIME_12H } from "@/lib/format-time";
-import { parseMaybe } from "@/lib/crm/date-range";
+import { dateFnsLocale } from "@/lib/format-time";
 import { CRM_UPDATED_EVENT } from "@/lib/events";
 import { cn } from "@/lib/utils";
 import { getCrmLeads } from "@/services/crm/crm-leads.service";
 import { getWorkTasks } from "@/services/work/work-tasks.service";
 import type { Employee } from "@/types";
-import type { CrmFollowUpFilter, CrmLead } from "@/types/crm";
+import type { CrmFollowUpFilter, CrmLead, CrmNextAction } from "@/types/crm";
 import type { WorkTask } from "@/types/work";
 
 interface CrmDayAgendaPanelProps {
@@ -67,6 +67,7 @@ export function CrmDayAgendaPanel({
   const [leads, setLeads] = useState<CrmLead[]>([]);
   const [tasks, setTasks] = useState<WorkTask[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionFilter, setActionFilter] = useState<CrmNextAction | "all">("all");
   const selectedRef = useRef<HTMLButtonElement | null>(null);
   const dfLocale = dateFnsLocale(locale);
   const now = new Date();
@@ -109,7 +110,17 @@ export function CrmDayAgendaPanel({
   const dayLeads = leadsOnDay(leads, selected, now);
   const dayTasks = tasksOnDay(tasks, selected);
   const late = isSameDay(selected, now) ? overdueLeads(leads, now) : [];
-  const quiet = !loading && dayLeads.length === 0 && dayTasks.length === 0 && late.length === 0;
+  const visibleLeads =
+    actionFilter === "all"
+      ? dayLeads
+      : dayLeads.filter((lead) => agendaAction(lead) === actionFilter);
+  const visibleLate =
+    actionFilter === "all"
+      ? late
+      : late.filter((lead) => agendaAction(lead) === actionFilter);
+  const actionChoices = groupLeadsByAction([...dayLeads, ...late]);
+  const quiet =
+    !loading && dayLeads.length === 0 && dayTasks.length === 0 && late.length === 0;
 
   function shiftWeek(delta: number) {
     const next = addDays(anchor, delta * 7);
@@ -121,6 +132,7 @@ export function CrmDayAgendaPanel({
     const today = startOfDay(new Date());
     setAnchor(today);
     setSelected(today);
+    setActionFilter("all");
   }
 
   return (
@@ -188,16 +200,22 @@ export function CrmDayAgendaPanel({
         {days.map((day) => {
           const active = isSameDay(day, selected);
           const today = isSameDay(day, now);
-          const count = leadsOnDay(leads, day, now).length + tasksOnDay(tasks, day).length;
+          const count =
+            leadsOnDay(leads, day, now).length +
+            tasksOnDay(tasks, day).length +
+            (isSameDay(day, now) ? overdueLeads(leads, now).length : 0);
           return (
             <button
               key={localDayKey(day)}
               ref={active ? selectedRef : undefined}
               type="button"
-              onClick={() => setSelected(day)}
+              onClick={() => {
+                setSelected(day);
+                setActionFilter("all");
+              }}
               aria-pressed={active}
               className={cn(
-                "flex min-h-[4.75rem] w-[4.35rem] shrink-0 snap-center touch-manipulation flex-col items-center justify-center rounded-2xl border px-1 py-2 transition-colors sm:w-auto sm:min-w-0",
+                "flex min-h-[4.75rem] w-[4.75rem] shrink-0 snap-center touch-manipulation flex-col items-center justify-center rounded-2xl border px-1 py-2 transition-colors sm:w-auto sm:min-w-0",
                 active
                   ? "border-primary bg-primary text-primary-foreground shadow-sm"
                   : "border-border/70 bg-card hover:bg-muted/40",
@@ -212,15 +230,15 @@ export function CrmDayAgendaPanel({
               </span>
               <span
                 className={cn(
-                  "mt-1.5 h-1.5 w-1.5 rounded-full",
-                  count > 0
-                    ? active
-                      ? "bg-primary-foreground"
-                      : "bg-primary"
-                    : "bg-transparent"
+                  "mt-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums",
+                  count === 0 && "opacity-0",
+                  active
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "bg-primary/10 text-primary"
                 )}
-                aria-hidden
-              />
+              >
+                {count}
+              </span>
             </button>
           );
         })}
@@ -234,7 +252,37 @@ export function CrmDayAgendaPanel({
         </div>
       ) : null}
 
-      {!loading && late.length > 0 ? (
+      {!loading && (dayLeads.length > 0 || late.length > 0) ? (
+        <div className="relative min-w-0">
+          <div className="flex snap-x snap-mandatory gap-1.5 overflow-x-auto overscroll-x-contain pb-0.5 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+            <FilterChip
+              active={actionFilter === "all"}
+              count={dayLeads.length + late.length}
+              onClick={() => setActionFilter("all")}
+            >
+              {t("crm.agenda.all")}
+            </FilterChip>
+            {actionChoices.map((group) => {
+              const tone = ACTION_TONE[group.action];
+              const Icon = tone.icon;
+              return (
+                <FilterChip
+                  key={group.action}
+                  active={actionFilter === group.action}
+                  count={group.leads.length}
+                  activeClassName={tone.solid}
+                  onClick={() => setActionFilter(group.action)}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  {t(`crm.nextAction.${group.action}`)}
+                </FilterChip>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      {!loading && visibleLate.length > 0 ? (
         <section className="overflow-hidden rounded-2xl border border-amber-500/25 bg-amber-500/[0.06]">
           <div className="flex items-center gap-2 px-3.5 py-2.5">
             <AlertTriangle className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" aria-hidden />
@@ -242,22 +290,19 @@ export function CrmDayAgendaPanel({
               {t("crm.agenda.overdue")}
             </p>
             <span className="ms-auto font-mono text-[12px] tabular-nums text-amber-800/80 dark:text-amber-200/80">
-              {late.length}
+              {visibleLate.length}
             </span>
           </div>
-          <ul className="grid gap-2 px-2.5 pb-2.5 sm:px-3 sm:pb-3">
-            {late.map((lead) => (
-              <FollowUpRow
-                key={lead.id}
-                lead={lead}
-                locale={locale}
-                owner={ownerName(lead.ownerEmployeeId)}
-                actionLabel={t(`crm.nextAction.${lead.nextAction}`)}
-                onOpen={() => onOpenLead(lead.id)}
-                late
-              />
-            ))}
-          </ul>
+          <div className="grid gap-2.5 px-2 pb-2 sm:px-2.5 sm:pb-2.5">
+            <ActionGroups
+              leads={visibleLate}
+              locale={locale}
+              ownerName={ownerName}
+              onOpenLead={onOpenLead}
+              late
+              showHeaders={actionFilter === "all"}
+            />
+          </div>
         </section>
       ) : null}
 
@@ -272,19 +317,17 @@ export function CrmDayAgendaPanel({
           <DayColumn
             title={t("crm.agenda.followUps")}
             empty={t("crm.agenda.emptyFollowUps")}
-            count={dayLeads.length}
+            count={visibleLeads.length}
             icon={<PhoneCall className="h-3.5 w-3.5" aria-hidden />}
+            plain
           >
-            {dayLeads.map((lead) => (
-              <FollowUpRow
-                key={lead.id}
-                lead={lead}
-                locale={locale}
-                owner={ownerName(lead.ownerEmployeeId)}
-                actionLabel={t(`crm.nextAction.${lead.nextAction}`)}
-                onOpen={() => onOpenLead(lead.id)}
-              />
-            ))}
+            <ActionGroups
+              leads={visibleLeads}
+              locale={locale}
+              ownerName={ownerName}
+              onOpenLead={onOpenLead}
+              showHeaders={actionFilter === "all"}
+            />
           </DayColumn>
           <DayColumn
             title={t("crm.agenda.tasks")}
@@ -340,117 +383,34 @@ function DayColumn({
   empty,
   count,
   icon,
+  plain = false,
   children,
 }: {
   title: string;
   empty: string;
   count: number;
   icon: ReactNode;
+  plain?: boolean;
   children: ReactNode;
 }) {
   return (
-    <section className="surface-panel min-w-0 p-3 sm:p-3.5">
-      <div className="flex items-center gap-2">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+    <section className={cn("min-w-0", !plain && "surface-panel p-3 sm:p-3.5")}>
+      <div className="flex min-h-11 items-center gap-2">
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
           {icon}
         </span>
-        <p className="min-w-0 text-[13px] font-semibold">{title}</p>
-        <span className="ms-auto font-mono text-[12px] tabular-nums text-muted-foreground">{count}</span>
+        <p className="min-w-0 text-sm font-semibold">{title}</p>
+        <span className="ms-auto rounded-full bg-muted px-2 py-0.5 font-mono text-[11px] font-semibold tabular-nums text-muted-foreground">
+          {count}
+        </span>
       </div>
       {count === 0 ? (
-        <p className="mt-3 rounded-xl border border-dashed border-border/80 px-3 py-4 text-center text-[12px] text-muted-foreground">
+        <p className="mt-2 rounded-xl border border-dashed border-border/80 px-3 py-5 text-center text-[13px] text-muted-foreground">
           {empty}
         </p>
       ) : (
-        <ul className="mt-3 grid gap-2">{children}</ul>
+        <div className={cn("mt-2", plain ? "grid gap-2.5" : "grid gap-2")}>{children}</div>
       )}
     </section>
-  );
-}
-
-function FollowUpRow({
-  lead,
-  locale,
-  owner,
-  actionLabel,
-  onOpen,
-  late = false,
-}: {
-  lead: CrmLead;
-  locale: string;
-  owner?: string;
-  actionLabel: string;
-  onOpen: () => void;
-  late?: boolean;
-}) {
-  const due = parseMaybe(lead.nextFollowUpAt);
-  const time = due ? format(due, TIME_12H, { locale: dateFnsLocale(locale) }) : "—";
-  return (
-    <li>
-      <button
-        type="button"
-        onClick={onOpen}
-        className="flex min-h-[3.25rem] w-full items-center gap-2.5 rounded-xl border border-border/70 bg-card px-2.5 py-2.5 text-start transition-colors active:bg-muted/60 sm:hover:bg-muted/40"
-      >
-        <span
-          dir="ltr"
-          className={cn(
-            "flex h-11 w-[4.4rem] shrink-0 items-center justify-center rounded-xl px-1 text-center font-mono text-[11px] font-semibold leading-tight tabular-nums",
-            late
-              ? "bg-amber-500/15 text-amber-800 dark:text-amber-200"
-              : "bg-primary/10 text-primary"
-          )}
-        >
-          {time}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13px] font-semibold">
-            <BidiText text={lead.name} />
-          </span>
-          <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
-            {actionLabel}
-            {owner ? ` · ${owner}` : ""}
-          </span>
-          {lead.companyName ? (
-            <span className="mt-0.5 block truncate text-[11px] text-muted-foreground/80">
-              <BidiText text={lead.companyName} />
-            </span>
-          ) : null}
-        </span>
-      </button>
-    </li>
-  );
-}
-
-function TaskRow({ task, label }: { task: WorkTask; label: string }) {
-  return (
-    <li>
-      <Link
-        href="/tasks"
-        className="flex min-h-[3.25rem] items-center gap-2.5 rounded-xl border border-border/70 bg-card px-2.5 py-2.5 transition-colors active:bg-muted/60 sm:hover:bg-muted/40"
-      >
-        <span
-          className={cn(
-            "h-2.5 w-2.5 shrink-0 rounded-full",
-            task.priority === "high" && "bg-rose-500",
-            task.priority === "medium" && "bg-amber-500",
-            task.priority === "low" && "bg-sky-500",
-            task.status === "completed" && "bg-emerald-500"
-          )}
-          aria-hidden
-        />
-        <span className="min-w-0 flex-1">
-          <span
-            className={cn(
-              "block truncate text-[13px] font-semibold",
-              task.status === "completed" && "text-muted-foreground line-through"
-            )}
-          >
-            <BidiText text={task.title} />
-          </span>
-          <span className="mt-0.5 block text-[11px] text-muted-foreground">{label}</span>
-        </span>
-      </Link>
-    </li>
   );
 }

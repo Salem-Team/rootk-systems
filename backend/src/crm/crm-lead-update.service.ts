@@ -116,6 +116,10 @@ export class CrmLeadUpdateService {
         NEXT_ACTIONS,
         "nextAction"
       );
+      if (body.nextFollowUpAt === undefined) {
+        const meta = asLeadMetadata(data.metadata ?? current.metadata);
+        data.metadata = clearFollowUpReminderMeta(meta);
+      }
     }
     if (body.nextFollowUpAt !== undefined) {
       data.nextFollowUpAt = asOptionalDate(body.nextFollowUpAt) ?? null;

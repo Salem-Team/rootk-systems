@@ -89,6 +89,38 @@ export class HttpClient {
     return this.parseSuccess<T>(response, path);
   }
 
+  /** Authenticated binary fetch (voice notes, exports). */
+  async requestBlob(
+    path: string,
+    options: Omit<HttpRequestOptions, "body"> = {}
+  ): Promise<Blob> {
+    const response = await this.rawRequest(path, {
+      ...options,
+      method: options.method ?? "GET",
+    });
+    if (response.status === 401 && !options.skipAuth) {
+      const refreshOutcome = await this.tryRefresh();
+      if (refreshOutcome === "success") {
+        const retry = await this.rawRequest(path, {
+          ...options,
+          method: options.method ?? "GET",
+        });
+        if (retry.ok) return retry.blob();
+        throw await this.toAppError(retry, path);
+      }
+      if (refreshOutcome === "transient") {
+        throw new InternalError("Unable to renew the session.", {
+          path,
+          status: 401,
+        });
+      }
+      await this.config.onUnauthorized?.();
+      throw new UnauthorizedError("Session expired");
+    }
+    if (!response.ok) throw await this.toAppError(response, path);
+    return response.blob();
+  }
+
   get<T>(path: string, options?: Omit<HttpRequestOptions, "method" | "body">) {
     return this.request<T>(path, { ...options, method: "GET" });
   }

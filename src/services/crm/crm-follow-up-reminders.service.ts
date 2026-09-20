@@ -1,17 +1,25 @@
 import { isApiMode } from "@/lib/env";
 import { parseMaybe } from "@/lib/crm/date-range";
+import {
+  dueReminderSlots,
+  isRemindableFollowUpAction,
+  type FollowUpReminderSlot,
+} from "@/lib/crm/follow-up-reminder-window";
 import { crmLeadRepository } from "@/repositories/crm.repository";
 import { pushNotification } from "@/services/notification.service";
 import { useSessionStore } from "@/stores/session-store";
 import type { CrmLead } from "@/types/crm";
 
-const REMINDER_GRACE_MS = 24 * 60 * 60 * 1000;
-const SENT_KEY = "rootk.crm.followUpReminders";
+const SENT_KEY = "rootk.crm.followUpReminderSlots";
 
-type SentMap = Record<string, string>;
+type SentMap = Record<string, true>;
 
-function reminderKey(leadId: string, followUpAt: string): string {
-  return `${leadId}:${followUpAt}`;
+function reminderKey(
+  leadId: string,
+  followUpAt: string,
+  slot: FollowUpReminderSlot
+): string {
+  return `${leadId}:${followUpAt}:${slot}`;
 }
 
 function readSent(): SentMap {
@@ -31,10 +39,18 @@ function writeSent(map: SentMap) {
   window.localStorage.setItem(SENT_KEY, JSON.stringify(map));
 }
 
-function markSent(leadId: string, followUpAt: string) {
+function markSent(leadId: string, followUpAt: string, slot: FollowUpReminderSlot) {
   const map = readSent();
-  map[reminderKey(leadId, followUpAt)] = new Date().toISOString();
+  map[reminderKey(leadId, followUpAt, slot)] = true;
   writeSent(map);
+}
+
+function alreadySent(
+  leadId: string,
+  followUpAt: string,
+  slot: FollowUpReminderSlot
+): boolean {
+  return Boolean(readSent()[reminderKey(leadId, followUpAt, slot)]);
 }
 
 /** Drop local reminder markers for a lead so a rescheduled follow-up can notify again. */
@@ -52,21 +68,40 @@ export function clearLocalCrmFollowUpReminders(leadId: string) {
   if (changed) writeSent(map);
 }
 
-function alreadySent(leadId: string, followUpAt: string): boolean {
-  return Boolean(readSent()[reminderKey(leadId, followUpAt)]);
-}
+const COPY: Record<
+  FollowUpReminderSlot,
+  { titleKey: string; bodyKey: string; priority: "high" | "urgent" }
+> = {
+  advance: {
+    titleKey: "notifications.crmFollowUpAdvanceTitle",
+    bodyKey: "notifications.crmFollowUpAdvanceBody",
+    priority: "high",
+  },
+  due: {
+    titleKey: "notifications.crmFollowUpDueTitle",
+    bodyKey: "notifications.crmFollowUpDueBody",
+    priority: "urgent",
+  },
+};
 
-function isFollowUpDue(lead: CrmLead, now: Date): boolean {
-  if (lead.status !== "active" || lead.nextAction === "none" || !lead.nextFollowUpAt)
-    return false;
+function slotsForLead(lead: CrmLead, now: Date): FollowUpReminderSlot[] {
+  if (
+    lead.status !== "active" ||
+    !isRemindableFollowUpAction(lead.nextAction) ||
+    !lead.nextFollowUpAt
+  ) {
+    return [];
+  }
   const due = parseMaybe(lead.nextFollowUpAt);
-  if (!due) return false;
-  const elapsed = now.getTime() - due.getTime();
-  return elapsed >= 0 && elapsed <= REMINDER_GRACE_MS;
+  if (!due) return [];
+  return dueReminderSlots(due, now).filter(
+    (slot) => !alreadySent(lead.id, lead.nextFollowUpAt!, slot)
+  );
 }
 
 /**
- * Local-mode tick: notify the current user when an owned lead's next action is due.
+ * Local-mode tick: notify the current user for owned call/meeting follow-ups
+ * (15 minutes early, then again at the scheduled time).
  * API mode relies on the Nest CRM reminder poller instead.
  */
 export async function processLocalCrmFollowUpReminders(): Promise<void> {
@@ -84,9 +119,7 @@ export async function processLocalCrmFollowUpReminders(): Promise<void> {
   const leads = await crmLeadRepository.findAll();
   const due = leads.filter(
     (lead) =>
-      isFollowUpDue(lead, now) &&
-      lead.nextFollowUpAt &&
-      !alreadySent(lead.id, lead.nextFollowUpAt) &&
+      slotsForLead(lead, now).length > 0 &&
       (session.role === "admin" ||
         !employeeId ||
         lead.ownerEmployeeId === employeeId)
@@ -94,22 +127,26 @@ export async function processLocalCrmFollowUpReminders(): Promise<void> {
 
   for (const lead of due) {
     if (!lead.nextFollowUpAt) continue;
-    await pushNotification({
-      titleKey: "notifications.crmFollowUpSoonTitle",
-      bodyKey: "notifications.crmFollowUpSoonBody",
-      vars: {
-        name: lead.name,
-        action: lead.nextAction,
-      },
-      category: "schedule",
-      priority: "high",
-      audience: "employee",
-      recipientIds: [userId],
-      href: `/crm?lead=${lead.id}`,
-      entityType: "crm_lead",
-      entityId: lead.id,
-      actorId: "system",
-    });
-    markSent(lead.id, lead.nextFollowUpAt);
+    for (const slot of slotsForLead(lead, now)) {
+      const copy = COPY[slot];
+      await pushNotification({
+        titleKey: copy.titleKey,
+        bodyKey: copy.bodyKey,
+        vars: {
+          name: lead.name,
+          action: lead.nextAction,
+          at: lead.nextFollowUpAt,
+        },
+        category: "schedule",
+        priority: copy.priority,
+        audience: "employee",
+        recipientIds: [userId],
+        href: `/crm?lead=${lead.id}`,
+        entityType: "crm_lead",
+        entityId: lead.id,
+        actorId: "system",
+      });
+      markSent(lead.id, lead.nextFollowUpAt, slot);
+    }
   }
 }

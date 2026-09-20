@@ -5,6 +5,7 @@ import { WorkTasksQueryService } from "./work-tasks-query.service";
 import { WorkTasksStatusService } from "./work-tasks-status.service";
 import { WorkTasksWriteService } from "./work-tasks-write.service";
 import { WorkTasksService } from "./work-tasks.service";
+import { WorkTaskCommentsService } from "./work-task-comments.service";
 import { WorkService } from "./work.service";
 import { RolesGuard } from "../common/roles.guard";
 import { NotificationsModule } from "../notifications/notifications.module";
@@ -18,6 +19,7 @@ import { TargetsModule } from "../targets/targets.module";
     WorkTasksWriteService,
     WorkTasksStatusService,
     WorkTasksService,
+    WorkTaskCommentsService,
     WorkMeetingsService,
     WorkService,
     RolesGuard,

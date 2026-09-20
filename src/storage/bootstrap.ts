@@ -34,6 +34,7 @@ async function writeSeed(): Promise<void> {
     storage.setItem(StorageKeys.approvalRules, seed.approvalRules),
     storage.setItem(StorageKeys.userPreferences, seed.userPreferences),
     storage.setItem(StorageKeys.workTasks, seed.workTasks),
+    storage.setItem(StorageKeys.workTaskComments, []),
     storage.setItem(StorageKeys.workMeetings, seed.workMeetings),
     storage.setItem(StorageKeys.targetCategories, seed.targetCategories),
     storage.setItem(StorageKeys.targetTypes, seed.targetTypes),
@@ -101,6 +102,7 @@ export async function clearDemoData(): Promise<void> {
     storage.setItem(StorageKeys.notifications, []),
     storage.setItem(StorageKeys.users, []),
     storage.setItem(StorageKeys.workTasks, []),
+    storage.setItem(StorageKeys.workTaskComments, []),
     storage.setItem(StorageKeys.workMeetings, []),
     storage.setItem(StorageKeys.meta, {
       seedVersion: SEED_VERSION,

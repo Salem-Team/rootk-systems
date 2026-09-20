@@ -257,6 +257,7 @@ model Company {
   leaveRequests LeaveRequest[]
   attendance    AttendanceRecord[]
   workTasks         WorkTask[]
+  workTaskComments  WorkTaskComment[]
   workMeetings      WorkMeeting[]
   notifications     AppNotification[]
   targetCategories  TargetCategory[]
@@ -592,11 +593,46 @@ model WorkTask {
   company              Company               @relation(fields: [companyId], references: [id])
   target               PerformanceTarget?    @relation(fields: [targetId], references: [id])
   organicAdvertisement OrganicAdvertisement?
+  comments             WorkTaskComment[]
 
   @@index([companyId, status])
   @@index([companyId, dueDate])
   @@index([companyId, targetId])
   @@index([companyId, completedAt])
+}
+
+/** Threaded discussion on a work task — text and/or a short voice note. */
+model WorkTaskComment {
+  id                 String   @id @default(cuid())
+  companyId          String
+  taskId             String
+  /** Null = top-level comment; set = reply to that comment. */
+  parentId           String?
+  authorUserId       String
+  authorEmployeeId   String?
+  authorName         String   @default("")
+  body               String   @default("")
+  /** Relative file id under company voice storage (no path traversal). */
+  voiceFileId        String?
+  voiceDurationMs    Int?
+  voiceMime          String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  createdBy          String?
+  updatedBy          String?
+  deletedAt          DateTime?
+  isArchived         Boolean  @default(false)
+  version            Int      @default(1)
+  metadata           Json     @default("{}")
+
+  company Company          @relation(fields: [companyId], references: [id])
+  task    WorkTask         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  parent  WorkTaskComment? @relation("TaskCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies WorkTaskComment[] @relation("TaskCommentReplies")
+
+  @@index([companyId, taskId, createdAt])
+  @@index([taskId, parentId])
+  @@index([companyId, voiceFileId])
 }
 
 model WorkMeeting {

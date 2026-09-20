@@ -3,8 +3,16 @@ import { todayIsoDate } from "@/lib/work-utils";
 import type { TaskPriority, TaskStatus, WorkMeeting, WorkTask } from "@/types/work";
 
 export type PanelTab = "tasks" | "meetings";
-export type TaskFilter = "all" | TaskStatus | "overdue";
+export type TaskFilter = "all" | "open" | TaskStatus | "overdue";
 export type MeetingFilter = "all" | "today" | "upcoming" | "past";
+
+/** KPI chips on the admin work hero that drive list filters. */
+export type AdminWorkHeroFilter =
+  | "open"
+  | "overdue"
+  | "completed"
+  | "today"
+  | null;
 
 export const PRIORITY_VARIANT = {
   high: "danger",

@@ -8,17 +8,36 @@ import { CrmLeadStatus, CrmNextAction, NotificationAudience } from "@prisma/clie
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import {
-  FOLLOW_UP_REMINDER_GRACE_MS,
-  hasFollowUpReminderFor,
-  isFollowUpDueForReminder,
-  markFollowUpReminderSent,
+  FOLLOW_UP_ADVANCE_MS,
+  FOLLOW_UP_DUE_GRACE_MS,
+  FOLLOW_UP_REMINDER_ACTIONS,
+  dueReminderSlots,
+  hasFollowUpReminderSlot,
+  markFollowUpReminderSlot,
+  type FollowUpReminderSlot,
 } from "./crm-follow-up-meta";
 
 const TICK_MS = 60_000;
 
+const COPY: Record<
+  FollowUpReminderSlot,
+  { titleKey: string; bodyKey: string; priority: "high" | "urgent" }
+> = {
+  advance: {
+    titleKey: "notifications.crmFollowUpAdvanceTitle",
+    bodyKey: "notifications.crmFollowUpAdvanceBody",
+    priority: "high",
+  },
+  due: {
+    titleKey: "notifications.crmFollowUpDueTitle",
+    bodyKey: "notifications.crmFollowUpDueBody",
+    priority: "urgent",
+  },
+};
+
 /**
- * Polls for CRM leads whose next-action time has arrived (and recently overdue
- * if a tick was missed) and sends a one-shot in-app reminder to the owner.
+ * One-shot reminders for call and meeting follow-ups:
+ * 15 minutes before, then again at the scheduled time.
  */
 @Injectable()
 export class CrmFollowUpRemindersService
@@ -50,14 +69,15 @@ export class CrmFollowUpRemindersService
     this.running = true;
     try {
       const now = new Date();
-      const windowStart = new Date(now.getTime() - FOLLOW_UP_REMINDER_GRACE_MS);
+      const windowStart = new Date(now.getTime() - FOLLOW_UP_DUE_GRACE_MS);
+      const windowEnd = new Date(now.getTime() + FOLLOW_UP_ADVANCE_MS);
 
       const leads = await this.prisma.crmLead.findMany({
         where: {
           deletedAt: null,
           status: CrmLeadStatus.active,
-          nextAction: { not: CrmNextAction.none },
-          nextFollowUpAt: { gte: windowStart, lte: now },
+          nextAction: { in: [...FOLLOW_UP_REMINDER_ACTIONS] as CrmNextAction[] },
+          nextFollowUpAt: { gte: windowStart, lte: windowEnd },
         },
         select: {
           id: true,
@@ -73,42 +93,52 @@ export class CrmFollowUpRemindersService
 
       for (const lead of leads) {
         if (!lead.nextFollowUpAt) continue;
-        if (!isFollowUpDueForReminder(lead.nextFollowUpAt, now)) continue;
-        if (hasFollowUpReminderFor(lead.metadata, lead.nextFollowUpAt)) continue;
+        const slots = dueReminderSlots(lead.nextFollowUpAt, now).filter(
+          (slot) => !hasFollowUpReminderSlot(lead.metadata, lead.nextFollowUpAt!, slot)
+        );
+        if (slots.length === 0) continue;
 
         const recipientIds = await this.resolveOwnerUserIds(
           lead.companyId,
           lead.ownerEmployeeId
         );
-        if (recipientIds.length === 0) {
-          // Still mark so we do not retry forever when the owner has no login.
-          await this.markSent(lead.id, lead.metadata, lead.nextFollowUpAt);
-          continue;
+
+        let metadata: unknown = lead.metadata;
+        for (const slot of slots) {
+          if (recipientIds.length > 0) {
+            const copy = COPY[slot];
+            await this.notifications.notifyDomain({
+              companyId: lead.companyId,
+              actorId: "system",
+              category: "schedule",
+              priority: copy.priority,
+              audience: NotificationAudience.employee,
+              titleKey: copy.titleKey,
+              bodyKey: copy.bodyKey,
+              vars: {
+                name: lead.name,
+                action: lead.nextAction,
+                at: lead.nextFollowUpAt.toISOString(),
+              },
+              href: `/crm?lead=${lead.id}`,
+              entityType: "crm_lead",
+              entityId: lead.id,
+              recipientIds,
+            });
+          }
+          metadata = markFollowUpReminderSlot(
+            metadata,
+            lead.nextFollowUpAt,
+            slot
+          );
+          await this.prisma.crmLead.update({
+            where: { id: lead.id },
+            data: { metadata: metadata as ReturnType<typeof markFollowUpReminderSlot> },
+          });
+          this.logger.debug(
+            `CRM follow-up ${slot} reminder for lead ${lead.id} at ${lead.nextFollowUpAt.toISOString()}`
+          );
         }
-
-        const followAtIso = lead.nextFollowUpAt.toISOString();
-        await this.notifications.notifyDomain({
-          companyId: lead.companyId,
-          actorId: "system",
-          category: "schedule",
-          priority: "high",
-          audience: NotificationAudience.employee,
-          titleKey: "notifications.crmFollowUpSoonTitle",
-          bodyKey: "notifications.crmFollowUpSoonBody",
-          vars: {
-            name: lead.name,
-            action: lead.nextAction,
-          },
-          href: `/crm?lead=${lead.id}`,
-          entityType: "crm_lead",
-          entityId: lead.id,
-          recipientIds,
-        });
-
-        await this.markSent(lead.id, lead.metadata, lead.nextFollowUpAt);
-        this.logger.debug(
-          `CRM follow-up reminder sent for lead ${lead.id} at ${followAtIso}`
-        );
       }
     } catch (err) {
       this.logger.warn(
@@ -136,18 +166,5 @@ export class CrmFollowUpRemindersService
       select: { id: true },
     });
     return users.map((u) => u.id);
-  }
-
-  private async markSent(
-    leadId: string,
-    metadata: unknown,
-    followUpAt: Date
-  ) {
-    await this.prisma.crmLead.update({
-      where: { id: leadId },
-      data: {
-        metadata: markFollowUpReminderSent(metadata, followUpAt),
-      },
-    });
   }
 }

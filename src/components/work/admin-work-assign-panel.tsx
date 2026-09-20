@@ -15,11 +15,24 @@ import { AdminWorkDeleteDialog } from "@/components/work/admin-work-delete-dialo
 import { TaskViewSheet } from "@/components/work/task-view-sheet";
 import { useAdminWorkPanelData } from "@/components/work/use-admin-work-panel-data";
 import { useAdminWorkPanelForms } from "@/components/work/use-admin-work-panel-forms";
-import type { PanelTab } from "@/components/work/admin-work-panel-types";
+import type { PanelTab, AdminWorkHeroFilter } from "@/components/work/admin-work-panel-types";
 import { getWorkEmployeeIdFromUser, useSessionStore } from "@/stores/session-store";
 import { useTranslation } from "@/hooks/use-translation";
 import type { WorkMeeting, WorkTask } from "@/types/work";
 import { ar as arLocale, enUS } from "date-fns/locale";
+
+function resolveHeroFilter(
+  tab: PanelTab,
+  taskFilter: string,
+  meetingFilter: string
+): AdminWorkHeroFilter {
+  if (tab === "meetings" && meetingFilter === "today") return "today";
+  if (tab !== "tasks") return null;
+  if (taskFilter === "open") return "open";
+  if (taskFilter === "overdue") return "overdue";
+  if (taskFilter === "completed") return "completed";
+  return null;
+}
 
 export function AdminWorkAssignPanel() {
   const { locale } = useTranslation();
@@ -78,9 +91,45 @@ export function AdminWorkAssignPanel() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <AdminWorkHero stats={data.stats} />
+      <AdminWorkHero
+        stats={data.stats}
+        activeFilter={resolveHeroFilter(
+          data.tab,
+          data.taskFilter,
+          data.meetingFilter
+        )}
+        onFilter={(filter) => {
+          const current = resolveHeroFilter(
+            data.tab,
+            data.taskFilter,
+            data.meetingFilter
+          );
+          if (current === filter) {
+            data.setTaskFilter("all");
+            data.setMeetingFilter("all");
+            return;
+          }
+          if (filter === "today") {
+            data.setTab("meetings");
+            data.setMeetingFilter("today");
+            data.setTaskFilter("all");
+            data.setQuery("");
+          } else {
+            data.setTab("tasks");
+            data.setTaskFilter(filter);
+            data.setMeetingFilter("all");
+            data.setQuery("");
+          }
+          window.requestAnimationFrame(() => {
+            document
+              .getElementById("admin-work-board")
+              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        }}
+      />
 
       <Tabs
+        id="admin-work-board"
         value={data.tab}
         onValueChange={(v) => {
           data.setTab(v as PanelTab);

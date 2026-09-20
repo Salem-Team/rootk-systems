@@ -73,6 +73,8 @@ export function useAdminWorkPanelData() {
       }
       if (taskFilter === "overdue") {
         if (taskDueBucket(task.dueDate, task.status) !== "overdue") return false;
+      } else if (taskFilter === "open") {
+        if (task.status === "completed") return false;
       } else if (taskFilter !== "all" && task.status !== taskFilter) {
         return false;
       }

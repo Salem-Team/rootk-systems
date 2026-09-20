@@ -87,6 +87,7 @@ export function AdminWorkFilterBar({
               ? (
                   [
                     ["all", t("common.all")],
+                    ["open", t("workAdmin.kpiOpen")],
                     ["todo", t("ops.statusTodo")],
                     ["in_progress", t("ops.statusInProgress")],
                     ["completed", t("ops.statusCompleted")],

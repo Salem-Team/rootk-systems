@@ -12,6 +12,7 @@ import {
   TaskEvidenceBadge,
   TaskEvidenceDisplay,
 } from "@/components/work/task-completion-evidence-dialog";
+import { TaskCommentsPanel } from "@/components/work/task-comments-panel";
 import { WorkDoneButtonMotion, WorkStatusDot } from "@/components/work/work-motion";
 import { PRIORITY_VARIANT, statusLabelKey } from "@/components/work/employee-work-hub-types";
 import { useTranslation } from "@/hooks/use-translation";
@@ -204,6 +205,10 @@ export function TaskDetailCard({
           </ul>
         </div>
       ) : null}
+
+      <div className="mt-5">
+        <TaskCommentsPanel taskId={task.id} />
+      </div>
 
       {related ? (
         <button

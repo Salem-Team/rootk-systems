@@ -78,6 +78,11 @@ export const API_ROUTES = {
     taskStatus: (id: string) => `/work/tasks/${id}/status`,
     taskSubItem: (id: string, subId: string) =>
       `/work/tasks/${id}/sub-items/${subId}`,
+    taskComments: (id: string) => `/work/tasks/${id}/comments`,
+    taskCommentById: (id: string, commentId: string) =>
+      `/work/tasks/${id}/comments/${commentId}`,
+    taskVoice: (id: string, fileId: string) =>
+      `/work/tasks/${id}/voice/${fileId}`,
     meetings: "/work/meetings",
     meetingById: (id: string) => `/work/meetings/${id}`,
   },

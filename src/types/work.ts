@@ -79,3 +79,30 @@ export interface WorkMeeting extends BaseEntity {
 }
 
 export type MeetingWhen = "today" | "upcoming" | "past";
+
+
+/** Text or voice note on a work task (replies nest one level). */
+export interface WorkTaskComment extends BaseEntity {
+  id: string;
+  taskId: string;
+  parentId: string | null;
+  authorUserId: string;
+  authorEmployeeId: string | null;
+  authorName: string;
+  body: string;
+  voiceFileId?: string | null;
+  voiceDurationMs?: number | null;
+  voiceMime?: string | null;
+  /** API path or local data URL for playback. */
+  voiceUrl?: string | null;
+}
+
+export interface CreateWorkTaskCommentInput {
+  body?: string;
+  parentId?: string | null;
+  voice?: {
+    dataBase64: string;
+    mime: string;
+    durationMs: number;
+  } | null;
+}

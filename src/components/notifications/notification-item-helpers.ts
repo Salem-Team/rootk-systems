@@ -34,7 +34,12 @@ export function notificationVars(
     base.at = formatAtTimestamp(base.at, locale);
   }
   if (
-    item.bodyKey === "notifications.crmFollowUpSoonBody" &&
+    (item.bodyKey === "notifications.crmFollowUpSoonBody" ||
+      item.bodyKey === "notifications.crmFollowUpAdvanceBody" ||
+      item.bodyKey === "notifications.crmFollowUpDueBody" ||
+      item.titleKey === "notifications.crmFollowUpAdvanceTitle" ||
+      item.titleKey === "notifications.crmFollowUpDueTitle" ||
+      item.titleKey === "notifications.crmFollowUpSoonTitle") &&
     typeof base.action === "string"
   ) {
     const actionKey = CRM_NEXT_ACTION_KEYS[base.action];

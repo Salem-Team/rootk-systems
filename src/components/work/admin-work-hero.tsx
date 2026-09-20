@@ -5,11 +5,17 @@ import { motion, useReducedMotion } from "framer-motion";
 import { AlertTriangle, CalendarDays, CheckCircle2, ListTodo } from "lucide-react";
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp } from "@/lib/animations";
+import { cn } from "@/lib/utils";
+import type { AdminWorkHeroFilter } from "@/components/work/admin-work-panel-types";
 
 export function AdminWorkHero({
   stats,
+  activeFilter = null,
+  onFilter,
 }: {
   stats: { open: number; overdue: number; done: number; today: number };
+  activeFilter?: AdminWorkHeroFilter;
+  onFilter?: (filter: Exclude<AdminWorkHeroFilter, null>) => void;
 }) {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
@@ -41,26 +47,43 @@ export function AdminWorkHero({
             {t("workAdmin.description")}
           </p>
         </div>
-        <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4 lg:w-auto">
+        <div
+          className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4 lg:w-auto"
+          role="toolbar"
+          aria-label={t("workAdmin.kpiFilterLabel")}
+        >
           <StatChip
             icon={<ListTodo className="h-3.5 w-3.5" />}
             label={t("workAdmin.kpiOpen")}
             value={String(stats.open)}
+            active={activeFilter === "open"}
+            tone="sky"
+            onClick={onFilter ? () => onFilter("open") : undefined}
           />
           <StatChip
             icon={<AlertTriangle className="h-3.5 w-3.5" />}
             label={t("workAdmin.kpiOverdue")}
             value={String(stats.overdue)}
+            active={activeFilter === "overdue"}
+            tone="amber"
+            warn={stats.overdue > 0}
+            onClick={onFilter ? () => onFilter("overdue") : undefined}
           />
           <StatChip
             icon={<CheckCircle2 className="h-3.5 w-3.5" />}
             label={t("workAdmin.kpiDone")}
             value={String(stats.done)}
+            active={activeFilter === "completed"}
+            tone="emerald"
+            onClick={onFilter ? () => onFilter("completed") : undefined}
           />
           <StatChip
             icon={<CalendarDays className="h-3.5 w-3.5" />}
             label={t("workAdmin.kpiTodayMeetings")}
             value={String(stats.today)}
+            active={activeFilter === "today"}
+            tone="violet"
+            onClick={onFilter ? () => onFilter("today") : undefined}
           />
         </div>
       </div>
@@ -72,20 +95,65 @@ function StatChip({
   icon,
   label,
   value,
+  active,
+  tone,
+  warn,
+  onClick,
 }: {
   icon: ReactNode;
   label: string;
   value: string;
+  active?: boolean;
+  tone: "sky" | "amber" | "emerald" | "violet";
+  warn?: boolean;
+  onClick?: () => void;
 }) {
-  return (
-    <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.07] px-2.5 py-2 backdrop-blur-sm sm:px-3 sm:py-2.5">
+  const toneRing = {
+    sky: "ring-sky-300/70 bg-sky-400/20",
+    amber: "ring-amber-300/70 bg-amber-400/20",
+    emerald: "ring-emerald-300/70 bg-emerald-400/20",
+    violet: "ring-violet-300/70 bg-violet-400/20",
+  }[tone];
+
+  const className = cn(
+    "min-w-0 rounded-xl border px-2.5 py-2 text-start backdrop-blur-sm transition-[transform,background-color,box-shadow,border-color] duration-200 sm:px-3 sm:py-2.5",
+    "touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70",
+    onClick && "cursor-pointer active:scale-[0.98] sm:hover:bg-white/[0.12]",
+    active
+      ? cn("border-white/35 shadow-[0_0_0_1px_rgba(255,255,255,0.12)] ring-2", toneRing)
+      : "border-white/10 bg-white/[0.07]",
+    warn && !active && "border-amber-300/35"
+  );
+
+  const body = (
+    <>
       <p className="flex min-w-0 items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-white/55">
         <span className="shrink-0">{icon}</span>
         <span className="truncate">{label}</span>
       </p>
-      <p className="mt-1 font-display text-lg font-bold tabular-nums text-white sm:text-xl">
+      <p
+        className={cn(
+          "mt-1 font-display text-lg font-bold tabular-nums text-white sm:text-xl",
+          warn && "text-amber-100"
+        )}
+      >
         {value}
       </p>
-    </div>
+    </>
+  );
+
+  if (!onClick) {
+    return <div className={className}>{body}</div>;
+  }
+
+  return (
+    <button
+      type="button"
+      className={className}
+      onClick={onClick}
+      aria-pressed={active}
+    >
+      {body}
+    </button>
   );
 }

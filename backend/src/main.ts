@@ -1,14 +1,19 @@
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { json, urlencoded } from "express";
 import { AppModule } from "./app.module";
 import { ResponseInterceptor } from "./common/interceptors/response.interceptor";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 import { parseCorsOrigins } from "./common/cors";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
   const config = app.get(ConfigService);
+
+  // Voice notes are sent as base64 JSON — raise the default 100kb Nest limit.
+  app.use(json({ limit: "6mb" }));
+  app.use(urlencoded({ extended: true, limit: "6mb" }));
 
   app.setGlobalPrefix("api");
   const corsOrigins = parseCorsOrigins(config.get<string>("CORS_ORIGIN"));

@@ -17,6 +17,7 @@ node_modules/
 # testing
 /coverage
 /tmp/
+backend/uploads/
 
 # next.js
 /.next/
