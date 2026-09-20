@@ -26,7 +26,7 @@ import {
 import { WorkStatusDot } from "@/components/work/work-motion";
 import { initials } from "@/components/work/employee-avatar-initials";
 import { statusLabelKey } from "@/components/work/employee-work-hub-types";
-import { BidiText } from "@/components/shared/bidi-text";
+import { BidiText, flattenPreview } from "@/components/shared/bidi-text";
 import { useTranslation } from "@/hooks/use-translation";
 import { completionNeedsEvidenceDialog } from "@/lib/task-evidence";
 import {
@@ -47,9 +47,10 @@ const AVATAR_TONES = [
 ];
 
 const PRIORITY_PILL: Record<TaskPriority, string> = {
-  high: "bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300",
-  medium: "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
-  low: "bg-sky-50 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300",
+  high: "border-rose-200/80 bg-rose-50 text-rose-700 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-300",
+  medium:
+    "border-amber-200/80 bg-amber-50 text-amber-800 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-300",
+  low: "border-sky-200/80 bg-sky-50 text-sky-700 dark:border-sky-500/25 dark:bg-sky-500/10 dark:text-sky-300",
 };
 
 function avatarTone(seed: string): string {
@@ -60,30 +61,40 @@ function avatarTone(seed: string): string {
   return AVATAR_TONES[n] ?? AVATAR_TONES[0];
 }
 
+/** Compact title + one-line preview — fixed visual height for every row. */
 export function TaskTitleCell({ task }: { task: WorkTask }) {
-  const subtitle = task.description.trim() || task.tag.trim();
+  const title = flattenPreview(task.title, 64);
+  const subtitle = flattenPreview(
+    task.description.trim() || task.tag.trim(),
+    72
+  );
+
   return (
-    <div className="flex min-w-0 items-center gap-3">
-      <Avatar className="h-9 w-9 shrink-0">
-        <AvatarFallback className={cn("text-[11px]", avatarTone(task.title))}>
+    <div className="flex h-11 min-w-0 items-center gap-3">
+      <Avatar className="h-9 w-9 shrink-0 ring-1 ring-border/60">
+        <AvatarFallback className={cn("text-[11px] font-semibold", avatarTone(task.title))}>
           {initials(task.title) || "•"}
         </AvatarFallback>
       </Avatar>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p
           className={cn(
-            "truncate text-[13px] font-semibold leading-snug",
+            "truncate text-[13px] font-semibold leading-5 tracking-tight",
             task.status === "completed" &&
               "text-muted-foreground line-through decoration-border"
           )}
         >
-          <BidiText text={task.title} />
+          <BidiText text={title} />
         </p>
-        {subtitle ? (
-          <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-            <BidiText text={subtitle} />
-          </p>
-        ) : null}
+        <p
+          className={cn(
+            "mt-0.5 truncate text-[11px] leading-4",
+            subtitle ? "text-muted-foreground" : "text-transparent select-none"
+          )}
+          aria-hidden={!subtitle}
+        >
+          {subtitle ? <BidiText text={subtitle} /> : "—"}
+        </p>
       </div>
     </div>
   );
@@ -92,7 +103,7 @@ export function TaskTitleCell({ task }: { task: WorkTask }) {
 export function TaskStatusCell({ status }: { status: TaskStatus }) {
   const { t } = useTranslation();
   return (
-    <span className="inline-flex items-center gap-2 text-[13px]">
+    <span className="inline-flex h-6 items-center gap-2 whitespace-nowrap text-[12px] font-medium">
       <WorkStatusDot status={status} />
       {t(statusLabelKey(status))}
     </span>
@@ -104,11 +115,11 @@ export function TaskPriorityPill({ priority }: { priority: TaskPriority }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[12px] font-medium",
+        "inline-flex h-6 items-center gap-1.5 rounded-md border px-2 text-[11px] font-semibold tracking-tight",
         PRIORITY_PILL[priority]
       )}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
+      <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" aria-hidden />
       {t(`ops.priority.${priority}`)}
     </span>
   );

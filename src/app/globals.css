@@ -272,17 +272,20 @@
     }
   }
 
-  /* Mixed Arabic/English: base dir from content; English stays an LTR island. */
+  /* Mixed Arabic/English: isolate base dir; do NOT break truncate in tables. */
   .bidi-plain {
     unicode-bidi: isolate;
     text-align: start;
-    overflow-wrap: anywhere;
-    word-break: break-word;
   }
 
   .bidi-plain bdi[dir="ltr"] {
     unicode-bidi: isolate;
-    white-space: inherit;
+  }
+
+  /* Full descriptions / notes — wrapping allowed. */
+  .bidi-prose {
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   html[dir="rtl"] textarea.bidi-plain,

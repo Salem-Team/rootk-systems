@@ -116,25 +116,29 @@ export function WorkTasksTable({
 
   return (
     <div ref={listRef} className={cn("space-y-3", className)}>
-      <WorkMotionList className="space-y-2.5 md:hidden">
+      <WorkMotionList className="space-y-2 md:hidden">
         <AnimatePresence initial={false} mode="popLayout">
           {pageTasks.map((task) => {
             const due = taskDueBucket(task.dueDate, task.status);
             const busy = busyId === task.id;
             const selected = selectedId === task.id;
             return (
-              <WorkMotionCard key={task.id} selected={selected}>
+              <WorkMotionCard
+                key={task.id}
+                selected={selected}
+                className="min-h-[8.5rem]"
+              >
                 <button
                   type="button"
                   className="w-full text-start"
                   onClick={() => openTask?.(task)}
                 >
                   <TaskTitleCell task={task} />
-                  <span className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="mt-3 flex h-6 flex-wrap items-center gap-2">
                     <TaskStatusCell status={task.status} />
                     <TaskPriorityPill priority={task.priority} />
                   </span>
-                  <span className="mt-2.5 block">
+                  <span className="mt-2.5 block h-5">
                     <TaskDueCell
                       dueDate={task.dueDate}
                       overdue={due === "overdue"}
@@ -142,7 +146,7 @@ export function WorkTasksTable({
                     />
                   </span>
                 </button>
-                <div className="mt-3 flex items-center justify-between gap-2">
+                <div className="mt-3 flex h-9 items-center justify-between gap-2 border-t border-border/50 pt-3">
                   {onDone && task.status !== "completed" ? (
                     <WorkDoneButtonMotion
                       pulse={task.status === "in_progress"}
@@ -151,7 +155,7 @@ export function WorkTasksTable({
                       <Button
                         type="button"
                         size="sm"
-                        className="w-full"
+                        className="h-9 w-full"
                         disabled={busy}
                         onClick={() => onDone(task)}
                       >
@@ -183,27 +187,27 @@ export function WorkTasksTable({
 
       <WorkMotionTableShell className="hidden md:block">
         <section className="surface-panel overflow-hidden">
-          <DataTable embedded className="min-w-[46rem]">
+          <DataTable embedded className="min-w-[46rem] table-fixed">
             <DataTableHeader>
               <DataTableHeaderRow>
-                <DataTableHead className="h-11">
+                <DataTableHead className="h-11 w-[38%]">
                   {t("workTable.colTask")}
                 </DataTableHead>
-                <DataTableHead className="h-11">
+                <DataTableHead className="h-11 w-[14%]">
                   {t("workTable.colStatus")}
                 </DataTableHead>
-                <DataTableHead className="hidden h-11 sm:table-cell">
+                <DataTableHead className="hidden h-11 w-[12%] sm:table-cell">
                   {t("workTable.colPriority")}
                 </DataTableHead>
                 {showAssignee ? (
-                  <DataTableHead className="hidden h-11 lg:table-cell">
+                  <DataTableHead className="hidden h-11 w-[16%] lg:table-cell">
                     {t("workTable.colAssignee")}
                   </DataTableHead>
                 ) : null}
-                <DataTableHead className="h-11">
+                <DataTableHead className="h-11 w-[14%]">
                   {t("workTable.colDue")}
                 </DataTableHead>
-                <DataTableHead className="hidden h-11 xl:table-cell">
+                <DataTableHead className="hidden h-11 w-[10%] xl:table-cell">
                   {t("workTable.colOrigin")}
                 </DataTableHead>
                 <DataTableHead className="h-11 w-12 text-end">
@@ -222,22 +226,23 @@ export function WorkTasksTable({
                     index={index}
                     selected={selected}
                     striped
+                    className="h-[4.25rem]"
                     onClick={openTask ? () => openTask(task) : undefined}
                   >
-                    <DataTableCell className="py-4">
-                      <div className="min-w-0 max-w-[280px]">
+                    <DataTableCell className="h-[4.25rem] py-0 align-middle">
+                      <div className="min-w-0 max-w-full pe-2">
                         <TaskTitleCell task={task} />
                       </div>
                     </DataTableCell>
-                    <DataTableCell className="py-4 whitespace-nowrap">
+                    <DataTableCell className="h-[4.25rem] py-0 align-middle whitespace-nowrap">
                       <TaskStatusCell status={task.status} />
                     </DataTableCell>
-                    <DataTableCell className="hidden py-4 sm:table-cell">
+                    <DataTableCell className="hidden h-[4.25rem] py-0 align-middle sm:table-cell">
                       <TaskPriorityPill priority={task.priority} />
                     </DataTableCell>
                     {showAssignee ? (
                       <DataTableCell
-                        className="hidden py-4 lg:table-cell"
+                        className="hidden h-[4.25rem] py-0 align-middle lg:table-cell"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <TaskAssigneeCell
@@ -249,18 +254,18 @@ export function WorkTasksTable({
                         />
                       </DataTableCell>
                     ) : null}
-                    <DataTableCell className="py-4 whitespace-nowrap">
+                    <DataTableCell className="h-[4.25rem] py-0 align-middle whitespace-nowrap">
                       <TaskDueCell
                         dueDate={task.dueDate}
                         overdue={due === "overdue"}
                         dateLocale={dateLocale}
                       />
                     </DataTableCell>
-                    <DataTableCell className="hidden py-4 xl:table-cell">
+                    <DataTableCell className="hidden h-[4.25rem] py-0 align-middle xl:table-cell">
                       <TaskOriginCell origin={task.origin} />
                     </DataTableCell>
                     <DataTableCell
-                      className="py-4"
+                      className="h-[4.25rem] py-0 align-middle"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex justify-end">

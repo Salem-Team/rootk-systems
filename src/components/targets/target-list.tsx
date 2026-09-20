@@ -6,7 +6,7 @@ import { ar as arLocale, enUS } from "date-fns/locale";
 import { AlertTriangle, Pencil, Target, Trash2 } from "lucide-react";
 import { EmployeeAvatarStack, TaskAssignees } from "@/components/work/employee-multi-picker";
 import { EmptyState } from "@/components/shared/empty-state";
-import { BidiText } from "@/components/shared/bidi-text";
+import { BidiText, flattenPreview } from "@/components/shared/bidi-text";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 import { Button } from "@/components/ui/button";
@@ -142,7 +142,9 @@ export function TargetList({
                     </div>
                     {target.description ? (
                       <p className="mt-1 line-clamp-2 text-[13px] text-muted-foreground">
-                        <BidiText text={target.description} />
+                        <BidiText
+                          text={flattenPreview(target.description, 120)}
+                        />
                       </p>
                     ) : null}
                     <div className="mt-2.5 flex flex-wrap gap-1.5">

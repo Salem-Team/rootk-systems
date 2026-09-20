@@ -146,10 +146,16 @@ export function TaskDetailCard({
       </div>
 
       {task.description ? (
-        <BidiBlocks
-          text={task.description}
-          className="mt-4 text-[14px] text-muted-foreground"
-        />
+        <section className="mt-4 rounded-2xl border border-border/70 bg-muted/15 p-4">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            {t("common.description")}
+          </p>
+          <BidiBlocks
+            text={task.description}
+            className="text-[14px] text-foreground/90"
+            blockClassName="text-[14px] leading-7"
+          />
+        </section>
       ) : null}
 
       <TaskEvidenceDisplay task={task} className="mt-4" />

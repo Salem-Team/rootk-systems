@@ -122,10 +122,16 @@ export function TaskViewSheet({
               </div>
 
               {task.description ? (
-                <BidiBlocks
-                  text={task.description}
-                  className="text-[13px] text-muted-foreground"
-                />
+                <section className="rounded-2xl border border-border/70 bg-muted/15 p-4">
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                    {t("common.description")}
+                  </p>
+                  <BidiBlocks
+                    text={task.description}
+                    className="text-[13px] text-foreground/90"
+                    blockClassName="text-[13px] leading-7"
+                  />
+                </section>
               ) : null}
 
               <div>

@@ -73,6 +73,14 @@ export function splitBidiBlocks(text: string): string[] {
   return bySteps.length > 1 ? bySteps : [single];
 }
 
+/** One-line preview for tables/lists — never expands row height. */
+export function flattenPreview(text: string, maxChars = 96): string {
+  const flat = text.replace(/\s+/g, " ").trim();
+  if (!flat) return "";
+  if (flat.length <= maxChars) return flat;
+  return `${flat.slice(0, Math.max(1, maxChars - 1)).trimEnd()}…`;
+}
+
 /** User text that may mix Arabic and English. */
 export function BidiText({
   text,
@@ -82,12 +90,8 @@ export function BidiText({
   className?: string;
 }) {
   const dir = resolveTextDir(text);
-  const hasBreaks = text.includes("\n");
   return (
-    <span
-      dir={dir}
-      className={cn("bidi-plain", hasBreaks && "whitespace-pre-wrap", className)}
-    >
+    <span dir={dir} className={cn("bidi-plain", className)}>
       {bidiNodes(text)}
     </span>
   );
@@ -116,7 +120,7 @@ export function BidiBlocks({
       <p
         dir={dir}
         className={cn(
-          "bidi-plain whitespace-pre-wrap text-start leading-relaxed",
+          "bidi-plain bidi-prose whitespace-pre-wrap text-start leading-relaxed",
           className,
           blockClassName
         )}
@@ -129,7 +133,10 @@ export function BidiBlocks({
   return (
     <div
       dir={dir}
-      className={cn("bidi-plain space-y-2.5 text-start", className)}
+      className={cn(
+        "bidi-plain bidi-prose space-y-2.5 text-start",
+        className
+      )}
     >
       {blocks.map((block, index) => (
         <p
