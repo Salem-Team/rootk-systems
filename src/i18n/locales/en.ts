@@ -327,6 +327,8 @@ export const en = {
   workMedia: {
     title: "Photos & videos",
     hint: "Drop files here or browse. Images up to 5MB, videos up to 28MB.",
+    pasteHint: "Or copy an image and press ⌘V / Ctrl+V to paste",
+    pasted: "Image pasted",
     browse: "Choose files",
     galleryTitle: "Attachments",
     limitReached: "Attachment limit reached.",

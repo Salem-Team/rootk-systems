@@ -330,17 +330,27 @@ export function CrmFeedbackForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[min(94dvh,960px)] flex-col gap-0 overflow-hidden sm:max-w-xl">
-        <DialogHeader className="shrink-0 border-b border-border/50 pb-3">
+      <DialogContent
+        className={cn(
+          "flex flex-col gap-0 overflow-hidden p-0",
+          // Mobile: near-full sheet, 90% width floating panel feel
+          "inset-x-[5%] bottom-[max(0.5rem,env(safe-area-inset-bottom))] max-h-[min(94dvh,100%)] w-[90%] max-w-none",
+          "rounded-[1.35rem] rounded-b-[1.35rem]",
+          "px-0 pb-0 pt-0",
+          // Desktop / tablet
+          "sm:inset-x-auto sm:bottom-auto sm:w-[min(90vw,42rem)] sm:max-w-[min(90vw,42rem)] sm:max-h-[min(92dvh,960px)] sm:rounded-2xl sm:p-0"
+        )}
+      >
+        <DialogHeader className="shrink-0 border-b border-border/50 px-4 pb-3 pt-1 sm:px-5 sm:pb-3.5 sm:pt-1">
           <DialogTitle>{t("crm.feedback.formTitle")}</DialogTitle>
-          <DialogDescription className="line-clamp-2 sm:line-clamp-none">
+          <DialogDescription className="line-clamp-2 text-[13px] leading-relaxed sm:line-clamp-none sm:text-sm">
             {t("crm.feedback.formDesc")}
           </DialogDescription>
         </DialogHeader>
 
-        <DialogBody className="grid gap-4 py-3.5 sm:gap-5 sm:py-4">
+        <DialogBody className="grid gap-5 px-4 py-4 sm:gap-5 sm:px-5 sm:py-4">
           <section className="grid gap-3">
-            <h3 className="text-[13px] font-semibold tracking-tight">
+            <h3 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-muted-foreground sm:text-[13px] sm:normal-case sm:tracking-tight sm:text-foreground">
               {t("crm.feedback.sectionLead")}
             </h3>
             <div className="rounded-2xl border border-border/70 bg-muted/25 px-3.5 py-3.5 sm:rounded-xl sm:py-3">
@@ -408,7 +418,7 @@ export function CrmFeedbackForm({
 
           <section className="grid gap-3">
             <div className="flex items-end justify-between gap-2">
-              <h3 className="text-[13px] font-semibold tracking-tight">
+              <h3 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-muted-foreground sm:text-[13px] sm:normal-case sm:tracking-tight sm:text-foreground">
                 {t("crm.feedback.sectionAction")}
               </h3>
               <span className="text-[11px] text-muted-foreground sm:text-[12px]">
@@ -575,7 +585,7 @@ export function CrmFeedbackForm({
           </section>
 
           <section className="grid gap-3">
-            <h3 className="text-[13px] font-semibold tracking-tight">
+            <h3 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-muted-foreground sm:text-[13px] sm:normal-case sm:tracking-tight sm:text-foreground">
               {t("crm.feedback.sectionFeedback")}
             </h3>
             <div className="grid gap-2">
@@ -618,7 +628,7 @@ export function CrmFeedbackForm({
           </section>
         </DialogBody>
 
-        <DialogFooter className="shrink-0 gap-2 sm:gap-2 [&_button]:min-h-12 [&_button]:touch-manipulation [&_button]:rounded-xl sm:[&_button]:min-h-10 sm:[&_button]:rounded-lg">
+        <DialogFooter className="shrink-0 gap-2 border-border/50 px-4 pb-[max(0.85rem,env(safe-area-inset-bottom))] pt-3 sm:gap-2 sm:px-5 sm:pb-4 [&_button]:min-h-12 [&_button]:touch-manipulation [&_button]:rounded-xl sm:[&_button]:min-h-10 sm:[&_button]:rounded-lg">
           <Button
             type="button"
             variant="outline"

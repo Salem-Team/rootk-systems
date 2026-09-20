@@ -326,6 +326,8 @@ export const ar: TranslationKeys = {
   workMedia: {
     title: "صور وفيديوهات",
     hint: "اسحب الملفات هنا أو اختار من الجهاز. صور لحد 5MB وفيديو لحد 28MB.",
+    pasteHint: "أو انسخ صورة واضغط ⌘V / Ctrl+V للصقها هنا",
+    pasted: "تم لصق الصورة",
     browse: "اختَر ملفات",
     galleryTitle: "المرفقات",
     limitReached: "وصلت للحد الأقصى من المرفقات.",

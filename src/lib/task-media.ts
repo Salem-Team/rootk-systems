@@ -61,6 +61,65 @@ export function acceptMediaAttr(): string {
   return "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime";
 }
 
+/** Extract image/video files from a paste or drop clipboard/dataTransfer. */
+export function mediaFilesFromDataTransfer(
+  data: DataTransfer | null | undefined
+): File[] {
+  if (!data) return [];
+  const out: File[] = [];
+  const seen = new Set<string>();
+
+  if (data.files?.length) {
+    for (const file of Array.from(data.files)) {
+      if (!mediaKindForMime(file.type)) continue;
+      const key = `${file.name}:${file.size}:${file.type}:${file.lastModified}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(file);
+    }
+  }
+
+  if (data.items?.length) {
+    for (const item of Array.from(data.items)) {
+      if (item.kind !== "file") continue;
+      const file = item.getAsFile();
+      if (!file || !mediaKindForMime(file.type)) continue;
+      const key = `${file.name}:${file.size}:${file.type}:${file.lastModified}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(file);
+    }
+  }
+
+  return out;
+}
+
+/** Build a named File from a clipboard image blob (often unnamed). */
+export function clipboardBlobToMediaFile(blob: Blob, index = 0): File | null {
+  const mime = (blob.type || "image/png").toLowerCase();
+  if (!mediaKindForMime(mime)) return null;
+  const ext =
+    mime === "image/jpeg" || mime === "image/jpg"
+      ? "jpg"
+      : mime === "image/webp"
+        ? "webp"
+        : mime === "image/gif"
+          ? "gif"
+          : mime.startsWith("video/")
+            ? mime.includes("webm")
+              ? "webm"
+              : "mp4"
+            : "png";
+  const stamp = new Date()
+    .toISOString()
+    .replace(/[:.]/g, "-")
+    .slice(0, 19);
+  return new File([blob], `paste-${stamp}${index > 0 ? `-${index + 1}` : ""}.${ext}`, {
+    type: mime,
+    lastModified: Date.now(),
+  });
+}
+
 export async function fileToMediaDraft(
   file: File
 ): Promise<{ ok: true; draft: WorkTaskMediaDraft } | { ok: false; error: string }> {
