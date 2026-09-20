@@ -17,6 +17,7 @@ import {
   Target,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { BidiText } from "@/components/shared/bidi-text";
 import { useTranslation } from "@/hooks/use-translation";
 import { resolveNotificationHref } from "@/lib/notification-href";
 import {
@@ -139,7 +140,7 @@ export function NotificationListItem({
                 : "font-medium text-foreground/90"
             )}
           >
-            {title}
+            <BidiText text={title} />
           </span>
           <span className="flex shrink-0 items-center gap-1.5">
             {item.priority === "urgent" || item.priority === "high" ? (
@@ -159,7 +160,7 @@ export function NotificationListItem({
           </span>
         </span>
         <span className="mt-0.5 block text-[12px] leading-relaxed text-muted-foreground line-clamp-2">
-          {body}
+          <BidiText text={body} />
         </span>
         <span className="mt-1.5 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
           <span className="rounded-md bg-muted/60 px-1.5 py-0.5 font-medium">

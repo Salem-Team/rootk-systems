@@ -15,6 +15,7 @@ import { meetingWhen, openTaskCount } from "@/lib/work-utils";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { WorkMeeting, WorkTask } from "@/types/work";
+import { BidiText } from "@/components/shared/bidi-text";
 
 /** Compact work preview (tasks + next meeting) for the employee sidebar. */
 export function SidebarEmployeeTasks({
@@ -132,7 +133,7 @@ export function SidebarEmployeeTasks({
                 />
                 <span className="min-w-0">
                   <span className="block truncate text-[12px] font-medium text-white/90">
-                    {task.title}
+                    <BidiText text={task.title} />
                   </span>
                   <span className="mt-0.5 flex items-center gap-1 text-[10px] text-white/40">
                     <ListTodo className="h-2.5 w-2.5" aria-hidden />

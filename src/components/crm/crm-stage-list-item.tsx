@@ -68,7 +68,9 @@ export function CrmStageListItem({
         />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-[13px] font-semibold">{stage.name}</p>
+            <p className="text-[13px] font-semibold">
+              <BidiText text={stage.name} />
+            </p>
             {!stage.active ? (
               <Badge variant="outline" className="text-[10px]">
                 {t("crm.stages.inactive")}
@@ -187,7 +189,9 @@ export function CrmStageListItem({
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-[12px] font-semibold">{sub.name}</p>
+                      <p className="text-[12px] font-semibold">
+                        <BidiText text={sub.name} />
+                      </p>
                       {!sub.active ? (
                         <Badge variant="outline" className="text-[10px]">
                           {t("crm.stages.inactive")}

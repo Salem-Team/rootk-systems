@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
 import { Megaphone, Pin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { BidiText } from "@/components/shared/bidi-text";
 import { useTranslation } from "@/hooks/use-translation";
 import { localizedAnnouncement } from "@/lib/i18n-content";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
@@ -118,7 +119,7 @@ export function Announcements({
                         />
                       ) : null}
                       <h4 className="text-[13px] font-semibold leading-snug break-words">
-                        {copy.title}
+                        <BidiText text={copy.title} />
                       </h4>
                       {!isRead ? (
                         <span
@@ -135,7 +136,7 @@ export function Announcements({
                     </Badge>
                   </div>
                   <p className="text-sm leading-relaxed text-muted-foreground line-clamp-3 sm:line-clamp-2">
-                    {copy.body}
+                    <BidiText text={copy.body} />
                   </p>
                   <p className="mt-2 text-[10px] text-muted-foreground">
                     {item.author} ·{" "}

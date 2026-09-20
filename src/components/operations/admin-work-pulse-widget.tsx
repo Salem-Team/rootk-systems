@@ -22,6 +22,7 @@ import {
   taskDueBucket,
 } from "@/lib/work-utils";
 import type { WorkMeeting, WorkTask } from "@/types/work";
+import { BidiText } from "@/components/shared/bidi-text";
 
 /** Compact admin pulse for team tasks & meetings on the operations dashboard. */
 export function AdminWorkPulseWidget() {
@@ -134,7 +135,7 @@ export function AdminWorkPulseWidget() {
             <li key={task.id}>
               <SoftListRow className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-[13px] font-medium">{task.title}</p>
+                  <p className="truncate text-[13px] font-medium"><BidiText text={task.title} /></p>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">
                     {task.assigneeIds.length} {t("workHub.people")}
                     {task.tag ? ` · ${task.tag}` : ""}

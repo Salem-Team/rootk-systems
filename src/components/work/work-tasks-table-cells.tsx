@@ -26,6 +26,7 @@ import {
 import { WorkStatusDot } from "@/components/work/work-motion";
 import { initials } from "@/components/work/employee-avatar-initials";
 import { statusLabelKey } from "@/components/work/employee-work-hub-types";
+import { BidiText } from "@/components/shared/bidi-text";
 import { useTranslation } from "@/hooks/use-translation";
 import { completionNeedsEvidenceDialog } from "@/lib/task-evidence";
 import {
@@ -76,11 +77,11 @@ export function TaskTitleCell({ task }: { task: WorkTask }) {
               "text-muted-foreground line-through decoration-border"
           )}
         >
-          {task.title}
+          <BidiText text={task.title} />
         </p>
         {subtitle ? (
           <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-            {subtitle}
+            <BidiText text={subtitle} />
           </p>
         ) : null}
       </div>

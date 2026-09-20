@@ -27,6 +27,7 @@ import { fadeInUp, staggerContainer } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 import type { TaskStatus, WorkTask } from "@/types/work";
 import type { TranslationPath } from "@/i18n";
+import { BidiText } from "@/components/shared/bidi-text";
 
 const PRIORITY_VARIANT = {
   high: "danger",
@@ -156,7 +157,7 @@ export function TaskBoardWidget() {
                                   task.status === "completed" && "line-through"
                                 )}
                               >
-                                {task.title}
+                                <BidiText text={task.title} />
                               </span>
                               <span className="mt-1 flex flex-wrap gap-1">
                                 <Badge

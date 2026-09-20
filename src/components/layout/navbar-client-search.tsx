@@ -15,6 +15,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { displayCrmPhone } from "@/lib/crm/phone-links";
 import { cn } from "@/lib/utils";
 import type { CrmLead } from "@/types/crm";
+import { BidiText } from "@/components/shared/bidi-text";
 
 /** Global header search for CRM clients (name or phone). */
 export function NavbarClientSearch() {
@@ -71,7 +72,7 @@ export function NavbarClientSearch() {
                   className="flex w-full flex-col items-stretch rounded-xl px-3 py-3 text-start hover:bg-muted/70 active:bg-muted md:rounded-lg md:px-2.5 md:py-2"
                 >
                   <span className="truncate text-[15px] font-semibold md:text-[13px]">
-                    {lead.name}
+                    <BidiText text={lead.name} />
                   </span>
                   <span className="mt-0.5 truncate font-mono text-[13px] tabular-nums text-muted-foreground md:text-[11px]">
                     {displayCrmPhone(lead.phone, lead.phoneNormalized)}

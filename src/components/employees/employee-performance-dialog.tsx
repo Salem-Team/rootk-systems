@@ -27,6 +27,7 @@ import {
 import { getInitials, cn } from "@/lib/utils";
 import { getWorkTasks } from "@/services/work.service";
 import type { Employee } from "@/types";
+import { BidiText } from "@/components/shared/bidi-text";
 
 function emptyStats(since: string): EmployeeTaskPerformance {
   return { total: 0, completed: 0, incomplete: 0, rate: 0, since };
@@ -105,7 +106,7 @@ export function EmployeePerformanceDialog({
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">{employee.name}</p>
+            <p className="truncate text-sm font-semibold"><BidiText text={employee.name} /></p>
             <p className="truncate text-xs text-muted-foreground">
               {employee.position} · {employee.employeeId}
             </p>
@@ -126,7 +127,10 @@ export function EmployeePerformanceDialog({
               <div className="flex items-end justify-between gap-3">
                 <div>
                   <p className="section-label">{t("employees.performanceRate")}</p>
-                  <p className={cn("mt-1 text-3xl font-semibold tabular-nums", rateColor)}>
+                  <p
+                    className={cn("mt-1 text-3xl font-semibold tabular-nums", rateColor)}
+                    dir="ltr"
+                  >
                     {stats?.rate ?? 0}
                     <span className="ms-0.5 text-lg font-medium">%</span>
                   </p>

@@ -97,6 +97,7 @@ export function TargetProgressRing({
         <span
           className="absolute inset-0 flex items-center justify-center font-display text-[0.7rem] font-bold tabular-nums"
           style={{ fontSize: Math.max(10, size * 0.24) }}
+          dir="ltr"
         >
           {Math.round(clamped)}
           <span className="text-[0.65em] opacity-60">%</span>

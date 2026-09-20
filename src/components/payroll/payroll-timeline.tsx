@@ -53,7 +53,7 @@ export function PayrollTimeline({
                 className="absolute start-[-5px] top-1.5 h-2.5 w-2.5 rounded-full border-2 border-primary bg-card"
               />
               <p className="text-sm font-semibold tracking-tight">
-                {event.title}
+                <BidiText text={event.title} />
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 <BidiText text={event.description} />

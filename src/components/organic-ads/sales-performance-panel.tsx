@@ -18,6 +18,7 @@ import type {
 } from "@/types/organic-ads";
 import { AdStatusBadge } from "@/components/organic-ads/ad-status-badge";
 import { format } from "date-fns";
+import { BidiText } from "@/components/shared/bidi-text";
 
 interface SalesPerformancePanelProps {
   rows: SalesPerformanceRow[];
@@ -144,7 +145,7 @@ export function SalesPerformancePanel({
                   className="flex items-center justify-between rounded-lg border border-border/60 px-3 py-2 text-[13px]"
                 >
                   <span className="min-w-0 truncate font-medium">
-                    {target.title}
+                    <BidiText text={target.title} />
                   </span>
                   <span className="font-mono tabular-nums text-muted-foreground">
                     {target.completedQuantity}/{target.quantity}

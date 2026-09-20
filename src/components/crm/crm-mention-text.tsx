@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { bidiNodes } from "@/components/shared/bidi-text";
+import { bidiNodes, resolveTextDir } from "@/components/shared/bidi-text";
 import { splitMentionText } from "@/lib/mentions";
 import { cn } from "@/lib/utils";
 
@@ -9,7 +9,7 @@ interface CrmMentionTextProps {
   className?: string;
 }
 
-/** Renders feedback text with @mentions highlighted. */
+/** Renders feedback text with @mentions highlighted (inline-safe). */
 export function CrmMentionText({
   text,
   names = [],
@@ -19,12 +19,15 @@ export function CrmMentionText({
   if (parts.length === 0) return null;
 
   return (
-    <span dir="auto" className={cn("bidi-plain whitespace-pre-wrap", className)}>
+    <span
+      dir={resolveTextDir(text)}
+      className={cn("bidi-plain whitespace-pre-wrap", className)}
+    >
       {parts.map((part, index) =>
         part.type === "mention" ? (
           <bdi
             key={`${part.value}-${index}`}
-            dir="auto"
+            dir="ltr"
             className="font-medium text-primary"
           >
             {part.value}

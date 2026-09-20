@@ -8,6 +8,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 import { getInitials } from "@/lib/utils";
 import type { Employee } from "@/types";
+import { BidiText } from "@/components/shared/bidi-text";
 
 function OrgPersonCard({
   employee,
@@ -32,7 +33,7 @@ function OrgPersonCard({
       </Avatar>
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13px] font-semibold tracking-tight">
-          {employee.name}
+          <BidiText text={employee.name} />
         </p>
         <p className="truncate text-[11px] text-muted-foreground">
           {roleLabel ?? employee.position}

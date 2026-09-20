@@ -127,7 +127,9 @@ export function CategoriesTab({
                   aria-hidden
                 />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{cat.name}</p>
+                  <p className="truncate text-sm font-medium">
+                    <BidiText text={cat.name} />
+                  </p>
                   {cat.description ? (
                     <p className="truncate text-[11px] text-muted-foreground">
                       <BidiText text={cat.description} />

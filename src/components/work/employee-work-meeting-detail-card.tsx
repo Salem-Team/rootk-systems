@@ -7,7 +7,7 @@ import { Pencil, Sparkles, Trash2, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MetaChip } from "@/components/shared/meta-chip";
-import { BidiText } from "@/components/shared/bidi-text";
+import { BidiBlocks, BidiText } from "@/components/shared/bidi-text";
 import { OriginBadge } from "@/components/work/employee-work-composer";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatClockRange } from "@/lib/format-time";
@@ -49,7 +49,7 @@ export function MeetingDetailCard({
             {t("workHub.meetingDetail")}
           </p>
           <h2 className="mt-1 text-xl font-bold tracking-tight">
-            {meeting.title}
+            <BidiText text={meeting.title} />
           </h2>
           <div className="mt-2">
             <OriginBadge origin={meeting.origin} />
@@ -140,9 +140,10 @@ export function MeetingDetailCard({
       {meeting.notes ? (
         <div className="mt-5">
           <h3 className="mb-2 text-[13px] font-semibold">{t("workHub.notes")}</h3>
-          <p className="rounded-xl border border-border/60 bg-muted/20 px-3.5 py-3 text-[13px] leading-relaxed text-muted-foreground">
-            <BidiText text={meeting.notes} />
-          </p>
+          <BidiBlocks
+            text={meeting.notes}
+            className="rounded-xl border border-border/60 bg-muted/20 px-3.5 py-3 text-[13px] text-muted-foreground"
+          />
         </div>
       ) : null}
     </motion.article>

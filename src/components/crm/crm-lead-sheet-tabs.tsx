@@ -2,7 +2,7 @@
 
 import { CrmMentionChips, CrmMentionText } from "@/components/crm/crm-mention-text";
 import { CrmLeadRequestBudgetEditor } from "@/components/crm/crm-lead-request-budget-editor";
-import { BidiText } from "@/components/shared/bidi-text";
+import { BidiBlocks, BidiText } from "@/components/shared/bidi-text";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/hooks/use-translation";
@@ -39,11 +39,19 @@ function Row({
       <dd
         className={
           multiline
-            ? "min-w-0 whitespace-pre-wrap break-words text-[0.92rem] font-medium leading-relaxed text-foreground sm:rounded-lg sm:bg-muted/40 sm:px-3 sm:py-2 sm:text-[13px]"
+            ? "min-w-0 break-words text-[0.92rem] font-medium text-foreground sm:rounded-lg sm:bg-muted/40 sm:px-3 sm:py-2 sm:text-[13px]"
             : "min-w-0 break-words text-[0.92rem] font-medium text-foreground sm:text-[13px]"
         }
       >
-        {value ? <BidiText text={value} /> : value}
+        {value ? (
+          multiline ? (
+            <BidiBlocks text={value} />
+          ) : (
+            <BidiText text={value} />
+          )
+        ) : (
+          value
+        )}
       </dd>
     </div>
   );
@@ -184,9 +192,9 @@ export function CrmLeadSheetTabs({
                     </span>
                   </div>
                   {item.description ? (
-                    <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground sm:mt-1 sm:text-[12px]">
+                    <div className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground sm:mt-1 sm:text-[12px]">
                       <CrmMentionText text={item.description} />
-                    </p>
+                    </div>
                   ) : null}
                   <p className="mt-1.5 text-[11px] text-muted-foreground/80">
                     {t(`crm.activityType.${item.type}`)}

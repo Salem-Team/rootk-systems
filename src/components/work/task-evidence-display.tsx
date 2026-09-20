@@ -4,7 +4,7 @@ import { ExternalLink, FileCheck2 } from "lucide-react";
 import { TaskEvidenceBadge } from "@/components/work/task-evidence-badge";
 import { useTranslation } from "@/hooks/use-translation";
 import { evidenceLinkLabel, resolveEvidenceBadgeState } from "@/lib/task-evidence";
-import { BidiText } from "@/components/shared/bidi-text";
+import { BidiBlocks } from "@/components/shared/bidi-text";
 import { cn } from "@/lib/utils";
 import type { WorkTask } from "@/types/work";
 
@@ -90,9 +90,10 @@ export function TaskEvidenceDisplay({
               <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("workEvidence.fieldNotes")}
               </p>
-              <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-foreground/90">
-                <BidiText text={notes} />
-              </p>
+              <BidiBlocks
+                text={notes}
+                className="text-[13px] text-foreground/90"
+              />
             </div>
           ) : null}
 

@@ -16,6 +16,7 @@ import { formatClockRange } from "@/lib/format-time";
 import { meetingWhen } from "@/lib/work-utils";
 import type { Employee } from "@/types";
 import type { WorkMeeting } from "@/types/work";
+import { BidiText } from "@/components/shared/bidi-text";
 
 export function AdminWorkMeetingList({
   meetings,
@@ -103,7 +104,7 @@ export function AdminWorkMeetingList({
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">
                     <p className="text-[15px] font-semibold leading-snug">
-                      {meeting.title}
+                      <BidiText text={meeting.title} />
                     </p>
                     <p className="mt-1 text-[13px] text-muted-foreground">
                       {format(parseISO(meeting.date), "EEEE · d MMM", {

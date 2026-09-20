@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { format, parseISO } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
 import { Eye } from "lucide-react";
@@ -12,7 +12,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { BidiText } from "@/components/shared/bidi-text";
+import { BidiBlocks, BidiText } from "@/components/shared/bidi-text";
+import { PercentValue } from "@/components/shared/percent-value";
 import { Button } from "@/components/ui/button";
 import { EmployeeAvatarStack } from "@/components/work/employee-multi-picker";
 import {
@@ -121,7 +122,7 @@ export function TargetViewSheet({
           <>
             <SheetHeader>
               <SheetTitle className="pe-8 text-start leading-snug">
-                {target.title}
+                <BidiText text={target.title} />
               </SheetTitle>
               <SheetDescription className="text-start">
                 {t("targets.view.description")}
@@ -140,9 +141,12 @@ export function TargetViewSheet({
                   <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                     {t("targets.view.completion")}
                   </p>
-                  <p className="font-display text-3xl font-semibold tabular-nums tracking-tight">
-                    {Math.round(percentage)}
-                    <span className="text-lg text-muted-foreground">%</span>
+                  <p className="font-display text-3xl font-semibold tracking-tight">
+                    <PercentValue
+                      value={percentage}
+                      className="font-display text-3xl font-semibold"
+                      suffixClassName="text-lg text-muted-foreground opacity-100"
+                    />
                   </p>
                   <p className="text-[13px] text-muted-foreground">
                     {target.completedQuantity}/{target.quantity} {target.unit}
@@ -166,9 +170,10 @@ export function TargetViewSheet({
               </div>
 
               {target.description ? (
-                <p className="text-[13px] leading-relaxed text-muted-foreground">
-                  <BidiText text={target.description} />
-                </p>
+                <BidiBlocks
+                  text={target.description}
+                  className="text-[13px] text-muted-foreground"
+                />
               ) : null}
 
               <dl className="grid gap-2.5 rounded-xl border border-border/60 p-3 text-[13px] sm:grid-cols-2">
@@ -178,7 +183,11 @@ export function TargetViewSheet({
                 />
                 <Meta
                   label={t("targets.view.taskRate")}
-                  value={`${taskRate}%`}
+                  value={
+                    <span dir="ltr" className="tabular-nums">
+                      {taskRate}%
+                    </span>
+                  }
                 />
                 <Meta
                   label={t("targets.assign.fieldStartDate")}
@@ -257,7 +266,7 @@ export function TargetViewSheet({
   );
 }
 
-function Meta({ label, value }: { label: string; value: string }) {
+function Meta({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
       <dt className="text-[11px] text-muted-foreground">{label}</dt>

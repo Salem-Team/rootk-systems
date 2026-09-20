@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { MetaChip } from "@/components/shared/meta-chip";
-import { BidiText } from "@/components/shared/bidi-text";
+import { BidiBlocks, BidiText } from "@/components/shared/bidi-text";
 import { OriginBadge } from "@/components/work/employee-work-composer";
 import {
   TaskEvidenceBadge,
@@ -73,7 +73,9 @@ export function TaskDetailCard({
             <WorkStatusDot status={task.status} />
             {t("workHub.taskDetail")}
           </p>
-          <h2 className="mt-1 text-xl font-bold tracking-tight">{task.title}</h2>
+          <h2 className="mt-1 text-xl font-bold tracking-tight">
+            <BidiText text={task.title} />
+          </h2>
         </div>
         <div className="flex flex-wrap gap-2">
           {onEdit ? (
@@ -144,9 +146,10 @@ export function TaskDetailCard({
       </div>
 
       {task.description ? (
-        <p className="mt-4 text-[14px] leading-relaxed text-muted-foreground">
-          <BidiText text={task.description} />
-        </p>
+        <BidiBlocks
+          text={task.description}
+          className="mt-4 text-[14px] text-muted-foreground"
+        />
       ) : null}
 
       <TaskEvidenceDisplay task={task} className="mt-4" />
@@ -197,7 +200,7 @@ export function TaskDetailCard({
                   <span
                     className={cn(sub.done && "text-muted-foreground line-through")}
                   >
-                    {sub.label}
+                    <BidiText text={sub.label} />
                   </span>
                 </button>
               </li>

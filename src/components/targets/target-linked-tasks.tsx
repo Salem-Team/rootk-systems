@@ -18,6 +18,7 @@ import {
 import { isAssignedTo, taskDueBucket } from "@/lib/work-utils";
 import { cn } from "@/lib/utils";
 import type { WorkTask } from "@/types/work";
+import { BidiText } from "@/components/shared/bidi-text";
 
 function canActOnTask(
   task: WorkTask,
@@ -118,7 +119,7 @@ export function TargetLinkedTasksList({
                       "text-muted-foreground line-through decoration-border"
                   )}
                 >
-                  {task.title}
+                  <BidiText text={task.title} />
                 </p>
                 <p className="text-[11px] text-muted-foreground">
                   {task.status === "todo"

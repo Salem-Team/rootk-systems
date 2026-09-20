@@ -7,6 +7,7 @@ import { DepartmentBadge } from "@/components/employees/department-badge";
 import { EmployeePerformanceButton } from "@/components/employees/employee-performance-dialog";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { useTranslation } from "@/hooks/use-translation";
+import { BidiText } from "@/components/shared/bidi-text";
 import { getInitials } from "@/lib/utils";
 import type { Employee } from "@/types";
 import type {
@@ -47,7 +48,7 @@ export function EmployeeProfileHeader({
               {employee.employeeId}
             </p>
             <h2 className="text-xl font-semibold tracking-tight">
-              {employee.name}
+              <BidiText text={employee.name} />
             </h2>
             <p className="text-sm text-muted-foreground">{employee.position}</p>
           </div>

@@ -6,6 +6,7 @@ import { getCrmPhoneDuplicates } from "@/services/crm.service";
 import { displayCrmPhone } from "@/lib/crm/phone-links";
 import { Button } from "@/components/ui/button";
 import type { CrmPhoneDuplicateGroup } from "@/types/crm";
+import { BidiText } from "@/components/shared/bidi-text";
 
 interface CrmPhoneDuplicatesBannerProps {
   onOpenLead: (leadId: string) => void;
@@ -44,7 +45,7 @@ export function CrmPhoneDuplicatesBanner({
               variant="outline"
               onClick={() => onOpenLead(lead.id)}
             >
-              {lead.name}
+              <BidiText text={lead.name} />
             </Button>
           ))}
         </div>

@@ -5,6 +5,7 @@ import { CalendarDays, Loader2, PartyPopper, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { fadeInUp } from "@/lib/animations";
+import { BidiText } from "@/components/shared/bidi-text";
 import {
   holidayDescKey,
   holidayNameKey,
@@ -52,7 +53,13 @@ export function HolidayListItem({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <p className="truncate font-medium">
-              {translateOrFallback(t, holidayNameKey(holiday.id), holiday.name)}
+              <BidiText
+                text={translateOrFallback(
+                  t,
+                  holidayNameKey(holiday.id),
+                  holiday.name
+                )}
+              />
             </p>
             <Badge
               variant="outline"
@@ -74,11 +81,13 @@ export function HolidayListItem({
           </p>
           {holiday.description ? (
             <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-              {translateOrFallback(
-                t,
-                holidayDescKey(holiday.id),
-                holiday.description
-              )}
+              <BidiText
+                text={translateOrFallback(
+                  t,
+                  holidayDescKey(holiday.id),
+                  holiday.description
+                )}
+              />
             </p>
           ) : null}
         </div>

@@ -8,6 +8,7 @@ import { formatIsoClock } from "@/lib/format-time";
 import { getInitials } from "@/lib/utils";
 import { locationKey, positionKey, translateOrFallback } from "@/lib/i18n-content";
 import type { AttendanceRecord, Employee } from "@/types";
+import { BidiText } from "@/components/shared/bidi-text";
 
 export function TeamAttendanceRow({
   employee,
@@ -48,7 +49,7 @@ export function TeamAttendanceRow({
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <p className="truncate font-medium">{employee.name}</p>
+            <p className="truncate font-medium"><BidiText text={employee.name} /></p>
             <p className="truncate text-xs text-muted-foreground">
               {translateOrFallback(t, positionKey(employee.position), employee.position)}{" "}
               ·{" "}

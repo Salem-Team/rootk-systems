@@ -61,7 +61,9 @@ export function CrmBusinessTypesPanel({ className }: { className?: string }) {
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-[13px] font-semibold">{row.name}</p>
+                  <p className="text-[13px] font-semibold">
+                    <BidiText text={row.name} />
+                  </p>
                   {!row.active ? (
                     <Badge variant="outline">{t("crm.stages.inactive")}</Badge>
                   ) : null}

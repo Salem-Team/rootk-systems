@@ -63,7 +63,7 @@ export function NeedsAttention({ items, onSelect }: NeedsAttentionProps) {
                     </span>
                     <span className="min-w-0">
                       <span className="block text-[13px] font-semibold">
-                        {item.title}
+                        <BidiText text={item.title} />
                       </span>
                       <span className="mt-0.5 block text-[12px] leading-relaxed text-muted-foreground">
                         <BidiText text={item.description} />

@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { AdStatusBadge, AdValidationBadge } from "@/components/organic-ads/ad-status-badge";
-import { BidiText } from "@/components/shared/bidi-text";
+import { BidiBlocks } from "@/components/shared/bidi-text";
 import { useTranslation } from "@/hooks/use-translation";
 import type { OrganicAdvertisement } from "@/types/organic-ads";
 
@@ -164,9 +164,10 @@ export function AdvertisementDetailsSheet({
               <h3 className="text-sm font-semibold">
                 {t("organicAds.details.notes")}
               </h3>
-              <p className="mt-1 text-[13px] text-muted-foreground">
-                <BidiText text={ad.notes} />
-              </p>
+              <BidiBlocks
+                text={ad.notes}
+                className="mt-1 text-[13px] text-muted-foreground"
+              />
             </section>
           ) : null}
 

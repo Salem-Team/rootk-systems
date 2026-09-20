@@ -17,7 +17,7 @@ import {
   TargetProgressRing,
   type ProgressRingTone,
 } from "@/components/targets/target-progress-ring";
-import { BidiText } from "@/components/shared/bidi-text";
+import { BidiBlocks, BidiText } from "@/components/shared/bidi-text";
 import { TaskCommentsPanel } from "@/components/work/task-comments-panel";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
@@ -85,7 +85,7 @@ export function TaskViewSheet({
           <>
             <SheetHeader className="shrink-0 border-b border-border/60 px-4 pb-4 pt-2 pe-14 sm:px-6 sm:pe-14 sm:pt-3">
               <SheetTitle className="pe-8 text-start leading-snug">
-                {task.title}
+                <BidiText text={task.title} />
               </SheetTitle>
               <SheetDescription className="text-start">
                 {t("workAdmin.viewTaskDesc")}
@@ -104,7 +104,10 @@ export function TaskViewSheet({
                   <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                     {t("workAdmin.taskCompletion")}
                   </p>
-                  <p className="font-display text-3xl font-semibold tabular-nums tracking-tight">
+                  <p
+                    className="font-display text-3xl font-semibold tabular-nums tracking-tight"
+                    dir="ltr"
+                  >
                     {percentage}
                     <span className="text-lg text-muted-foreground">%</span>
                   </p>
@@ -119,9 +122,10 @@ export function TaskViewSheet({
               </div>
 
               {task.description ? (
-                <p className="text-[13px] leading-relaxed text-muted-foreground">
-                  <BidiText text={task.description} />
-                </p>
+                <BidiBlocks
+                  text={task.description}
+                  className="text-[13px] text-muted-foreground"
+                />
               ) : null}
 
               <div>
@@ -203,7 +207,7 @@ export function TaskViewSheet({
                             sub.done && "text-muted-foreground line-through"
                           )}
                         >
-                          {sub.label}
+                          <BidiText text={sub.label} />
                         </span>
                       </li>
                     ))}

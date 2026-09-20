@@ -21,6 +21,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { positionKey, translateOrFallback } from "@/lib/i18n-content";
 import { getInitials } from "@/lib/utils";
 import type { AttendanceRecord, Employee } from "@/types";
+import { BidiText } from "@/components/shared/bidi-text";
 
 interface EmployeeTableProps {
   employees: Employee[];
@@ -62,7 +63,7 @@ export function EmployeeTable({
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <p className="truncate font-medium">{employee.name}</p>
+                <p className="truncate font-medium"><BidiText text={employee.name} /></p>
                 <p className="truncate font-mono text-[11px] text-muted-foreground">
                   {employee.employeeId}
                 </p>
@@ -168,7 +169,7 @@ export function EmployeeTable({
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[13px] font-semibold">
-                      {employee.name}
+                      <BidiText text={employee.name} />
                     </p>
                     <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
                       {employee.employeeId}

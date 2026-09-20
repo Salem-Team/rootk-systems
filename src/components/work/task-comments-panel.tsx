@@ -13,7 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { BidiText } from "@/components/shared/bidi-text";
+import { BidiBlocks, BidiText } from "@/components/shared/bidi-text";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
@@ -111,9 +111,10 @@ function CommentCard({
             </time>
           </div>
           {comment.body ? (
-            <p className="mt-1.5 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-foreground/95 sm:text-sm">
-              <BidiText text={comment.body} />
-            </p>
+            <BidiBlocks
+              text={comment.body}
+              className="mt-1.5 break-words text-[13px] text-foreground/95 sm:text-sm"
+            />
           ) : null}
           {voiceSrc ? (
             <VoicePlayer

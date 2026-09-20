@@ -114,7 +114,7 @@ export function ActivityFeed({
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-[13px] font-medium">
-                              {copy.title}
+                              <BidiText text={copy.title} />
                             </p>
                             <p className="truncate text-xs text-muted-foreground">
                               <BidiText text={copy.description} />

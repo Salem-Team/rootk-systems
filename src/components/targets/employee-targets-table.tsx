@@ -36,6 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { PerformanceTarget, TargetCategory } from "@/types/targets";
 import type { WorkTask } from "@/types/work";
+import { BidiText } from "@/components/shared/bidi-text";
 
 function nextOpenLinkedTask(
   target: PerformanceTarget,
@@ -130,7 +131,7 @@ export function EmployeeTargetsTable({
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-[14px] font-semibold leading-snug">
-                      {target.title}
+                      <BidiText text={target.title} />
                     </p>
                     <p className="mt-1 text-[11px] text-muted-foreground">
                       {category?.name ?? "—"}
@@ -149,6 +150,7 @@ export function EmployeeTargetsTable({
                       initial={reduceMotion ? false : { scale: 0.9, opacity: 0.4 }}
                       animate={{ scale: 1, opacity: 1 }}
                       className="font-mono tabular-nums font-semibold text-foreground"
+                      dir="ltr"
                     >
                       {pct}%
                     </motion.span>
@@ -239,7 +241,7 @@ export function EmployeeTargetsTable({
                   <DataTableCell>
                     <div className="min-w-0 max-w-[260px]">
                       <p className="truncate text-[13px] font-semibold">
-                        {target.title}
+                        <BidiText text={target.title} />
                       </p>
                       <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                         {category?.name ?? "—"}
@@ -253,7 +255,9 @@ export function EmployeeTargetsTable({
                           {progressLabel(target)}
                         </span>
                         <span className="text-[11px] text-muted-foreground">
-                          {pct}%
+                          <span dir="ltr" className="text-muted-foreground">
+                            {pct}%
+                          </span>
                         </span>
                       </div>
                       <WorkProgressBar value={pct} />

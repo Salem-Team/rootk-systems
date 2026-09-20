@@ -9,6 +9,7 @@ import { ensureCrmList } from "@/lib/crm-normalize";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
 import type { CrmLead, CrmStage } from "@/types/crm";
+import { BidiText } from "@/components/shared/bidi-text";
 
 interface CrmPipelinePanelProps {
   stages: CrmStage[];
@@ -122,7 +123,7 @@ export function CrmPipelinePanel({
                         className="w-full rounded-lg border border-border/60 bg-background px-3 py-2.5 text-start transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <p className="truncate text-[13px] font-semibold">
-                          {lead.name}
+                          <BidiText text={lead.name} />
                         </p>
                         <div
                           className="mt-0.5"
@@ -189,7 +190,7 @@ export function CrmPipelinePanel({
                         className="w-full rounded-lg border border-border/60 bg-background px-2.5 py-2 text-start transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <p className="truncate text-[13px] font-semibold">
-                          {lead.name}
+                          <BidiText text={lead.name} />
                         </p>
                         <div
                           className="mt-0.5"

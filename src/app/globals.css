@@ -272,13 +272,22 @@
     }
   }
 
-  /* Mixed Arabic/English: each field follows its own text, English stays an island. */
+  /* Mixed Arabic/English: base dir from content; English stays an LTR island. */
   .bidi-plain {
     unicode-bidi: isolate;
     text-align: start;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
+  .bidi-plain bdi[dir="ltr"] {
+    unicode-bidi: isolate;
+    white-space: inherit;
+  }
+
+  html[dir="rtl"] textarea.bidi-plain,
   html[dir="rtl"] textarea:not([dir="ltr"]),
+  html[dir="rtl"] input.bidi-plain:not([dir="ltr"]),
   html[dir="rtl"] input[dir="auto"] {
     unicode-bidi: plaintext;
     text-align: start;

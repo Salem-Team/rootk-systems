@@ -14,6 +14,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { formatIsoDateTime } from "@/lib/format-time";
 import type { TranslationPath } from "@/i18n";
 import type { CrmSalesProfileLead } from "@/types/crm";
+import { BidiText } from "@/components/shared/bidi-text";
 
 function formatWhen(iso: string | null): string {
   return formatIsoDateTime(iso, "en", "d MMM · h:mm a");
@@ -64,7 +65,7 @@ export function CrmSalesProfileLeadsDialog({
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate text-[13px] font-semibold">
-                      {lead.name}
+                      <BidiText text={lead.name} />
                     </p>
                     {lead.companyName ? (
                       <p className="truncate text-[11px] text-muted-foreground">

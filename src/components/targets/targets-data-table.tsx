@@ -26,6 +26,7 @@ import {
   WorkProgressBar,
 } from "@/components/work/work-motion";
 import { EmptyState } from "@/components/shared/empty-state";
+import { BidiText } from "@/components/shared/bidi-text";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import { useTranslation } from "@/hooks/use-translation";
 import {
@@ -105,7 +106,7 @@ export function TargetsDataTable({
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-[14px] font-semibold leading-snug">
-                      {target.title}
+                      <BidiText text={target.title} />
                     </p>
                     <p className="mt-1 text-[11px] text-muted-foreground">
                       {category?.name ?? "—"}
@@ -204,7 +205,7 @@ export function TargetsDataTable({
                   <DataTableCell>
                     <div className="min-w-0 max-w-[240px]">
                       <p className="truncate text-[13px] font-semibold">
-                        {target.title}
+                        <BidiText text={target.title} />
                       </p>
                       <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                         {category?.name ?? "—"}
@@ -220,7 +221,9 @@ export function TargetsDataTable({
                         <span>
                           {target.completedQuantity}/{target.quantity}
                         </span>
-                        <span className="text-muted-foreground">{pct}%</span>
+                        <span className="text-muted-foreground" dir="ltr">
+                          {pct}%
+                        </span>
                       </div>
                       <WorkProgressBar value={pct} />
                     </div>

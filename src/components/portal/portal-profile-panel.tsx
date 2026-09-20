@@ -15,6 +15,7 @@ import { fadeInUp, staggerContainer } from "@/lib/animations";
 import { getInitials } from "@/lib/utils";
 import type { Employee } from "@/types";
 import type { TranslationPath } from "@/i18n";
+import { BidiText } from "@/components/shared/bidi-text";
 
 export function PortalProfilePanel({ employee }: { employee: Employee }) {
   const { t } = useTranslation();
@@ -47,7 +48,7 @@ export function PortalProfilePanel({ employee }: { employee: Employee }) {
                 {employee.employeeId}
               </p>
               <h2 className="text-2xl font-semibold tracking-tight">
-                {employee.name}
+                <BidiText text={employee.name} />
               </h2>
               <p className="text-sm text-muted-foreground">{employee.position}</p>
               <div className="flex flex-wrap gap-1.5">
