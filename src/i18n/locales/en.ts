@@ -609,6 +609,14 @@ export const en = {
     navDrawer: "Navigation drawer",
     sidebarCollapsed: "Sidebar collapsed",
     sidebarExpanded: "Sidebar expanded",
+    pagination: {
+      label: "Pagination",
+      showing: "Showing {from}–{to} of {total}",
+      perPage: "Per page",
+      prev: "Previous",
+      next: "Next",
+      pageOf: "Page {page} of {total}",
+    },
   },
   a11y: {
     skipToContent: "Skip to content",

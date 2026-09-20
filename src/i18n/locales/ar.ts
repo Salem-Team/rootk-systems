@@ -603,6 +603,14 @@ export const ar: TranslationKeys = {
     navDrawer: "قائمة التنقل",
     sidebarCollapsed: "الشريط الجانبي مطوي",
     sidebarExpanded: "الشريط الجانبي موسّع",
+    pagination: {
+      label: "التنقّل بين الصفحات",
+      showing: "عرض {from}–{to} من {total}",
+      perPage: "لكل صفحة",
+      prev: "السابق",
+      next: "التالي",
+      pageOf: "صفحة {page} من {total}",
+    },
   },
   a11y: {
     skipToContent: "تخطِّ إلى المحتوى",

@@ -1,11 +1,14 @@
 "use client";
 
+import { useMemo } from "react";
 import type { Locale } from "date-fns";
 import { format, parseISO } from "date-fns";
 import { motion } from "framer-motion";
 import { Clock3, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ListPagination } from "@/components/shared/list-pagination";
 import { OriginBadge } from "@/components/work/employee-work-composer";
+import { useListPagination } from "@/hooks/use-list-pagination";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatClockRange } from "@/lib/format-time";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
@@ -29,8 +32,43 @@ export function MeetingList({
 }) {
   const { t, locale } = useTranslation();
 
+  const fingerprint = useMemo(
+    () => `${title}:${items.map((m) => m.id).join("|")}`,
+    [title, items]
+  );
+
+  const { setPage, pageSize, setPageSize, slice } = useListPagination(items, {
+    fingerprint,
+  });
+
+  if (items.length === 0) {
+    return (
+      <section>
+        <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {title} · 0
+        </p>
+        <ul className="space-y-2">
+          <li className="rounded-2xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
+            <p>{t("workHub.noMeetings")}</p>
+            {onCreate ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="mt-3"
+                onClick={onCreate}
+              >
+                {t("workHub.addPersonalMeeting")}
+              </Button>
+            ) : null}
+          </li>
+        </ul>
+      </section>
+    );
+  }
+
   return (
-    <section>
+    <section className="space-y-3">
       <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
         {title} · {items.length}
       </p>
@@ -40,7 +78,7 @@ export function MeetingList({
         animate="visible"
         className="space-y-2"
       >
-        {items.map((m) => {
+        {slice.items.map((m) => {
           const active = activeId === m.id;
           return (
             <motion.li key={m.id} variants={fadeInUp}>
@@ -76,23 +114,18 @@ export function MeetingList({
             </motion.li>
           );
         })}
-        {items.length === 0 ? (
-          <li className="rounded-2xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-            <p>{t("workHub.noMeetings")}</p>
-            {onCreate ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="mt-3"
-                onClick={onCreate}
-              >
-                {t("workHub.addPersonalMeeting")}
-              </Button>
-            ) : null}
-          </li>
-        ) : null}
       </motion.ul>
+
+      <ListPagination
+        page={slice.page}
+        totalPages={slice.totalPages}
+        total={slice.total}
+        from={slice.from}
+        to={slice.to}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
     </section>
   );
 }

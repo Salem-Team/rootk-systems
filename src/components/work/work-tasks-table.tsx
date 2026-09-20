@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
 import { ar as arLocale, enUS } from "date-fns/locale";
 import { CheckCircle2, Loader2 } from "lucide-react";
@@ -29,6 +30,8 @@ import {
   WorkMotionTableShell,
 } from "@/components/work/work-motion";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ListPagination } from "@/components/shared/list-pagination";
+import { useListPagination } from "@/hooks/use-list-pagination";
 import { useTranslation } from "@/hooks/use-translation";
 import { taskDueBucket } from "@/lib/work-utils";
 import { cn } from "@/lib/utils";
@@ -53,6 +56,7 @@ export function WorkTasksTable({
   emptyTitle,
   emptyDesc,
   className,
+  pageSize: initialPageSize = 10,
 }: {
   tasks: WorkTask[];
   employees?: Map<string, Employee>;
@@ -70,10 +74,32 @@ export function WorkTasksTable({
   emptyTitle?: string;
   emptyDesc?: string;
   className?: string;
+  pageSize?: 10 | 20 | 50;
 }) {
   const { t, locale } = useTranslation();
   const dateLocale = locale === "ar" ? arLocale : enUS;
   const openTask = onSelect ?? onView;
+  const listRef = useRef<HTMLDivElement>(null);
+
+  const fingerprint = useMemo(
+    () =>
+      `${assigneeFilter ?? ""}:${tasks.map((task) => task.id).join("|")}`,
+    [assigneeFilter, tasks]
+  );
+
+  const { setPage, pageSize, setPageSize, slice } = useListPagination(tasks, {
+    pageSize: initialPageSize,
+    fingerprint,
+  });
+
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    listRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [slice.page, pageSize]);
 
   if (tasks.length === 0) {
     return (
@@ -86,11 +112,13 @@ export function WorkTasksTable({
     );
   }
 
+  const pageTasks = slice.items;
+
   return (
-    <div className={cn("space-y-3", className)}>
+    <div ref={listRef} className={cn("space-y-3", className)}>
       <WorkMotionList className="space-y-2.5 md:hidden">
         <AnimatePresence initial={false} mode="popLayout">
-          {tasks.map((task) => {
+          {pageTasks.map((task) => {
             const due = taskDueBucket(task.dueDate, task.status);
             const busy = busyId === task.id;
             const selected = selectedId === task.id;
@@ -184,7 +212,7 @@ export function WorkTasksTable({
               </DataTableHeaderRow>
             </DataTableHeader>
             <DataTableBody>
-              {tasks.map((task, index) => {
+              {pageTasks.map((task, index) => {
                 const due = taskDueBucket(task.dueDate, task.status);
                 const busy = busyId === task.id;
                 const selected = selectedId === task.id;
@@ -254,6 +282,17 @@ export function WorkTasksTable({
           </DataTable>
         </section>
       </WorkMotionTableShell>
+
+      <ListPagination
+        page={slice.page}
+        totalPages={slice.totalPages}
+        total={slice.total}
+        from={slice.from}
+        to={slice.to}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
     </div>
   );
 }
