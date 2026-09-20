@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DateTime12Field } from "@/components/shared/datetime-12-field";
 import { Field } from "@/components/work/employee-work-composer-field";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
@@ -110,15 +111,13 @@ export function EmployeeWorkTaskComposerDialog({
             <SectionLabel>{t("workAdmin.sectionSchedule")}</SectionLabel>
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label={t("workAdmin.fieldDue")} htmlFor="emp-task-due">
-                <Input
+                <DateTime12Field
                   id="emp-task-due"
-                  type="datetime-local"
-                  step={60}
-                  className={inputClassName}
                   value={taskDraft.dueDate}
-                  onChange={(e) =>
-                    setTaskDraft((p) => ({ ...p, dueDate: e.target.value }))
+                  onChange={(dueDate) =>
+                    setTaskDraft((p) => ({ ...p, dueDate }))
                   }
+                  placeholder={t("dateTime.pick")}
                 />
               </Field>
               <Field label={t("workAdmin.fieldEstimate")} htmlFor="emp-task-est">

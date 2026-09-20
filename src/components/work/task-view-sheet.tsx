@@ -18,6 +18,7 @@ import {
   type ProgressRingTone,
 } from "@/components/targets/target-progress-ring";
 import { BidiBlocks, BidiText } from "@/components/shared/bidi-text";
+import { TaskMediaGallery } from "@/components/work/task-media-gallery";
 import { TaskCommentsPanel } from "@/components/work/task-comments-panel";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
@@ -132,6 +133,10 @@ export function TaskViewSheet({
                     blockClassName="text-[13px] leading-7"
                   />
                 </section>
+              ) : null}
+
+              {task.media && task.media.length > 0 ? (
+                <TaskMediaGallery items={task.media} />
               ) : null}
 
               <div>

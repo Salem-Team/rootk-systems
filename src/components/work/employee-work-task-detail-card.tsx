@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { MetaChip } from "@/components/shared/meta-chip";
 import { BidiBlocks, BidiText } from "@/components/shared/bidi-text";
+import { TaskMediaGallery } from "@/components/work/task-media-gallery";
 import { OriginBadge } from "@/components/work/employee-work-composer";
 import {
   TaskEvidenceBadge,
@@ -156,6 +157,10 @@ export function TaskDetailCard({
             blockClassName="text-[14px] leading-7"
           />
         </section>
+      ) : null}
+
+      {task.media && task.media.length > 0 ? (
+        <TaskMediaGallery items={task.media} className="mt-4" />
       ) : null}
 
       <TaskEvidenceDisplay task={task} className="mt-4" />

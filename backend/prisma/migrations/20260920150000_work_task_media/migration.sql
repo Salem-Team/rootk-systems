@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "WorkTask" ADD COLUMN IF NOT EXISTS "media" JSONB NOT NULL DEFAULT '[]';

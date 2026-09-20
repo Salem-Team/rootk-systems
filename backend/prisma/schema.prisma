@@ -577,6 +577,11 @@ model WorkTask {
   requireEvidenceNotes  Boolean      @default(false)
   evidenceLinks         String[]     @default([])
   evidenceNotes         String       @default("")
+  /**
+   * Task brief media: [{ id, kind: "image"|"video", mime, name, sizeBytes }].
+   * Files live under uploads/task-media/{companyId}/.
+   */
+  media                 Json         @default("[]")
   /// When the task was assigned / became actionable (defaults to create time).
   assignedAt            DateTime     @default(now())
   /// When all assignees marked the task completed (null if any still open).

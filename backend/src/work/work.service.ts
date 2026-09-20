@@ -67,6 +67,15 @@ export class WorkService {
     return this.tasks.deleteTask(companyId, actor, id);
   }
 
+  streamTaskMedia(
+    companyId: string,
+    actor: Actor,
+    taskId: string,
+    fileId: string
+  ) {
+    return this.tasks.streamTaskMedia(companyId, actor, taskId, fileId);
+  }
+
   // ── Meetings ────────────────────────────────────────────────────────────
 
   listMeetings(

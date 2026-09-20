@@ -28,6 +28,7 @@ function emptyTask(id = ""): WorkTask {
     requireEvidenceNotes: false,
     evidenceLinks: [],
     evidenceNotes: "",
+    media: [],
     companyId: "",
     createdAt: "",
     updatedAt: "",

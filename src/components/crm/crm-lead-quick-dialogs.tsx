@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { CrmDateTimeField } from "@/components/crm/crm-datetime-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -139,15 +140,12 @@ export function CrmLeadFollowUpDialog({
         <DialogHeader>
           <DialogTitle>{t("crm.actions.scheduleFollowUp")}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-1.5">
-          <Label htmlFor="crm-follow-at">{t("crm.leadForm.nextFollowUp")}</Label>
-          <Input
-            id="crm-follow-at"
-            type="datetime-local"
-            value={followAt}
-            onChange={(e) => onFollowAtChange(e.target.value)}
-          />
-        </div>
+        <CrmDateTimeField
+          id="crm-follow-at"
+          label={t("crm.leadForm.nextFollowUp")}
+          value={followAt}
+          onChange={onFollowAtChange}
+        />
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             {t("crm.actions.cancel")}

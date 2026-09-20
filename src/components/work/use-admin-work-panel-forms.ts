@@ -11,6 +11,7 @@ import {
 } from "@/services/work.service";
 import { emitTargetsUpdated, emitWorkUpdated } from "@/lib/events";
 import { clampOrganicAdsQuantity } from "@/lib/organic-ads-task-match";
+import { mediaDraftsToPayload } from "@/lib/task-media";
 import { useTranslation } from "@/hooks/use-translation";
 import { toStorageIso } from "@/lib/flexible-datetime";
 import type { WorkMeeting, WorkTask } from "@/types/work";
@@ -135,6 +136,7 @@ export function useAdminWorkPanelForms({
       origin: "assigned" as const,
       requireEvidenceLinks: Boolean(taskForm.requireEvidenceLinks),
       requireEvidenceNotes: Boolean(taskForm.requireEvidenceNotes),
+      media: mediaDraftsToPayload(taskForm.mediaDrafts),
       subItems: taskForm.subItemsText
         .split("\n")
         .map((line) => line.trim())

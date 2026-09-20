@@ -32,7 +32,38 @@ import {
   presentWorkTaskForActor,
 } from "@/services/work/work-shared";
 import type { ApiResponse } from "@/types";
-import type { WorkTask } from "@/types/work";
+import type { WorkTask, WorkTaskMediaItem } from "@/types/work";
+
+function localMediaFromPayload(
+  media: CreateWorkTaskDto["media"],
+  previous: WorkTaskMediaItem[] = []
+): WorkTaskMediaItem[] {
+  if (media === undefined) return previous;
+  const prevMap = new Map(previous.map((item) => [item.id, item]));
+  const items: WorkTaskMediaItem[] = [];
+  for (const entry of media) {
+    if ("dataBase64" in entry && entry.dataBase64) {
+      const mime = entry.mime;
+      const kind =
+        entry.kind ?? (mime.startsWith("video/") ? "video" : "image");
+      const id = createId("media");
+      items.push({
+        id,
+        kind: kind === "video" ? "video" : "image",
+        mime,
+        name: entry.name ?? "media",
+        sizeBytes: Math.ceil((entry.dataBase64.length * 3) / 4),
+        url: `data:${mime};base64,${entry.dataBase64}`,
+      });
+      continue;
+    }
+    if ("id" in entry && entry.id) {
+      const existing = prevMap.get(entry.id);
+      if (existing) items.push(existing);
+    }
+  }
+  return items.slice(0, 8);
+}
 
 /** POST /work/tasks */
 export async function createWorkTask(
@@ -110,6 +141,7 @@ export async function createWorkTask(
             : Boolean(parsed.data.requireEvidenceNotes),
         evidenceLinks,
         evidenceNotes,
+        media: localMediaFromPayload(parsed.data.media),
         assignedAt: now,
         completedAt: status === "completed" ? now : null,
         subItems: (parsed.data.subItems ?? []).map((s) => ({
@@ -285,6 +317,10 @@ export async function updateWorkTask(
         parsed.data.evidenceNotes !== undefined
           ? parsed.data.evidenceNotes
           : (primaryEvidence?.evidenceNotes ?? current.evidenceNotes),
+      media:
+        parsed.data.media !== undefined
+          ? localMediaFromPayload(parsed.data.media, current.media ?? [])
+          : current.media,
       assignedAt: current.assignedAt || current.createdAt,
       completedAt,
       subItems: parsed.data.subItems

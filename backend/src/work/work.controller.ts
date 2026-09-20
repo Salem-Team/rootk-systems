@@ -186,6 +186,26 @@ export class WorkController {
     return file;
   }
 
+  @Get("tasks/:id/media/:fileId")
+  @RequirePermission("tasks.viewOwn", "tasks.viewTeam", "tasks.viewAll")
+  async streamTaskMedia(
+    @CompanyId() companyId: string,
+    @CurrentUser() user: JwtPayload | undefined,
+    @Param("id") id: string,
+    @Param("fileId") fileId: string,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const { file, mime } = await this.service.streamTaskMedia(
+      companyId,
+      toActor(user),
+      id,
+      fileId
+    );
+    res.setHeader("Content-Type", mime);
+    res.setHeader("Cache-Control", "private, max-age=3600");
+    return file;
+  }
+
   @Get("meetings")
   @RequirePermission("tasks.manageMeetings", "tasks.viewOwn", "tasks.viewAll")
   meetings(

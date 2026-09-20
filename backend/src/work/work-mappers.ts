@@ -5,6 +5,10 @@ import {
   type WorkMeeting,
   type WorkTask,
 } from "@prisma/client";
+import {
+  mediaUrlForTask,
+  parseStoredMedia,
+} from "./work-task-media-storage";
 import { auditFields, dateOnly, iso, isoOrNull } from "../common/mappers";
 import {
   findAssigneeProgress,
@@ -163,6 +167,10 @@ export function mapTask(row: WorkTask, actor?: Actor) {
     requireEvidenceNotes: row.requireEvidenceNotes,
     evidenceLinks,
     evidenceNotes,
+    media: parseStoredMedia(row.media).map((item) => ({
+      ...item,
+      url: mediaUrlForTask(row.id, item.id),
+    })),
     assignedAt: iso(row.assignedAt ?? row.createdAt),
     completedAt,
     ...auditFields(row),

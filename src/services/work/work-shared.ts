@@ -36,6 +36,7 @@ export function emptyTask(id: string): WorkTask {
     requireEvidenceNotes: false,
     evidenceLinks: [],
     evidenceNotes: "",
+    media: [],
     assignedAt: "",
     completedAt: null,
     companyId: "",

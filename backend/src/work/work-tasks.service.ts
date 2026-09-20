@@ -66,4 +66,13 @@ export class WorkTasksService {
   deleteTask(companyId: string, actor: Actor, id: string) {
     return this.write.deleteTask(companyId, actor, id);
   }
+
+  streamTaskMedia(
+    companyId: string,
+    actor: Actor,
+    taskId: string,
+    fileId: string
+  ) {
+    return this.write.streamTaskMedia(companyId, actor, taskId, fileId);
+  }
 }

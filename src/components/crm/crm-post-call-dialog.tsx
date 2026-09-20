@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { CrmDateTimeField } from "@/components/crm/crm-datetime-field";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/hooks/use-translation";
@@ -187,21 +187,12 @@ export function CrmPostCallDialog({
             </div>
           ) : null}
 
-          <div className="space-y-2">
-            <Label
-              htmlFor="post-call-follow"
-              className="text-[13px] font-medium"
-            >
-              {t("crm.call.followUp")}
-            </Label>
-            <Input
-              id="post-call-follow"
-              type="datetime-local"
-              value={followAt}
-              onChange={(e) => setFollowAt(e.target.value)}
-              className="min-h-12 touch-manipulation text-[16px] sm:min-h-11 sm:text-sm"
-            />
-          </div>
+          <CrmDateTimeField
+            id="post-call-follow"
+            label={t("crm.call.followUp")}
+            value={followAt}
+            onChange={setFollowAt}
+          />
 
           <div className="space-y-2">
             <Label

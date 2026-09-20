@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CrmDateTimeField } from "@/components/crm/crm-datetime-field";
 import { CrmRequestBudgetFields } from "@/components/crm/crm-request-budget-fields";
 import { Textarea } from "@/components/ui/textarea";
 import { CrmIntlPhoneInput } from "@/components/crm/crm-intl-phone-input";
@@ -398,22 +399,12 @@ export function CrmLeadFormFields({
             </SelectContent>
           </Select>
         </div>
-        <div className="grid min-w-0 gap-1.5">
-          <Label
-            htmlFor="crm-lead-follow"
-            className="text-[13px] leading-snug sm:text-sm"
-          >
-            {t("crm.leadForm.nextFollowUp")}
-          </Label>
-          <Input
-            id="crm-lead-follow"
-            type="datetime-local"
-            dir="ltr"
-            value={nextFollowUpAt}
-            onChange={(e) => onNextFollowUpAtChange(e.target.value)}
-            className="h-10 min-w-0 touch-manipulation tabular-nums [color-scheme:light] dark:[color-scheme:dark] sm:h-9 [&::-webkit-calendar-picker-indicator]:ms-1 [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:min-w-0"
-          />
-        </div>
+        <CrmDateTimeField
+          id="crm-lead-follow"
+          label={t("crm.leadForm.nextFollowUp")}
+          value={nextFollowUpAt}
+          onChange={onNextFollowUpAtChange}
+        />
       </div>
 
       <div className="grid gap-3.5 rounded-2xl border border-primary/20 bg-primary/[0.03] p-3.5 sm:gap-3 sm:rounded-xl sm:p-3.5">

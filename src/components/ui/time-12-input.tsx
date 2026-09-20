@@ -66,7 +66,10 @@ export function Time12Input({
         disabled={disabled}
         onValueChange={(v) => emit({ hour12: Number(v) })}
       >
-        <SelectTrigger className="h-9 font-mono tabular-nums" aria-label="Hour">
+        <SelectTrigger
+          className="h-10 rounded-xl border-border/85 bg-card font-mono tabular-nums shadow-[0_1px_2px_rgba(11,20,36,0.03)] sm:h-9 sm:rounded-lg"
+          aria-label="Hour"
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="max-h-60">
@@ -84,7 +87,7 @@ export function Time12Input({
         onValueChange={(v) => emit({ minute: Number(v) })}
       >
         <SelectTrigger
-          className="h-9 font-mono tabular-nums"
+          className="h-10 rounded-xl border-border/85 bg-card font-mono tabular-nums shadow-[0_1px_2px_rgba(11,20,36,0.03)] sm:h-9 sm:rounded-lg"
           aria-label="Minute"
         >
           <SelectValue>
@@ -105,7 +108,10 @@ export function Time12Input({
         disabled={disabled}
         onValueChange={(v) => emit({ period: v as ClockPeriod })}
       >
-        <SelectTrigger className="h-9 min-w-[3.75rem]" aria-label="AM/PM">
+        <SelectTrigger
+          className="h-10 min-w-[3.75rem] rounded-xl border-border/85 bg-card font-semibold shadow-[0_1px_2px_rgba(11,20,36,0.03)] sm:h-9 sm:rounded-lg"
+          aria-label="AM/PM"
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

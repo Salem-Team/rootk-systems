@@ -54,10 +54,23 @@ export interface WorkTask extends BaseEntity {
   evidenceLinks?: string[];
   /** Written proof / handoff notes submitted on completion. */
   evidenceNotes?: string;
+  /** Brief images/videos attached to the task. */
+  media?: WorkTaskMediaItem[];
   /** ISO timestamp when the task was assigned / became actionable. */
   assignedAt?: string;
   /** ISO timestamp when marked completed (null/undefined while open). */
   completedAt?: string | null;
+}
+
+export type WorkTaskMediaKind = "image" | "video";
+
+export interface WorkTaskMediaItem {
+  id: string;
+  kind: WorkTaskMediaKind;
+  mime: string;
+  name: string;
+  sizeBytes: number;
+  url?: string;
 }
 
 /** Scheduled meeting with assigned participants. */

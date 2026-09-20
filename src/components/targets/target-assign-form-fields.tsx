@@ -1,5 +1,6 @@
 "use client";
 
+import { DateTime12Field } from "@/components/shared/datetime-12-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -139,22 +140,19 @@ export function TargetAssignFormFields({
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label={t("targets.assign.fieldStartDate")} htmlFor="tgt-start">
-          <Input
+          <DateTime12Field
             id="tgt-start"
-            type="datetime-local"
-            step={60}
             value={form.startDate}
-            onChange={(e) => patch({ startDate: e.target.value })}
+            onChange={(startDate) => patch({ startDate })}
+            placeholder={t("dateTime.pick")}
           />
         </Field>
         <Field label={t("targets.assign.fieldEndDate")} htmlFor="tgt-end">
-          <Input
+          <DateTime12Field
             id="tgt-end"
-            type="datetime-local"
-            step={60}
             value={form.endDate}
-            min={form.startDate || undefined}
-            onChange={(e) => patch({ endDate: e.target.value })}
+            onChange={(endDate) => patch({ endDate })}
+            placeholder={t("dateTime.pick")}
           />
         </Field>
       </div>

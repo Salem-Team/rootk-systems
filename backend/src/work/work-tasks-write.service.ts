@@ -1,4 +1,9 @@
-import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  StreamableFile,
+} from "@nestjs/common";
 import { TaskPriority, TaskStatus, WorkOrigin, Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { parseDate } from "../common/mappers";
@@ -11,6 +16,12 @@ import {
 } from "./work-mappers";
 import { assertCanAssignToTeam } from "../lib/team";
 import { assertCanMutateWorkTask } from "./work-access";
+import {
+  parseStoredMedia,
+  resolveTaskMediaPayload,
+  deleteCompanyTaskMedia,
+  readCompanyTaskMedia,
+} from "./work-task-media-storage";
 
 export type { Actor };
 
@@ -68,6 +79,11 @@ export class WorkTasksWriteService {
     const initialStatus = (body.status as TaskStatus) ?? TaskStatus.todo;
     const evidenceLinks = sanitizeEvidenceLinks(body.evidenceLinks);
     const evidenceNotes = String(body.evidenceNotes ?? "");
+    const media = await resolveTaskMediaPayload(
+      companyId,
+      body.media,
+      []
+    );
     const assigneeProgress = syncAssigneeProgress(assigneeIds, [], {
       status: initialStatus,
       completedAt:
@@ -95,6 +111,7 @@ export class WorkTasksWriteService {
         requireEvidenceNotes,
         evidenceLinks,
         evidenceNotes,
+        media: media as unknown as Prisma.InputJsonValue,
         assignedAt: now,
         completedAt: initialStatus === TaskStatus.completed ? now : null,
         createdBy: actor.userId,
@@ -168,15 +185,44 @@ export class WorkTasksWriteService {
     });
     if (!current) throw new NotFoundException("Task not found");
     await assertCanMutateWorkTask(this.prisma, companyId, actor, current, "delete");
+    for (const item of parseStoredMedia(current.media)) {
+      await deleteCompanyTaskMedia(companyId, item.id);
+    }
     await this.prisma.workTask.update({
       where: { id },
       data: {
         deletedAt: new Date(),
         isArchived: true,
+        media: [] as unknown as Prisma.InputJsonValue,
         updatedBy: actor.userId,
         version: { increment: 1 },
       },
     });
     return true;
+  }
+
+  async streamTaskMedia(
+    companyId: string,
+    actor: Actor,
+    taskId: string,
+    fileId: string
+  ) {
+    const current = await this.prisma.workTask.findFirst({
+      where: { id: taskId, companyId, deletedAt: null },
+    });
+    if (!current) throw new NotFoundException("Task not found");
+    if (
+      actor.role === "employee" &&
+      !current.assigneeIds.includes(actor.employeeId)
+    ) {
+      throw new ForbiddenException("You can only view media for your tasks");
+    }
+    const item = parseStoredMedia(current.media).find((m) => m.id === fileId);
+    if (!item) throw new NotFoundException("Media not found");
+    const buffer = await readCompanyTaskMedia(companyId, fileId);
+    return {
+      file: new StreamableFile(buffer),
+      mime: item.mime,
+    };
   }
 }

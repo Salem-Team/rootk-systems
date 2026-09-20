@@ -30,6 +30,10 @@ import {
   type Actor,
 } from "./work-mappers";
 import { assertCanMutateWorkTask, canWidenTaskAssignees } from "./work-access";
+import {
+  parseStoredMedia,
+  resolveTaskMediaPayload,
+} from "./work-task-media-storage";
 
 export type { Actor };
 
@@ -161,6 +165,15 @@ export class WorkTasksStatusService {
     const primaryEvidence =
       progress.find((p) => p.status === TaskStatus.completed) ?? progress[0];
 
+    const media =
+      body.media !== undefined
+        ? await resolveTaskMediaPayload(
+            companyId,
+            body.media,
+            parseStoredMedia(current.media)
+          )
+        : undefined;
+
     const row = await this.prisma.workTask.update({
       where: { id },
       data: {
@@ -204,6 +217,9 @@ export class WorkTasksStatusService {
           body.evidenceNotes !== undefined
             ? String(body.evidenceNotes)
             : primaryEvidence?.evidenceNotes,
+        ...(media !== undefined
+          ? { media: media as unknown as Prisma.InputJsonValue }
+          : {}),
         completedAt: rolledCompletedAt,
         updatedBy: actor.userId,
         version: { increment: 1 },

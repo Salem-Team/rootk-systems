@@ -1,4 +1,6 @@
 import { toDateTimeLocalValue } from "@/lib/flexible-datetime";
+import type { WorkTaskMediaDraft } from "@/lib/task-media";
+import { mediaItemsToDrafts } from "@/lib/task-media";
 import { todayIsoDate } from "@/lib/work-utils";
 import type { TaskPriority, TaskStatus, WorkMeeting, WorkTask } from "@/types/work";
 
@@ -36,6 +38,7 @@ export interface TaskFormState {
   /** When set, assignment creates an Organic Ads target + N linked tasks. */
   countsAsOrganicAd: boolean;
   organicAdsCount: number;
+  mediaDrafts: WorkTaskMediaDraft[];
 }
 
 export interface MeetingFormState {
@@ -67,6 +70,7 @@ export function emptyTaskForm(): TaskFormState {
     requireEvidenceNotes: false,
     countsAsOrganicAd: false,
     organicAdsCount: 1,
+    mediaDrafts: [],
   };
 }
 
@@ -82,6 +86,7 @@ export function nextTaskFormAfterCreate(prev: TaskFormState): TaskFormState {
     relatedMeetingId: prev.relatedMeetingId,
     requireEvidenceLinks: prev.requireEvidenceLinks,
     requireEvidenceNotes: prev.requireEvidenceNotes,
+    mediaDrafts: [],
   };
 }
 
@@ -116,6 +121,7 @@ export function taskToForm(task: WorkTask): TaskFormState {
     requireEvidenceNotes: Boolean(task.requireEvidenceNotes),
     countsAsOrganicAd: false,
     organicAdsCount: 1,
+    mediaDrafts: mediaItemsToDrafts(task.media ?? []),
   };
 }
 

@@ -57,6 +57,21 @@ export const createWorkTaskSchema = z.object({
   requireEvidenceNotes: z.boolean().optional(),
   evidenceLinks: z.array(evidenceUrlSchema).max(10).optional(),
   evidenceNotes: z.string().trim().max(4000).optional(),
+  media: z
+    .array(
+      z.union([
+        z.object({ id: z.string().min(1) }),
+        z.object({
+          id: z.string().min(1).optional(),
+          dataBase64: z.string().min(8),
+          mime: z.string().min(3).max(80),
+          name: z.string().trim().max(120).optional(),
+          kind: z.enum(["image", "video"]).optional(),
+        }),
+      ])
+    )
+    .max(8)
+    .optional(),
   subItems: z
     .array(
       z.object({
