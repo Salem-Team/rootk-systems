@@ -7,7 +7,7 @@ import {
 import { getEmployees } from "@/services/employees.service";
 import { getMyWorkMeetings, getMyWorkTasks } from "@/services/work.service";
 import { WORK_UPDATED_EVENT } from "@/lib/events";
-import { meetingWhen, taskDueBucket } from "@/lib/work-utils";
+import { meetingWhen, sortTasksNewestFirst, taskDueBucket } from "@/lib/work-utils";
 import type { Employee } from "@/types";
 import type { TaskStatus, WorkMeeting, WorkTask } from "@/types/work";
 import type { OriginFilter, WorkTab } from "@/components/work/employee-work-hub-types";
@@ -121,7 +121,7 @@ export function useEmployeeWorkHubData(workEmployeeId: string) {
     if (originFilter !== "all") {
       list = list.filter((x) => (x.origin ?? "assigned") === originFilter);
     }
-    return list;
+    return sortTasksNewestFirst(list);
   }, [tasks, filter, originFilter]);
 
   const filteredTodayMeetings = useMemo(() => {

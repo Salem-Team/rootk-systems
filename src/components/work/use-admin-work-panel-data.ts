@@ -2,7 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { getWorkforceEmployees } from "@/services/employees.service";
 import { getWorkMeetings, getWorkTasks } from "@/services/work.service";
 import { WORK_UPDATED_EVENT } from "@/lib/events";
-import { meetingWhen, openTaskCount, taskDueBucket } from "@/lib/work-utils";
+import {
+  meetingWhen,
+  openTaskCount,
+  sortTasksNewestFirst,
+  taskDueBucket,
+} from "@/lib/work-utils";
 import type { Employee } from "@/types";
 import type { WorkMeeting, WorkTask } from "@/types/work";
 import type { MeetingFilter, PanelTab, TaskFilter } from "@/components/work/admin-work-panel-types";
@@ -67,7 +72,7 @@ export function useAdminWorkPanelData() {
 
   const filteredTasks = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return tasks.filter((task) => {
+    const filtered = tasks.filter((task) => {
       if (assigneeFilter && !task.assigneeIds.includes(assigneeFilter)) {
         return false;
       }
@@ -90,6 +95,7 @@ export function useAdminWorkPanelData() {
         names.includes(q)
       );
     });
+    return sortTasksNewestFirst(filtered);
   }, [tasks, taskFilter, assigneeFilter, query, employeeMap]);
 
   const assigneeOptions = useMemo(() => {

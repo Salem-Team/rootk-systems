@@ -30,10 +30,12 @@ export class WorkTaskRepository extends CollectionRepository<WorkTask> {
         results = results.filter((t) => t.status === filters.status);
       }
       return results.sort((a, b) => {
-        if (!a.dueDate && !b.dueDate) return 0;
-        if (!a.dueDate) return 1;
-        if (!b.dueDate) return -1;
-        return a.dueDate.localeCompare(b.dueDate);
+        const aKey = a.createdAt || a.assignedAt || "";
+        const bKey = b.createdAt || b.assignedAt || "";
+        if (aKey && bKey && aKey !== bKey) return bKey.localeCompare(aKey);
+        if (aKey && !bKey) return -1;
+        if (!aKey && bKey) return 1;
+        return b.id.localeCompare(a.id);
       });
     });
   }

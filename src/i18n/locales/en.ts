@@ -231,6 +231,11 @@ export const en = {
       "Assign tasks to employees. Use Save & add another to create several without closing.",
     meetingFormDesc:
       "Schedule a meeting and invite employees as participants.",
+    sectionBasics: "Basics",
+    sectionSchedule: "Schedule & priority",
+    sectionAssignees: "People",
+    sectionMore: "More details",
+    sectionOptions: "Options",
     fieldTitle: "Title",
     fieldDue: "Due date (optional)",
     fieldEstimate: "Estimate min (optional)",
@@ -529,6 +534,10 @@ export const en = {
     voiceTooLarge: "Voice note is too large. Keep it under 3 minutes.",
     voiceOnly: "Voice",
     replying: "Replying",
+    repliesCount: "{count} replies",
+    replyCountOne: "1 reply",
+    newestFirst: "Newest first",
+    composerHint: "Share an update with the team",
   },
   common: {
     search: "Search clients by name or phone…",

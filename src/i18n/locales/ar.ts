@@ -231,6 +231,11 @@ export const ar: TranslationKeys = {
     taskFormDescMulti:
       "كلّف الموظفين بمهام. استخدم «احفظ وأضف تانية» عشان تضيف أكتر من مهمة من غير ما تقفل النافذة.",
     meetingFormDesc: "جدول اجتماع وادعُ الموظفين كمشاركين.",
+    sectionBasics: "الأساسيات",
+    sectionSchedule: "الموعد والأولوية",
+    sectionAssignees: "الأشخاص",
+    sectionMore: "تفاصيل إضافية",
+    sectionOptions: "خيارات",
     fieldTitle: "العنوان",
     fieldDue: "تاريخ الاستحقاق (اختياري)",
     fieldEstimate: "التقدير بالدقيقة (اختياري)",
@@ -524,6 +529,10 @@ export const ar: TranslationKeys = {
     voiceTooLarge: "الفويس كبير. خليه أقل من 3 دقايق.",
     voiceOnly: "فويس",
     replying: "جارٍ الرد",
+    repliesCount: "{count} ردود",
+    replyCountOne: "رد واحد",
+    newestFirst: "الأحدث أولاً",
+    composerHint: "شارك تحديث مع الفريق",
   },
   common: {
     search: "ابحث عن عميل بالاسم أو الرقم…",

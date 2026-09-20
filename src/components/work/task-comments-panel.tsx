@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
-import { Loader2, MessageSquare, Mic, Reply, Send, Trash2 } from "lucide-react";
+import {
+  Loader2,
+  MessageSquare,
+  MessageSquarePlus,
+  Mic,
+  Reply,
+  Send,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { BidiText } from "@/components/shared/bidi-text";
 import { Button } from "@/components/ui/button";
@@ -65,14 +73,16 @@ function CommentCard({
   return (
     <article
       className={cn(
-        "rounded-2xl border border-border/70 bg-card p-3 shadow-[var(--shadow-card)] sm:p-3.5",
-        isReply && "ms-2 border-s-[3px] border-s-primary/35 bg-muted/15 sm:ms-4"
+        "rounded-2xl border bg-card p-3 sm:rounded-xl sm:p-3.5",
+        isReply
+          ? "border-border/50 bg-muted/20 shadow-none"
+          : "border-border/70 shadow-[var(--shadow-card)]"
       )}
     >
       <div className="flex items-start gap-2.5">
         <span
           className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold",
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold sm:h-10 sm:w-10 sm:text-[12px]",
             isReply
               ? "bg-muted text-muted-foreground"
               : "bg-primary/10 text-primary"
@@ -82,7 +92,7 @@ function CommentCard({
           {initials || "?"}
         </span>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <p className="truncate text-[13px] font-semibold sm:text-sm">
               <BidiText text={comment.authorName || t("workComments.someone")} />
             </p>
@@ -93,7 +103,7 @@ function CommentCard({
               </span>
             ) : null}
             <time
-              className="ms-auto text-[11px] text-muted-foreground"
+              className="ms-auto text-[11px] tabular-nums text-muted-foreground"
               dateTime={comment.createdAt}
               title={formatIsoDateTime(comment.createdAt, locale)}
             >
@@ -192,7 +202,7 @@ function Composer({
   return (
     <div
       className={cn(
-        "grid gap-2.5 rounded-2xl border p-3 sm:p-3.5",
+        "grid gap-2.5 rounded-2xl border p-3 sm:rounded-xl sm:p-3.5",
         isReply
           ? "border-primary/25 bg-primary/[0.04]"
           : "border-border/70 bg-card shadow-[var(--shadow-card)]"
@@ -202,7 +212,12 @@ function Composer({
         <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">
           {t("workComments.replying")}
         </p>
-      ) : null}
+      ) : (
+        <p className="flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground">
+          <MessageSquarePlus className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          {t("workComments.composerHint")}
+        </p>
+      )}
       <Textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
@@ -278,7 +293,13 @@ export function TaskCommentsPanel({ taskId }: { taskId: string }) {
     return () => window.removeEventListener(WORK_UPDATED_EVENT, onUpdate);
   }, [load]);
 
-  const roots = useMemo(() => items.filter((c) => !c.parentId), [items]);
+  const roots = useMemo(() => {
+    return items
+      .filter((c) => !c.parentId)
+      .slice()
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }, [items]);
+
   const repliesByParent = useMemo(() => {
     const map = new Map<string, WorkTaskComment[]>();
     for (const item of items) {
@@ -286,6 +307,9 @@ export function TaskCommentsPanel({ taskId }: { taskId: string }) {
       const list = map.get(item.parentId) ?? [];
       list.push(item);
       map.set(item.parentId, list);
+    }
+    for (const [, list] of map) {
+      list.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     }
     return map;
   }, [items]);
@@ -308,19 +332,26 @@ export function TaskCommentsPanel({ taskId }: { taskId: string }) {
           <MessageSquare className="h-4 w-4" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-[15px] font-semibold tracking-tight sm:text-base">
-            {t("workComments.title")}
-          </h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-[15px] font-semibold tracking-tight sm:text-base">
+              {t("workComments.title")}
+            </h3>
+            <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-[11px] font-semibold tabular-nums text-muted-foreground">
+              {items.length}
+            </span>
+          </div>
           <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-muted-foreground sm:text-[13px]">
             {t("workComments.description")}
           </p>
         </div>
-        <span className="rounded-full bg-muted px-2.5 py-1 font-mono text-[11px] font-semibold tabular-nums text-muted-foreground">
-          {items.length}
-        </span>
+        {!loading && roots.length > 0 ? (
+          <span className="hidden rounded-full border border-border/60 bg-muted/30 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground sm:inline-flex">
+            {t("workComments.newestFirst")}
+          </span>
+        ) : null}
       </header>
 
-      <div className="grid gap-3 p-3 sm:gap-3.5 sm:p-4">
+      <div className="grid gap-4 p-3 sm:gap-4 sm:p-4">
         <Composer taskId={taskId} onDone={() => void load()} />
 
         {loading ? (
@@ -331,7 +362,7 @@ export function TaskCommentsPanel({ taskId }: { taskId: string }) {
         ) : null}
 
         {!loading && roots.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 px-4 py-8 text-center">
+          <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 px-4 py-8 text-center sm:rounded-xl">
             <span className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
               <MessageSquare className="h-4 w-4" aria-hidden />
             </span>
@@ -341,24 +372,36 @@ export function TaskCommentsPanel({ taskId }: { taskId: string }) {
           </div>
         ) : null}
 
-        <div className="grid gap-3">
+        <div className="grid gap-4">
           {roots.map((comment) => {
             const replies = repliesByParent.get(comment.id) ?? [];
             const canDelete =
               role === "admin" || comment.authorUserId === userId;
             return (
-              <div key={comment.id} className="grid gap-2">
+              <div key={comment.id} className="grid gap-0">
                 <CommentCard
                   comment={comment}
                   canDelete={canDelete}
                   locale={locale}
                   onReply={() =>
-                    setReplyTo((cur) => (cur === comment.id ? null : comment.id))
+                    setReplyTo((cur) =>
+                      cur === comment.id ? null : comment.id
+                    )
                   }
                   onDelete={() => void remove(comment.id)}
                 />
-                {replies.length > 0 ? (
-                  <div className="grid gap-2">
+
+                {replies.length > 0 || replyTo === comment.id ? (
+                  <div className="relative ms-3 mt-2 grid gap-2 border-s-2 border-primary/20 ps-3 sm:ms-5 sm:ps-4">
+                    {replies.length > 0 ? (
+                      <p className="text-[11px] font-semibold text-muted-foreground">
+                        {replies.length === 1
+                          ? t("workComments.replyCountOne")
+                          : t("workComments.repliesCount", {
+                              count: String(replies.length),
+                            })}
+                      </p>
+                    ) : null}
                     {replies.map((reply) => (
                       <CommentCard
                         key={reply.id}
@@ -371,20 +414,18 @@ export function TaskCommentsPanel({ taskId }: { taskId: string }) {
                         onDelete={() => void remove(reply.id)}
                       />
                     ))}
-                  </div>
-                ) : null}
-                {replyTo === comment.id ? (
-                  <div className="ms-2 sm:ms-4">
-                    <Composer
-                      taskId={taskId}
-                      parentId={comment.id}
-                      autofocus
-                      onCancel={() => setReplyTo(null)}
-                      onDone={() => {
-                        setReplyTo(null);
-                        void load();
-                      }}
-                    />
+                    {replyTo === comment.id ? (
+                      <Composer
+                        taskId={taskId}
+                        parentId={comment.id}
+                        autofocus
+                        onCancel={() => setReplyTo(null)}
+                        onDone={() => {
+                          setReplyTo(null);
+                          void load();
+                        }}
+                      />
+                    ) : null}
                   </div>
                 ) : null}
               </div>

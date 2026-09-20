@@ -57,7 +57,7 @@ export class WorkTasksQueryService {
     }
     const rows = await this.prisma.workTask.findMany({
       where,
-      orderBy: { dueDate: "asc" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
     return rows.map((row) => mapTask(row, actor));
   }

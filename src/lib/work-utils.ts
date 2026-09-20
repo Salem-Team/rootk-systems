@@ -46,6 +46,22 @@ export function isAssignedTo(ids: string[], employeeId: string): boolean {
   return ids.includes(employeeId);
 }
 
+/** Newest tasks first — prefers `createdAt`, falls back to `assignedAt` / id. */
+export function sortTasksNewestFirst<T extends {
+  id: string;
+  createdAt?: string;
+  assignedAt?: string;
+}>(tasks: T[]): T[] {
+  return [...tasks].sort((a, b) => {
+    const aKey = a.createdAt || a.assignedAt || "";
+    const bKey = b.createdAt || b.assignedAt || "";
+    if (aKey && bKey && aKey !== bKey) return bKey.localeCompare(aKey);
+    if (aKey && !bKey) return -1;
+    if (!aKey && bKey) return 1;
+    return b.id.localeCompare(a.id);
+  });
+}
+
 /** Employees only see themselves on a task — never co-assignees. */
 export function scopeWorkTaskAssigneesForEmployee<
   T extends { assigneeIds: string[]; assigneeProgress?: WorkTask["assigneeProgress"] },

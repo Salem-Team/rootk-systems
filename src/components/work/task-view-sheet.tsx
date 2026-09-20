@@ -80,10 +80,10 @@ export function TaskViewSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+      <SheetContent className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
         {task ? (
           <>
-            <SheetHeader>
+            <SheetHeader className="shrink-0 border-b border-border/60 px-4 pb-4 pt-2 pe-14 sm:px-6 sm:pe-14 sm:pt-3">
               <SheetTitle className="pe-8 text-start leading-snug">
                 {task.title}
               </SheetTitle>
@@ -92,7 +92,7 @@ export function TaskViewSheet({
               </SheetDescription>
             </SheetHeader>
 
-            <div className="mt-6 space-y-5">
+            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6">
               <div className="flex items-center gap-4 rounded-2xl border border-border/70 bg-muted/20 p-4">
                 <TargetProgressRing
                   percentage={percentage}
@@ -234,30 +234,30 @@ export function TaskViewSheet({
                 </div>
               </dl>
 
-              <div className="pt-1">
-                <TaskCommentsPanel taskId={task.id} />
-              </div>
+              <TaskCommentsPanel taskId={task.id} />
+            </div>
 
-              <div className="flex flex-wrap gap-2 border-t border-border/60 pt-4">
-                {onEdit ? (
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      onOpenChange(false);
-                      onEdit(task);
-                    }}
-                  >
-                    {t("common.edit")}
-                  </Button>
-                ) : null}
+            <div className="shrink-0 flex flex-wrap gap-2 border-t border-border/60 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
+              {onEdit ? (
                 <Button
                   type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
+                  className="h-11 flex-1 touch-manipulation rounded-xl sm:h-9 sm:flex-none sm:rounded-lg"
+                  onClick={() => {
+                    onOpenChange(false);
+                    onEdit(task);
+                  }}
                 >
-                  {t("common.close")}
+                  {t("common.edit")}
                 </Button>
-              </div>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 flex-1 touch-manipulation rounded-xl sm:h-9 sm:flex-none sm:rounded-lg"
+                onClick={() => onOpenChange(false)}
+              >
+                {t("common.close")}
+              </Button>
             </div>
           </>
         ) : null}
