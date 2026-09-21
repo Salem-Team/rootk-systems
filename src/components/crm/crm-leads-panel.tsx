@@ -7,6 +7,7 @@ import {
   Search,
   SlidersHorizontal,
   Upload,
+  X,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -179,18 +180,24 @@ export function CrmLeadsPanel({
   );
 
   return (
-    <section className={cn("surface-panel overflow-hidden", className)}>
-      <div className="panel-header flex flex-col gap-2.5 sm:gap-3">
+    <section
+      className={cn(
+        "surface-panel overflow-hidden",
+        "max-sm:-mx-3 max-sm:rounded-none max-sm:border-x-0",
+        className
+      )}
+    >
+      <div className="panel-header flex flex-col gap-2.5 !px-0 sm:gap-3 sm:!px-5">
         {!hideTitle ? (
-          <h2 className="hidden text-sm font-semibold tracking-tight sm:block">
+          <h2 className="hidden px-5 text-sm font-semibold tracking-tight sm:block">
             {t("crm.leads.title")}
           </h2>
         ) : null}
 
-        {/* Mobile app-style search + filter row */}
-        <div className="flex items-center gap-2">
-          <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        {/* Mobile: edge-to-edge search; sm+: search shares the toolbar row */}
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-2">
+          <div className="relative w-full min-w-0 px-3 sm:flex-1 sm:px-0">
+            <Search className="pointer-events-none absolute start-[1.625rem] top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground sm:start-3 sm:h-3.5 sm:w-3.5" />
             <Input
               ref={panel.searchInputRef}
               type="search"
@@ -204,82 +211,109 @@ export function CrmLeadsPanel({
                 }
               }}
               placeholder={t("crm.filters.search")}
-              className="h-11 w-full rounded-xl border-border/70 bg-muted/30 ps-10 text-base shadow-none sm:h-9 sm:rounded-lg sm:bg-background sm:ps-8 sm:text-sm"
+              className={cn(
+                "h-12 w-full rounded-2xl border-border/60 bg-muted/40 ps-11 pe-11 text-base shadow-none",
+                "placeholder:text-muted-foreground/70",
+                "focus-visible:border-primary/35 focus-visible:bg-background focus-visible:ring-primary/20",
+                "[&::-webkit-search-cancel-button]:hidden",
+                "sm:h-9 sm:rounded-lg sm:bg-background sm:ps-9 sm:pe-9 sm:text-sm"
+              )}
               aria-label={t("crm.filters.search")}
               autoComplete="off"
               enterKeyHint="search"
               inputMode="search"
               dir="auto"
             />
-          </div>
-          <Button
-            type="button"
-            size="sm"
-            variant={filterCount > 0 ? "default" : "outline"}
-            className="relative h-11 min-w-11 shrink-0 touch-manipulation rounded-xl px-3 lg:hidden"
-            onClick={() => panel.setFiltersOpen(true)}
-            aria-expanded={panel.filtersOpen}
-            aria-label={t("crm.filters.title")}
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            {filterCount > 0 ? (
-              <span className="absolute -end-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 font-mono text-[10px] font-bold text-white">
-                {filterCount > 9 ? "9+" : filterCount}
-              </span>
-            ) : null}
-          </Button>
-          {showOwnerFilter ? (
-            <Select
-              value={filters.ownerEmployeeId || "all"}
-              onValueChange={(v) =>
-                onFiltersChange((prev) => ({
-                  ...prev,
-                  ownerEmployeeId: v === "all" ? undefined : v,
-                  page: 1,
-                }))
-              }
-            >
-              <SelectTrigger
-                className="h-11 w-[min(100%,9.5rem)] shrink-0 rounded-xl border-border/70 sm:h-9 sm:rounded-lg sm:w-[10.5rem]"
-                aria-label={t("crm.filters.byUser")}
+            {panel.searchLocal.trim() ? (
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                className="absolute end-[1.125rem] top-1/2 h-9 w-9 -translate-y-1/2 rounded-xl text-muted-foreground hover:text-foreground sm:end-1.5 sm:h-7 sm:w-7 sm:rounded-md"
+                onClick={() => {
+                  panel.onSearchChange("");
+                  panel.searchInputRef.current?.focus();
+                }}
+                aria-label={t("dateTime.clear")}
               >
-                <SelectValue placeholder={t("crm.filters.byUser")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("crm.filters.allSales")}</SelectItem>
-                <SelectItem value="__unassigned__">
-                  {t("crm.filters.unassigned")}
-                </SelectItem>
-                {panel.safeEmployees.map((e) => (
-                  <SelectItem key={e.id} value={e.id}>
-                    {e.name}
+                <X className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+              </Button>
+            ) : null}
+          </div>
+
+          <div className="flex w-full items-center gap-2 px-3 sm:w-auto sm:shrink-0 sm:px-0">
+            <Button
+              type="button"
+              size="sm"
+              variant={filterCount > 0 ? "default" : "outline"}
+              className="relative h-11 min-w-11 flex-1 touch-manipulation rounded-xl px-3 sm:h-9 sm:min-w-9 sm:flex-none lg:hidden"
+              onClick={() => panel.setFiltersOpen(true)}
+              aria-expanded={panel.filtersOpen}
+              aria-label={t("crm.filters.title")}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              <span className="ms-1.5 text-sm font-medium sm:hidden">
+                {t("crm.filters.title")}
+              </span>
+              {filterCount > 0 ? (
+                <span className="absolute -end-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 font-mono text-[10px] font-bold text-white">
+                  {filterCount > 9 ? "9+" : filterCount}
+                </span>
+              ) : null}
+            </Button>
+            {showOwnerFilter ? (
+              <Select
+                value={filters.ownerEmployeeId || "all"}
+                onValueChange={(v) =>
+                  onFiltersChange((prev) => ({
+                    ...prev,
+                    ownerEmployeeId: v === "all" ? undefined : v,
+                    page: 1,
+                  }))
+                }
+              >
+                <SelectTrigger
+                  className="h-11 min-w-0 flex-1 rounded-xl border-border/70 sm:h-9 sm:w-[10.5rem] sm:flex-none sm:rounded-lg"
+                  aria-label={t("crm.filters.byUser")}
+                >
+                  <SelectValue placeholder={t("crm.filters.byUser")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("crm.filters.allSales")}</SelectItem>
+                  <SelectItem value="__unassigned__">
+                    {t("crm.filters.unassigned")}
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : null}
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-11 shrink-0 touch-manipulation rounded-xl px-2.5 sm:hidden"
-            aria-expanded={toolsOpen}
-            aria-label={t("crm.actions.moreTools")}
-            onClick={() => setToolsOpen((v) => !v)}
-          >
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 transition-transform",
-                toolsOpen && "rotate-180"
-              )}
-            />
-          </Button>
+                  {panel.safeEmployees.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-11 shrink-0 touch-manipulation rounded-xl px-2.5 sm:hidden"
+              aria-expanded={toolsOpen}
+              aria-label={t("crm.actions.moreTools")}
+              onClick={() => setToolsOpen((v) => !v)}
+            >
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 transition-transform",
+                  toolsOpen && "rotate-180"
+                )}
+              />
+            </Button>
+          </div>
         </div>
 
         {/* Collapsed tools on phones; always visible from sm+ */}
         <div
           className={cn(
-            "flex flex-wrap items-center gap-2",
+            "flex flex-wrap items-center gap-2 px-3 sm:px-0",
             toolsOpen ? "flex" : "hidden",
             "sm:flex"
           )}
