@@ -5,6 +5,7 @@ export {
   isEgyptianMobile,
   normalizeEgyptianMobile,
   normalizePhone,
+  phoneSearchNeedles,
 } from "../../shared/phone-normalize";
 export type {
   PhoneNormalizeErr,

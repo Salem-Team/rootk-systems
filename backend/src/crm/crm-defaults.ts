@@ -47,7 +47,9 @@ export const DEFAULT_BUSINESS_TYPES: Array<{
   { name: "تجارة الجملة", sortOrder: 17 },
   { name: "خدمات مهنية", sortOrder: 18 },
   { name: "مطاعم وضيافة", sortOrder: 19 },
-  { name: "أخرى", sortOrder: 20 },
+  { name: "توريدات", sortOrder: 20 },
+  { name: "استيراد وتصدير", sortOrder: 21 },
+  { name: "أخرى", sortOrder: 22 },
 ];
 
 /** Old English seed names → Arabic labels. Keys are lowercased. */

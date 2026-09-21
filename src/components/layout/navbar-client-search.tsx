@@ -202,18 +202,18 @@ export function NavbarClientSearch() {
       {/* Desktop / tablet: inline search */}
       <div
         ref={mobileOpen ? undefined : search.rootRef}
-        className="relative hidden max-w-sm flex-1 md:block"
+        className="relative hidden min-w-0 w-full flex-1 md:block"
       >
         <Search className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/80" />
         <Input
           {...inputProps}
-          className="h-9 border-border/55 bg-muted/40 ps-8 shadow-none transition-colors placeholder:text-muted-foreground/55 hover:bg-muted/55 focus-visible:border-primary/30 focus-visible:bg-card focus-visible:shadow-sm"
+          className="h-9 w-full border-border/55 bg-muted/40 ps-8 shadow-none transition-colors placeholder:text-muted-foreground/55 hover:bg-muted/55 focus-visible:border-primary/30 focus-visible:bg-card focus-visible:shadow-sm"
         />
 
         {search.showPanel ? (
           <div
             className={cn(
-              "absolute inset-x-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-xl border border-border bg-popover shadow-[var(--shadow-card-hover)]"
+              "absolute inset-x-0 top-[calc(100%+6px)] z-50 w-full overflow-hidden rounded-xl border border-border bg-popover shadow-[var(--shadow-card-hover)]"
             )}
             role="listbox"
             aria-label={t("common.searchClients")}

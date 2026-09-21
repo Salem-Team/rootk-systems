@@ -24,6 +24,14 @@ const CrmPostCallHost = dynamic(
   { ssr: false }
 );
 
+const CrmIncomingCallHost = dynamic(
+  () =>
+    import("@/components/crm/crm-incoming-call-host").then(
+      (m) => m.CrmIncomingCallHost
+    ),
+  { ssr: false }
+);
+
 /**
  * App chrome (sidebar + navbar). Page enter polish lives in PageTransition /
  * `.page-cascade` — do NOT wrap route children in Framer AnimatePresence+opacity
@@ -65,6 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <MobileBottomNav />
         <CrmPostCallHost />
+        <CrmIncomingCallHost />
       </div>
     </AuthGate>
   );

@@ -393,6 +393,40 @@ function main() {
   assert(canCrm("employee", "view"), "sales can view own CRM");
   assert(canCrm("employee", "view_dashboard"), "sales can view own dashboard");
 
+  const searchable = lead("l-search", hagar, {
+    name: "أحمد علي",
+    phone: "01012345678",
+    phoneNormalized: "+201012345678",
+    budget: "أقل من 50 ألف",
+    request: "المنتج: إدارة العملاء",
+    notes: "محتاج عرض",
+    source: "facebook",
+    tags: ["hot"],
+  });
+  const searchScope = { canViewOthers: true as const };
+  const found = (q: string, extra = "") =>
+    filterLeads([searchable], { search: q }, {
+      ...searchScope,
+      searchTextByLeadId: extra
+        ? new Map([[searchable.id, extra]])
+        : undefined,
+    }).length === 1;
+  assert(found("احمد"), "search: folded Arabic name");
+  assert(found("01012345678"), "search: local mobile");
+  assert(found("201012345678"), "search: international digits");
+  assert(found("1234"), "search: phone fragment");
+  assert(found("<50k"), "search: compact budget");
+  assert(found("أقل من 50"), "search: budget text");
+  assert(found("crm"), "search: request product");
+  assert(found("فيسبوك"), "search: source label");
+  assert(found("ساخن"), "search: tag label");
+  assert(found("محتاج"), "search: notes");
+  assert(
+    found("الميزانية عالية", "فيدباك: الميزانية عالية ومحتاج خصم"),
+    "search: feedback text"
+  );
+  assert(!found("عميل مش موجود"), "search: unrelated query misses");
+
   if (failed > 0) {
     console.error(`\nCRM scope verify failed: ${failed} assertion(s)`);
     process.exit(1);

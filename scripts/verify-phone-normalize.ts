@@ -10,6 +10,7 @@ import {
   canonicalPhoneOrNull,
   formatEgyptianNationalDisplay,
   normalizeEgyptianMobile,
+  phoneSearchNeedles,
 } from "../shared/phone-normalize";
 
 let failed = 0;
@@ -86,6 +87,16 @@ const backend = readFileSync(
   "utf8"
 );
 assert(shared === backend, "backend copy matches shared source of truth");
+
+const needles = phoneSearchNeedles("01012345678");
+assert(needles.includes("1012345678"), "local 010… also searches without the trunk 0");
+assert(needles.includes("201012345678"), "local 010… also searches the 20… international digits");
+assert(
+  needles.some((needle) => "201012345678".includes(needle)),
+  "01012345678 matches stored +201012345678 digits"
+);
+assert(phoneSearchNeedles("٠١٠١٢").some((n) => "201012345678".includes(n)), "Arabic-Indic partial matches stored digits");
+assert(phoneSearchNeedles("12").length === 0, "fewer than 3 digits is not a phone search");
 
 if (failed) {
   console.error(`\n${failed} phone-normalize checks failed`);

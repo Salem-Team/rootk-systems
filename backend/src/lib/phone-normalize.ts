@@ -156,6 +156,31 @@ export function canonicalPhoneOrNull(input: unknown): string | null {
 }
 
 /**
+ * Digit fragments that should match a stored phone (national, E.164, or partial).
+ * `01012` also yields `1012` and `201012` so it hits `+201012…`.
+ * Empty when the query has fewer than 3 digits.
+ */
+export function phoneSearchNeedles(input: unknown): string[] {
+  if (input === null || input === undefined) return [];
+  const digits = foldDigits(String(input)).replace(/\D/g, "");
+  if (digits.length < 3) return [];
+  const needles = new Set<string>();
+  const add = (value: string) => {
+    if (value.length >= 3) needles.add(value);
+  };
+  add(digits);
+  const stripped = digits.replace(/^0+/, "");
+  add(stripped);
+  if (digits.startsWith("0") && stripped) add(`20${stripped}`);
+  if (digits.startsWith("20") && digits.length >= 5) {
+    add(digits.slice(2));
+    add(`0${digits.slice(2)}`);
+  }
+  if (digits.startsWith("00")) add(digits.slice(2));
+  return [...needles];
+}
+
+/**
  * Display in familiar Egyptian national grouping: 010 1234 5678.
  * Returns null when the value is not a valid EG mobile (caller keeps original).
  */

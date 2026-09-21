@@ -6,13 +6,14 @@ import {
   parseMaybe,
   resolveCrmRange,
 } from "@/lib/crm/date-range";
-import { extractHandle, looksLikeHandle } from "@/lib/crm/contact-identity";
-import { canonicalPhoneOrNull } from "@/lib/phone-normalize";
+import { leadMatchesSearch } from "@/lib/crm/lead-search";
 
 export type CrmLeadScopeOpts = {
   actorEmployeeId?: string | null;
   canViewOthers?: boolean;
   teamOwnerIds?: string[];
+  /** Feedback, stage, owner, and business-type text keyed by lead id. */
+  searchTextByLeadId?: ReadonlyMap<string, string>;
 };
 
 function isInCrmScope(
@@ -109,50 +110,15 @@ export function filterLeads(
         return false;
     }
 
-    if (q) {
-      const canonical = canonicalPhoneOrNull(filters.search);
-      const hay = [
-        lead.name,
-        lead.phone,
-        lead.email,
-        lead.companyName,
-        lead.id,
-      ]
-        .join(" ")
-        .toLowerCase();
-      const qDigits = q.replace(/\D/g, "");
-      const phoneDigits = (lead.phoneNormalized || lead.phone).replace(/\D/g, "");
-      const digitHit = qDigits.length >= 3 && phoneDigits.includes(qDigits);
-      const exactPhone =
-        Boolean(canonical) &&
-        (lead.phoneNormalized || canonicalPhoneOrNull(lead.phone)) === canonical;
-      const handle = extractHandle(q);
-      const handleHit =
-        looksLikeHandle(q) &&
-        Boolean(handle) &&
-        ((lead.phoneNormalized || "").toLowerCase().includes(`:${handle}`) ||
-          lead.phone.toLowerCase().includes(handle));
-      const extraHay = (lead.contacts ?? [])
-        .flatMap((row) => [row.phone, row.phoneNormalized ?? ""])
-        .join(" ")
-        .toLowerCase();
-      const extraDigits = (lead.contacts ?? [])
-        .map((row) => (row.phoneNormalized || row.phone).replace(/\D/g, ""))
-        .join(" ");
-      const extraHit =
-        extraHay.includes(q) ||
-        (qDigits.length >= 3 && extraDigits.includes(qDigits)) ||
-        (Boolean(canonical) &&
-          (lead.contacts ?? []).some(
-            (row) =>
-              (row.phoneNormalized || canonicalPhoneOrNull(row.phone)) ===
-              canonical
-          )) ||
-        (looksLikeHandle(q) &&
-          Boolean(handle) &&
-          extraHay.includes(handle));
-      if (!hay.includes(q) && !exactPhone && !digitHit && !handleHit && !extraHit)
-        return false;
+    if (
+      q &&
+      !leadMatchesSearch(
+        lead,
+        filters.search ?? "",
+        opts?.searchTextByLeadId?.get(lead.id) ?? ""
+      )
+    ) {
+      return false;
     }
 
     if (filters.dateFrom || filters.dateTo || filters.range) {

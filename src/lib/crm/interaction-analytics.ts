@@ -13,7 +13,7 @@ import type {
 } from "@/types/crm";
 import { parseMaybe } from "@/lib/crm/date-range";
 import { formatHour12Label } from "@/lib/crm/format";
-import { canonicalPhoneOrNull } from "@/lib/phone-normalize";
+import { canonicalPhoneOrNull, phoneSearchNeedles } from "@/lib/phone-normalize";
 
 function emptyBucket(): CrmCallMeetingBucket {
   return {
@@ -95,7 +95,9 @@ export function clientCallRowMatchesSearch(
   const qDigits = digitsOnly(query);
   if (qDigits.length < 3) return false;
   const phoneDigits = digitsOnly(row.phoneNormalized || row.phone);
-  if (phoneDigits.includes(qDigits)) return true;
+  if (phoneSearchNeedles(query).some((needle) => phoneDigits.includes(needle))) {
+    return true;
+  }
   const canonical = canonicalPhoneOrNull(query);
   if (!canonical) return false;
   return (

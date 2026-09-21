@@ -176,6 +176,22 @@ export async function ensureCatalog(): Promise<{
     subStages = await crmSubStageRepository.findAll();
   }
 
+  if (businessTypes.length > 0) {
+    const { crmBusinessTypesSeed } = await import("@/mocks/crm");
+    const names = new Set(businessTypes.map((row) => row.name.trim()));
+    const ensured = crmBusinessTypesSeed.filter(
+      (row) =>
+        (row.id === "crm-bt-supplies" || row.id === "crm-bt-import-export") &&
+        !names.has(row.name)
+    );
+    if (ensured.length > 0) {
+      for (const row of ensured) {
+        await crmBusinessTypeRepository.create(enrichWithAudit(row, "system"));
+      }
+      businessTypes = await crmBusinessTypeRepository.findAll();
+    }
+  }
+
   // Existing local catalogs: always keep a stage named "Lost".
   if (stages.length > 0) {
     const namedLost = stages.find(

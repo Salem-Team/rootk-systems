@@ -8,7 +8,7 @@ import {
 } from "@/api/crm.api";
 import { isApiMode } from "@/lib/env";
 import { NotFoundError } from "@/lib/errors";
-import { filterLeads } from "@/lib/crm-analytics";
+import { filterStoredLeads } from "@/services/crm/crm-lead-list-filter";
 import { appendLossReasonNote } from "@/lib/crm/loss-reason";
 import { ensurePaginatedLeads } from "@/lib/crm-normalize";
 import { emitCrmUpdated } from "@/lib/events";
@@ -49,7 +49,7 @@ export async function getCrmLeadCounts(
     assertCap("view");
     await ensureCatalog();
     const all = await crmLeadRepository.findAll();
-    const filtered = filterLeads(
+    const filtered = await filterStoredLeads(
       all,
       { ...scoped, status: scoped.status ?? "active" },
       await crmLeadFilterScope()
@@ -77,7 +77,7 @@ export async function getCrmLeads(
     assertCap("view");
     await ensureCatalog();
     const all = await crmLeadRepository.findAll();
-    let filtered = filterLeads(all, scoped, await crmLeadFilterScope());
+    let filtered = await filterStoredLeads(all, scoped, await crmLeadFilterScope());
     const sort = filters.sort ?? "updatedAt";
     const order = filters.order ?? "desc";
     filtered = [...filtered].sort((a, b) => {

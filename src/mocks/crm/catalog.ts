@@ -227,5 +227,7 @@ export const crmBusinessTypesSeed: SeedOf<CrmBusinessType>[] = [
   { id: "crm-bt-wholesale", name: "تجارة الجملة", description: "", sortOrder: 17, active: true },
   { id: "crm-bt-professional", name: "خدمات مهنية", description: "", sortOrder: 18, active: true },
   { id: "crm-bt-hospitality", name: "مطاعم وضيافة", description: "", sortOrder: 19, active: true },
-  { id: "crm-bt-other", name: "أخرى", description: "", sortOrder: 20, active: true },
+  { id: "crm-bt-supplies", name: "توريدات", description: "", sortOrder: 20, active: true },
+  { id: "crm-bt-import-export", name: "استيراد وتصدير", description: "", sortOrder: 21, active: true },
+  { id: "crm-bt-other", name: "أخرى", description: "", sortOrder: 22, active: true },
 ];

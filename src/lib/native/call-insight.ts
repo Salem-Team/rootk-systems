@@ -1,4 +1,4 @@
-import { registerPlugin } from "@capacitor/core";
+import { registerPlugin, type PluginListenerHandle } from "@capacitor/core";
 import { isNativeApp, nativePlatform } from "@/lib/native/platform";
 
 export type OutboundCallInsight = {
@@ -10,27 +10,95 @@ export type OutboundCallInsight = {
   answered?: boolean;
 };
 
+export type IncomingCallEvent = {
+  number: string;
+  state: string;
+};
+
+export type IncomingLeadCardInput = {
+  leadId: string;
+  title: string;
+  name: string;
+  phone: string;
+  company: string;
+  requestLabel: string;
+  request: string;
+  budgetLabel: string;
+  budget: string;
+  openLabel: string;
+  dismissLabel: string;
+  rtl: boolean;
+};
+
+type PermissionState = "prompt" | "prompt-with-rationale" | "granted" | "denied";
+
+type CallInsightPermissions = {
+  callLog: PermissionState;
+  phoneState?: PermissionState;
+};
+
 type CallInsightPlugin = {
   getLatestOutbound(options: {
     phone: string;
     sinceEpochMs: number;
   }): Promise<OutboundCallInsight>;
-  checkPermissions(): Promise<{ callLog: PermissionState }>;
-  requestPermissions(): Promise<{ callLog: PermissionState }>;
+  checkPermissions(): Promise<CallInsightPermissions>;
+  requestPermissions(): Promise<CallInsightPermissions>;
+  startIncomingWatch(): Promise<void>;
+  stopIncomingWatch(): Promise<void>;
+  consumePendingIncoming(): Promise<IncomingCallEvent>;
+  incomingCapabilities(): Promise<{ overlay: boolean; screening: boolean }>;
+  requestOverlayPermission(): Promise<{ granted: boolean }>;
+  requestScreeningRole(): Promise<{ granted: boolean }>;
+  showIncomingLeadCard(options: IncomingLeadCardInput): Promise<{ shown: boolean }>;
+  hideIncomingLeadCard(): Promise<void>;
+  addListener(
+    eventName: "incomingCall",
+    listenerFunc: (event: IncomingCallEvent) => void
+  ): Promise<PluginListenerHandle>;
+  addListener(
+    eventName: "openIncomingLead",
+    listenerFunc: (event: { leadId: string }) => void
+  ): Promise<PluginListenerHandle>;
+  addListener(
+    eventName: "incomingCardDismissed",
+    listenerFunc: () => void
+  ): Promise<PluginListenerHandle>;
 };
 
-type PermissionState = "prompt" | "prompt-with-rationale" | "granted" | "denied";
+const denied: PermissionState = "denied";
 
-const RootkCallInsight = registerPlugin<CallInsightPlugin>("RootkCallInsight", {
+export const rootkCallInsight = registerPlugin<CallInsightPlugin>("RootkCallInsight", {
   web: () => ({
     async getLatestOutbound() {
       return { found: false };
     },
     async checkPermissions() {
-      return { callLog: "denied" as const };
+      return { callLog: denied, phoneState: denied };
     },
     async requestPermissions() {
-      return { callLog: "denied" as const };
+      return { callLog: denied, phoneState: denied };
+    },
+    async startIncomingWatch() {},
+    async stopIncomingWatch() {},
+    async consumePendingIncoming() {
+      return { number: "", state: "idle" };
+    },
+    async incomingCapabilities() {
+      return { overlay: false, screening: false };
+    },
+    async requestOverlayPermission() {
+      return { granted: false };
+    },
+    async requestScreeningRole() {
+      return { granted: false };
+    },
+    async showIncomingLeadCard() {
+      return { shown: false };
+    },
+    async hideIncomingLeadCard() {},
+    async addListener() {
+      return { remove: async () => undefined };
     },
   }),
 });
@@ -43,9 +111,9 @@ function sleep(ms: number) {
 export async function ensureCallInsightPermission(): Promise<boolean> {
   if (!isNativeApp() || nativePlatform() !== "android") return false;
   try {
-    const current = await RootkCallInsight.checkPermissions();
+    const current = await rootkCallInsight.checkPermissions();
     if (current.callLog === "granted") return true;
-    const next = await RootkCallInsight.requestPermissions();
+    const next = await rootkCallInsight.requestPermissions();
     return next.callLog === "granted";
   } catch {
     return false;
@@ -63,9 +131,9 @@ export async function lookupOutboundCallInsight(options: {
 }): Promise<OutboundCallInsight | null> {
   if (!isNativeApp() || nativePlatform() !== "android") return null;
   try {
-    const perms = await RootkCallInsight.checkPermissions();
+    const perms = await rootkCallInsight.checkPermissions();
     if (perms.callLog !== "granted") {
-      const next = await RootkCallInsight.requestPermissions();
+      const next = await rootkCallInsight.requestPermissions();
       if (next.callLog !== "granted") return null;
     }
   } catch {
@@ -75,7 +143,7 @@ export async function lookupOutboundCallInsight(options: {
   for (const delay of [0, 500, 1200, 2500]) {
     if (delay > 0) await sleep(delay);
     try {
-      const row = await RootkCallInsight.getLatestOutbound({
+      const row = await rootkCallInsight.getLatestOutbound({
         phone: options.phone,
         sinceEpochMs: options.sinceEpochMs,
       });

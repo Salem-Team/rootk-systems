@@ -21,6 +21,8 @@ type BusinessTypeKey =
   | "wholesale"
   | "professional"
   | "hospitality"
+  | "supplies"
+  | "import_export"
   | "other";
 
 /** Stored catalog names (English seed or Arabic seed) → translation key. */
@@ -54,6 +56,11 @@ const BUSINESS_TYPE_ALIASES: Record<string, BusinessTypeKey> = {
   "تجارة الجملة": "wholesale",
   "خدمات مهنية": "professional",
   "مطاعم وضيافة": "hospitality",
+  توريدات: "supplies",
+  supplies: "supplies",
+  "استيراد وتصدير": "import_export",
+  "import & export": "import_export",
+  "import and export": "import_export",
   other: "other",
   أخرى: "other",
 };

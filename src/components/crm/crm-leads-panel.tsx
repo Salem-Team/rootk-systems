@@ -194,9 +194,8 @@ export function CrmLeadsPanel({
           </h2>
         ) : null}
 
-        {/* Mobile: edge-to-edge search; sm+: search shares the toolbar row */}
-        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-2">
-          <div className="relative w-full min-w-0 px-3 sm:flex-1 sm:px-0">
+        <div className="flex w-full flex-col gap-2.5">
+          <div className="relative w-full min-w-0 px-3 sm:px-0">
             <Search className="pointer-events-none absolute start-[1.625rem] top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground sm:start-3 sm:h-3.5 sm:w-3.5" />
             <Input
               ref={panel.searchInputRef}

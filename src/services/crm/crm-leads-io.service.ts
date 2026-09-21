@@ -3,7 +3,7 @@ import {
   postCrmLeadsImport,
   type CrmLeadsImportResult,
 } from "@/api/crm.api";
-import { filterLeads } from "@/lib/crm-analytics";
+import { filterStoredLeads } from "@/services/crm/crm-lead-list-filter";
 import { isApiMode } from "@/lib/env";
 import {
   normalizeSource,
@@ -184,7 +184,11 @@ export async function exportCrmLeadRows(
       crmLeadRepository.findAll(),
       employeeRepository.findAll(),
     ]);
-    const filtered = filterLeads(all, scopeCrmFiltersToActor(filters), await crmLeadFilterScope());
+    const filtered = await filterStoredLeads(
+      all,
+      scopeCrmFiltersToActor(filters),
+      await crmLeadFilterScope()
+    );
     const stageName = new Map(stages.map((s) => [s.id, s.name]));
     const businessName = new Map(businessTypes.map((b) => [b.id, b.name]));
     const ownerName = new Map(employees.map((e) => [e.id, e.name]));

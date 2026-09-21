@@ -28,6 +28,13 @@ function ownerVisible(lead: CrmLead, allowed: string[] | null): boolean {
   return Boolean(lead.ownerEmployeeId && allowed.includes(lead.ownerEmployeeId));
 }
 
+function leadOwnsCanonical(lead: CrmLead, canonical: string): boolean {
+  if (canonicalPhoneOrNull(lead.phoneNormalized || lead.phone) === canonical) return true;
+  return (lead.contacts ?? []).some(
+    (contact) => canonicalPhoneOrNull(contact.phoneNormalized || contact.phone) === canonical
+  );
+}
+
 export async function matchCrmLeadByPhone(
   phone: string
 ): Promise<ApiResponse<CrmPhoneMatchResult | null>> {
@@ -39,14 +46,11 @@ export async function matchCrmLeadByPhone(
     if (!canonical) throw new ValidationError("Not a valid phone number");
     const all = await crmLeadRepository.findAll();
     const allowed = await resolveCrmOwnerIds();
-    const match = all.find(
-      (lead) => canonicalPhoneOrNull(lead.phoneNormalized || lead.phone) === canonical
-    );
-    if (!match) return ok({ lead: null, ownedByOther: false });
-    if (!ownerVisible(match, allowed)) {
-      return ok({ lead: null, ownedByOther: true });
-    }
-    return ok({ lead: match, ownedByOther: false });
+    const matches = all.filter((lead) => leadOwnsCanonical(lead, canonical));
+    const visible = matches.find((lead) => ownerVisible(lead, allowed));
+    if (visible) return ok({ lead: visible, ownedByOther: false });
+    if (matches.length > 0) return ok({ lead: null, ownedByOther: true });
+    return ok({ lead: null, ownedByOther: false });
   } catch (error) {
     return fromError(error, null);
   }

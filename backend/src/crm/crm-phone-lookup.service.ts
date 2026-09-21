@@ -27,12 +27,13 @@ export class CrmPhoneLookupService {
     }
 
     const ownerIds = await this.shared.resolveOwnerIds(companyId, actor);
+    const owner = this.shared.scopeOwnerFilter(actor, ownerIds);
     const row = await this.prisma.crmLead.findFirst({
       where: {
         companyId,
         deletedAt: null,
-        phoneNormalized: canonical,
-        ...this.shared.scopeOwnerFilter(actor, ownerIds),
+        ...owner,
+        ...phoneIdentityWhere(canonical),
       },
     });
 
@@ -41,7 +42,11 @@ export class CrmPhoneLookupService {
     if (ownerIds === null) return { lead: null, ownedByOther: false };
 
     const hidden = await this.prisma.crmLead.findFirst({
-      where: { companyId, deletedAt: null, phoneNormalized: canonical },
+      where: {
+        companyId,
+        deletedAt: null,
+        ...phoneIdentityWhere(canonical),
+      },
       select: { id: true },
     });
     return { lead: null, ownedByOther: Boolean(hidden) };
@@ -100,4 +105,18 @@ export class CrmPhoneLookupService {
         leads: leads.map(summarizeLead),
       }));
   }
+}
+
+function phoneIdentityWhere(canonical: string) {
+  return {
+    OR: [
+      { phoneNormalized: canonical },
+      {
+        metadata: {
+          path: ["contactKeys"],
+          array_contains: canonical,
+        },
+      },
+    ],
+  };
 }
