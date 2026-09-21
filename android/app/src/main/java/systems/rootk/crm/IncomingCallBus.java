@@ -107,6 +107,8 @@ final class IncomingCallBus {
         lastReplayedPendingAt = pendingAt;
         current.onIncoming(pendingNumber, "recall", pendingLeadId);
     }
+
+    static synchronized Snapshot consumePending() {
         if (pendingDelivered || pendingAt == 0) return Snapshot.empty();
         if (System.currentTimeMillis() - pendingAt > FRESH_MS) return Snapshot.empty();
         pendingDelivered = true;
