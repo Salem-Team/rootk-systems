@@ -26,7 +26,7 @@ export function PageHeader({
 }: PageHeaderProps) {
   const mobileSlot = mobileActions ?? actions;
   const mobileRowClass = cn(
-    "mt-3 flex w-full flex-wrap gap-2 sm:hidden [&_a]:min-h-11 [&_a]:touch-manipulation [&_button]:min-h-11 [&_button]:touch-manipulation",
+    "mt-3 flex w-full max-w-full flex-wrap gap-2 sm:hidden [&>*]:w-full [&>*]:max-w-full [&>*]:min-w-0 [&_a]:min-h-11 [&_a]:touch-manipulation [&_button]:min-h-11 [&_button]:max-w-full [&_button]:touch-manipulation [&_[role=combobox]]:min-h-11 [&_[role=combobox]]:!w-full [&_[role=combobox]]:max-w-full",
     mobileActionsClassName ??
       "[&_a]:flex-1 [&_button]:min-w-[calc(50%-0.25rem)] [&_button]:flex-1"
   );

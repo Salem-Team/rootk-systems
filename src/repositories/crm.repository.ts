@@ -40,6 +40,27 @@ export class CrmLeadRepository extends CollectionRepository<CrmLead> {
   constructor() {
     super(getStorageAdapter(), StorageKeys.crmLeads);
   }
+
+  /** Live rows, soft-deleted rows, or both. Archived-but-not-deleted stays out of live, matching `findAll`. */
+  async findForList(
+    mode: "live" | "deleted" | "withDeleted"
+  ): Promise<CrmLead[]> {
+    return this.withLatency(async () => {
+      const items = await this.readAll();
+      const live = items.filter((item) => !item.deletedAt && !item.isArchived);
+      if (mode === "live") return live;
+      const deleted = items.filter((item) => Boolean(item.deletedAt));
+      if (mode === "deleted") return deleted;
+      return [...live, ...deleted];
+    });
+  }
+
+  async findIncludingDeleted(id: string): Promise<CrmLead | null> {
+    return this.withLatency(async () => {
+      const items = await this.readAll();
+      return items.find((item) => item.id === id) ?? null;
+    });
+  }
 }
 
 export class CrmLeadActivityRepository extends CollectionRepository<CrmLeadActivity> {

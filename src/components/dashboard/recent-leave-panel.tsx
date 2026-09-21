@@ -26,8 +26,8 @@ export function RecentLeavePanel({ requests }: { requests: LeaveRequest[] }) {
       className="surface-panel overflow-hidden"
       aria-labelledby="recent-leave-heading"
     >
-      <div className="panel-header flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="panel-header flex flex-wrap items-start justify-between gap-2 sm:gap-3">
+        <div className="min-w-0 flex-1 basis-40">
           <h3
             id="recent-leave-heading"
             className="flex items-center gap-2 text-[0.95rem] font-semibold tracking-tight"
@@ -61,7 +61,7 @@ export function RecentLeavePanel({ requests }: { requests: LeaveRequest[] }) {
               <motion.li
                 key={leave.id}
                 variants={fadeInUp}
-                className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2.5"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/60 bg-muted/20 px-3 py-2.5"
               >
                 <div className="min-w-0">
                   <p className="truncate text-[13px] font-semibold">

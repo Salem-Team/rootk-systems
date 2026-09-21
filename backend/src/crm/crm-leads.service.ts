@@ -118,7 +118,9 @@ export class CrmLeadsService {
   }
 
   async getLead(companyId: string, actor: Actor, id: string) {
-    const lead = await this.shared.requireLead(companyId, actor, id);
+    const lead = await this.shared.requireLead(companyId, actor, id, {
+      includeDeleted: true,
+    });
     return mapLead(lead);
   }
 

@@ -28,12 +28,14 @@ export function incomingCallsSupported(): boolean {
 
 export async function ensureIncomingCallAccess(): Promise<void> {
   if (!incomingCallsSupported()) return;
+  const plugin = await notifications();
+  if (!plugin) return;
   try {
-    const current = await rootkCallInsight.checkPermissions();
-    if (current.callLog === "granted") return;
-    await rootkCallInsight.requestPermissions();
+    const current = await plugin.checkPermissions();
+    if (current.display === "granted") return;
+    await plugin.requestPermissions();
   } catch {
-    /* permission UI unavailable */
+    /* notification prompt unavailable */
   }
 }
 
@@ -55,7 +57,7 @@ export async function consumePendingIncomingCall(): Promise<IncomingCallEvent | 
   if (!incomingCallsSupported()) return null;
   try {
     const event = await rootkCallInsight.consumePendingIncoming();
-    if (!event?.number) return null;
+    if (!event?.number && !event?.leadId) return null;
     return event;
   } catch {
     return null;

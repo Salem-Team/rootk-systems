@@ -28,6 +28,11 @@ interface CrmDashboardChartsProps {
   onNavigatePerformance?: () => void;
 }
 
+function shortAxisLabel(value: unknown, max = 10) {
+  const text = String(value ?? "");
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
 /** Leads-by-stage, leads trend, feedback reasons, and sales performance charts. */
 export function CrmDashboardCharts({
   leadsByStage,
@@ -52,14 +57,14 @@ export function CrmDashboardCharts({
               {t("crm.dashboard.leadsByStageDesc")}
             </p>
           </div>
-          <div className="panel-body h-[260px]">
+          <div className="chart-frame panel-body h-[240px] sm:h-[260px]">
             {leadsByStage.length === 0 ? (
               <EmptyState compact title={t("crm.empty.chart")} />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={leadsByStage}
-                  margin={{ top: 8, right: 8, left: -12, bottom: 0 }}
+                  margin={{ top: 8, right: 4, left: 0, bottom: 4 }}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -70,13 +75,17 @@ export function CrmDashboardCharts({
                     dataKey="label"
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                    interval={0}
+                    tickFormatter={(value) => shortAxisLabel(value, 8)}
                   />
                   <YAxis
                     allowDecimals={false}
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                    interval={0}
+                    tickFormatter={(value) => shortAxisLabel(value, 8)}
                   />
                   <Tooltip contentStyle={chartTooltipStyle} />
                   <Bar
@@ -107,14 +116,14 @@ export function CrmDashboardCharts({
               {t("crm.dashboard.leadsTrendDesc")}
             </p>
           </div>
-          <div className="panel-body h-[260px]">
+          <div className="chart-frame panel-body h-[240px] sm:h-[260px]">
             {trendData.length === 0 ? (
               <EmptyState compact title={t("crm.empty.chart")} />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={trendData}
-                  margin={{ top: 8, right: 8, left: -12, bottom: 0 }}
+                  margin={{ top: 8, right: 4, left: 0, bottom: 4 }}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -125,13 +134,16 @@ export function CrmDashboardCharts({
                     dataKey="label"
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                    interval="preserveStartEnd"
+                    minTickGap={16}
                   />
                   <YAxis
                     allowDecimals={false}
+                    width={32}
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
                   />
                   <Tooltip contentStyle={chartTooltipStyle} />
                   <Area
@@ -160,7 +172,7 @@ export function CrmDashboardCharts({
               {t("crm.dashboard.feedbackReasonsDesc")}
             </p>
           </div>
-          <div className="panel-body h-[260px]">
+          <div className="chart-frame panel-body h-[240px] sm:h-[260px]">
             {feedbackReasons.length === 0 ? (
               <EmptyState compact title={t("crm.empty.chart")} />
             ) : (
@@ -180,15 +192,19 @@ export function CrmDashboardCharts({
                     allowDecimals={false}
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                    interval={0}
+                    tickFormatter={(value) => shortAxisLabel(value, 8)}
                   />
                   <YAxis
                     type="category"
                     dataKey="label"
-                    width={100}
+                    width={72}
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                    interval={0}
+                    tickFormatter={(value) => shortAxisLabel(value, 9)}
                   />
                   <Tooltip contentStyle={chartTooltipStyle} />
                   <Bar
@@ -214,7 +230,7 @@ export function CrmDashboardCharts({
               {t("crm.dashboard.salesPerformanceDesc")}
             </p>
           </div>
-          <div className="panel-body h-[260px]">
+          <div className="chart-frame panel-body h-[240px] sm:h-[260px]">
             {salesPerformance.length === 0 ? (
               <EmptyState compact title={t("crm.empty.chart")} />
             ) : (
@@ -225,7 +241,7 @@ export function CrmDashboardCharts({
                     value: r.leads,
                     employeeId: r.employeeId,
                   }))}
-                  margin={{ top: 8, right: 8, left: -12, bottom: 0 }}
+                  margin={{ top: 8, right: 4, left: 0, bottom: 4 }}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -236,13 +252,17 @@ export function CrmDashboardCharts({
                     dataKey="name"
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                    interval={0}
+                    tickFormatter={(value) => shortAxisLabel(value, 8)}
                   />
                   <YAxis
                     allowDecimals={false}
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                    interval={0}
+                    tickFormatter={(value) => shortAxisLabel(value, 8)}
                   />
                   <Tooltip contentStyle={chartTooltipStyle} />
                   <Bar

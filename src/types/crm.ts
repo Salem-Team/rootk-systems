@@ -11,6 +11,9 @@ export type CrmLeadContact = {
 
 export type CrmLeadStatus = "active" | "inactive" | "archived";
 
+/** List filter only — not a stored lead status. Soft-deleted rows, admin-only. */
+export type CrmLeadListStatus = CrmLeadStatus | "deleted";
+
 export type CrmLeadSource =
   | "facebook"
   | "instagram"
@@ -224,7 +227,7 @@ export interface CrmLeadFilters {
   search?: string;
   stageId?: string;
   subStageId?: string;
-  status?: CrmLeadStatus | "";
+  status?: CrmLeadListStatus | "";
   source?: CrmLeadSource | "";
   ownerEmployeeId?: string;
   tag?: CrmLeadTag | "";

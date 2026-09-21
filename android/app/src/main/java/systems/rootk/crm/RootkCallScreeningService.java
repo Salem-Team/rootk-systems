@@ -22,7 +22,7 @@ public class RootkCallScreeningService extends CallScreeningService {
         Uri handle = details.getHandle();
         if (handle == null) return;
         String number = handle.getSchemeSpecificPart();
-        IncomingCallBus.publishRinging(number);
+        IncomingCallBus.publishRinging(this, number);
     }
 
     private static CallResponse allowCall() {

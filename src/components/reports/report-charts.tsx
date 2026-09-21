@@ -98,7 +98,7 @@ export function ReportCharts({
     >
       <div className="h-[320px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={weeklyData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+          <AreaChart data={weeklyData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="reportPresent" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={CHART.present} stopOpacity={0.35} />

@@ -39,6 +39,7 @@ import {
   actorEmployeeId,
   assertCap,
   assertLeadAccess,
+  findReadableCrmLead,
   resolveCrmOwnerIds,
   ensureCatalog,
   writeHistory,
@@ -109,7 +110,7 @@ export async function getCrmLeadTimeline(
   try {
     await simulateDelay();
     assertCap("view");
-    const lead = await crmLeadRepository.findById(leadId);
+    const lead = await findReadableCrmLead(leadId);
     if (!lead) throw new NotFoundError("Lead not found");
     await assertLeadAccess(lead);
     const items = (await crmLeadActivityRepository.findAll())
@@ -264,6 +265,20 @@ export async function getCrmFeedbackList(
   try {
     await simulateDelay();
     assertCap("view");
+    if (filters.leadId) {
+      const lead = await findReadableCrmLead(filters.leadId);
+      if (!lead) return ok([]);
+      await assertLeadAccess(lead);
+      const items = (await crmLeadFeedbackRepository.findAll())
+        .filter((row) => row.leadId === filters.leadId)
+        .filter((row) =>
+          filters.feedbackTypeId
+            ? row.feedbackTypeId === filters.feedbackTypeId
+            : true
+        )
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      return ok(items);
+    }
     let items = await crmLeadFeedbackRepository.findAll();
     const allowed = await resolveCrmOwnerIds();
     if (allowed !== null) {

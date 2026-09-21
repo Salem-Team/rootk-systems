@@ -13,6 +13,7 @@ import {
   mentionMetadata,
 } from "../lib/mentions";
 import { NotificationsService } from "../notifications/notifications.service";
+import { isAdminRole } from "../common/roles";
 import { assertCap, type Actor } from "./crm-access";
 import {
   clampPage,
@@ -83,7 +84,9 @@ export class CrmActivitiesService {
   }
 
   async getTimeline(companyId: string, actor: Actor, leadId: string) {
-    await this.shared.requireLead(companyId, actor, leadId);
+    await this.shared.requireLead(companyId, actor, leadId, {
+      includeDeleted: true,
+    });
     const [activities] = await Promise.all([
       this.prisma.crmLeadActivity.findMany({
         where: { companyId, leadId, deletedAt: null },
@@ -351,6 +354,8 @@ export class CrmActivitiesService {
     );
 
     const ownerIds = await this.shared.resolveOwnerIds(companyId, actor);
+    const includeDeletedLead =
+      Boolean(query.leadId) && isAdminRole(actor.role);
 
     const where: Prisma.CrmLeadFeedbackWhereInput = {
       companyId,
@@ -358,7 +363,7 @@ export class CrmActivitiesService {
       ...(query.feedbackTypeId ? { feedbackTypeId: query.feedbackTypeId } : {}),
       ...(query.leadId ? { leadId: query.leadId } : {}),
       lead: {
-        deletedAt: null,
+        ...(includeDeletedLead ? {} : { deletedAt: null }),
         ...this.shared.scopeOwnerFilter(actor, ownerIds),
         ...this.shared.extraOwnerFilter(ownerIds, query.ownerEmployeeId),
       },

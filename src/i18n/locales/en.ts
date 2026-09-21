@@ -3329,7 +3329,7 @@ export const en = {
         "Archived leads stay in history but leave the active pipeline.",
       confirmDelete: "Delete selected leads?",
       confirmDeleteDesc:
-        "These leads will be removed from the pipeline. This can’t be undone.",
+        "This is a soft delete. Leads disappear for employees and stay visible to admins only.",
       selected: "{count} selected",
       selectedNoun: "selected",
       selectAll: "Select all",
@@ -3458,10 +3458,8 @@ export const en = {
         empty: "Not set",
         open: "Open lead",
         hide: "Hide",
-        overlayHint:
-          "Allow display over other apps so the client's request and budget show while the phone is ringing.",
         screeningHint:
-          "Allow ROOTK to identify incoming calls so the number is captured while it is ringing, even if the app is in the background.",
+          "Allow ROOTK to identify incoming calls. A notification shows the client, request, and budget while the phone rings, without covering the call screen.",
       },
     },
     contacts: {
@@ -3556,6 +3554,7 @@ export const en = {
       active: "Active",
       inactive: "Inactive",
       archived: "Archived",
+      deleted: "Deleted",
     },
     source: {
       facebook: "Facebook",
@@ -3683,6 +3682,7 @@ export const en = {
       timeline: "Timeline",
       feedback: "Feedback",
       information: "Lead information",
+      deletedNote: "This lead is deleted. Employees cannot see it.",
       company: "Company",
       businessType: "Business type",
       email: "Email",

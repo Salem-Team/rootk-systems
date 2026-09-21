@@ -6,11 +6,14 @@ import { useTranslation } from "@/hooks/use-translation";
 import type { Locale } from "@/i18n";
 import { saveUserPreferences } from "@/services/user-preferences.service";
 import { useSessionStore } from "@/stores/session-store";
+import { cn } from "@/lib/utils";
 
 export function LanguageSwitcher({
   variant = "icon",
+  className,
 }: {
   variant?: "icon" | "full";
+  className?: string;
 }) {
   const { t, locale, setLocale } = useTranslation();
   const userId = useSessionStore((s) => s.user.id);
@@ -29,11 +32,12 @@ export function LanguageSwitcher({
       size={variant === "full" ? "default" : "icon-sm"}
       aria-label={t("common.language")}
       onClick={toggleLocale}
-      className={
+      className={cn(
         variant === "full"
           ? "gap-2 text-white hover:bg-white/10 hover:text-white"
-          : undefined
-      }
+          : "h-10 w-10 touch-manipulation sm:h-8 sm:w-8",
+        className
+      )}
     >
       <Languages className="h-4 w-4" />
       {variant === "full" ? (

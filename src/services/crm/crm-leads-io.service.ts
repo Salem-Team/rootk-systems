@@ -3,7 +3,7 @@ import {
   postCrmLeadsImport,
   type CrmLeadsImportResult,
 } from "@/api/crm.api";
-import { filterStoredLeads } from "@/services/crm/crm-lead-list-filter";
+import { filterStoredLeads, leadListMode } from "@/services/crm/crm-lead-list-filter";
 import { isApiMode } from "@/lib/env";
 import {
   normalizeSource,
@@ -180,13 +180,14 @@ export async function exportCrmLeadRows(
     assertCap("view");
     await simulateDelay();
     const { stages, businessTypes } = await ensureCatalog();
+    const scoped = scopeCrmFiltersToActor(filters);
     const [all, employees] = await Promise.all([
-      crmLeadRepository.findAll(),
+      crmLeadRepository.findForList(leadListMode(scoped)),
       employeeRepository.findAll(),
     ]);
     const filtered = await filterStoredLeads(
       all,
-      scopeCrmFiltersToActor(filters),
+      scoped,
       await crmLeadFilterScope()
     );
     const stageName = new Map(stages.map((s) => [s.id, s.name]));
@@ -206,7 +207,7 @@ export async function exportCrmLeadRows(
         owner: lead.ownerEmployeeId
           ? ownerName.get(lead.ownerEmployeeId) ?? lead.ownerEmployeeId
           : "",
-        status: lead.status,
+        status: lead.deletedAt ? "deleted" : lead.status,
         tags: (lead.tags ?? []).join(";"),
         nextAction: lead.nextAction ?? "none",
         notes: lead.notes ?? "",

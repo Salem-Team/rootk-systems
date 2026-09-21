@@ -29,7 +29,7 @@ export function LateReportChart({ weeklyData, monthlyData, t }: SecondaryChartPr
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={weeklyData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+            <BarChart data={weeklyData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
               <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
               <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
@@ -40,7 +40,7 @@ export function LateReportChart({ weeklyData, monthlyData, t }: SecondaryChartPr
         </div>
         <div className="h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={monthlyData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+            <LineChart data={monthlyData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
               <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
               <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
@@ -67,7 +67,7 @@ export function AbsenceReportChart({ weeklyData, monthlyData, t }: SecondaryChar
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={weeklyData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+            <BarChart data={weeklyData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
               <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
               <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
@@ -78,7 +78,7 @@ export function AbsenceReportChart({ weeklyData, monthlyData, t }: SecondaryChar
         </div>
         <div className="h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={monthlyData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+            <AreaChart data={monthlyData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="absentFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={CHART.absent} stopOpacity={0.35} />
@@ -110,7 +110,7 @@ export function MonthlyReportChart({ monthlyData, t }: SecondaryChartProps) {
     <ChartCard title={t("reports.monthlyTab")} description={t("dashboard.monthlyDesc")}>
       <div className="h-[320px]">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={monthlyData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+          <ComposedChart data={monthlyData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
             <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
             <YAxis yAxisId="left" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
@@ -159,7 +159,7 @@ export function HoursReportChart({ monthlyData, t }: SecondaryChartProps) {
     <ChartCard title={t("reports.hoursTab")} description={t("reports.description")}>
       <div className="h-[320px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={monthlyData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+          <AreaChart data={monthlyData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="hoursFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={CHART.hours} stopOpacity={0.35} />

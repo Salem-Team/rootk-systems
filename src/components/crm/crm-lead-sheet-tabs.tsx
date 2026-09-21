@@ -123,15 +123,30 @@ export function CrmLeadSheetTabs({
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] sm:pb-6">
         <TabsContent value="overview" className="mt-3 space-y-3 outline-none">
-          <CrmLeadRequestBudgetEditor
-            lead={lead}
-            onSaved={onRequestBudgetSaved}
-          />
+          {lead.deletedAt ? null : (
+            <CrmLeadRequestBudgetEditor
+              lead={lead}
+              onSaved={onRequestBudgetSaved}
+            />
+          )}
           <section className="rounded-2xl border border-border/60 p-3 sm:rounded-xl sm:p-3.5">
             <h3 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
               {t("crm.leadSheet.information")}
             </h3>
             <dl className="mt-2.5 grid gap-2 text-[13px] sm:gap-2.5">
+              {lead.deletedAt ? (
+                <>
+                  <Row
+                    label={t("crm.leadSheet.request")}
+                    value={lead.request || "—"}
+                    multiline
+                  />
+                  <Row
+                    label={t("crm.leadSheet.budget")}
+                    value={lead.budget || "—"}
+                  />
+                </>
+              ) : null}
               <Row label={t("crm.leadSheet.company")} value={lead.companyName || "—"} />
               <Row
                 label={t("crm.leadSheet.businessType")}
@@ -144,7 +159,11 @@ export function CrmLeadSheetTabs({
               />
               <Row
                 label={t("crm.leads.colStatus")}
-                value={t(`crm.status.${lead.status}`)}
+                value={
+                  lead.deletedAt
+                    ? t("crm.status.deleted")
+                    : t(`crm.status.${lead.status}`)
+                }
               />
               {stageCategory === "lost" ? (
                 <Row

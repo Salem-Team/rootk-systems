@@ -73,6 +73,11 @@ export function NavbarClientSearch() {
                 >
                   <span className="truncate text-[15px] font-semibold md:text-[13px]">
                     <BidiText text={lead.name} />
+                    {lead.deletedAt ? (
+                      <span className="ms-1.5 text-[11px] font-medium text-rose-600 dark:text-rose-400">
+                        {t("crm.status.deleted")}
+                      </span>
+                    ) : null}
                   </span>
                   <span className="mt-0.5 truncate font-mono text-[13px] tabular-nums text-muted-foreground md:text-[11px]">
                     {displayCrmPhone(lead.phone, lead.phoneNormalized)}
@@ -144,7 +149,7 @@ export function NavbarClientSearch() {
         type="button"
         variant="ghost"
         size="icon-sm"
-        className="md:hidden"
+        className="h-10 w-10 shrink-0 touch-manipulation md:hidden"
         onClick={() => {
           setMobileOpen(true);
           search.setOpen(true);

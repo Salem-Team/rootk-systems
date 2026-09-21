@@ -3316,7 +3316,7 @@ export const ar: TranslationKeys = {
         "العملاء المؤرشفون يفضلون في السجل لكن يخرجون من المسار النشط.",
       confirmDelete: "حذف العملاء المحددين؟",
       confirmDeleteDesc:
-        "العملاء هيتحذفوا من المسار، ومش هتقدر ترجع الإجراء ده.",
+        "الحذف مش نهائي. العملاء هيختفوا من الموظفين، والأدمن بس اللي يقدر يشوفهم.",
       selected: "{count} محدّد",
       selectedNoun: "محدّد",
       selectAll: "تحديد الكل",
@@ -3445,10 +3445,8 @@ export const ar: TranslationKeys = {
         empty: "مش متسجل",
         open: "فتح العميل",
         hide: "إخفاء",
-        overlayHint:
-          "فعّل الظهور فوق التطبيقات عشان يظهر طلب العميل والبادجت والموبايل بيرن.",
         screeningHint:
-          "اسمح لـ ROOTK إنه يعرّف المكالمات الواردة، عشان الرقم يتلقط وهو بيرن حتى لو التطبيق في الخلفية.",
+          "اسمح لـ ROOTK إنه يعرّف المكالمات الواردة. هيظهر إشعار بالعميل والطلب والبادجت والمكالمة بترن، من غير ما نغطي شاشة التليفون.",
       },
     },
     contacts: {
@@ -3543,6 +3541,7 @@ export const ar: TranslationKeys = {
       active: "نشط",
       inactive: "غير نشط",
       archived: "مؤرشف",
+      deleted: "محذوف",
     },
     source: {
       facebook: "فيسبوك",
@@ -3670,6 +3669,7 @@ export const ar: TranslationKeys = {
       timeline: "الجدول الزمني",
       feedback: "الملاحظات",
       information: "بيانات العميل",
+      deletedNote: "العميل ده محذوف. الموظفين مش هيشوفوه.",
       company: "الشركة",
       businessType: "نوع الشركة",
       email: "البريد",

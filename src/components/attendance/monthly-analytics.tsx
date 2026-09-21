@@ -63,7 +63,7 @@ export function MonthlyAnalytics({ records }: MonthlyAnalyticsProps) {
             <TabsContent value="trend" className="mt-0">
               <div className="h-[260px] sm:h-[300px]" role="img" aria-label={t("attendance.chartTrend")}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                  <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
                     <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
                     <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
@@ -85,7 +85,7 @@ export function MonthlyAnalytics({ records }: MonthlyAnalyticsProps) {
             <TabsContent value="hours" className="mt-0">
               <div className="h-[260px] sm:h-[300px]" role="img" aria-label={t("attendance.chartHours")}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                  <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
                     <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
                     <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
@@ -104,7 +104,7 @@ export function MonthlyAnalytics({ records }: MonthlyAnalyticsProps) {
             <TabsContent value="late" className="mt-0">
               <div className="h-[260px] sm:h-[300px]" role="img" aria-label={t("attendance.chartLate")}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                  <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
                     <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
                     <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
@@ -123,7 +123,7 @@ export function MonthlyAnalytics({ records }: MonthlyAnalyticsProps) {
             <TabsContent value="compare" className="mt-0">
               <div className="h-[260px] sm:h-[300px]" role="img" aria-label={t("attendance.chartCompare")}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                  <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
                     <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
                     <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />

@@ -10,7 +10,6 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.CallLog;
-import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import androidx.activity.result.ActivityResult;
 import com.getcapacitor.JSObject;
@@ -43,24 +42,6 @@ public class RootkCallInsightPlugin extends Plugin {
 
     private BroadcastReceiver phoneReceiver;
     private boolean watchStarted;
-
-    @Override
-    public void load() {
-        IncomingLeadOverlay.setListener(new IncomingLeadOverlay.Listener() {
-            @Override
-            public void onOpen(String leadId) {
-                JSObject data = new JSObject();
-                data.put("leadId", leadId == null ? "" : leadId);
-                notifyListeners("openIncomingLead", data);
-                bringAppToFront();
-            }
-
-            @Override
-            public void onDismiss() {
-                notifyListeners("incomingCardDismissed", new JSObject());
-            }
-        });
-    }
 
     @PluginMethod
     public void getLatestOutbound(PluginCall call) {
@@ -149,8 +130,12 @@ public class RootkCallInsightPlugin extends Plugin {
     public void startIncomingWatch(PluginCall call) {
         IncomingCallBus.setEmitter(this::emitIncoming);
         if (!watchStarted) {
-            registerPhoneReceiver();
-            watchStarted = true;
+            try {
+                registerPhoneReceiver();
+                watchStarted = true;
+            } catch (RuntimeException ignored) {
+                watchStarted = false;
+            }
         }
         call.resolve();
     }
@@ -160,8 +145,7 @@ public class RootkCallInsightPlugin extends Plugin {
         IncomingCallBus.setEmitter(null);
         unregisterPhoneReceiver();
         watchStarted = false;
-        Context ctx = getContext();
-        if (ctx != null) IncomingLeadOverlay.hide(ctx);
+        IncomingCallNotifier.cancel(getContext());
         call.resolve();
     }
 
@@ -171,39 +155,22 @@ public class RootkCallInsightPlugin extends Plugin {
         JSObject data = new JSObject();
         data.put("number", pending.number);
         data.put("state", pending.state);
+        data.put("leadId", pending.leadId);
         call.resolve(data);
     }
 
     @PluginMethod
     public void incomingCapabilities(PluginCall call) {
-        Context ctx = getContext();
         JSObject data = new JSObject();
-        data.put("overlay", ctx != null && IncomingLeadOverlay.canDraw(ctx));
+        data.put("overlay", false);
         data.put("screening", holdsScreeningRole());
         call.resolve(data);
     }
 
     @PluginMethod
     public void requestOverlayPermission(PluginCall call) {
-        Context ctx = getContext();
-        if (ctx != null && IncomingLeadOverlay.canDraw(ctx)) {
-            JSObject data = new JSObject();
-            data.put("granted", true);
-            call.resolve(data);
-            return;
-        }
-        Intent intent = new Intent(
-            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-            Uri.parse("package:" + (ctx == null ? "" : ctx.getPackageName()))
-        );
-        startActivityForResult(call, intent, "overlayPermissionResult");
-    }
-
-    @ActivityCallback
-    private void overlayPermissionResult(PluginCall call, ActivityResult result) {
-        Context ctx = getContext();
         JSObject data = new JSObject();
-        data.put("granted", ctx != null && Settings.canDrawOverlays(ctx));
+        data.put("granted", false);
         call.resolve(data);
     }
 
@@ -245,43 +212,43 @@ public class RootkCallInsightPlugin extends Plugin {
     @PluginMethod
     public void showIncomingLeadCard(PluginCall call) {
         Context ctx = getContext();
-        if (ctx == null || !IncomingLeadOverlay.canDraw(ctx)) {
-            JSObject data = new JSObject();
-            data.put("shown", false);
-            call.resolve(data);
-            return;
-        }
-        IncomingLeadOverlay.CardModel model = new IncomingLeadOverlay.CardModel();
-        model.leadId = text(call, "leadId");
-        model.title = text(call, "title");
-        model.name = text(call, "name");
-        model.phone = text(call, "phone");
-        model.company = text(call, "company");
-        model.requestLabel = text(call, "requestLabel");
-        model.request = text(call, "request");
-        model.budgetLabel = text(call, "budgetLabel");
-        model.budget = text(call, "budget");
-        model.openLabel = text(call, "openLabel");
-        model.dismissLabel = text(call, "dismissLabel");
-        model.rtl = call.getBoolean("rtl", true);
-        boolean shown = IncomingLeadOverlay.show(ctx, model);
+        String leadId = text(call, "leadId");
+        String title = text(call, "title");
+        String name = text(call, "name");
+        String request = text(call, "request");
+        String budget = text(call, "budget");
+        String requestLabel = text(call, "requestLabel");
+        String budgetLabel = text(call, "budgetLabel");
+        String body = requestLabel + ": " + request + " · " + budgetLabel + ": " + budget;
+        IncomingCallNotifier.show(
+            ctx,
+            title.isEmpty() ? name : title + ": " + name,
+            body,
+            leadId,
+            text(call, "phone")
+        );
         JSObject data = new JSObject();
-        data.put("shown", shown);
+        data.put("shown", IncomingCallNotifier.canNotify(ctx));
         call.resolve(data);
     }
 
     @PluginMethod
     public void hideIncomingLeadCard(PluginCall call) {
-        Context ctx = getContext();
-        if (ctx != null) IncomingLeadOverlay.hide(ctx);
+        IncomingCallNotifier.cancel(getContext());
         call.resolve();
     }
 
-    private void emitIncoming(String number, String state) {
+    private void emitIncoming(String number, String state, String leadId) {
         JSObject data = new JSObject();
         data.put("number", number == null ? "" : number);
         data.put("state", state == null ? "idle" : state);
+        data.put("leadId", leadId == null ? "" : leadId);
         notifyListeners("incomingCall", data);
+        if ("open".equals(state) && leadId != null && !leadId.isEmpty()) {
+            JSObject open = new JSObject();
+            open.put("leadId", leadId);
+            notifyListeners("openIncomingLead", open);
+        }
     }
 
     private void registerPhoneReceiver() {
@@ -296,19 +263,20 @@ public class RootkCallInsightPlugin extends Plugin {
                 String state = intent.getStringExtra(TelephonyManager.EXTRA_STATE);
                 if (TelephonyManager.EXTRA_STATE_RINGING.equals(state)) {
                     IncomingCallBus.publishRinging(
+                        context,
                         intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER)
                     );
                 } else if (TelephonyManager.EXTRA_STATE_OFFHOOK.equals(state)) {
                     IncomingCallBus.publishOffhook();
                 } else if (TelephonyManager.EXTRA_STATE_IDLE.equals(state)) {
-                    IncomingCallBus.publishIdle();
+                    IncomingCallBus.publishIdle(context);
                 }
             }
         };
         IntentFilter filter = new IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED);
         Context app = ctx.getApplicationContext();
         if (Build.VERSION.SDK_INT >= 33) {
-            app.registerReceiver(phoneReceiver, filter, Context.RECEIVER_EXPORTED);
+            app.registerReceiver(phoneReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
         } else {
             app.registerReceiver(phoneReceiver, filter);
         }
@@ -333,19 +301,6 @@ public class RootkCallInsightPlugin extends Plugin {
         if (ctx == null) return false;
         RoleManager roles = ctx.getSystemService(RoleManager.class);
         return roles != null && roles.isRoleHeld(RoleManager.ROLE_CALL_SCREENING);
-    }
-
-    private void bringAppToFront() {
-        Context ctx = getContext();
-        if (ctx == null) return;
-        Intent launch = ctx.getPackageManager().getLaunchIntentForPackage(ctx.getPackageName());
-        if (launch == null) return;
-        launch.addFlags(
-            Intent.FLAG_ACTIVITY_NEW_TASK
-                | Intent.FLAG_ACTIVITY_SINGLE_TOP
-                | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-        );
-        ctx.startActivity(launch);
     }
 
     private static String text(PluginCall call, String key) {

@@ -27,7 +27,7 @@ export function NotificationsPopover() {
         <Button
           variant="ghost"
           size="icon-sm"
-          className="relative"
+          className="relative h-10 w-10 touch-manipulation sm:h-8 sm:w-8"
           aria-label={t("common.notifications")}
         >
           <Bell className="h-4 w-4" />

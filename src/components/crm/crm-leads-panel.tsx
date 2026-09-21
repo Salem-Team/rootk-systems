@@ -335,6 +335,7 @@ export function CrmLeadsPanel({
         onClearFilters={panel.clearFilters}
       />
 
+      {filters.status === "deleted" ? null : (
       <CrmLeadsBulkBar
         selectedCount={panel.selected.size}
         stages={panel.safeStages}
@@ -355,6 +356,7 @@ export function CrmLeadsPanel({
         onDelete={() => void panel.runBulk("delete")}
         onClear={panel.clearSelection}
       />
+      )}
 
       <CrmLeadsTable
         loading={loading}

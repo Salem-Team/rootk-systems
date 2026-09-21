@@ -9,7 +9,6 @@ import { useTranslation } from "@/hooks/use-translation";
 import { displayCrmPhone } from "@/lib/crm/phone-links";
 import { emitCrmOpenLead } from "@/lib/events";
 import {
-  askOverlayPermission,
   askScreeningRole,
   cancelIncomingLeadNotification,
   consumePendingIncomingCall,
@@ -17,7 +16,6 @@ import {
   ensureIncomingCallAccess,
   incomingCallsSupported,
   listenForIncomingCalls,
-  notifyIncomingLead,
   presentIncomingLeadCard,
   readIncomingCapabilities,
   startIncomingCallWatch,
@@ -26,7 +24,6 @@ import {
 import { matchCrmLeadByPhone } from "@/services/crm/crm-calls.service";
 import type { CrmLead } from "@/types/crm";
 
-const OVERLAY_ASKED = "rootk.incoming-overlay-asked";
 const SCREENING_ASKED = "rootk.incoming-screening-asked";
 
 function tail(phone: string) {
@@ -126,17 +123,10 @@ export function CrmIncomingCallHost() {
         rtl: localeRef.current === "ar",
       });
       if (cancelled || my !== tokenRef.current) return;
-      if (shown) {
-        await cancelIncomingLeadNotification();
-        return;
+      if (document.visibilityState === "visible" || !shown) {
+        setLead(matched);
+        setOpen(true);
       }
-      setLead(matched);
-      setOpen(true);
-      await notifyIncomingLead({
-        leadId: matched.id,
-        title: `${translate("crm.call.incoming.title")}: ${matched.name}`,
-        body: `${translate("crm.call.incoming.request")}: ${request} · ${translate("crm.call.incoming.budget")}: ${budget}`,
-      });
     }
 
     void (async () => {
@@ -144,6 +134,17 @@ export function CrmIncomingCallHost() {
       if (cancelled) return;
       detach = await listenForIncomingCalls(
         (event) => {
+          if (event.state === "open" && event.leadId) {
+            openLead(event.leadId);
+            return;
+          }
+          if (event.state === "idle") {
+            setOpen(false);
+            setLead(null);
+            void dismissIncomingLeadCard();
+            void cancelIncomingLeadNotification();
+            return;
+          }
           if (event.state === "ringing" && event.number) void reveal(event.number);
         },
         (leadId) => openLead(leadId),
@@ -159,18 +160,12 @@ export function CrmIncomingCallHost() {
       }
       await startIncomingCallWatch();
       const pending = await consumePendingIncomingCall();
-      if (pending?.number) void reveal(pending.number);
+      if (pending?.leadId && pending.state === "open") openLead(pending.leadId);
+      else if (pending?.number) void reveal(pending.number);
 
       const caps = await readIncomingCapabilities();
       if (cancelled) return;
-      if (!caps.overlay && !wasAsked(OVERLAY_ASKED)) {
-        rememberAsked(OVERLAY_ASKED);
-        toast.message(tRef.current("crm.call.incoming.overlayHint"));
-        await askOverlayPermission();
-      }
-      if (cancelled) return;
-      const afterOverlay = await readIncomingCapabilities();
-      if (!afterOverlay.screening && !wasAsked(SCREENING_ASKED)) {
+      if (!caps.screening && !wasAsked(SCREENING_ASKED)) {
         rememberAsked(SCREENING_ASKED);
         toast.message(tRef.current("crm.call.incoming.screeningHint"));
         await askScreeningRole();

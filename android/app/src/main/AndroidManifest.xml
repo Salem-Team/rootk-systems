@@ -9,11 +9,10 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <!-- CRM contact picker — READ only (WRITE removed for Play Contacts policy). -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
-    <!-- Post-dial talk duration, and the incoming number while the phone is ringing. -->
+    <!-- Talk time for a call the user just placed from ROOTK. Not a full log sync. -->
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <!-- Ringing / idle so the incoming notice can dismiss. The number comes from the screening role. -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <!-- Card over the incoming-call screen (request + budget). User grants it in Settings. -->
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <!-- Biometric unlock (fingerprint / face) — optional hardware. -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />

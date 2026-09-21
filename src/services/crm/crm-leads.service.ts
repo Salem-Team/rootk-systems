@@ -8,7 +8,7 @@ import {
 } from "@/api/crm.api";
 import { isApiMode } from "@/lib/env";
 import { NotFoundError } from "@/lib/errors";
-import { filterStoredLeads } from "@/services/crm/crm-lead-list-filter";
+import { filterStoredLeads, leadListMode } from "@/services/crm/crm-lead-list-filter";
 import { appendLossReasonNote } from "@/lib/crm/loss-reason";
 import { ensurePaginatedLeads } from "@/lib/crm-normalize";
 import { emitCrmUpdated } from "@/lib/events";
@@ -27,6 +27,7 @@ import {
   assertLeadAccess,
   crmLeadFilterScope,
   ensureCatalog,
+  findReadableCrmLead,
   scopeCrmFiltersToActor,
   writeHistory,
 } from "@/services/crm/crm-shared";
@@ -48,7 +49,9 @@ export async function getCrmLeadCounts(
     await simulateDelay();
     assertCap("view");
     await ensureCatalog();
-    const all = await crmLeadRepository.findAll();
+    const all = await crmLeadRepository.findForList(
+      leadListMode({ ...scoped, status: scoped.status ?? "active" })
+    );
     const filtered = await filterStoredLeads(
       all,
       { ...scoped, status: scoped.status ?? "active" },
@@ -76,7 +79,7 @@ export async function getCrmLeads(
     await simulateDelay();
     assertCap("view");
     await ensureCatalog();
-    const all = await crmLeadRepository.findAll();
+    const all = await crmLeadRepository.findForList(leadListMode(scoped));
     let filtered = await filterStoredLeads(all, scoped, await crmLeadFilterScope());
     const sort = filters.sort ?? "updatedAt";
     const order = filters.order ?? "desc";
@@ -125,7 +128,7 @@ export async function getCrmLead(
   try {
     await simulateDelay();
     assertCap("view");
-    const lead = await crmLeadRepository.findById(id);
+    const lead = await findReadableCrmLead(id);
     if (!lead) throw new NotFoundError("Lead not found");
     await assertLeadAccess(lead);
     return ok(lead);

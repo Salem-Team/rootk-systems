@@ -13,6 +13,7 @@ export type OutboundCallInsight = {
 export type IncomingCallEvent = {
   number: string;
   state: string;
+  leadId?: string;
 };
 
 export type IncomingLeadCardInput = {
@@ -82,7 +83,7 @@ export const rootkCallInsight = registerPlugin<CallInsightPlugin>("RootkCallInsi
     async startIncomingWatch() {},
     async stopIncomingWatch() {},
     async consumePendingIncoming() {
-      return { number: "", state: "idle" };
+      return { number: "", state: "idle", leadId: "" };
     },
     async incomingCapabilities() {
       return { overlay: false, screening: false };

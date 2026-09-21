@@ -79,10 +79,10 @@
   --chart-3: #b45309;
   --chart-4: #b91c1c;
   --chart-5: #475569;
-  --shadow-card: 0 0 0 1px rgba(11, 20, 36, 0.035),
-    0 1px 2px rgba(11, 20, 36, 0.035), 0 10px 24px rgba(11, 20, 36, 0.04);
-  --shadow-card-hover: 0 0 0 1px rgba(8, 40, 104, 0.12),
-    0 6px 14px rgba(11, 20, 36, 0.045), 0 20px 40px rgba(8, 40, 104, 0.1);
+  --shadow-card: 0 0 0 1px rgba(11, 20, 36, 0.045),
+    0 1px 1px rgba(11, 20, 36, 0.03), 0 10px 22px rgba(11, 20, 36, 0.05);
+  --shadow-card-hover: 0 0 0 1px rgba(8, 40, 104, 0.16),
+    0 8px 18px rgba(11, 20, 36, 0.05), 0 18px 36px rgba(8, 40, 104, 0.08);
   --shadow-navbar: 0 1px 0 rgba(11, 20, 36, 0.05),
     0 8px 24px rgba(11, 20, 36, 0.04);
   --shadow-float: 0 0 0 1px rgba(11, 20, 36, 0.05),
@@ -91,9 +91,9 @@
   --type-leading: 1.55;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --duration-instant: 120ms;
-  --duration-fast: 200ms;
-  --duration-base: 360ms;
-  --duration-slow: 520ms;
+  --duration-fast: 180ms;
+  --duration-base: 320ms;
+  --duration-slow: 460ms;
   --control-h: 2.35rem;
   --space-page-x: 1rem;
   --space-page-y: 1.5rem;
@@ -346,31 +346,26 @@
   .surface-panel {
     border-radius: var(--radius-xl);
     border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
-    background: color-mix(in oklab, var(--card) 98%, white);
-    box-shadow: var(--shadow-card);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.72), transparent 46%),
+      color-mix(in oklab, var(--card) 98%, white);
+    box-shadow:
+      var(--shadow-card),
+      inset 0 1px 0 rgba(255, 255, 255, 0.72);
     transition:
-      box-shadow var(--duration-base) var(--ease-out),
-      border-color var(--duration-base) var(--ease-out),
-      transform var(--duration-base) var(--ease-out),
+      box-shadow var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out),
       background-color var(--duration-fast) var(--ease-out);
   }
 
   .dark .surface-panel {
     background: var(--card);
-  }
-
-  .surface-panel-interactive {
-    will-change: transform;
-  }
-
-  .surface-panel-interactive:hover {
-    border-color: color-mix(in oklab, var(--primary) 22%, var(--border));
-    box-shadow: var(--shadow-card-hover);
-    transform: translateY(-2px);
+    box-shadow: var(--shadow-card);
   }
 
   .surface-panel-interactive:active {
-    transform: translateY(-1px) scale(0.997);
+    transform: scale(0.992);
   }
 
   .chrome-bar {
@@ -404,8 +399,12 @@
   .kpi-tile {
     border-radius: calc(var(--radius) + 2px);
     border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
-    background: var(--card);
-    box-shadow: var(--shadow-card);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.55), transparent 42%),
+      var(--card);
+    box-shadow:
+      var(--shadow-card),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
     padding: 0.75rem 0.8rem;
     min-width: 0;
     max-width: 100%;
@@ -422,14 +421,42 @@
     }
   }
 
-  .kpi-tile:hover {
-    border-color: color-mix(in oklab, var(--primary) 18%, var(--border));
-    box-shadow: var(--shadow-card-hover);
-    transform: translateY(-2px);
+  .dark .kpi-tile {
+    background: var(--card);
+    box-shadow: var(--shadow-card);
   }
 
   .kpi-tile:active {
-    transform: translateY(-1px) scale(0.995);
+    transform: scale(0.992);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .surface-panel-interactive:hover {
+      border-color: color-mix(in oklab, var(--primary) 22%, var(--border));
+      box-shadow: var(--shadow-card-hover);
+      transform: translateY(-2px);
+    }
+
+    .kpi-tile:hover {
+      border-color: color-mix(in oklab, var(--primary) 18%, var(--border));
+      box-shadow: var(--shadow-card-hover);
+      transform: translateY(-2px);
+    }
+
+    .list-row:hover {
+      border-color: color-mix(in oklab, var(--border) 100%, var(--primary) 8%);
+      background: color-mix(in oklab, var(--muted) 35%, var(--card));
+      box-shadow: 0 1px 2px rgba(11, 20, 36, 0.04);
+    }
+
+    .lift-hover:hover {
+      transform: translateY(-2px);
+    }
+
+    .surface-shine:hover::after {
+      transform: translateX(120%);
+      opacity: 1;
+    }
   }
 
   .control-field {
@@ -461,12 +488,6 @@
       border-color var(--duration-fast) var(--ease-out),
       box-shadow var(--duration-fast) var(--ease-out),
       transform var(--duration-instant) var(--ease-out);
-  }
-
-  .list-row:hover {
-    border-color: color-mix(in oklab, var(--border) 100%, var(--primary) 8%);
-    background: color-mix(in oklab, var(--muted) 35%, var(--card));
-    box-shadow: 0 1px 2px rgba(11, 20, 36, 0.04);
   }
 
   .list-row:active {
@@ -503,17 +524,8 @@
       opacity 200ms ease;
   }
 
-  .surface-shine:hover::after {
-    transform: translateX(120%);
-    opacity: 1;
-  }
-
   .lift-hover {
-    transition: transform 240ms var(--ease-out);
-  }
-
-  .lift-hover:hover {
-    transform: translateY(-2px);
+    transition: transform var(--duration-fast) var(--ease-out);
   }
 
   .admin-card {
@@ -538,7 +550,6 @@
 
   .icon-well {
     @apply flex h-8 w-8 items-center justify-center rounded-[0.7rem] border border-primary/12 bg-primary/[0.07] text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.35)];
-    animation: icon-well-in var(--duration-base) var(--ease-out) both;
   }
 
   .dark .icon-well {
@@ -787,6 +798,7 @@
 
   .type-title {
     text-wrap: balance;
+    overflow-wrap: anywhere;
     font-family: var(--font-heading);
     font-size: 1.45rem;
     font-weight: 700;
@@ -977,11 +989,49 @@
     touch-action: manipulation;
   }
 
+  /* Charts must stay inside the page column on every breakpoint. */
+  .recharts-responsive-container,
+  .recharts-wrapper {
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .chart-frame {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .panel-body:has(.recharts-responsive-container),
+  [role="img"]:has(.recharts-responsive-container) {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   /* Compact app-like page chrome on phones */
   @media (max-width: 639px) {
     .type-title {
       font-size: 1.35rem;
       letter-spacing: -0.03em;
+    }
+
+    .panel-header {
+      flex-wrap: wrap;
+      row-gap: 0.5rem;
+    }
+
+    .recharts-legend-item-text {
+      font-size: 11px !important;
+    }
+
+    .recharts-cartesian-axis-tick text {
+      font-size: 10px;
+    }
+
+    button[role="combobox"] {
+      min-height: 2.75rem;
+      font-size: 16px;
     }
 
     .type-subtitle {
@@ -1020,11 +1070,18 @@
   }
 
   /**
-   * Light cascade for direct page children (skip header — PageHeader has its own motion).
-   * Uses transform + opacity via CSS so we don't nest another Framer opacity layer.
+   * One quiet settle per page section. Transform only — nested fades
+   * (KPI stagger, lists) stay visible instead of fading twice.
    */
   .page-cascade > *:not(header) {
-    animation: page-cascade-in var(--duration-base) var(--ease-out) both;
+    animation: page-cascade-in 420ms var(--ease-out) both;
+  }
+
+  .page-cascade > *:not(header) .ui-enter-up,
+  .page-cascade > *:not(header) .ui-enter-scale,
+  .page-cascade > *:not(header) .ui-enter-left,
+  .page-cascade > *:not(header) .ui-enter-right {
+    animation: none;
   }
 
   .page-cascade > *:not(header):nth-child(1) {
@@ -1063,12 +1120,10 @@
 
 @keyframes page-cascade-in {
   from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.992);
+    transform: translateY(8px);
   }
   to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
@@ -1097,7 +1152,7 @@
 @keyframes ui-enter-up {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -1108,18 +1163,18 @@
 @keyframes ui-enter-scale {
   from {
     opacity: 0;
-    transform: scale(0.985);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translateY(0);
   }
 }
 
 @keyframes ui-enter-left {
   from {
     opacity: 0;
-    transform: translateX(-12px);
+    transform: translateX(-10px);
   }
   to {
     opacity: 1;
@@ -1130,7 +1185,7 @@
 @keyframes ui-enter-right {
   from {
     opacity: 0;
-    transform: translateX(12px);
+    transform: translateX(10px);
   }
   to {
     opacity: 1;
@@ -1164,6 +1219,14 @@
 
 .ui-enter-right {
   animation: ui-enter-right var(--duration-base) var(--ease-out) both;
+}
+
+html[dir="rtl"] .ui-enter-left {
+  animation-name: ui-enter-right;
+}
+
+html[dir="rtl"] .ui-enter-right {
+  animation-name: ui-enter-left;
 }
 
 .ui-stagger > *:nth-child(1) {

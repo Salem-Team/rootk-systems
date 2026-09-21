@@ -159,10 +159,10 @@ function HeroStat({
   hint?: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/12 bg-white/[0.08] px-2.5 py-2.5 backdrop-blur-[2px]">
-      <p className="flex items-center gap-1 text-[11px] text-white/65">
+    <div className="min-w-0 rounded-xl border border-white/12 bg-white/[0.08] px-2 py-2.5 backdrop-blur-[2px] sm:px-2.5">
+      <p className="flex items-center gap-1 text-[10px] leading-tight text-white/65 sm:text-[11px]">
         <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        <span className="truncate">{label}</span>
+        <span className="line-clamp-2">{label}</span>
       </p>
       <p className="mt-1 font-mono text-lg font-semibold tabular-nums tracking-tight text-white">
         {value}

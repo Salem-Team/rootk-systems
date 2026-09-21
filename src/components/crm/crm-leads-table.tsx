@@ -252,12 +252,16 @@ export function CrmLeadsTable({
                     <span
                       className={cn(
                         "text-[11px] font-medium",
-                        lead.status === "active"
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-muted-foreground"
+                        lead.deletedAt
+                          ? "text-rose-600 dark:text-rose-400"
+                          : lead.status === "active"
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-muted-foreground"
                       )}
                     >
-                      {t(`crm.status.${lead.status}`)}
+                      {lead.deletedAt
+                        ? t("crm.status.deleted")
+                        : t(`crm.status.${lead.status}`)}
                     </span>
                     <CrmLeadRowActions
                       lead={lead}
@@ -416,8 +420,10 @@ export function CrmLeadsTable({
                   {formatMaybeDate(lead.nextFollowUpAt)}
                 </DataTableCell>
                 <DataTableCell className="hidden lg:table-cell">
-                  <span className="text-[12px]">
-                    {t(`crm.status.${lead.status}`)}
+                  <span className={cn("text-[12px]", lead.deletedAt && "font-medium text-rose-600 dark:text-rose-400")}>
+                    {lead.deletedAt
+                      ? t("crm.status.deleted")
+                      : t(`crm.status.${lead.status}`)}
                   </span>
                 </DataTableCell>
                 <DataTableCell

@@ -1,6 +1,7 @@
 /** Pure Prisma where-clause builder for lead listing/filtering. */
 import { CrmLeadSource, CrmLeadStatus, type Prisma } from "@prisma/client";
 import { endOfDay } from "date-fns";
+import { isAdminRole } from "../common/roles";
 import type { Actor } from "./crm-access";
 import { LEAD_SOURCES, LEAD_STATUSES } from "./crm-input";
 import { CrmSharedService } from "./crm-shared.service";
@@ -17,8 +18,8 @@ export function buildLeadWhere(
 ): Prisma.CrmLeadWhereInput {
   const where: Prisma.CrmLeadWhereInput = {
     companyId,
-    deletedAt: null,
     ...shared.scopeOwnerFilter(actor, ownerIds),
+    ...deletedLeadVisibility(actor, query),
   };
 
   if (query.search?.trim()) {
@@ -26,7 +27,11 @@ export function buildLeadWhere(
   }
   if (query.stageId) where.stageId = query.stageId;
   if (query.subStageId) where.subStageId = query.subStageId;
-  if (query.status && LEAD_STATUSES.has(query.status)) {
+  if (
+    query.status &&
+    query.status !== "deleted" &&
+    LEAD_STATUSES.has(query.status)
+  ) {
     where.status = query.status as CrmLeadStatus;
   }
   if (query.source && LEAD_SOURCES.has(query.source)) {
@@ -53,6 +58,25 @@ export function buildLeadWhere(
   }
 
   return where;
+}
+
+/**
+ * Soft-deleted leads stay in the database.
+ * Only an admin can list them (`status=deleted`) or find them via search.
+ */
+function deletedLeadVisibility(
+  actor: Actor,
+  query: Record<string, string | undefined>
+): Prisma.CrmLeadWhereInput {
+  const wantsDeleted = query.status === "deleted";
+  if (wantsDeleted) {
+    if (!isAdminRole(actor.role)) return { id: { in: [] } };
+    return { deletedAt: { not: null } };
+  }
+  const adminSearch =
+    isAdminRole(actor.role) && !query.status && Boolean(query.search?.trim());
+  if (adminSearch) return {};
+  return { deletedAt: null };
 }
 
 const TEXT_FIELDS = [

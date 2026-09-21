@@ -74,7 +74,7 @@ export function PersonalAttendanceChart({
       </div>
       <div className="panel-body h-[240px]" role="img" aria-label={t("employeeHome.personalChart")}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="empHoursFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={CHART.hours} stopOpacity={0.28} />
@@ -135,7 +135,7 @@ export function WeeklyHoursChart({ data }: { data: PersonalWeekPoint[] }) {
       </div>
       <div className="panel-body h-[240px]" role="img" aria-label={t("employeeHome.weeklyHours")}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+          <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
             <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
             <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />

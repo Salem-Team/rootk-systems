@@ -3,6 +3,7 @@ import {
   type DataAccessScope,
 } from "@/constants/permissions";
 import { isApiMode } from "@/lib/env";
+import { isAdminRole } from "@/constants/roles";
 import { enrichWithAudit } from "@/lib/entity";
 import { ForbiddenError } from "@/lib/errors";
 import { createId } from "@/lib/id";
@@ -11,6 +12,7 @@ import {
   crmBusinessTypeRepository,
   crmFeedbackTypeRepository,
   crmLeadHistoryRepository,
+  crmLeadRepository,
   crmStageRepository,
   crmSubStageRepository,
 } from "@/repositories/crm.repository";
@@ -93,6 +95,15 @@ export async function assertLeadAccess(lead: CrmLead): Promise<void> {
   if (allowed === null) return;
   if (lead.ownerEmployeeId && allowed.includes(lead.ownerEmployeeId)) return;
   throw new ForbiddenError("You can only access leads in your team scope");
+}
+
+/** Live lead, or a soft-deleted lead when the actor is an admin. */
+export async function findReadableCrmLead(id: string): Promise<CrmLead | null> {
+  const live = await crmLeadRepository.findById(id);
+  if (live) return live;
+  if (!isAdminRole(getSessionRole())) return null;
+  const row = await crmLeadRepository.findIncludingDeleted(id);
+  return row?.deletedAt ? row : null;
 }
 
 export async function writeHistory(

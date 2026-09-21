@@ -15,6 +15,7 @@ import {
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { employeeIdsForScope } from "../common/employee-scope";
+import { isAdminRole } from "../common/roles";
 import { NotificationsService } from "../notifications/notifications.service";
 import {
   assertCap,
@@ -369,13 +370,20 @@ export class CrmSharedService {
     }
   }
 
-  async requireLead(companyId: string, actor: Actor, id: string) {
+  async requireLead(
+    companyId: string,
+    actor: Actor,
+    id: string,
+    opts?: { includeDeleted?: boolean }
+  ) {
     assertCap(actor, "view");
+    const includeDeleted =
+      Boolean(opts?.includeDeleted) && isAdminRole(actor.role);
     const lead = await this.prisma.crmLead.findFirst({
       where: {
         id,
         companyId,
-        deletedAt: null,
+        ...(includeDeleted ? {} : { deletedAt: null }),
         ...(await this.ownerScope(companyId, actor)),
       },
     });

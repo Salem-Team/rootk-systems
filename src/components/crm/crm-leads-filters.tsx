@@ -20,12 +20,13 @@ import {
 import { canFilterCrmByOwner } from "@/lib/crm/lead-filters";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
+import { useSessionStore } from "@/stores/session-store";
 import type { Employee } from "@/types";
 import type {
   CrmFollowUpFilter,
   CrmLeadFilters,
+  CrmLeadListStatus,
   CrmLeadSource,
-  CrmLeadStatus,
   CrmStage,
 } from "@/types/crm";
 
@@ -43,7 +44,7 @@ const SOURCES: CrmLeadSource[] = [
   "other",
 ];
 
-const STATUSES: CrmLeadStatus[] = ["active", "inactive", "archived"];
+const STATUSES: CrmLeadListStatus[] = ["active", "inactive", "archived"];
 
 interface CrmLeadsFiltersProps {
   open: boolean;
@@ -66,6 +67,7 @@ function FilterControls({
   employees,
   showOwnerFilter,
   hasActiveFilters,
+  showDeletedStatus = false,
   lockedKeys,
   stacked,
   onFiltersChange,
@@ -76,6 +78,7 @@ function FilterControls({
   employees: Employee[];
   showOwnerFilter: boolean;
   hasActiveFilters: boolean;
+  showDeletedStatus?: boolean;
   lockedKeys?: Array<"status" | "followUp">;
   stacked?: boolean;
   onFiltersChange: Dispatch<SetStateAction<CrmLeadFilters>>;
@@ -124,7 +127,7 @@ function FilterControls({
         onValueChange={(v) =>
           onFiltersChange((prev) => ({
             ...prev,
-            status: v === "all" ? "" : (v as CrmLeadStatus),
+            status: v === "all" ? "" : (v as CrmLeadListStatus),
             page: 1,
           }))
         }
@@ -134,11 +137,13 @@ function FilterControls({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">{t("crm.filters.allStatuses")}</SelectItem>
-          {STATUSES.map((s) => (
-            <SelectItem key={s} value={s}>
-              {t(`crm.status.${s}`)}
-            </SelectItem>
-          ))}
+          {(showDeletedStatus ? [...STATUSES, "deleted" as const] : STATUSES).map(
+            (s) => (
+              <SelectItem key={s} value={s}>
+                {t(`crm.status.${s}`)}
+              </SelectItem>
+            )
+          )}
         </SelectContent>
       </Select>
       ) : null}
@@ -297,7 +302,9 @@ export function CrmLeadsFilters({
   onClearFilters,
 }: CrmLeadsFiltersProps) {
   const { t } = useTranslation();
+  const role = useSessionStore((s) => s.role);
   const showOwnerFilter = canFilterCrmByOwner({ canAssign, canViewOthers });
+  const showDeletedStatus = role === "admin";
 
   const controls = (
     <FilterControls
@@ -306,6 +313,7 @@ export function CrmLeadsFilters({
       employees={employees}
       showOwnerFilter={showOwnerFilter}
       hasActiveFilters={hasActiveFilters}
+      showDeletedStatus={showDeletedStatus}
       lockedKeys={lockedKeys}
       onFiltersChange={onFiltersChange}
       onClearFilters={onClearFilters}

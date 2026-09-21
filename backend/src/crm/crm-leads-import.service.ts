@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { assertCap, ownerIdAllowed, type Actor } from "./crm-access";
 import { CRM_IMPORT_MAX_ROWS } from "./crm-defaults";
+import { buildLeadWhere } from "./crm-leads-query";
 import { CrmLeadCreateService } from "./crm-lead-create.service";
 import { CrmSharedService } from "./crm-shared.service";
 
@@ -166,15 +167,7 @@ export class CrmLeadsImportService {
     assertCap(actor, "view");
     const ownerIds = await this.shared.resolveOwnerIds(companyId, actor);
     const list = await this.prisma.crmLead.findMany({
-      where: {
-        companyId,
-        deletedAt: null,
-        ...this.shared.scopeOwnerFilter(actor, ownerIds),
-        ...(query.status ? { status: query.status as never } : {}),
-        ...(query.stageId ? { stageId: query.stageId } : {}),
-        ...(query.source ? { source: query.source as never } : {}),
-        ...this.shared.extraOwnerFilter(ownerIds, query.ownerEmployeeId),
-      },
+      where: buildLeadWhere(this.shared, companyId, actor, query, ownerIds),
       orderBy: { updatedAt: "desc" },
       take: CRM_IMPORT_MAX_ROWS,
     });
@@ -210,7 +203,7 @@ export class CrmLeadsImportService {
       owner: lead.ownerEmployeeId
         ? ownerName.get(lead.ownerEmployeeId) ?? lead.ownerEmployeeId
         : "",
-      status: lead.status,
+      status: lead.deletedAt ? "deleted" : lead.status,
       tags: lead.tags.join(";"),
       nextAction: lead.nextAction,
       notes: lead.notes,

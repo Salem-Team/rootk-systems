@@ -94,7 +94,7 @@ export function EmployeeCallStats({ rows }: { rows: DailyReportRow[] }) {
                   </p>
                   <dl className="mt-2 grid grid-cols-3 gap-1.5 text-center">
                     <div className="rounded-lg bg-muted/50 px-1.5 py-1.5">
-                      <dt className="text-[10px] text-muted-foreground">
+                      <dt className="line-clamp-2 text-[10px] leading-tight text-muted-foreground">
                         {t("reports.colCalls")}
                       </dt>
                       <dd className="font-mono text-[13px] font-semibold tabular-nums">
@@ -102,7 +102,7 @@ export function EmployeeCallStats({ rows }: { rows: DailyReportRow[] }) {
                       </dd>
                     </div>
                     <div className="rounded-lg bg-muted/50 px-1.5 py-1.5">
-                      <dt className="text-[10px] text-muted-foreground">
+                      <dt className="line-clamp-2 text-[10px] leading-tight text-muted-foreground">
                         {t("reports.colActiveCalls")}
                       </dt>
                       <dd className="font-mono text-[13px] tabular-nums text-emerald-700 dark:text-emerald-300">
@@ -110,7 +110,7 @@ export function EmployeeCallStats({ rows }: { rows: DailyReportRow[] }) {
                       </dd>
                     </div>
                     <div className="rounded-lg bg-muted/50 px-1.5 py-1.5">
-                      <dt className="text-[10px] text-muted-foreground">
+                      <dt className="line-clamp-2 text-[10px] leading-tight text-muted-foreground">
                         {t("reports.colInactiveCalls")}
                       </dt>
                       <dd className="font-mono text-[13px] tabular-nums text-rose-700 dark:text-rose-300">
@@ -251,7 +251,7 @@ function CallKpi({
 }) {
   return (
     <div className="rounded-lg bg-muted/45 px-2.5 py-1.5">
-      <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+      <dt className="line-clamp-2 text-[10px] font-medium leading-tight text-muted-foreground">
         {label}
       </dt>
       <dd

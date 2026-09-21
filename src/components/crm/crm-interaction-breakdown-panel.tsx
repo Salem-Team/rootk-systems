@@ -179,7 +179,7 @@ export function CrmInteractionBreakdownPanel({
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={dayChart}
-                      margin={{ top: 8, right: 8, left: -12, bottom: 0 }}
+                      margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
                     >
                       <CartesianGrid
                         strokeDasharray="3 3"
@@ -239,7 +239,7 @@ export function CrmInteractionBreakdownPanel({
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={hourChart}
-                      margin={{ top: 8, right: 8, left: -12, bottom: 0 }}
+                      margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
                     >
                       <CartesianGrid
                         strokeDasharray="3 3"

@@ -52,8 +52,8 @@ export function ActivityFeed({
       className="surface-panel flex h-full flex-col overflow-hidden"
       aria-labelledby="activity-feed-heading"
     >
-      <div className="panel-header flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="panel-header flex flex-wrap items-start justify-between gap-2 sm:gap-3">
+        <div className="min-w-0 flex-1 basis-40">
           <h3
             id="activity-feed-heading"
             className="text-[0.95rem] font-semibold tracking-tight"

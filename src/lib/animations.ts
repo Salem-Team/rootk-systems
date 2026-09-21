@@ -8,31 +8,31 @@ export const easeInOutSoft: [number, number, number, number] = [0.65, 0, 0.35, 1
 /** Duration tokens (seconds) — keep in sync with --duration-* in globals.css */
 export const duration = {
   instant: 0.12,
-  fast: 0.2,
-  base: 0.36,
-  slow: 0.52,
-  page: 0.45,
+  fast: 0.18,
+  base: 0.32,
+  slow: 0.46,
+  page: 0.4,
 } as const;
 
 export const spring: Transition = {
   type: "spring",
-  stiffness: 420,
-  damping: 32,
+  stiffness: 380,
+  damping: 34,
   mass: 0.8,
 };
 
 export const softSpring: Transition = {
   type: "spring",
-  stiffness: 260,
-  damping: 26,
-  mass: 0.85,
+  stiffness: 280,
+  damping: 32,
+  mass: 0.9,
 };
 
 export const snappySpring: Transition = {
   type: "spring",
-  stiffness: 520,
-  damping: 36,
-  mass: 0.7,
+  stiffness: 460,
+  damping: 38,
+  mass: 0.72,
 };
 
 export const layoutSpring: Transition = {
@@ -88,7 +88,7 @@ export const pageTransitionSoft: Variants = {
 };
 
 export const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 14 },
+  hidden: { opacity: 0, y: 8 },
   visible: {
     opacity: 1,
     y: 0,
@@ -98,11 +98,11 @@ export const fadeInUp: Variants = {
 
 /** Transform-only enter — safe as nested children under AppShell opacity. */
 export const riseIn: Variants = {
-  hidden: { y: 12, opacity: 0.01 },
+  hidden: { y: 8, opacity: 0.01 },
   visible: {
     y: 0,
     opacity: 1,
-    transition: { duration: 0.4, ease: easeOutExpo },
+    transition: { duration: 0.34, ease: easeOutExpo },
   },
 };
 
@@ -161,8 +161,8 @@ export const staggerContainer: Variants = {
   hidden: {},
   visible: {
     transition: {
-      staggerChildren: 0.05,
-      delayChildren: 0.03,
+      staggerChildren: 0.04,
+      delayChildren: 0.02,
     },
   },
 };
@@ -217,12 +217,12 @@ export const sidebarItem: Variants = {
 };
 
 export const cardHover = {
-  rest: { y: 0, scale: 1 },
+  rest: { y: 0 },
   hover: {
-    y: -3,
+    y: -2,
     transition: snappySpring,
   },
-  tap: { scale: 0.985, transition: { duration: 0.1 } },
+  tap: { scale: 0.99, transition: { duration: 0.1 } },
 };
 
 export const pressable = {
@@ -231,17 +231,17 @@ export const pressable = {
   transition: snappySpring,
 };
 
-/** Panel enter — transform only (safe under AppShell / page-cascade opacity). */
+/** Panel enter — short settle, no scale (avoids a cheap zoom on every card). */
 export const surfaceEnter = {
-  initial: { y: 12, scale: 0.985 },
-  animate: { y: 0, scale: 1 },
+  initial: { y: 8 },
+  animate: { y: 0 },
 };
 
 export const iconPop = {
   rest: { scale: 1, rotate: 0 },
   hover: {
-    scale: 1.1,
-    rotate: -6,
+    scale: 1.06,
+    rotate: -3,
     transition: snappySpring,
   },
 };

@@ -6,7 +6,6 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -60,13 +59,14 @@ export function WeeklyChart({ data }: { data: WeeklyStat[] }) {
             {t("dashboard.last7Days")}
           </span>
         </div>
-        <div
-          className="panel-body h-[260px] min-w-0 sm:h-[300px] md:h-[320px]"
-          role="img"
-          aria-label={t("dashboard.weeklyTitle")}
-        >
+        <div className="panel-body min-w-0">
+          <div
+            className="chart-frame h-[220px] sm:h-[300px] md:h-[320px]"
+            role="img"
+            aria-label={t("dashboard.weeklyTitle")}
+          >
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="presentFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={CHART.present} stopOpacity={0.3} />
@@ -78,10 +78,9 @@ export function WeeklyChart({ data }: { data: WeeklyStat[] }) {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-              <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: MUTED }} />
-              <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: MUTED }} />
+              <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: MUTED }} interval={0} />
+              <YAxis width={32} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: MUTED }} />
               <Tooltip contentStyle={chartTooltipStyle} />
-              <Legend />
               <Area
                 type="monotone"
                 dataKey="present"
@@ -120,6 +119,29 @@ export function WeeklyChart({ data }: { data: WeeklyStat[] }) {
               />
             </AreaChart>
           </ResponsiveContainer>
+          </div>
+          <ul className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5">
+            {(
+              [
+                ["present", CHART.present, t("charts.present")],
+                ["wfh", CHART.wfh, t("charts.wfh")],
+                ["late", CHART.late, t("charts.late")],
+                ["absent", CHART.absent, t("charts.absent")],
+              ] as const
+            ).map(([key, color, label]) => (
+              <li
+                key={key}
+                className="inline-flex min-w-0 items-center gap-1.5 text-[11px] text-muted-foreground"
+              >
+                <span
+                  className="h-2 w-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: color }}
+                  aria-hidden
+                />
+                <span className="truncate">{label}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
     </Reveal>

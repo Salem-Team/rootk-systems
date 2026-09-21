@@ -68,6 +68,7 @@ export function CrmLeadSheet({
     onChanged,
   });
   const { t, lead } = sheet;
+  const deleted = Boolean(lead?.deletedAt);
 
   return (
     <>
@@ -87,6 +88,11 @@ export function CrmLeadSheet({
                     <SheetTitle className="truncate text-[1.15rem] leading-snug sm:text-lg">
                       {lead?.name ?? "…"}
                     </SheetTitle>
+                    {deleted ? (
+                      <p className="mt-1 text-[12px] font-medium text-rose-600 dark:text-rose-400">
+                        {t("crm.leadSheet.deletedNote")}
+                      </p>
+                    ) : null}
                     <SheetDescription asChild>
                       <div className="mt-1.5">
                         {lead ? (
@@ -116,7 +122,7 @@ export function CrmLeadSheet({
                 </p>
               </SheetHeader>
 
-              {lead ? (
+              {lead && !deleted ? (
                 <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-1.5">
                   <Button
                     type="button"
@@ -187,7 +193,7 @@ export function CrmLeadSheet({
             )}
           </div>
 
-          {lead ? (
+          {lead && !deleted ? (
             <div className="shrink-0 border-t border-border/60 bg-card/95 px-3 py-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl sm:hidden">
               <Button
                 type="button"

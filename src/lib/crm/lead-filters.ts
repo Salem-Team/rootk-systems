@@ -14,7 +14,24 @@ export type CrmLeadScopeOpts = {
   teamOwnerIds?: string[];
   /** Feedback, stage, owner, and business-type text keyed by lead id. */
   searchTextByLeadId?: ReadonlyMap<string, string>;
+  /**
+   * Admin search with no status filter: keep soft-deleted rows in the result.
+   * Everyone else never sees `deletedAt`.
+   */
+  includeDeletedMatches?: boolean;
 };
+
+function matchesLeadDeletionFilter(
+  lead: CrmLead,
+  filters: CrmLeadFilters,
+  opts?: CrmLeadScopeOpts
+): boolean {
+  const deleted = Boolean(lead.deletedAt);
+  if (filters.status === "deleted") return deleted;
+  if (deleted && !opts?.includeDeletedMatches) return false;
+  if (filters.status && lead.status !== filters.status) return false;
+  return true;
+}
 
 function isInCrmScope(
   ownerEmployeeId: string | null | undefined,
@@ -85,7 +102,7 @@ export function filterLeads(
     if (filters.stageId && lead.stageId !== filters.stageId) return false;
     if (filters.subStageId && lead.subStageId !== filters.subStageId)
       return false;
-    if (filters.status && lead.status !== filters.status) return false;
+    if (!matchesLeadDeletionFilter(lead, filters, opts)) return false;
     if (filters.source && lead.source !== filters.source) return false;
     if (filters.tag && !lead.tags.includes(filters.tag)) return false;
 

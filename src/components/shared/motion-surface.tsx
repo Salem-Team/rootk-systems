@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { softSpring, snappySpring, surfaceEnter } from "@/lib/animations";
+import { softSpring, surfaceEnter } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 
 interface MotionSurfaceProps {
@@ -17,8 +17,8 @@ interface MotionSurfaceProps {
 }
 
 /**
- * Elevated surface with enter motion + optional hover lift.
- * Opacity lives only on this node (safe under AppShell route transition).
+ * Elevated surface with a short enter settle.
+ * Hover lift stays in CSS so it only runs on a real pointer.
  */
 export function MotionSurface({
   interactive = true,
@@ -50,12 +50,6 @@ export function MotionSurface({
           }
         : { animate: surfaceEnter.animate })}
       transition={{ ...softSpring, delay }}
-      whileHover={
-        interactive
-          ? { y: -3, transition: snappySpring }
-          : undefined
-      }
-      whileTap={interactive ? { scale: 0.992 } : undefined}
     >
       {children}
     </motion.div>

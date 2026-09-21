@@ -6,7 +6,7 @@ import type { LucideIcon } from "lucide-react";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { AnimatedCounter } from "@/components/shared/animated-counter";
 import { Badge } from "@/components/ui/badge";
-import { iconPop, snappySpring } from "@/lib/animations";
+import { iconPop } from "@/lib/animations";
 import { cn } from "@/lib/utils";
 import type { SparkPoint } from "@/components/dashboard/dashboard-mock-data";
 
@@ -82,20 +82,20 @@ export function KpiCard({
 
   const content = (
     <>
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-2 sm:gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <p className="section-label !mb-0">{label}</p>
+          <div className="flex flex-wrap items-center gap-1">
+            <p className="section-label !mb-0 line-clamp-2 leading-snug">{label}</p>
             {badge ? (
               <Badge
                 variant="info"
-                className="h-5 px-1.5 text-[10px] font-semibold"
+                className="h-5 max-w-full px-1.5 text-[10px] font-semibold"
               >
                 {badge}
               </Badge>
             ) : null}
           </div>
-          <p className="stat-value mt-2 text-[1.35rem] leading-none sm:mt-2.5 sm:text-[1.55rem] md:text-[1.7rem]">
+          <p className="stat-value mt-1.5 text-[1.28rem] leading-none sm:mt-2.5 sm:text-[1.55rem] md:text-[1.7rem]">
             <AnimatedCounter
               value={value}
               suffix={suffix}
@@ -103,7 +103,7 @@ export function KpiCard({
             />
           </p>
           {hint ? (
-            <p className="mt-1.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground">
+            <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-muted-foreground sm:mt-1.5">
               {hint}
             </p>
           ) : null}
@@ -130,8 +130,10 @@ export function KpiCard({
         </div>
         <div className="flex flex-col items-end gap-2.5">
           <motion.div
+            initial={reduceMotion ? false : "rest"}
+            whileHover={reduceMotion ? undefined : "hover"}
             variants={reduceMotion ? undefined : iconPop}
-            className={cn("icon-well h-9 w-9 shrink-0", tone)}
+            className={cn("icon-well h-8 w-8 shrink-0 sm:h-9 sm:w-9", tone)}
           >
             <Icon className="h-3.5 w-3.5" aria-hidden />
           </motion.div>
@@ -142,48 +144,20 @@ export function KpiCard({
   );
 
   const shellClass = cn(
-    "kpi-tile surface-panel-interactive group relative block h-full overflow-hidden",
+    "kpi-tile group relative block h-full overflow-hidden",
     href && "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
     className
   );
 
   if (href) {
     return (
-      <motion.div
-        initial={reduceMotion ? false : "rest"}
-        whileHover={reduceMotion ? undefined : "hover"}
-        variants={
-          reduceMotion
-            ? undefined
-            : {
-                rest: { y: 0 },
-                hover: { y: -2, transition: snappySpring },
-              }
-        }
-        className="h-full"
-      >
+      <div className="h-full">
         <Link href={href} className={shellClass} aria-label={label}>
           {content}
         </Link>
-      </motion.div>
+      </div>
     );
   }
 
-  return (
-    <motion.article
-      initial={reduceMotion ? false : "rest"}
-      whileHover={reduceMotion ? undefined : "hover"}
-      variants={
-        reduceMotion
-          ? undefined
-          : {
-              rest: { y: 0 },
-              hover: { y: -2, transition: snappySpring },
-            }
-      }
-      className={shellClass}
-    >
-      {content}
-    </motion.article>
-  );
+  return <article className={shellClass}>{content}</article>;
 }
