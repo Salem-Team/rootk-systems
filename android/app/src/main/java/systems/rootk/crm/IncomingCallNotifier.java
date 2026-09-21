@@ -10,18 +10,21 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
 /**
- * Heads-up notice while a call is ringing.
- * This is the supported surface on current Android: a system overlay cannot
- * cover the incoming-call screen, and Play rejects that permission for a CRM.
+ * Heads-up notice while a client is ringing: name, request, and budget.
+ * Stays up through the call so it can be read from the shade if the system
+ * hides windows drawn over the incoming-call screen.
  */
 final class IncomingCallNotifier {
 
-    static final String CHANNEL_ID = "crm_incoming_calls";
+    static final String CHANNEL_ID = "crm_incoming_calls_v2";
     static final int NOTIFICATION_ID = 420_001;
     static final String EXTRA_NUMBER = "rootk_incoming_number";
     static final String EXTRA_LEAD = "rootk_incoming_lead";
 
-    private static final long TIMEOUT_MS = 45_000L;
+    private static String lastTitle = "";
+    private static String lastBody = "";
+    private static String lastLead = "";
+    private static String lastNumber = "";
 
     private IncomingCallNotifier() {}
 
@@ -30,9 +33,16 @@ final class IncomingCallNotifier {
         return NotificationManagerCompat.from(context.getApplicationContext()).areNotificationsEnabled();
     }
 
-    static void showNumber(Context context, String number) {
-        if (context == null || number == null || number.trim().isEmpty()) return;
-        show(context, "ROOTK", number.trim(), "", number.trim());
+    static void showCard(Context context, IncomingLeadIndex.Card card) {
+        if (card == null) return;
+        String title = card.title == null || card.title.isEmpty() ? card.name : card.title;
+        show(context, title, card.notificationBody(), card.leadId, card.phone, true);
+    }
+
+    /** After hangup, keep the same text swipeable for a short while. */
+    static void relax(Context context) {
+        if (lastTitle.isEmpty() && lastBody.isEmpty()) return;
+        show(context, lastTitle, lastBody, lastLead, lastNumber, false);
     }
 
     static void show(
@@ -42,22 +52,39 @@ final class IncomingCallNotifier {
         String leadId,
         String number
     ) {
+        show(context, title, body, leadId, number, true);
+    }
+
+    private static void show(
+        Context context,
+        String title,
+        String body,
+        String leadId,
+        String number,
+        boolean ongoing
+    ) {
         if (context == null) return;
         Context app = context.getApplicationContext();
         if (!NotificationManagerCompat.from(app).areNotificationsEnabled()) return;
+        lastTitle = title == null ? "" : title;
+        lastBody = body == null ? "" : body;
+        lastLead = leadId == null ? "" : leadId;
+        lastNumber = number == null ? "" : number;
         ensureChannel(app);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(app, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_call)
-            .setContentTitle(title == null || title.isEmpty() ? "ROOTK" : title)
-            .setContentText(body == null ? "" : body)
-            .setStyle(new NotificationCompat.BigTextStyle().bigText(body == null ? "" : body))
+            .setContentTitle(lastTitle.isEmpty() ? "ROOTK" : lastTitle)
+            .setContentText(lastBody)
+            .setStyle(new NotificationCompat.BigTextStyle().bigText(lastBody))
             .setCategory(NotificationCompat.CATEGORY_CALL)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setOngoing(ongoing)
+            .setAutoCancel(!ongoing)
             .setOnlyAlertOnce(true)
-            .setTimeoutAfter(TIMEOUT_MS)
-            .setContentIntent(openApp(app, number, leadId));
+            .setColor(0xFF082868)
+            .setContentIntent(openApp(app, lastNumber, lastLead));
+        if (!ongoing) builder.setTimeoutAfter(60_000L);
         try {
             NotificationManagerCompat.from(app).notify(NOTIFICATION_ID, builder.build());
         } catch (SecurityException ignored) {
@@ -97,10 +124,10 @@ final class IncomingCallNotifier {
         NotificationChannel channel = new NotificationChannel(
             CHANNEL_ID,
             "ROOTK calls",
-            NotificationManager.IMPORTANCE_HIGH
+            NotificationManager.IMPORTANCE_MAX
         );
         channel.setDescription("Who is calling, and their request and budget");
-        channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PRIVATE);
+        channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
         manager.createNotificationChannel(channel);
     }
 }

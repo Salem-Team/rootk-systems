@@ -3458,8 +3458,10 @@ export const en = {
         empty: "Not set",
         open: "Open lead",
         hide: "Hide",
+        overlayHint:
+          "Allow display over other apps so the request and budget card can sit on top of the ringing screen.",
         screeningHint:
-          "Allow ROOTK to identify incoming calls. A notification shows the client, request, and budget while the phone rings, without covering the call screen.",
+          "Allow ROOTK to identify incoming calls so the number is captured while it is ringing, and the request and budget can be shown.",
       },
     },
     contacts: {

@@ -10,6 +10,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.CallLog;
+import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import androidx.activity.result.ActivityResult;
 import com.getcapacitor.JSObject;
@@ -42,6 +43,25 @@ public class RootkCallInsightPlugin extends Plugin {
 
     private BroadcastReceiver phoneReceiver;
     private boolean watchStarted;
+
+    @Override
+    public void load() {
+        IncomingLeadOverlay.setListener(new IncomingLeadOverlay.Listener() {
+            @Override
+            public void onOpen(String leadId) {
+                JSObject data = new JSObject();
+                data.put("leadId", leadId == null ? "" : leadId);
+                notifyListeners("openIncomingLead", data);
+                bringAppToFront();
+            }
+
+            @Override
+            public void onDismiss() {
+                notifyListeners("incomingCardDismissed", new JSObject());
+                IncomingCallNotifier.cancel(getContext());
+            }
+        });
+    }
 
     @PluginMethod
     public void getLatestOutbound(PluginCall call) {
@@ -145,7 +165,6 @@ public class RootkCallInsightPlugin extends Plugin {
         IncomingCallBus.setEmitter(null);
         unregisterPhoneReceiver();
         watchStarted = false;
-        IncomingCallNotifier.cancel(getContext());
         call.resolve();
     }
 
@@ -161,16 +180,38 @@ public class RootkCallInsightPlugin extends Plugin {
 
     @PluginMethod
     public void incomingCapabilities(PluginCall call) {
+        Context ctx = getContext();
         JSObject data = new JSObject();
-        data.put("overlay", false);
+        data.put("overlay", ctx != null && IncomingLeadOverlay.canDraw(ctx));
         data.put("screening", holdsScreeningRole());
         call.resolve(data);
     }
 
     @PluginMethod
     public void requestOverlayPermission(PluginCall call) {
+        Context ctx = getContext();
+        if (ctx != null && IncomingLeadOverlay.canDraw(ctx)) {
+            JSObject data = new JSObject();
+            data.put("granted", true);
+            call.resolve(data);
+            return;
+        }
+        if (ctx == null) {
+            call.reject("NO_CONTEXT");
+            return;
+        }
+        Intent intent = new Intent(
+            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            Uri.parse("package:" + ctx.getPackageName())
+        );
+        startActivityForResult(call, intent, "overlayPermissionResult");
+    }
+
+    @ActivityCallback
+    private void overlayPermissionResult(PluginCall call, ActivityResult result) {
+        Context ctx = getContext();
         JSObject data = new JSObject();
-        data.put("granted", false);
+        data.put("granted", ctx != null && Settings.canDrawOverlays(ctx));
         call.resolve(data);
     }
 
@@ -210,31 +251,45 @@ public class RootkCallInsightPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void syncIncomingLeads(PluginCall call) {
+        IncomingLeadIndex.save(getContext(), call.getString("index", ""));
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void replayRecentIncoming(PluginCall call) {
+        IncomingCallBus.replayRecent();
+        call.resolve();
+    }
+
+    @PluginMethod
     public void showIncomingLeadCard(PluginCall call) {
         Context ctx = getContext();
-        String leadId = text(call, "leadId");
-        String title = text(call, "title");
-        String name = text(call, "name");
-        String request = text(call, "request");
-        String budget = text(call, "budget");
-        String requestLabel = text(call, "requestLabel");
-        String budgetLabel = text(call, "budgetLabel");
-        String body = requestLabel + ": " + request + " · " + budgetLabel + ": " + budget;
-        IncomingCallNotifier.show(
-            ctx,
-            title.isEmpty() ? name : title + ": " + name,
-            body,
-            leadId,
-            text(call, "phone")
-        );
+        IncomingLeadIndex.Card card = new IncomingLeadIndex.Card();
+        card.leadId = text(call, "leadId");
+        card.title = text(call, "title");
+        card.name = text(call, "name");
+        card.phone = text(call, "phone");
+        card.company = text(call, "company");
+        card.requestLabel = text(call, "requestLabel");
+        card.request = text(call, "request");
+        card.budgetLabel = text(call, "budgetLabel");
+        card.budget = text(call, "budget");
+        card.openLabel = text(call, "openLabel");
+        card.dismissLabel = text(call, "dismissLabel");
+        card.rtl = Boolean.TRUE.equals(call.getBoolean("rtl", true));
+        boolean overlay = IncomingLeadOverlay.show(ctx, card);
+        IncomingCallNotifier.showCard(ctx, card);
         JSObject data = new JSObject();
-        data.put("shown", IncomingCallNotifier.canNotify(ctx));
+        data.put("shown", overlay || IncomingCallNotifier.canNotify(ctx));
         call.resolve(data);
     }
 
     @PluginMethod
     public void hideIncomingLeadCard(PluginCall call) {
-        IncomingCallNotifier.cancel(getContext());
+        Context ctx = getContext();
+        IncomingLeadOverlay.hide(ctx);
+        IncomingCallNotifier.cancel(ctx);
         call.resolve();
     }
 
@@ -276,7 +331,7 @@ public class RootkCallInsightPlugin extends Plugin {
         IntentFilter filter = new IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED);
         Context app = ctx.getApplicationContext();
         if (Build.VERSION.SDK_INT >= 33) {
-            app.registerReceiver(phoneReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            app.registerReceiver(phoneReceiver, filter, Context.RECEIVER_EXPORTED);
         } else {
             app.registerReceiver(phoneReceiver, filter);
         }
@@ -293,6 +348,19 @@ public class RootkCallInsightPlugin extends Plugin {
             }
         }
         phoneReceiver = null;
+    }
+
+    private void bringAppToFront() {
+        Context ctx = getContext();
+        if (ctx == null) return;
+        Intent launch = ctx.getPackageManager().getLaunchIntentForPackage(ctx.getPackageName());
+        if (launch == null) return;
+        launch.addFlags(
+            Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP
+                | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+        );
+        ctx.startActivity(launch);
     }
 
     private boolean holdsScreeningRole() {

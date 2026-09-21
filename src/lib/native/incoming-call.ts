@@ -1,11 +1,13 @@
+import { displayCrmPhone } from "@/lib/crm/phone-links";
 import { isNativeApp, nativePlatform } from "@/lib/native/platform";
 import {
   rootkCallInsight,
   type IncomingCallEvent,
   type IncomingLeadCardInput,
 } from "@/lib/native/call-insight";
+import type { CrmLead } from "@/types/crm";
 
-const CHANNEL_ID = "crm_incoming_calls";
+const CHANNEL_ID = "crm_incoming_calls_v2";
 const NOTIFICATION_ID = 420_001;
 
 type LocalNotificationsPlugin = typeof import("@capacitor/local-notifications").LocalNotifications;
@@ -28,6 +30,14 @@ export function incomingCallsSupported(): boolean {
 
 export async function ensureIncomingCallAccess(): Promise<void> {
   if (!incomingCallsSupported()) return;
+  try {
+    const current = await rootkCallInsight.checkPermissions();
+    if (current.callLog !== "granted" || current.phoneState !== "granted") {
+      await rootkCallInsight.requestPermissions();
+    }
+  } catch {
+    /* runtime permission UI unavailable */
+  }
   const plugin = await notifications();
   if (!plugin) return;
   try {
@@ -37,6 +47,88 @@ export async function ensureIncomingCallAccess(): Promise<void> {
   } catch {
     /* notification prompt unavailable */
   }
+}
+
+export async function replayRecentIncomingCall(): Promise<void> {
+  if (!incomingCallsSupported()) return;
+  try {
+    await rootkCallInsight.replayRecentIncoming();
+  } catch {
+    /* plugin not ready */
+  }
+}
+
+export async function syncIncomingLeadCache(
+  leads: CrmLead[],
+  labels: {
+    rtl: boolean;
+    title: string;
+    request: string;
+    budget: string;
+    empty: string;
+    open: string;
+    hide: string;
+  }
+): Promise<void> {
+  if (!incomingCallsSupported()) return;
+  const byTail: Record<
+    string,
+    { id: string; name: string; phone: string; company: string; request: string; budget: string }
+  > = {};
+  for (const lead of leads) {
+    const request = clip(lead.request) || labels.empty;
+    const budget = clip(lead.budget) || labels.empty;
+    const row = {
+      id: lead.id,
+      name: lead.name,
+      phone: displayCrmPhone(lead.phone, lead.phoneNormalized),
+      company: lead.companyName.trim(),
+      request,
+      budget,
+    };
+    for (const key of phoneTails(lead)) {
+      if (!byTail[key]) byTail[key] = row;
+    }
+  }
+  try {
+    await rootkCallInsight.syncIncomingLeads({
+      index: JSON.stringify({
+        rtl: labels.rtl,
+        labels: {
+          title: labels.title,
+          request: labels.request,
+          budget: labels.budget,
+          empty: labels.empty,
+          open: labels.open,
+          hide: labels.hide,
+        },
+        byTail,
+      }),
+    });
+  } catch {
+    /* native index unavailable until the Android build includes it */
+  }
+}
+
+function clip(value: string, max = 180) {
+  const text = value.trim();
+  if (text.length <= max) return text;
+  return `${text.slice(0, max - 1)}…`;
+}
+
+function phoneTails(lead: CrmLead): string[] {
+  const values = [
+    lead.phone,
+    lead.phoneNormalized,
+    ...(lead.contacts ?? []).flatMap((contact) => [contact.phone, contact.phoneNormalized]),
+  ];
+  const tails = new Set<string>();
+  for (const value of values) {
+    if (!value) continue;
+    const digits = value.replace(/\D/g, "");
+    if (digits.length >= 7) tails.add(digits.slice(-9));
+  }
+  return [...tails];
 }
 
 export async function startIncomingCallWatch(): Promise<void> {

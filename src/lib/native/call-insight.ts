@@ -53,6 +53,8 @@ type CallInsightPlugin = {
   requestScreeningRole(): Promise<{ granted: boolean }>;
   showIncomingLeadCard(options: IncomingLeadCardInput): Promise<{ shown: boolean }>;
   hideIncomingLeadCard(): Promise<void>;
+  syncIncomingLeads(options: { index: string }): Promise<void>;
+  replayRecentIncoming(): Promise<void>;
   addListener(
     eventName: "incomingCall",
     listenerFunc: (event: IncomingCallEvent) => void
@@ -98,6 +100,8 @@ export const rootkCallInsight = registerPlugin<CallInsightPlugin>("RootkCallInsi
       return { shown: false };
     },
     async hideIncomingLeadCard() {},
+    async syncIncomingLeads() {},
+    async replayRecentIncoming() {},
     async addListener() {
       return { remove: async () => undefined };
     },

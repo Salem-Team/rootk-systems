@@ -11,8 +11,10 @@
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <!-- Talk time for a call the user just placed from ROOTK. Not a full log sync. -->
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
-    <!-- Ringing / idle so the incoming notice can dismiss. The number comes from the screening role. -->
+    <!-- Ringing state. The incoming number also requires the call-screening role on newer Android. -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <!-- Card above the incoming-call screen when the device still allows it. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <!-- Biometric unlock (fingerprint / face) — optional hardware. -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />

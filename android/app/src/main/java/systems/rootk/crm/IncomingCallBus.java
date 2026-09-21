@@ -46,6 +46,8 @@ final class IncomingCallBus {
     private static String lastTail = "";
     private static long lastRingAt;
 
+    private static long lastReplayedPendingAt;
+
     private IncomingCallBus() {}
 
     static synchronized void setEmitter(Emitter next) {
@@ -61,8 +63,12 @@ final class IncomingCallBus {
         lastTail = tail;
         lastRingAt = now;
         active = true;
-        deliver(raw, "ringing", "");
-        IncomingCallNotifier.showNumber(context, raw);
+        IncomingLeadIndex.Card card = IncomingLeadIndex.match(context, raw);
+        String leadId = card == null ? "" : card.leadId;
+        deliver(raw, "ringing", leadId);
+        if (card == null) return;
+        IncomingLeadOverlay.show(context, card);
+        IncomingCallNotifier.showCard(context, card);
     }
 
     static synchronized void publishOffhook() {
@@ -71,13 +77,10 @@ final class IncomingCallBus {
     }
 
     static synchronized void publishIdle(Context context) {
-        if (!active && pendingLeadId.isEmpty()) {
-            IncomingCallNotifier.cancel(context);
-            return;
-        }
+        if (!active) return;
         active = false;
         deliver(pendingNumber, "idle", pendingLeadId);
-        IncomingCallNotifier.cancel(context);
+        IncomingCallNotifier.relax(context);
     }
 
     /** Notification tap, including a cold start before JS is listening. */
@@ -94,7 +97,16 @@ final class IncomingCallBus {
         }
     }
 
-    static synchronized Snapshot consumePending() {
+    /** App came back while the call (or the minute after it) is still relevant. */
+    static synchronized void replayRecent() {
+        if (pendingAt == 0 || pendingAt == lastReplayedPendingAt) return;
+        if (System.currentTimeMillis() - pendingAt > 120_000L) return;
+        if (pendingLeadId.isEmpty() || pendingNumber.isEmpty()) return;
+        Emitter current = emitter;
+        if (current == null) return;
+        lastReplayedPendingAt = pendingAt;
+        current.onIncoming(pendingNumber, "recall", pendingLeadId);
+    }
         if (pendingDelivered || pendingAt == 0) return Snapshot.empty();
         if (System.currentTimeMillis() - pendingAt > FRESH_MS) return Snapshot.empty();
         pendingDelivered = true;
