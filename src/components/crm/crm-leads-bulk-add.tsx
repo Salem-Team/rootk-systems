@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useCrmLeadsBulkAdd } from "@/hooks/use-crm-leads-bulk-add";
+import { businessTypeLabel } from "@/lib/crm/business-type-label";
 import type { Employee } from "@/types";
 import type { CrmBusinessType, CrmStage } from "@/types/crm";
 
@@ -188,7 +189,7 @@ export function CrmLeadsBulkAdd({
                       </SelectItem>
                       {bulk.activeBusinessTypes.map((b) => (
                         <SelectItem key={b.id} value={b.id}>
-                          {b.name}
+                          {businessTypeLabel(b.name, t)}
                         </SelectItem>
                       ))}
                     </SelectContent>

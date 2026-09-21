@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatMaybeDateTime } from "@/lib/crm/format";
+import { businessTypeLabel } from "@/lib/crm/business-type-label";
 import type { Employee } from "@/types";
 import type {
   CrmBusinessType,
@@ -84,8 +85,11 @@ export function CrmLeadSheetTabs({
   onRequestBudgetSaved,
 }: CrmLeadSheetTabsProps) {
   const { t } = useTranslation();
-  const businessTypeName =
-    businessTypes.find((b) => b.id === lead.businessTypeId)?.name || "—";
+  const businessTypeName = (() => {
+    const stored =
+      businessTypes.find((b) => b.id === lead.businessTypeId)?.name ?? "";
+    return stored ? businessTypeLabel(stored, t) : "—";
+  })();
   const employeeNameById = new Map(employees.map((e) => [e.id, e.name]));
 
   return (

@@ -20,6 +20,8 @@ export type CrmLeadSource =
   | "referral"
   | "organic"
   | "advertisement"
+  | "google"
+  | "chatgpt"
   | "other";
 
 export type CrmNextAction =

@@ -34,6 +34,8 @@ const SOURCES: CrmLeadSource[] = [
   "referral",
   "organic",
   "advertisement",
+  "google",
+  "chatgpt",
   "other",
 ];
 

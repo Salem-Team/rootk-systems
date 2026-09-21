@@ -243,9 +243,18 @@ export function normalizeSource(value: string): CrmLeadSource {
     "referral",
     "organic",
     "advertisement",
+    "google",
+    "chatgpt",
     "other",
   ];
-  return (allowed.find((s) => s === v) ?? "other") as CrmLeadSource;
+  const aliases: Record<string, CrmLeadSource> = {
+    google: "google",
+    جوجل: "google",
+    chatgpt: "chatgpt",
+    "chat gpt": "chatgpt",
+    "شات جي بي تي": "chatgpt",
+  };
+  return aliases[v] ?? (allowed.find((s) => s === v) ?? "other");
 }
 
 export function normalizeStatus(value: string): CrmLeadStatus {

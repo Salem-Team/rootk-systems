@@ -27,17 +27,42 @@ export const DEFAULT_BUSINESS_TYPES: Array<{
   name: string;
   sortOrder: number;
 }> = [
-  { name: "Technology", sortOrder: 0 },
-  { name: "Healthcare", sortOrder: 1 },
-  { name: "Education", sortOrder: 2 },
-  { name: "Retail", sortOrder: 3 },
-  { name: "Real Estate", sortOrder: 4 },
-  { name: "Manufacturing", sortOrder: 5 },
-  { name: "Finance", sortOrder: 6 },
-  { name: "Food & Beverage", sortOrder: 7 },
-  { name: "Construction", sortOrder: 8 },
-  { name: "Other", sortOrder: 9 },
+  { name: "تكنولوجيا", sortOrder: 0 },
+  { name: "رعاية صحية", sortOrder: 1 },
+  { name: "تعليم", sortOrder: 2 },
+  { name: "تجارة التجزئة", sortOrder: 3 },
+  { name: "عقارات", sortOrder: 4 },
+  { name: "تصنيع", sortOrder: 5 },
+  { name: "تمويل وخدمات مالية", sortOrder: 6 },
+  { name: "أغذية ومشروبات", sortOrder: 7 },
+  { name: "مقاولات وبناء", sortOrder: 8 },
+  { name: "خدمات لوجستية", sortOrder: 9 },
+  { name: "تسويق وإعلان", sortOrder: 10 },
+  { name: "سياحة وفنادق", sortOrder: 11 },
+  { name: "زراعة", sortOrder: 12 },
+  { name: "تجارة إلكترونية", sortOrder: 13 },
+  { name: "خدمات قانونية", sortOrder: 14 },
+  { name: "طاقة", sortOrder: 15 },
+  { name: "اتصالات", sortOrder: 16 },
+  { name: "تجارة الجملة", sortOrder: 17 },
+  { name: "خدمات مهنية", sortOrder: 18 },
+  { name: "مطاعم وضيافة", sortOrder: 19 },
+  { name: "أخرى", sortOrder: 20 },
 ];
+
+/** Old English seed names → Arabic labels. Keys are lowercased. */
+export const BUSINESS_TYPE_ENGLISH_NAMES: Record<string, string> = {
+  technology: "تكنولوجيا",
+  healthcare: "رعاية صحية",
+  education: "تعليم",
+  retail: "تجارة التجزئة",
+  "real estate": "عقارات",
+  manufacturing: "تصنيع",
+  finance: "تمويل وخدمات مالية",
+  "food & beverage": "أغذية ومشروبات",
+  construction: "مقاولات وبناء",
+  other: "أخرى",
+};
 
 export const DEFAULT_FEEDBACK_TYPES: Array<{
   name: string;

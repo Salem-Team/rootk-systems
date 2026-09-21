@@ -176,6 +176,8 @@ enum CrmLeadSource {
   referral
   organic
   advertisement
+  google
+  chatgpt
   other
 }
 

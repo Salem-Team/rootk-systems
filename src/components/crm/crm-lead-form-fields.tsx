@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CrmIntlPhoneInput } from "@/components/crm/crm-intl-phone-input";
 import { useTranslation } from "@/hooks/use-translation";
 import { CRM_CONTACT_KINDS } from "@/lib/crm/contact-identity";
+import { businessTypeLabel } from "@/lib/crm/business-type-label";
 import { NEXT_ACTIONS, SOURCES, STATUSES, TAGS } from "@/lib/crm/lead-form-options";
 import type { LeadFormContactDraft } from "@/lib/crm/lead-contacts";
 import type { Employee } from "@/types";
@@ -253,7 +254,7 @@ export function CrmLeadFormFields({
             </SelectItem>
             {activeBusinessTypes.map((b) => (
               <SelectItem key={b.id} value={b.id}>
-                {b.name}
+                {businessTypeLabel(b.name, t)}
               </SelectItem>
             ))}
           </SelectContent>

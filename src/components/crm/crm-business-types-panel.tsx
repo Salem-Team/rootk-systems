@@ -18,6 +18,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useCrmBusinessTypesPanel } from "@/hooks/use-crm-business-types-panel";
+import { businessTypeLabel } from "@/lib/crm/business-type-label";
 import { cn } from "@/lib/utils";
 
 /** Admin CRUD for company / industry types used on leads. */
@@ -62,7 +63,7 @@ export function CrmBusinessTypesPanel({ className }: { className?: string }) {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-[13px] font-semibold">
-                    <BidiText text={row.name} />
+                    <BidiText text={businessTypeLabel(row.name, t)} />
                   </p>
                   {!row.active ? (
                     <Badge variant="outline">{t("crm.stages.inactive")}</Badge>

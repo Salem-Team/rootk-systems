@@ -8,6 +8,15 @@ export const CRM_REQUEST_PRODUCTS = [
   "website",
   "accounting",
   "pos",
+  "ecommerce",
+  "inventory",
+  "marketing",
+  "call_center",
+  "payroll",
+  "school",
+  "clinic",
+  "custom_software",
+  "bi",
 ] as const;
 
 export type CrmRequestProduct = (typeof CRM_REQUEST_PRODUCTS)[number];
@@ -23,6 +32,16 @@ export const CRM_REQUEST_INDUSTRIES = [
   "logistics",
   "construction",
   "restaurants",
+  "technology",
+  "finance",
+  "food",
+  "tourism",
+  "agriculture",
+  "legal",
+  "energy",
+  "telecom",
+  "ecommerce",
+  "marketing",
 ] as const;
 
 export type CrmRequestIndustry = (typeof CRM_REQUEST_INDUSTRIES)[number];
@@ -94,6 +113,7 @@ export function parseCrmRequest(raw: string): ParsedCrmRequest {
       if (p === "mobile_app") {
         return /mobile\s*app|موبايل|تطبيق/.test(lower);
       }
+      if (p.length <= 3) return new RegExp(`\\b${p}\\b`, "i").test(text);
       return lower.includes(p);
     });
     return { products, industries: [], notes: text };
@@ -157,13 +177,34 @@ export function matchProductToken(token: string): CrmRequestProduct | null {
   const n = normalizeToken(token);
   if (PRODUCT_SET.has(n)) return n as CrmRequestProduct;
   const aliases: Record<string, CrmRequestProduct> = {
-    "mobile_app": "mobile_app",
+    mobile_app: "mobile_app",
     mobile: "mobile_app",
     app: "mobile_app",
     موبايل: "mobile_app",
     تطبيق: "mobile_app",
+    تطبيق_موبايل: "mobile_app",
     محاسبة: "accounting",
     موقع: "website",
+    موقع_إلكتروني: "website",
+    إدارة_العملاء: "crm",
+    موارد_بشرية: "hr",
+    نظام_إدارة: "erp",
+    نقاط_البيع: "pos",
+    تجارة_إلكترونية: "ecommerce",
+    مخزون: "inventory",
+    تسويق: "marketing",
+    كول_سنتر: "call_center",
+    مرتبات: "payroll",
+    نظام_مدارس: "school",
+    نظام_عيادات: "clinic",
+    برنامج_مخصص: "custom_software",
+    تقارير_ولوحات: "bi",
+    "e-commerce": "ecommerce",
+    ecommerce: "ecommerce",
+    inventory: "inventory",
+    marketing: "marketing",
+    payroll: "payroll",
+    "call_center": "call_center",
   };
   return aliases[n] ?? null;
 }
@@ -175,15 +216,31 @@ export function matchIndustryToken(token: string): CrmRequestIndustry | null {
   const aliases: Record<string, CrmRequestIndustry> = {
     تصنيع: "manufacturing",
     تجارة: "trading",
+    تجارة_الجملة: "trading",
     خدمات: "services",
-    "رعاية_صحية": "healthcare",
+    رعاية_صحية: "healthcare",
     تعليم: "education",
     عقارات: "real_estate",
-    "realestate": "real_estate",
+    realestate: "real_estate",
     تجزئة: "retail",
+    تجارة_التجزئة: "retail",
     لوجستيات: "logistics",
+    خدمات_لوجستية: "logistics",
     مقاولات: "construction",
+    مقاولات_وبناء: "construction",
     مطاعم: "restaurants",
+    مطاعم_وضيافة: "restaurants",
+    تكنولوجيا: "technology",
+    تمويل: "finance",
+    تمويل_وخدمات_مالية: "finance",
+    أغذية_ومشروبات: "food",
+    سياحة_وفنادق: "tourism",
+    زراعة: "agriculture",
+    خدمات_قانونية: "legal",
+    طاقة: "energy",
+    اتصالات: "telecom",
+    تجارة_إلكترونية: "ecommerce",
+    تسويق_وإعلان: "marketing",
   };
   return aliases[n] ?? null;
 }

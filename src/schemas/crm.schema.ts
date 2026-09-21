@@ -9,6 +9,8 @@ const leadSource = z.enum([
   "referral",
   "organic",
   "advertisement",
+  "google",
+  "chatgpt",
   "other",
 ]);
 

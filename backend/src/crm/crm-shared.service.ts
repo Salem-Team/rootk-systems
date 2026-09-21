@@ -24,6 +24,7 @@ import {
   type Actor,
 } from "./crm-access";
 import {
+  BUSINESS_TYPE_ENGLISH_NAMES,
   CRM_SYSTEM_ACTOR_ID,
   DEFAULT_BUSINESS_TYPES,
   DEFAULT_FEEDBACK_TYPES,
@@ -186,18 +187,47 @@ export class CrmSharedService {
     companyId: string,
     actorId = CRM_SYSTEM_ACTOR_ID
   ) {
-    const count = await this.prisma.crmBusinessType.count({
+    const existing = await this.prisma.crmBusinessType.findMany({
       where: { companyId, deletedAt: null },
+      select: { id: true, name: true },
     });
-    if (count > 0) return;
+    if (existing.length === 0) {
+      await this.prisma.crmBusinessType.createMany({
+        data: DEFAULT_BUSINESS_TYPES.map((b) => ({
+          companyId,
+          name: b.name,
+          sortOrder: b.sortOrder,
+          createdBy: actorId,
+          updatedBy: actorId,
+        })),
+        skipDuplicates: true,
+      });
+      return;
+    }
+
+    const names = new Set(existing.map((row) => row.name));
+    for (const row of existing) {
+      const next = BUSINESS_TYPE_ENGLISH_NAMES[row.name.trim().toLowerCase()];
+      if (!next || next === row.name || names.has(next)) continue;
+      await this.prisma.crmBusinessType.update({
+        where: { id: row.id },
+        data: { name: next, updatedBy: actorId },
+      });
+      names.delete(row.name);
+      names.add(next);
+    }
+
+    const missing = DEFAULT_BUSINESS_TYPES.filter((b) => !names.has(b.name));
+    if (missing.length === 0) return;
     await this.prisma.crmBusinessType.createMany({
-      data: DEFAULT_BUSINESS_TYPES.map((b) => ({
+      data: missing.map((b) => ({
         companyId,
         name: b.name,
         sortOrder: b.sortOrder,
         createdBy: actorId,
         updatedBy: actorId,
       })),
+      skipDuplicates: true,
     });
   }
 
