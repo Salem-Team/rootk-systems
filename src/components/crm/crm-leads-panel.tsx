@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { CrmLeadsBulkAdd } from "@/components/crm/crm-leads-bulk-add";
 import { CrmLeadsBulkBar } from "@/components/crm/crm-leads-bulk-bar";
 import { CrmLeadsFilters } from "@/components/crm/crm-leads-filters";
+import { CrmColdCallImportDialog } from "@/components/crm/crm-cold-call-import-dialog";
 import { CrmLeadsImportDialog } from "@/components/crm/crm-leads-import-dialog";
 import { CrmLeadsTable } from "@/components/crm/crm-leads-table";
 import { useCrmLeadsPanel } from "@/hooks/use-crm-leads-panel";
@@ -399,12 +400,20 @@ export function CrmLeadsPanel({
         onFiltersChange={onFiltersChange}
       />
 
-      <CrmLeadsImportDialog
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        onImported={onImported}
-        recordType={isCold ? "cold_call" : "lead"}
-      />
+      {isCold ? (
+        <CrmColdCallImportDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          onImported={onImported}
+        />
+      ) : (
+        <CrmLeadsImportDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          onImported={onImported}
+          recordType="lead"
+        />
+      )}
     </section>
   );
 }

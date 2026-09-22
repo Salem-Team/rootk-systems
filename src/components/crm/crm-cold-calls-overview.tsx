@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import { Button } from "@/components/ui/button";
-import { CrmLeadsImportDialog } from "@/components/crm/crm-leads-import-dialog";
+import { CrmColdCallImportDialog } from "@/components/crm/crm-cold-call-import-dialog";
 import {
   Select,
   SelectContent,
@@ -240,11 +240,10 @@ export function CrmColdCallsOverview({
       ) : null}
 
       {canCreate ? (
-        <CrmLeadsImportDialog
+        <CrmColdCallImportDialog
           open={importOpen}
           onOpenChange={setImportOpen}
           onImported={onImported}
-          recordType="cold_call"
         />
       ) : null}
     </section>

@@ -3663,7 +3663,8 @@ export const en = {
       dropTitle: "Drop your sheet here or browse",
       dropHint: "xlsx · xls · csv",
       changeFile: "Change file",
-      mapHint: "Map each field to a sheet column. Name and phone are required.",
+      mapHint:
+        "Map each field to a sheet column. Name and phone are required. You can change any mapping anytime.",
       previewReady: "Previewing first {count} rows",
       optional: "optional",
     },

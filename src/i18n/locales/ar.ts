@@ -3650,7 +3650,7 @@ export const ar: TranslationKeys = {
       dropTitle: "اسحب الشيت هنا أو اختاره",
       dropHint: "xlsx · xls · csv",
       changeFile: "تغيير الملف",
-      mapHint: "اربط كل حقل بعمود من الشيت. الاسم والموبايل مطلوبين.",
+      mapHint: "اربط كل حقل بعمود من الشيت. الاسم والموبايل مطلوبين. تقدر تعدّل الربط في أي وقت.",
       previewReady: "معاينة أول {count} صف",
       optional: "اختياري",
     },

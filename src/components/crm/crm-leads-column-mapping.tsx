@@ -43,6 +43,8 @@ interface CrmLeadsColumnMappingProps {
   onChange: (field: CrmLeadCsvHeader, columnIndex: number | undefined) => void;
   /** Put required fields first and highlight them (cold-call import). */
   emphasizeRequired?: boolean;
+  /** Keep the sample column visible on small screens. */
+  alwaysShowSample?: boolean;
 }
 
 /** Map spreadsheet columns onto canonical CRM lead fields. */
@@ -52,6 +54,7 @@ export function CrmLeadsColumnMapping({
   samples,
   onChange,
   emphasizeRequired = false,
+  alwaysShowSample = false,
 }: CrmLeadsColumnMappingProps) {
   const { t } = useTranslation();
   const fields = emphasizeRequired
@@ -62,13 +65,22 @@ export function CrmLeadsColumnMapping({
     : [...CRM_LEAD_CSV_HEADERS];
 
   return (
-    <div className="max-h-64 overflow-auto rounded-xl border border-border/70">
+    <div className="max-h-[min(18rem,42vh)] overflow-auto rounded-xl border border-border/60">
       <table className="w-full text-[12px]">
         <thead className="sticky top-0 z-[1] bg-muted/95 backdrop-blur">
           <tr className="text-start">
-            <th className="px-3 py-2 font-medium">{t("crm.import.mapField")}</th>
-            <th className="px-3 py-2 font-medium">{t("crm.import.mapColumn")}</th>
-            <th className="hidden px-3 py-2 font-medium sm:table-cell">
+            <th className="px-3 py-2.5 font-semibold text-foreground/90">
+              {t("crm.import.mapField")}
+            </th>
+            <th className="px-3 py-2.5 font-semibold text-foreground/90">
+              {t("crm.import.mapColumn")}
+            </th>
+            <th
+              className={cn(
+                "px-3 py-2.5 font-semibold text-foreground/90",
+                !alwaysShowSample && "hidden sm:table-cell"
+              )}
+            >
               {t("crm.import.mapSample")}
             </th>
           </tr>
@@ -84,14 +96,15 @@ export function CrmLeadsColumnMapping({
               <tr
                 key={field}
                 className={cn(
-                  "border-t border-border/50",
-                  emphasizeRequired && required && "bg-primary/[0.03]"
+                  "border-t border-border/45",
+                  emphasizeRequired && required && !mapped && "bg-amber-500/[0.04]",
+                  emphasizeRequired && required && mapped && "bg-primary/[0.02]"
                 )}
               >
-                <td className="px-3 py-2 align-middle">
+                <td className="whitespace-nowrap px-3 py-2 align-middle">
                   <span className="font-medium">{t(FIELD_LABEL[field])}</span>
                   {required ? (
-                    <span className="ms-1 text-rose-600" title="required">
+                    <span className="ms-1 font-semibold text-rose-600" title="required">
                       *
                     </span>
                   ) : emphasizeRequired ? (
@@ -112,11 +125,11 @@ export function CrmLeadsColumnMapping({
                   >
                     <SelectTrigger
                       className={cn(
-                        "h-9 min-w-[9rem] text-[12px]",
+                        "h-9 min-w-[8.5rem] rounded-lg text-[12px]",
                         emphasizeRequired &&
                           required &&
                           !mapped &&
-                          "border-amber-500/50"
+                          "border-amber-500/45"
                       )}
                     >
                       <SelectValue placeholder={t("crm.import.skipColumn")} />
@@ -139,7 +152,13 @@ export function CrmLeadsColumnMapping({
                     </SelectContent>
                   </Select>
                 </td>
-                <td className="hidden max-w-[200px] truncate px-3 py-2 text-muted-foreground sm:table-cell">
+                <td
+                  className={cn(
+                    "max-w-[11rem] truncate px-3 py-2 text-muted-foreground",
+                    !alwaysShowSample && "hidden sm:table-cell"
+                  )}
+                  title={sample.length > 0 ? sample.join(" · ") : undefined}
+                >
                   {sample.length > 0 ? sample.join(" · ") : "—"}
                 </td>
               </tr>

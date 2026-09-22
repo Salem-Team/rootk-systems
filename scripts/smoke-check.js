@@ -526,7 +526,10 @@ function main() {
   assert(
     fileContains("src/components/crm/crm-hub-sidebar.tsx", '"coldCalls"') &&
       fileContains("src/app/(app)/crm/page.tsx", "CrmColdCallsOverview") &&
-      fileContains("src/components/crm/crm-leads-import-dialog.tsx", 'recordType === "cold_call"'),
+      fileContains(
+        "src/components/crm/crm-cold-call-import-dialog.tsx",
+        'useCrmLeadsImport(onImported, "cold_call")'
+      ),
     "cold calls hub tab + Excel import wiring"
   );
   assert(
