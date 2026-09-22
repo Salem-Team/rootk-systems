@@ -116,7 +116,7 @@ export function WorkTasksTable({
 
   return (
     <div ref={listRef} className={cn("space-y-3", className)}>
-      <WorkMotionList className="space-y-2 md:hidden">
+      <WorkMotionList className="space-y-2.5 md:hidden">
         <AnimatePresence initial={false} mode="popLayout">
           {pageTasks.map((task) => {
             const due = taskDueBucket(task.dueDate, task.status);
@@ -126,19 +126,24 @@ export function WorkTasksTable({
               <WorkMotionCard
                 key={task.id}
                 selected={selected}
-                className="min-h-[8.5rem]"
+                className="p-4"
               >
                 <button
                   type="button"
-                  className="w-full text-start"
+                  className="w-full touch-manipulation text-start active:opacity-90"
                   onClick={() => openTask?.(task)}
                 >
-                  <TaskTitleCell task={task} />
-                  <span className="mt-3 flex h-6 flex-wrap items-center gap-2">
+                  <TaskTitleCell task={task} compact={false} />
+                  <span className="mt-3 flex flex-wrap items-center gap-2">
                     <TaskStatusCell status={task.status} />
                     <TaskPriorityPill priority={task.priority} />
+                    {task.origin === "personal" ? (
+                      <span className="text-[11px] font-medium text-muted-foreground">
+                        <TaskOriginCell origin={task.origin} />
+                      </span>
+                    ) : null}
                   </span>
-                  <span className="mt-2.5 block h-5">
+                  <span className="mt-2.5 block">
                     <TaskDueCell
                       dueDate={task.dueDate}
                       overdue={due === "overdue"}
@@ -146,16 +151,27 @@ export function WorkTasksTable({
                     />
                   </span>
                 </button>
-                <div className="mt-3 flex h-9 items-center justify-between gap-2 border-t border-border/50 pt-3">
+                {showAssignee ? (
+                  <div className="mt-3">
+                    <TaskAssigneeCell
+                      ids={task.assigneeIds}
+                      employees={employees}
+                      selectedId={assigneeFilter}
+                      onSelect={onSelectAssignee}
+                      task={task}
+                    />
+                  </div>
+                ) : null}
+                <div className="mt-3.5 flex min-h-11 items-center justify-between gap-2 border-t border-border/50 pt-3.5">
                   {onDone && task.status !== "completed" ? (
                     <WorkDoneButtonMotion
                       pulse={task.status === "in_progress"}
-                      className="flex-1"
+                      className="min-w-0 flex-1"
                     >
                       <Button
                         type="button"
                         size="sm"
-                        className="h-9 w-full"
+                        className="h-11 w-full touch-manipulation rounded-xl text-[13px] font-semibold"
                         disabled={busy}
                         onClick={() => onDone(task)}
                       >
@@ -168,7 +184,11 @@ export function WorkTasksTable({
                       </Button>
                     </WorkDoneButtonMotion>
                   ) : (
-                    <span />
+                    <span className="min-w-0 flex-1 text-[12px] text-muted-foreground">
+                      {task.status === "completed"
+                        ? t("ops.statusCompleted")
+                        : null}
+                    </span>
                   )}
                   <TaskRowMenu
                     task={task}

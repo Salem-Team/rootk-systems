@@ -20,8 +20,8 @@ const AdminWorkHeroCharts = dynamic(
     ssr: false,
     loading: () => (
       <div className="grid gap-2.5 sm:grid-cols-2">
-        <div className="h-[172px] animate-pulse rounded-2xl bg-white/10" />
-        <div className="h-[172px] animate-pulse rounded-2xl bg-white/10" />
+        <div className="h-[168px] animate-pulse rounded-2xl bg-white/10 sm:h-[172px]" />
+        <div className="h-[168px] animate-pulse rounded-2xl bg-white/10 sm:h-[172px]" />
       </div>
     ),
   }
@@ -46,7 +46,7 @@ export function AdminWorkHero({
       variants={fadeInUp}
       initial={reduceMotion ? false : "hidden"}
       animate="visible"
-      className="relative overflow-hidden rounded-[1.5rem] border border-primary/20 bg-[linear-gradient(155deg,#061c4a_0%,#082868_48%,#0c3a7a_100%)] p-5 text-primary-foreground shadow-[var(--shadow-card-hover)] sm:p-7"
+      className="relative overflow-hidden rounded-[1.25rem] border border-primary/20 bg-[linear-gradient(155deg,#061c4a_0%,#082868_48%,#0c3a7a_100%)] p-4 text-primary-foreground shadow-[var(--shadow-card-hover)] sm:rounded-[1.5rem] sm:p-7"
     >
       <div
         aria-hidden
@@ -56,16 +56,16 @@ export function AdminWorkHero({
             "radial-gradient(circle at 90% 12%, rgba(255,255,255,0.16), transparent 34%), radial-gradient(circle at 8% 88%, rgba(56,189,248,0.16), transparent 40%)",
         }}
       />
-      <div className="relative space-y-5">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <div className="relative space-y-4 sm:space-y-5">
+        <div className="flex flex-col gap-4 sm:gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">
               {t("workAdmin.eyebrow")}
             </p>
-            <h1 className="font-display mt-2 text-[1.45rem] font-bold leading-tight tracking-tight text-white sm:text-[2rem]">
+            <h1 className="font-display mt-1.5 text-[1.35rem] font-bold leading-tight tracking-tight text-white sm:mt-2 sm:text-[2rem]">
               {t("workAdmin.title")}
             </h1>
-            <p className="mt-2 hidden text-[14px] leading-relaxed text-white/72 sm:block">
+            <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-white/72 sm:mt-2 sm:line-clamp-none sm:text-[14px]">
               {t("workAdmin.description")}
             </p>
           </div>
@@ -145,7 +145,7 @@ function StatChip({
   }[tone];
 
   const className = cn(
-    "min-w-0 rounded-xl border px-2.5 py-2 text-start backdrop-blur-sm transition-[transform,background-color,box-shadow,border-color] duration-200 sm:px-3 sm:py-2.5",
+    "min-h-[4.25rem] min-w-0 rounded-2xl border px-2.5 py-2.5 text-start backdrop-blur-sm transition-[transform,background-color,box-shadow,border-color] duration-200 sm:min-h-0 sm:rounded-xl sm:px-3 sm:py-2.5",
     "touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70",
     onClick && "cursor-pointer active:scale-[0.98] sm:hover:bg-white/[0.12]",
     active

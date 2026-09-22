@@ -96,6 +96,7 @@ const TEXT_FIELDS = [
   "name",
   "email",
   "companyName",
+  "companyLocation",
   "notes",
   "request",
   "budget",

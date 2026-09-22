@@ -105,6 +105,8 @@ export function CrmLeadFormSheet({
                 onEmailChange={form.setEmail}
                 companyName={form.companyName}
                 onCompanyNameChange={form.setCompanyName}
+                companyLocation={form.companyLocation}
+                onCompanyLocationChange={form.setCompanyLocation}
                 businessTypeId={form.businessTypeId}
                 onBusinessTypeIdChange={form.setBusinessTypeId}
                 activeBusinessTypes={form.activeBusinessTypes}

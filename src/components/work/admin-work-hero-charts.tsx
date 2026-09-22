@@ -133,7 +133,7 @@ export function AdminWorkHeroCharts({
         {statusTotal === 0 ? (
           <EmptyChart label={t("workAdmin.chartEmpty")} />
         ) : (
-          <div className="flex h-[132px] items-center gap-2">
+          <div className="flex h-[140px] items-center gap-1.5 sm:h-[132px] sm:gap-2">
             <div className="relative h-full min-w-0 flex-1">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -143,8 +143,8 @@ export function AdminWorkHeroCharts({
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    innerRadius={36}
-                    outerRadius={54}
+                    innerRadius={34}
+                    outerRadius={52}
                     paddingAngle={2}
                     stroke="rgba(6,28,74,0.65)"
                     strokeWidth={2}
@@ -193,12 +193,12 @@ export function AdminWorkHeroCharts({
                 </span>
               </div>
             </div>
-            <ul className="w-[7.5rem] shrink-0 space-y-1.5 pe-1">
+            <ul className="w-[6.75rem] shrink-0 space-y-1 pe-0.5 sm:w-[7.5rem] sm:space-y-1.5 sm:pe-1">
               {statusData.map((row) => (
                 <li key={row.key}>
                   <button
                     type="button"
-                    className="flex w-full items-center gap-1.5 rounded-md px-1 py-0.5 text-start touch-manipulation hover:bg-white/10"
+                    className="flex min-h-8 w-full items-center gap-1.5 rounded-lg px-1 py-1 text-start touch-manipulation hover:bg-white/10 sm:min-h-0 sm:rounded-md sm:py-0.5"
                     onClick={() => onStatusFilter?.(row.key)}
                   >
                     <span
@@ -226,18 +226,18 @@ export function AdminWorkHeroCharts({
         {openPriorityTotal === 0 ? (
           <EmptyChart label={t("workAdmin.chartEmptyOpen")} />
         ) : (
-          <div className="h-[132px]">
+          <div className="h-[140px] sm:h-[132px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={priorityData}
                 layout="vertical"
-                margin={{ top: 4, right: 8, left: 4, bottom: 0 }}
+                margin={{ top: 4, right: 8, left: 2, bottom: 0 }}
               >
                 <XAxis type="number" hide />
                 <YAxis
                   type="category"
                   dataKey="name"
-                  width={52}
+                  width={48}
                   tick={{ fill: "rgba(255,255,255,0.62)", fontSize: 10 }}
                   axisLine={false}
                   tickLine={false}

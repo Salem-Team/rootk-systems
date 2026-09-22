@@ -91,6 +91,9 @@ export class CrmLeadUpdateService {
     if (body.companyName !== undefined) {
       data.companyName = String(body.companyName ?? "").trim();
     }
+    if (body.companyLocation !== undefined) {
+      data.companyLocation = String(body.companyLocation ?? "").trim();
+    }
     if (body.businessTypeId !== undefined) {
       const raw = body.businessTypeId;
       if (raw === null || raw === "") {

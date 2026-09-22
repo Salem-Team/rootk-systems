@@ -106,6 +106,7 @@ export function useCrmLeadForm({
   ]);
   const [email, setEmail] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [companyLocation, setCompanyLocation] = useState("");
   const [businessTypeId, setBusinessTypeId] = useState<string>("none");
   const [source, setSource] = useState<CrmLeadSource>("other");
   const [stageId, setStageId] = useState("");
@@ -138,6 +139,7 @@ export function useCrmLeadForm({
       setContacts(draftsFromLead(editingLead));
       setEmail(editingLead.email ?? "");
       setCompanyName(editingLead.companyName ?? "");
+      setCompanyLocation(editingLead.companyLocation ?? "");
       setBusinessTypeId(editingLead.businessTypeId ?? "none");
       setSource(editingLead.source);
       setStageId(editingLead.stageId);
@@ -155,6 +157,7 @@ export function useCrmLeadForm({
       setContacts([emptyContactDraft()]);
       setEmail("");
       setCompanyName("");
+      setCompanyLocation("");
       setBusinessTypeId("none");
       setSource("other");
       setStageId(
@@ -302,6 +305,7 @@ export function useCrmLeadForm({
       contacts: resolvedContacts,
       email: email.trim(),
       companyName: companyName.trim(),
+      companyLocation: companyLocation.trim(),
       businessTypeId:
         businessTypeId === "none" ? null : businessTypeId || null,
       source,
@@ -379,6 +383,8 @@ export function useCrmLeadForm({
     setEmail,
     companyName,
     setCompanyName,
+    companyLocation,
+    setCompanyLocation,
     businessTypeId,
     setBusinessTypeId,
     source,

@@ -55,6 +55,7 @@ export async function importCrmLeads(
         phone: r.phone,
         email: r.email,
         companyName: r.companyName,
+        companyLocation: r.companyLocation,
         businessType: r.businessType,
         source: normalizeSource(r.source),
         stage: r.stage,
@@ -146,6 +147,7 @@ export async function importCrmLeads(
             : "none",
           request: row.request ?? "",
           budget: row.budget ?? "",
+          companyLocation: row.companyLocation ?? "",
           notes: row.notes,
           recordType,
         });
@@ -205,6 +207,7 @@ export async function exportCrmLeadRows(
         phone: lead.phone,
         email: lead.email ?? "",
         companyName: lead.companyName ?? "",
+        companyLocation: lead.companyLocation ?? "",
         businessType: lead.businessTypeId
           ? businessName.get(lead.businessTypeId) ?? lead.businessTypeId
           : "",
@@ -216,6 +219,8 @@ export async function exportCrmLeadRows(
         status: lead.deletedAt ? "deleted" : lead.status,
         tags: (lead.tags ?? []).join(";"),
         nextAction: lead.nextAction ?? "none",
+        request: lead.request ?? "",
+        budget: lead.budget ?? "",
         notes: lead.notes ?? "",
       }))
     );

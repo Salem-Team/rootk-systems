@@ -74,6 +74,7 @@ export function mapLead(row: CrmLead) {
     contacts: extraContactsFromMetadata(row.metadata),
     email: row.email,
     companyName: row.companyName,
+    companyLocation: row.companyLocation ?? "",
     businessTypeId: row.businessTypeId,
     source: row.source,
     ownerEmployeeId: row.ownerEmployeeId,

@@ -86,7 +86,7 @@ export function AdminWorkTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[min(94dvh,920px)] w-[90vw] max-w-[90vw] flex-col gap-0 overflow-hidden p-0 sm:max-w-[90vw] sm:p-0">
+      <DialogContent className="flex max-h-[min(94dvh,920px)] w-full max-w-none flex-col gap-0 overflow-hidden p-0 sm:w-[min(92vw,56rem)] sm:max-w-[min(92vw,56rem)] sm:p-0">
         <DialogHeader className="shrink-0 border-b border-border/55 px-4 pb-3.5 pt-1 sm:px-5 sm:pt-5">
           <DialogTitle className="flex items-center gap-2.5">
             <span className="icon-well h-9 w-9 shrink-0">

@@ -31,17 +31,17 @@ export function AdminWorkTaskList({
 
   if (tasks.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border/80 px-4 py-14 text-center">
+      <div className="rounded-2xl border border-dashed border-border/80 px-4 py-12 text-center sm:py-14">
         <ListTodo className="mx-auto h-8 w-8 text-muted-foreground/50" />
         <p className="mt-3 text-sm font-medium text-foreground">
           {t("workAdmin.emptyTasks")}
         </p>
-        <p className="mt-1 text-[12px] text-muted-foreground">
+        <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
           {t("workAdmin.emptyTasksHint")}
         </p>
         <Button
           type="button"
-          className="mt-4"
+          className="mt-4 h-11 w-full max-w-xs touch-manipulation rounded-xl sm:h-9 sm:w-auto sm:rounded-lg"
           size="sm"
           onClick={onCreateTask}
         >

@@ -218,6 +218,7 @@ export async function createCrmLead(
         notes: parsed.notes ?? "",
         request: parsed.request ?? "",
         budget: parsed.budget ?? "",
+        companyLocation: parsed.companyLocation ?? "",
         convertedAt: null,
       },
       actorId

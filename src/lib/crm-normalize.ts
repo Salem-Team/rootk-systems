@@ -52,6 +52,8 @@ function normalizeLead(lead: CrmLead): CrmLead {
     contacts: Array.isArray(lead.contacts) ? lead.contacts : [],
     request: typeof lead.request === "string" ? lead.request : "",
     budget: typeof lead.budget === "string" ? lead.budget : "",
+    companyLocation:
+      typeof lead.companyLocation === "string" ? lead.companyLocation : "",
   };
 }
 

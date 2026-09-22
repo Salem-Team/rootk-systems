@@ -22,36 +22,44 @@ export function AdminWorkTabsBar({
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-      <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-xl bg-muted/60 p-1 sm:inline-grid sm:w-auto sm:rounded-2xl sm:p-1.5">
+    <div className="flex flex-col gap-3 sm:gap-3.5 lg:flex-row lg:items-center lg:justify-between">
+      <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-2xl bg-muted/60 p-1.5 sm:inline-grid sm:w-auto sm:rounded-2xl">
         <TabsTrigger
           value="tasks"
-          className="min-h-10 gap-1 rounded-lg px-2 text-[12px] sm:min-h-11 sm:rounded-xl sm:px-4 sm:text-[13px]"
+          className="min-h-11 gap-1.5 rounded-xl px-2.5 text-[13px] font-semibold touch-manipulation sm:min-h-11 sm:px-4"
         >
-          <ListTodo className="hidden h-3.5 w-3.5 sm:me-1.5 sm:inline" aria-hidden />
-          {t("workAdmin.tabTasks")}
-          <span className="ms-1 font-mono text-[10px] opacity-70 sm:ms-1.5">
+          <ListTodo className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
+          <span className="truncate">{t("workAdmin.tabTasks")}</span>
+          <span className="ms-0.5 font-mono text-[10px] opacity-70 sm:ms-1">
             {tasksCount}
           </span>
         </TabsTrigger>
         <TabsTrigger
           value="meetings"
-          className="min-h-10 gap-1 rounded-lg px-2 text-[12px] sm:min-h-11 sm:rounded-xl sm:px-4 sm:text-[13px]"
+          className="min-h-11 gap-1.5 rounded-xl px-2.5 text-[13px] font-semibold touch-manipulation sm:min-h-11 sm:px-4"
         >
-          <CalendarDays className="hidden h-3.5 w-3.5 sm:me-1.5 sm:inline" aria-hidden />
-          {t("workAdmin.tabMeetings")}
-          <span className="ms-1 font-mono text-[10px] opacity-70 sm:ms-1.5">
+          <CalendarDays className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
+          <span className="truncate">{t("workAdmin.tabMeetings")}</span>
+          <span className="ms-0.5 font-mono text-[10px] opacity-70 sm:ms-1">
             {meetingsCount}
           </span>
         </TabsTrigger>
       </TabsList>
       {tab === "tasks" ? (
-        <Button type="button" onClick={onCreateTask}>
+        <Button
+          type="button"
+          className="h-11 w-full touch-manipulation rounded-xl text-[14px] font-semibold sm:h-10 sm:w-auto sm:rounded-lg sm:text-sm"
+          onClick={onCreateTask}
+        >
           <Plus className="h-4 w-4" />
           {t("workAdmin.addTask")}
         </Button>
       ) : (
-        <Button type="button" onClick={onCreateMeeting}>
+        <Button
+          type="button"
+          className="h-11 w-full touch-manipulation rounded-xl text-[14px] font-semibold sm:h-10 sm:w-auto sm:rounded-lg sm:text-sm"
+          onClick={onCreateMeeting}
+        >
           <Plus className="h-4 w-4" />
           {t("workAdmin.addMeeting")}
         </Button>

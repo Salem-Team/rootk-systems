@@ -29,6 +29,7 @@ const SAMPLE_LEAD_ROW = [
   "+201000000001",
   "ahmed@example.com",
   "Acme Co",
+  "Cairo · Nasr City",
   "Retail",
   "website",
   "New Lead",
@@ -36,6 +37,8 @@ const SAMPLE_LEAD_ROW = [
   "active",
   "hot;interested",
   "call",
+  "ERP pricing",
+  "50k",
   "Imported sample",
 ];
 
@@ -77,6 +80,14 @@ const FIELD_GUIDE: Array<{
     ar: "اسم الشركة",
     en: "Company name",
     example: "Acme Co",
+    values: "",
+  },
+  {
+    field: "companyLocation",
+    required: false,
+    ar: "لوكيشن الشركة",
+    en: "Company location",
+    example: "Cairo · Nasr City",
     values: "",
   },
   {
@@ -135,6 +146,22 @@ const FIELD_GUIDE: Array<{
     en: "Next action",
     example: "call",
     values: "call, whatsapp, email, meeting, follow_up, send_proposal, none",
+  },
+  {
+    field: "request",
+    required: false,
+    ar: "الطلب",
+    en: "Request / interest",
+    example: "ERP pricing",
+    values: "",
+  },
+  {
+    field: "budget",
+    required: false,
+    ar: "البادجيت",
+    en: "Budget",
+    example: "50k",
+    values: "",
   },
   {
     field: "notes",

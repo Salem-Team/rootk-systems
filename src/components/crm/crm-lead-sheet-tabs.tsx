@@ -149,6 +149,11 @@ export function CrmLeadSheetTabs({
               ) : null}
               <Row label={t("crm.leadSheet.company")} value={lead.companyName || "—"} />
               <Row
+                label={t("crm.leadSheet.companyLocation")}
+                value={lead.companyLocation || "—"}
+                multiline
+              />
+              <Row
                 label={t("crm.leadSheet.businessType")}
                 value={businessTypeName}
               />

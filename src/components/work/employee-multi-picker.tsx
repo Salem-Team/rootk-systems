@@ -131,28 +131,28 @@ export function EmployeeMultiPicker({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t("workAdmin.searchPeople")}
-          className="h-9 ps-8"
+          className="h-11 rounded-xl ps-8 text-base touch-manipulation sm:h-9 sm:rounded-lg sm:text-sm"
         />
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-x-3 gap-y-1">
         <button
           type="button"
           onClick={selectAllVisible}
-          className="text-[11px] font-medium text-primary hover:underline"
+          className="min-h-9 text-[12px] font-medium text-primary touch-manipulation hover:underline sm:min-h-0 sm:text-[11px]"
         >
           {t("workAdmin.selectVisible")}
         </button>
         <button
           type="button"
           onClick={clearAll}
-          className="text-[11px] font-medium text-muted-foreground hover:underline"
+          className="min-h-9 text-[12px] font-medium text-muted-foreground touch-manipulation hover:underline sm:min-h-0 sm:text-[11px]"
         >
           {t("workAdmin.clearSelection")}
         </button>
       </div>
       <div
         className={cn(
-          "max-h-44 space-y-0.5 overflow-y-auto rounded-xl border border-border/70 bg-card/60 p-1.5",
+          "max-h-44 space-y-0.5 overflow-y-auto overscroll-contain rounded-xl border border-border/70 bg-card/60 p-1.5",
           listClassName
         )}
       >
@@ -162,7 +162,7 @@ export function EmployeeMultiPicker({
             <label
               key={emp.id}
               className={cn(
-                "flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-muted/55",
+                "flex min-h-12 cursor-pointer items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm transition-colors touch-manipulation hover:bg-muted/55 sm:min-h-0 sm:rounded-lg sm:px-2 sm:py-1.5",
                 checked && "bg-primary/[0.08] ring-1 ring-inset ring-primary/15"
               )}
             >

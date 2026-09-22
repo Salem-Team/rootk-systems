@@ -163,6 +163,8 @@ export interface CrmLead extends BaseEntity {
   contacts?: CrmLeadContact[];
   email: string;
   companyName: string;
+  /** Free-text company location / city / address. */
+  companyLocation: string;
   businessTypeId: string | null;
   source: CrmLeadSource;
   ownerEmployeeId: string | null;

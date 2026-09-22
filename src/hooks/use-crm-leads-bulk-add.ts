@@ -119,6 +119,7 @@ export function useCrmLeadsBulkAdd({
         phone: row.phone,
         email: "",
         companyName: "",
+        companyLocation: "",
         businessType:
           businessTypeId !== "none" ? businessTypeId : "",
         source,

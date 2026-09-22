@@ -137,6 +137,7 @@ export class CrmLeadsImportService {
           phone: item.phone,
           email: item.email,
           companyName: item.companyName,
+          companyLocation: item.companyLocation,
           businessTypeId,
           source: item.source,
           stageId,
@@ -199,6 +200,7 @@ export class CrmLeadsImportService {
       phone: lead.phone,
       email: lead.email,
       companyName: lead.companyName,
+      companyLocation: lead.companyLocation ?? "",
       businessType: lead.businessTypeId
         ? businessName.get(lead.businessTypeId) ?? lead.businessTypeId
         : "",
@@ -210,6 +212,8 @@ export class CrmLeadsImportService {
       status: lead.deletedAt ? "deleted" : lead.status,
       tags: lead.tags.join(";"),
       nextAction: lead.nextAction,
+      request: lead.request ?? "",
+      budget: lead.budget ?? "",
       notes: lead.notes,
     }));
   }

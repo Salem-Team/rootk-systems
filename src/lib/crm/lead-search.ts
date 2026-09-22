@@ -143,6 +143,7 @@ export function leadMatchesSearch(
     lead.phoneNormalized ?? "",
     lead.email,
     lead.companyName,
+    lead.companyLocation,
     lead.id,
     lead.notes,
     lead.request,

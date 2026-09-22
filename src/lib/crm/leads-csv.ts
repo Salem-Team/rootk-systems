@@ -6,6 +6,7 @@ export const CRM_LEAD_CSV_HEADERS = [
   "phone",
   "email",
   "companyName",
+  "companyLocation",
   "businessType",
   "source",
   "stage",
@@ -25,6 +26,7 @@ export interface CrmLeadCsvRow {
   phone: string;
   email: string;
   companyName: string;
+  companyLocation: string;
   businessType: string;
   source: string;
   stage: string;
@@ -78,6 +80,19 @@ const HEADER_ALIASES: Record<string, CrmLeadCsvHeader> = {
   organization: "companyName",
   شركة: "companyName",
   "اسم الشركة": "companyName",
+  companylocation: "companyLocation",
+  "company location": "companyLocation",
+  location: "companyLocation",
+  address: "companyLocation",
+  "company address": "companyLocation",
+  city: "companyLocation",
+  لوكيشن: "companyLocation",
+  "لوكيشن الشركة": "companyLocation",
+  "لوكيشن الشركه": "companyLocation",
+  "موقع الشركة": "companyLocation",
+  "عنوان الشركة": "companyLocation",
+  العنوان: "companyLocation",
+  المدينة: "companyLocation",
   businesstype: "businessType",
   "business type": "businessType",
   industry: "businessType",
@@ -182,6 +197,7 @@ export function applyLeadColumnMapping(
       phone,
       email: read("email"),
       companyName: read("companyName"),
+      companyLocation: read("companyLocation"),
       businessType: read("businessType"),
       source: read("source"),
       stage: read("stage"),

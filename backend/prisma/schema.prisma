@@ -1393,6 +1393,8 @@ model CrmLead {
   phoneNormalized  String?
   email            String         @default("")
   companyName      String         @default("")
+  /** Free-text company location / city / address. */
+  companyLocation  String         @default("")
   businessTypeId   String?
   source           CrmLeadSource  @default(other)
   ownerEmployeeId  String?

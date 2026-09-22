@@ -164,7 +164,11 @@ export function CrmRequestBudgetFields({
         <p className="text-[11.5px] text-muted-foreground">
           {t("crm.requestBudget.productsHint")}
         </p>
-        <div className="flex flex-wrap gap-2" role="group" aria-multiselectable="true">
+        <div
+          className="flex flex-wrap gap-2"
+          role="group"
+          aria-label={t("crm.requestBudget.productsLabel")}
+        >
           {CRM_REQUEST_PRODUCTS.map((id) => (
             <Chip
               key={id}

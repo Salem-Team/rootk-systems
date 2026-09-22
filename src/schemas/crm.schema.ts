@@ -90,6 +90,7 @@ export const createLeadSchema = z.object({
     .optional(),
   email: z.string().trim().email().optional().or(z.literal("")),
   companyName: z.string().trim().optional().default(""),
+  companyLocation: z.string().trim().optional().default(""),
   businessTypeId: z.string().nullable().optional(),
   source: leadSource.default("other"),
   ownerEmployeeId: z.string().nullable().optional(),

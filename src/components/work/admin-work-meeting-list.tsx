@@ -61,17 +61,17 @@ export function AdminWorkMeetingList({
   if (meetings.length === 0) {
     return (
       <ul className="space-y-2">
-        <li className="rounded-2xl border border-dashed border-border/80 px-4 py-14 text-center">
+        <li className="rounded-2xl border border-dashed border-border/80 px-4 py-12 text-center sm:py-14">
           <CalendarDays className="mx-auto h-8 w-8 text-muted-foreground/50" />
           <p className="mt-3 text-sm font-medium text-foreground">
             {t("workAdmin.emptyMeetings")}
           </p>
-          <p className="mt-1 text-[12px] text-muted-foreground">
+          <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
             {t("workAdmin.emptyMeetingsHint")}
           </p>
           <Button
             type="button"
-            className="mt-4"
+            className="mt-4 h-11 w-full max-w-xs touch-manipulation rounded-xl sm:h-9 sm:w-auto sm:rounded-lg"
             size="sm"
             onClick={onCreateMeeting}
           >
@@ -99,14 +99,18 @@ export function AdminWorkMeetingList({
                 key={meeting.id}
                 layout={!reduceMotion}
                 variants={fadeInUp}
-                className="rounded-2xl border border-border/70 bg-card px-4 py-3.5 shadow-[var(--shadow-card)] transition-colors hover:border-border"
+                className="rounded-2xl border border-border/70 bg-card px-3.5 py-3.5 shadow-[var(--shadow-card)] transition-colors touch-manipulation hover:border-border sm:px-4"
               >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0 flex-1">
+                <div className="flex flex-col gap-3.5">
+                  <button
+                    type="button"
+                    className="min-w-0 w-full text-start touch-manipulation active:opacity-90"
+                    onClick={() => onEdit(meeting)}
+                  >
                     <p className="text-[15px] font-semibold leading-snug">
                       <BidiText text={meeting.title} />
                     </p>
-                    <p className="mt-1 text-[13px] text-muted-foreground">
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
                       {format(parseISO(meeting.date), "EEEE · d MMM", {
                         locale: dateLocale,
                       })}{" "}
@@ -117,9 +121,11 @@ export function AdminWorkMeetingList({
                         locale
                       )}
                     </p>
-                    <p className="mt-1 text-[12px] text-muted-foreground">
-                      {meeting.location}
-                    </p>
+                    {meeting.location ? (
+                      <p className="mt-1 text-[12px] text-muted-foreground">
+                        {meeting.location}
+                      </p>
+                    ) : null}
                     <div className="mt-2.5 flex flex-wrap items-center gap-2">
                       <Badge
                         variant={
@@ -137,12 +143,13 @@ export function AdminWorkMeetingList({
                         ids={meeting.participantIds}
                       />
                     </div>
-                  </div>
-                  <div className="flex shrink-0 gap-2">
+                  </button>
+                  <div className="flex gap-2 border-t border-border/50 pt-3 sm:justify-end">
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
+                      className="h-11 min-w-0 flex-1 touch-manipulation rounded-xl sm:h-9 sm:flex-none sm:rounded-lg"
                       onClick={() => onEdit(meeting)}
                     >
                       <Pencil className="h-3.5 w-3.5" />
@@ -152,10 +159,11 @@ export function AdminWorkMeetingList({
                       type="button"
                       size="sm"
                       variant="ghost"
-                      className="text-destructive hover:text-destructive"
+                      className="h-11 w-11 shrink-0 touch-manipulation rounded-xl text-destructive hover:text-destructive sm:h-9 sm:w-9 sm:rounded-lg"
                       onClick={() => onDeleteRequest(meeting)}
+                      aria-label={t("common.delete")}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>

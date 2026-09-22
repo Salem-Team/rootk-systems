@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "CrmLead" ADD COLUMN IF NOT EXISTS "companyLocation" TEXT NOT NULL DEFAULT '';

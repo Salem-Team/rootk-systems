@@ -90,7 +90,7 @@ export function AdminWorkAssignPanel() {
   }
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-5 md:space-y-6">
       <AdminWorkHero
         stats={data.stats}
         activeFilter={resolveHeroFilter(

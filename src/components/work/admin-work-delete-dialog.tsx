@@ -36,10 +36,11 @@ export function AdminWorkDeleteDialog({
             })}
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter>
+        <DialogFooter className="gap-2 px-0 pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:pb-0">
           <Button
             type="button"
             variant="outline"
+            className="h-11 touch-manipulation rounded-xl sm:h-9 sm:rounded-lg"
             onClick={() => onOpenChange(false)}
           >
             {t("common.cancel")}
@@ -47,6 +48,7 @@ export function AdminWorkDeleteDialog({
           <Button
             type="button"
             variant="destructive"
+            className="h-11 touch-manipulation rounded-xl sm:h-9 sm:rounded-lg"
             disabled={busy}
             onClick={onConfirm}
           >

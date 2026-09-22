@@ -47,6 +47,8 @@ interface CrmLeadFormFieldsProps {
   onEmailChange: (v: string) => void;
   companyName: string;
   onCompanyNameChange: (v: string) => void;
+  companyLocation: string;
+  onCompanyLocationChange: (v: string) => void;
   businessTypeId: string;
   onBusinessTypeIdChange: (v: string) => void;
   activeBusinessTypes: CrmBusinessType[];
@@ -91,6 +93,8 @@ export function CrmLeadFormFields({
   onEmailChange,
   companyName,
   onCompanyNameChange,
+  companyLocation,
+  onCompanyLocationChange,
   businessTypeId,
   onBusinessTypeIdChange,
   activeBusinessTypes,
@@ -238,6 +242,19 @@ export function CrmLeadFormFields({
           id="crm-lead-company"
           value={companyName}
           onChange={(e) => onCompanyNameChange(e.target.value)}
+          className="h-11 w-full min-w-0 text-base sm:h-9 sm:text-sm"
+        />
+      </div>
+
+      <div className="grid gap-1.5">
+        <Label htmlFor="crm-lead-company-location">
+          {t("crm.leadForm.companyLocation")}
+        </Label>
+        <Input
+          id="crm-lead-company-location"
+          value={companyLocation}
+          onChange={(e) => onCompanyLocationChange(e.target.value)}
+          placeholder={t("crm.leadForm.companyLocationPlaceholder")}
           className="h-11 w-full min-w-0 text-base sm:h-9 sm:text-sm"
         />
       </div>

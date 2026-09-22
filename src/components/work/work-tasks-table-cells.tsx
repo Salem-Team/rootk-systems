@@ -61,25 +61,51 @@ function avatarTone(seed: string): string {
   return AVATAR_TONES[n] ?? AVATAR_TONES[0];
 }
 
-/** Compact title + one-line preview — fixed visual height for every row. */
-export function TaskTitleCell({ task }: { task: WorkTask }) {
-  const title = flattenPreview(task.title, 64);
+/** Compact title + one-line preview — fixed visual height for desktop rows. */
+export function TaskTitleCell({
+  task,
+  compact = true,
+}: {
+  task: WorkTask;
+  /** Desktop table rows keep a fixed height; mobile cards can wrap. */
+  compact?: boolean;
+}) {
+  const title = flattenPreview(task.title, compact ? 64 : 96);
   const subtitle = flattenPreview(
     task.description.trim() || task.tag.trim(),
-    72
+    compact ? 72 : 110
   );
 
   return (
-    <div className="flex h-11 min-w-0 items-center gap-3">
-      <Avatar className="h-9 w-9 shrink-0 ring-1 ring-border/60">
-        <AvatarFallback className={cn("text-[11px] font-semibold", avatarTone(task.title))}>
+    <div
+      className={cn(
+        "flex min-w-0 items-start gap-3",
+        compact ? "h-11 items-center" : "items-start"
+      )}
+    >
+      <Avatar
+        className={cn(
+          "shrink-0 ring-1 ring-border/60",
+          compact ? "h-9 w-9" : "h-10 w-10"
+        )}
+      >
+        <AvatarFallback
+          className={cn(
+            "font-semibold",
+            compact ? "text-[11px]" : "text-[12px]",
+            avatarTone(task.title)
+          )}
+        >
           {initials(task.title) || "•"}
         </AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1">
         <p
           className={cn(
-            "truncate text-[13px] font-semibold leading-5 tracking-tight",
+            "font-semibold tracking-tight",
+            compact
+              ? "truncate text-[13px] leading-5"
+              : "line-clamp-2 text-[15px] leading-snug",
             task.status === "completed" &&
               "text-muted-foreground line-through decoration-border"
           )}
@@ -88,8 +114,10 @@ export function TaskTitleCell({ task }: { task: WorkTask }) {
         </p>
         <p
           className={cn(
-            "mt-0.5 truncate text-[11px] leading-4",
-            subtitle ? "text-muted-foreground" : "text-transparent select-none"
+            compact
+              ? "mt-0.5 truncate text-[11px] leading-4"
+              : "mt-1 line-clamp-2 text-[12px] leading-relaxed",
+            subtitle ? "text-muted-foreground" : "select-none text-transparent"
           )}
           aria-hidden={!subtitle}
         >
@@ -216,7 +244,7 @@ export function TaskAssigneeCell({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="inline-flex max-w-[12.5rem] flex-col items-start gap-0.5 rounded-lg border border-border/80 bg-background px-2.5 py-1 text-start text-[12px] text-foreground/85 transition-colors hover:bg-muted/50"
+          className="inline-flex max-w-full flex-col items-start gap-0.5 rounded-xl border border-border/80 bg-background px-3 py-2 text-start text-[12px] text-foreground/85 transition-colors touch-manipulation hover:bg-muted/50 sm:max-w-[12.5rem] sm:rounded-lg sm:px-2.5 sm:py-1"
         >
           <span className="inline-flex max-w-full items-center gap-1.5">
             <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -365,10 +393,10 @@ export function TaskRowMenu({
           type="button"
           size="icon"
           variant="ghost"
-          className="h-8 w-8 text-muted-foreground"
+          className="h-11 w-11 touch-manipulation rounded-xl text-muted-foreground sm:h-8 sm:w-8 sm:rounded-md"
           aria-label={t("workTable.moreActions")}
         >
-          <MoreHorizontal className="h-4 w-4" />
+          <MoreHorizontal className="h-5 w-5 sm:h-4 sm:w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

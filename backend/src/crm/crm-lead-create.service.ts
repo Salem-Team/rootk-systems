@@ -148,6 +148,7 @@ export class CrmLeadCreateService {
           metadata: contactsMetadataPatch(extras) as Prisma.InputJsonValue,
           email: String(body.email ?? "").trim(),
           companyName: String(body.companyName ?? "").trim(),
+          companyLocation: String(body.companyLocation ?? "").trim(),
           businessTypeId,
           source: asEnum<CrmLeadSource>(
             body.source,

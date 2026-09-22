@@ -84,20 +84,20 @@ export function TaskViewSheet({
       <SheetContent className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
         {task ? (
           <>
-            <SheetHeader className="shrink-0 border-b border-border/60 px-4 pb-4 pt-2 pe-14 sm:px-6 sm:pe-14 sm:pt-3">
-              <SheetTitle className="pe-8 text-start leading-snug">
+            <SheetHeader className="shrink-0 border-b border-border/60 px-4 pb-4 pt-1 pe-14 sm:px-6 sm:pe-14 sm:pt-3">
+              <SheetTitle className="pe-8 text-start text-[1.05rem] leading-snug sm:text-lg">
                 <BidiText text={task.title} />
               </SheetTitle>
-              <SheetDescription className="text-start">
+              <SheetDescription className="text-start text-[13px]">
                 {t("workAdmin.viewTaskDesc")}
               </SheetDescription>
             </SheetHeader>
 
-            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6">
-              <div className="flex items-center gap-4 rounded-2xl border border-border/70 bg-muted/20 p-4">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:space-y-5 sm:px-6 sm:py-5">
+              <div className="flex items-center gap-3.5 rounded-2xl border border-border/70 bg-muted/20 p-3.5 sm:gap-4 sm:p-4">
                 <TargetProgressRing
                   percentage={percentage}
-                  size={88}
+                  size={80}
                   strokeWidth={7}
                   tone={tone}
                 />
@@ -252,11 +252,11 @@ export function TaskViewSheet({
               <TaskCommentsPanel taskId={task.id} />
             </div>
 
-            <div className="shrink-0 flex flex-wrap gap-2 border-t border-border/60 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
+            <div className="shrink-0 flex flex-col-reverse gap-2 border-t border-border/60 px-4 py-3 pb-[max(0.85rem,env(safe-area-inset-bottom))] sm:flex-row sm:flex-wrap sm:px-6">
               {onEdit ? (
                 <Button
                   type="button"
-                  className="h-11 flex-1 touch-manipulation rounded-xl sm:h-9 sm:flex-none sm:rounded-lg"
+                  className="h-12 w-full touch-manipulation rounded-xl text-[15px] font-semibold sm:h-9 sm:w-auto sm:flex-none sm:rounded-lg sm:text-sm"
                   onClick={() => {
                     onOpenChange(false);
                     onEdit(task);
@@ -268,7 +268,7 @@ export function TaskViewSheet({
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 flex-1 touch-manipulation rounded-xl sm:h-9 sm:flex-none sm:rounded-lg"
+                className="h-11 w-full touch-manipulation rounded-xl sm:h-9 sm:w-auto sm:flex-none sm:rounded-lg"
                 onClick={() => onOpenChange(false)}
               >
                 {t("common.close")}

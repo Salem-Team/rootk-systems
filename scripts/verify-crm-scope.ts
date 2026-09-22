@@ -65,6 +65,7 @@ function lead(
     phone: "01000000000",
     email: `${id}@ex.com`,
     companyName: "Co",
+    companyLocation: "",
     businessTypeId: null,
     source: "other",
     ownerEmployeeId,
