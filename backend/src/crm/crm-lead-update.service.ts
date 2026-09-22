@@ -76,6 +76,8 @@ export class CrmLeadUpdateService {
           excludeLeadId: id,
           visibleOwnerIds: await this.shared.resolveOwnerIds(companyId, actor),
           actorEmployeeId: actor.employeeId,
+          recordType:
+            current.recordType === "cold_call" ? "cold_call" : "lead",
         }
       );
       if (resolved.replaceExtras) {

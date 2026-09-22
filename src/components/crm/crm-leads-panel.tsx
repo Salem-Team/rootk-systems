@@ -63,6 +63,8 @@ interface CrmLeadsPanelProps {
   className?: string;
   /** Hide the panel title on dense mobile contexts (Delay embeds this panel). */
   hideTitle?: boolean;
+  /** Same table UI; coldCalls swaps copy + Excel import type. */
+  variant?: "leads" | "coldCalls";
 }
 
 function countBadgeFilters(
@@ -102,6 +104,7 @@ export function CrmLeadsPanel({
   feedbackTypes = [],
   className,
   hideTitle = false,
+  variant = "leads",
 }: CrmLeadsPanelProps) {
   const panel = useCrmLeadsPanel({
     leads,
@@ -112,6 +115,7 @@ export function CrmLeadsPanel({
     filterBadgeExclude,
   });
   const { t } = panel;
+  const isCold = variant === "coldCalls";
   const [importOpen, setImportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -124,7 +128,10 @@ export function CrmLeadsPanel({
 
   async function onExport() {
     setExporting(true);
-    const res = await exportCrmLeadRows(filters);
+    const res = await exportCrmLeadRows({
+      ...filters,
+      recordType: isCold ? "cold_call" : filters.recordType ?? "lead",
+    });
     setExporting(false);
     if (!res.success) {
       toast.error(res.message ?? t("crm.errors.loadFailed"));
@@ -132,7 +139,7 @@ export function CrmLeadsPanel({
     }
     const rows = res.data ?? [];
     await downloadCrmLeadsWorkbook(
-      `crm-leads-${format(new Date(), "yyyy-MM-dd")}.xlsx`,
+      `${isCold ? "crm-cold-calls" : "crm-leads"}-${format(new Date(), "yyyy-MM-dd")}.xlsx`,
       rows
     );
     toast.success(t("crm.toast.exported", { count: String(rows.length) }));
@@ -152,7 +159,7 @@ export function CrmLeadsPanel({
         <Download className="h-3.5 w-3.5 sm:me-1.5" />
         <span className="sm:inline">{t("crm.actions.export")}</span>
       </Button>
-      {canImport ? (
+      {canImport && !isCold ? (
         <CrmLeadsBulkAdd
           stages={stages}
           businessTypes={businessTypes}
@@ -167,13 +174,17 @@ export function CrmLeadsPanel({
         <Button
           type="button"
           size="sm"
-          variant="outline"
+          variant={isCold ? "default" : "outline"}
           className="min-h-11 touch-manipulation sm:min-h-8"
           onClick={() => setImportOpen(true)}
-          aria-label={t("crm.actions.import")}
+          aria-label={
+            isCold ? t("crm.coldCalls.importExcel") : t("crm.actions.import")
+          }
         >
           <Upload className="h-3.5 w-3.5 sm:me-1.5" />
-          <span className="sm:inline">{t("crm.actions.import")}</span>
+          <span className="sm:inline">
+            {isCold ? t("crm.coldCalls.importExcel") : t("crm.actions.import")}
+          </span>
         </Button>
       ) : null}
     </>
@@ -189,9 +200,16 @@ export function CrmLeadsPanel({
     >
       <div className="panel-header flex flex-col gap-2.5 !px-0 sm:gap-3 sm:!px-5">
         {!hideTitle ? (
-          <h2 className="hidden px-5 text-sm font-semibold tracking-tight sm:block">
-            {t("crm.leads.title")}
-          </h2>
+          <div className="hidden items-center gap-2 px-5 sm:flex">
+            <h2 className="text-sm font-semibold tracking-tight">
+              {t(isCold ? "crm.coldCalls.title" : "crm.leads.title")}
+            </h2>
+            {isCold ? (
+              <span className="rounded-md bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                {t("crm.coldCalls.separateBadge")}
+              </span>
+            ) : null}
+          </div>
         ) : null}
 
         <div className="flex w-full flex-col gap-2.5">
@@ -209,7 +227,11 @@ export function CrmLeadsPanel({
                   (e.target as HTMLInputElement).blur();
                 }
               }}
-              placeholder={t("crm.filters.search")}
+              placeholder={
+                isCold
+                  ? t("crm.coldCalls.searchPlaceholder")
+                  : t("crm.filters.search")
+              }
               className={cn(
                 "h-12 w-full rounded-2xl border-border/60 bg-muted/40 ps-11 pe-11 text-base shadow-none",
                 "placeholder:text-muted-foreground/70",
@@ -381,6 +403,7 @@ export function CrmLeadsPanel({
         open={importOpen}
         onOpenChange={setImportOpen}
         onImported={onImported}
+        recordType={isCold ? "cold_call" : "lead"}
       />
     </section>
   );

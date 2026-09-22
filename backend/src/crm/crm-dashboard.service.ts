@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { CrmLeadSource, type Prisma } from "@prisma/client";
+import { CrmLeadSource, CrmRecordType, type Prisma } from "@prisma/client";
 import {
   eachDayOfInterval,
   endOfDay,
@@ -58,6 +58,7 @@ export class CrmDashboardService {
     const where: Prisma.CrmLeadWhereInput = {
       companyId,
       deletedAt: null,
+      recordType: CrmRecordType.lead,
       ...scopeFilter,
       ...ownerFilter,
       ...sourceFilter,
@@ -82,6 +83,7 @@ export class CrmDashboardService {
           companyId,
           deletedAt: null,
           isArchived: false,
+          recordType: CrmRecordType.lead,
           ...scopeFilter,
           ...ownerFilter,
           ...sourceFilter,
@@ -110,6 +112,7 @@ export class CrmDashboardService {
         where: {
           companyId,
           deletedAt: null,
+          recordType: CrmRecordType.lead,
           createdAt: { gte: prevFrom, lte: endOfDay(prevTo) },
           ...scopeFilter,
           ...ownerFilter,

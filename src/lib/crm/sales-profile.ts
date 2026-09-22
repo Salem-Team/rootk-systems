@@ -7,6 +7,7 @@ import type {
   CrmSalesProfileLead,
   CrmStage,
 } from "@/types/crm";
+import { isPipelineLead } from "@/lib/crm/lead-filters";
 import { buildStageCards, isLost, isWon, stageMap } from "@/lib/crm/stage-metrics";
 
 export function toSalesProfileLeads(
@@ -92,7 +93,9 @@ export function buildSalesProfile(
   activities: CrmLeadActivity[],
   feedback: CrmLeadFeedback[]
 ): CrmSalesProfile {
-  const mine = leads.filter((l) => l.ownerEmployeeId === employeeId);
+  const mine = leads.filter(
+    (l) => l.ownerEmployeeId === employeeId && isPipelineLead(l)
+  );
   const map = stageMap(stages);
   const profileLeads = toSalesProfileLeads(mine, stages);
   const won = mine.filter((l) => isWon(map.get(l.stageId))).length;

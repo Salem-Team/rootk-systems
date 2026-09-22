@@ -102,13 +102,18 @@ export async function findLeadByCanonicalPhone(
   prisma: PhoneDb,
   companyId: string,
   phoneNormalized: string,
-  excludeLeadId?: string
+  opts?: {
+    excludeLeadId?: string;
+    /** Uniqueness is scoped per record type (lead vs cold_call). */
+    recordType?: "lead" | "cold_call";
+  }
 ) {
   return prisma.crmLead.findFirst({
     where: {
       companyId,
       deletedAt: null,
-      ...(excludeLeadId ? { id: { not: excludeLeadId } } : {}),
+      recordType: opts?.recordType ?? "lead",
+      ...(opts?.excludeLeadId ? { id: { not: opts.excludeLeadId } } : {}),
       OR: [
         { phoneNormalized },
         {
@@ -139,6 +144,7 @@ export async function assertPhoneAvailable(
     actorEmployeeId?: string;
     canViewOthers?: boolean;
     visibleOwnerIds?: string[] | null;
+    recordType?: "lead" | "cold_call";
   }
 ) {
   if (!phoneNormalized) return;
@@ -146,7 +152,10 @@ export async function assertPhoneAvailable(
     prisma,
     companyId,
     phoneNormalized,
-    opts.excludeLeadId
+    {
+      excludeLeadId: opts.excludeLeadId,
+      recordType: opts.recordType,
+    }
   );
   if (!existing) return;
   const visible =
@@ -177,6 +186,7 @@ export async function assertContactsAvailable(
     actorEmployeeId?: string;
     canViewOthers?: boolean;
     visibleOwnerIds?: string[] | null;
+    recordType?: "lead" | "cold_call";
   }
 ) {
   for (const key of keys) {

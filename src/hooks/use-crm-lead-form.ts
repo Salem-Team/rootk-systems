@@ -30,6 +30,7 @@ import type {
   CrmLeadStatus,
   CrmLeadTag,
   CrmNextAction,
+  CrmRecordType,
   CrmStage,
 } from "@/types/crm";
 
@@ -75,6 +76,8 @@ interface UseCrmLeadFormArgs {
   editingLead?: CrmLead | null;
   canAssign?: boolean;
   defaultStageId?: string;
+  /** Applied only when creating (not editing). */
+  recordType?: CrmRecordType;
   onOpenChange: (open: boolean) => void;
   onSaved?: (lead: CrmLead) => void;
   onOpenExistingLead?: (leadId: string) => void;
@@ -87,6 +90,7 @@ export function useCrmLeadForm({
   editingLead = null,
   canAssign = false,
   defaultStageId,
+  recordType = "lead",
   onOpenChange,
   onSaved,
   onOpenExistingLead,
@@ -317,6 +321,9 @@ export function useCrmLeadForm({
       notes,
       request: request.trim(),
       budget: budget.trim(),
+      recordType: editingLead
+        ? editingLead.recordType ?? "lead"
+        : recordType,
     };
 
     const parsed = createLeadSchema.safeParse(payload);

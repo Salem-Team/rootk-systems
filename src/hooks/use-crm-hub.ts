@@ -54,6 +54,9 @@ export function useCrmHub() {
     canViewDashboard ? "dashboard" : "leads"
   );
   const [leadsView, setLeadsView] = useState<"cards" | "table">("cards");
+  const [coldCallsView, setColdCallsView] = useState<"cards" | "table">(
+    "cards"
+  );
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -86,11 +89,15 @@ export function useCrmHub() {
     pageSize: 20,
     sort: "createdAt",
     order: "desc",
+    recordType: "lead",
   });
-  /** Owner filter for leads stage cards — local only so counts update without reload. */
+  /** Owner filter for leads / cold-call stage cards — local only so counts update without reload. */
   const [overviewOwnerEmployeeId, setOverviewOwnerEmployeeId] = useState<
     string | undefined
   >();
+  const [createRecordType, setCreateRecordType] = useState<"lead" | "cold_call">(
+    "lead"
+  );
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<CrmLead | null>(null);
@@ -171,6 +178,10 @@ export function useCrmHub() {
         jobs.push(loadPipeline());
         jobs.push(loadLeadCounts());
       }
+      if (tab === "coldCalls") {
+        if (coldCallsView === "table") jobs.push(loadLeads());
+        jobs.push(loadLeadCounts());
+      }
       if (tab === "delay") jobs.push(loadLeads());
       if (tab === "pipeline") jobs.push(loadPipeline());
       if (tab === "activities") jobs.push(loadActivities());
@@ -190,6 +201,7 @@ export function useCrmHub() {
   }, [
     tab,
     leadsView,
+    coldCallsView,
     loadCore,
     loadDashboard,
     loadLeads,
@@ -220,6 +232,7 @@ export function useCrmHub() {
           ...resolved,
           followUp: "overdue",
           status: "active",
+          recordType: "lead",
         };
         return sameLeadFilters(prev, merged) ? prev : merged;
       });
@@ -230,6 +243,7 @@ export function useCrmHub() {
   const pollIntervalMs = useMemo(() => {
     if (
       tab === "leads" ||
+      tab === "coldCalls" ||
       tab === "delay" ||
       tab === "pipeline" ||
       tab === "activities" ||
@@ -253,17 +267,30 @@ export function useCrmHub() {
     void reloadVisible();
   }, [reloadVisible]);
 
-  // Drop stale lead pages when switching into Delay / Leads table so we never
+  // Drop stale lead pages when switching into Delay / Leads / Cold Calls table so we never
   // briefly show another tab's rows (soft reload keeps loading=false).
-  const leadsSurfaceRef = useRef(`${tab}:${leadsView}`);
+  const leadsSurfaceRef = useRef(`${tab}:${leadsView}:${coldCallsView}`);
+  const recordTypeRef = useRef(leadFilters.recordType ?? "lead");
   useEffect(() => {
-    const next = `${tab}:${leadsView}`;
+    const next = `${tab}:${leadsView}:${coldCallsView}`;
     if (leadsSurfaceRef.current === next) return;
     leadsSurfaceRef.current = next;
-    if (tab === "delay" || (tab === "leads" && leadsView === "table")) {
+    if (
+      tab === "delay" ||
+      (tab === "leads" && leadsView === "table") ||
+      (tab === "coldCalls" && coldCallsView === "table")
+    ) {
       setLeadsPage(null);
     }
-  }, [tab, leadsView]);
+  }, [tab, leadsView, coldCallsView]);
+
+  useEffect(() => {
+    const nextType = leadFilters.recordType ?? "lead";
+    if (recordTypeRef.current === nextType) return;
+    recordTypeRef.current = nextType;
+    setLeadStageCounts(null);
+    setLeadsPage(null);
+  }, [leadFilters.recordType]);
 
   /** Render-time normalization — never pass raw API envelopes into panels. */
   const safeStages = useMemo(() => ensureCrmList<CrmStage>(stages), [stages]);
@@ -321,12 +348,14 @@ export function useCrmHub() {
     return [...map.values()];
   }, [safeActivityLeads, safePipelineLeads, safeLeadsPage]);
 
-  function openCreate() {
+  function openCreate(recordType: "lead" | "cold_call" = "lead") {
+    setCreateRecordType(recordType);
     setEditingLead(null);
     setFormOpen(true);
   }
 
   function openEdit(lead: CrmLead) {
+    setCreateRecordType(lead.recordType ?? "lead");
     setEditingLead(lead);
     setFormOpen(true);
   }
@@ -342,6 +371,7 @@ export function useCrmHub() {
       sort: prev.sort ?? "updatedAt",
       order: prev.order ?? "desc",
       ...filters,
+      recordType: filters?.recordType ?? "lead",
     }));
     setLeadsView("table");
     setTab("leads");
@@ -356,6 +386,7 @@ export function useCrmHub() {
         order: "asc",
         followUp: "overdue",
         status: "active",
+        recordType: "lead",
         ownerEmployeeId: prev.ownerEmployeeId,
         search: prev.search,
       };
@@ -375,6 +406,7 @@ export function useCrmHub() {
       sort: prev.sort ?? "updatedAt",
       order: prev.order ?? "desc",
       ownerEmployeeId: overviewOwnerEmployeeId,
+      recordType: "lead",
     }));
     setLeadsView("table");
   }
@@ -387,6 +419,7 @@ export function useCrmHub() {
       order: prev.order ?? "desc",
       ownerEmployeeId: overviewOwnerEmployeeId,
       stageId,
+      recordType: "lead",
     }));
     setLeadsView("table");
   }
@@ -400,6 +433,45 @@ export function useCrmHub() {
       sort: prev.sort ?? "updatedAt",
       order: prev.order ?? "desc",
       ownerEmployeeId: prev.ownerEmployeeId,
+      recordType: "lead",
+    }));
+  }
+
+  function openAllColdCalls() {
+    setLeadFilters((prev) => ({
+      page: 1,
+      pageSize: prev.pageSize ?? 20,
+      sort: prev.sort ?? "updatedAt",
+      order: prev.order ?? "desc",
+      ownerEmployeeId: overviewOwnerEmployeeId,
+      recordType: "cold_call",
+    }));
+    setColdCallsView("table");
+  }
+
+  function openStageColdCalls(stageId: string) {
+    setLeadFilters((prev) => ({
+      page: 1,
+      pageSize: prev.pageSize ?? 20,
+      sort: prev.sort ?? "updatedAt",
+      order: prev.order ?? "desc",
+      ownerEmployeeId: overviewOwnerEmployeeId,
+      stageId,
+      recordType: "cold_call",
+    }));
+    setColdCallsView("table");
+  }
+
+  function backToColdCallCards() {
+    setColdCallsView("cards");
+    setOverviewOwnerEmployeeId(leadFilters.ownerEmployeeId);
+    setLeadFilters((prev) => ({
+      page: 1,
+      pageSize: prev.pageSize ?? 20,
+      sort: prev.sort ?? "updatedAt",
+      order: prev.order ?? "desc",
+      ownerEmployeeId: prev.ownerEmployeeId,
+      recordType: "cold_call",
     }));
   }
 
@@ -408,7 +480,29 @@ export function useCrmHub() {
     if (next === "businessTypes" && !canManageBusinessTypes) return;
     if (next === "reports" && !canViewReports) return;
     if (next === "performance" && !canViewPerformance) return;
-    if (next === "leads") setLeadsView("cards");
+    if (next === "leads") {
+      setLeadsView("cards");
+      setLeadFilters((prev) => ({
+        page: 1,
+        pageSize: prev.pageSize ?? 20,
+        sort: prev.sort ?? "updatedAt",
+        order: prev.order ?? "desc",
+        recordType: "lead",
+        ownerEmployeeId: prev.recordType === "lead" ? prev.ownerEmployeeId : undefined,
+      }));
+    }
+    if (next === "coldCalls") {
+      setColdCallsView("cards");
+      setLeadFilters((prev) => ({
+        page: 1,
+        pageSize: prev.pageSize ?? 20,
+        sort: prev.sort ?? "updatedAt",
+        order: prev.order ?? "desc",
+        recordType: "cold_call",
+        ownerEmployeeId:
+          prev.recordType === "cold_call" ? prev.ownerEmployeeId : undefined,
+      }));
+    }
     if (next === "delay") {
       setLeadFilters((prev) => {
         const merged: CrmLeadFilters = {
@@ -418,6 +512,7 @@ export function useCrmHub() {
           order: "asc",
           followUp: "overdue",
           status: "active",
+          recordType: "lead",
           ownerEmployeeId: prev.ownerEmployeeId,
           search: prev.search,
         };
@@ -428,10 +523,11 @@ export function useCrmHub() {
   }
 
   const overviewLeads = useMemo(() => {
+    if ((leadFilters.recordType ?? "lead") === "cold_call") return [];
     const ownerId = overviewOwnerEmployeeId?.trim();
     if (!ownerId) return safePipelineLeads;
     return safePipelineLeads.filter((lead) => lead.ownerEmployeeId === ownerId);
-  }, [safePipelineLeads, overviewOwnerEmployeeId]);
+  }, [safePipelineLeads, overviewOwnerEmployeeId, leadFilters.recordType]);
 
   const stageCounts = useMemo(() => {
     if (leadStageCounts) {
@@ -465,6 +561,7 @@ export function useCrmHub() {
     tab,
     setTab,
     leadsView,
+    coldCallsView,
     ready,
     loading,
     syncing,
@@ -479,6 +576,7 @@ export function useCrmHub() {
     formOpen,
     setFormOpen,
     editingLead,
+    createRecordType,
     viewLeadId,
     viewLeadTab,
     setViewLeadId,
@@ -509,6 +607,9 @@ export function useCrmHub() {
     openStageLeads,
     setOverviewOwner,
     backToLeadsCards,
+    openAllColdCalls,
+    openStageColdCalls,
+    backToColdCallCards,
     onTabChange,
   };
 }

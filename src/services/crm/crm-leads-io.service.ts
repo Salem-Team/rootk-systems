@@ -44,8 +44,10 @@ const NEXT_ACTIONS = new Set<CrmNextAction>([
 ]);
 
 export async function importCrmLeads(
-  rows: CrmLeadCsvRow[]
+  rows: CrmLeadCsvRow[],
+  opts?: { recordType?: "lead" | "cold_call" }
 ): Promise<ApiResponse<CrmLeadsImportResult | null>> {
+  const recordType = opts?.recordType ?? "lead";
   if (isApiMode()) {
     return postCrmLeadsImport(
       rows.map((r) => ({
@@ -63,7 +65,10 @@ export async function importCrmLeads(
           ? r.nextAction
           : "none",
         notes: r.notes,
-      }))
+        request: r.request,
+        budget: r.budget,
+      })),
+      { recordType }
     );
   }
 
@@ -142,6 +147,7 @@ export async function importCrmLeads(
           request: row.request ?? "",
           budget: row.budget ?? "",
           notes: row.notes,
+          recordType,
         });
         if (!res.success || !res.data) {
           failed += 1;

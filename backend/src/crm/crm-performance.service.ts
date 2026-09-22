@@ -51,6 +51,7 @@ export class CrmPerformanceService {
     const where: Prisma.CrmLeadWhereInput = {
       companyId,
       deletedAt: null,
+      recordType: "lead",
       ...this.shared.scopeOwnerFilter(actor, scopeOwnerIds),
       ...this.shared.extraOwnerFilter(scopeOwnerIds, query.ownerEmployeeId),
     };
@@ -63,6 +64,7 @@ export class CrmPerformanceService {
           ...(from ? { createdAt: { gte: from, lte: to } } : {}),
           lead: {
             deletedAt: null,
+            recordType: "lead",
             ...this.shared.scopeOwnerFilter(actor, scopeOwnerIds),
             ...this.shared.extraOwnerFilter(scopeOwnerIds, query.ownerEmployeeId),
           },
@@ -116,7 +118,12 @@ export class CrmPerformanceService {
 
     const [leads, stages, activities, feedback] = await Promise.all([
       this.prisma.crmLead.findMany({
-        where: { companyId, deletedAt: null, ownerEmployeeId: employeeId },
+        where: {
+          companyId,
+          deletedAt: null,
+          recordType: "lead",
+          ownerEmployeeId: employeeId,
+        },
       }),
       this.prisma.crmStage.findMany({
         where: { companyId, deletedAt: null },
@@ -126,7 +133,11 @@ export class CrmPerformanceService {
         where: {
           companyId,
           deletedAt: null,
-          lead: { ownerEmployeeId: employeeId, deletedAt: null },
+          lead: {
+            ownerEmployeeId: employeeId,
+            deletedAt: null,
+            recordType: "lead",
+          },
         },
         orderBy: { occurredAt: "desc" },
         take: PERFORMANCE_PROFILE_RECENT_LIMIT,
@@ -135,7 +146,11 @@ export class CrmPerformanceService {
         where: {
           companyId,
           deletedAt: null,
-          lead: { ownerEmployeeId: employeeId, deletedAt: null },
+          lead: {
+            ownerEmployeeId: employeeId,
+            deletedAt: null,
+            recordType: "lead",
+          },
         },
         orderBy: { createdAt: "desc" },
         take: PERFORMANCE_PROFILE_RECENT_LIMIT,

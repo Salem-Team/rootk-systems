@@ -190,6 +190,48 @@ function main() {
   const othersAll = filterLeads(leads, {}, { canViewOthers: true });
   assert(othersAll.length === 4, "filterLeads: view-others sees all including unassigned");
 
+  // Cold calls share the table but stay out of lead totals by default.
+  const typedRows: CrmLead[] = [
+    lead("lead-a", hagar, { recordType: "lead" }),
+    lead("cold-a", hagar, { recordType: "cold_call" }),
+    lead("legacy-a", hagar), // missing recordType → treated as lead
+  ];
+  const defaultLeadsOnly = filterLeads(typedRows, {}, { canViewOthers: true });
+  assert(
+    defaultLeadsOnly.length === 2 &&
+      defaultLeadsOnly.every((l) => (l.recordType ?? "lead") === "lead"),
+    "filterLeads: default excludes cold_call rows"
+  );
+  const coldOnly = filterLeads(
+    typedRows,
+    { recordType: "cold_call" },
+    { canViewOthers: true }
+  );
+  assert(
+    coldOnly.length === 1 && coldOnly[0]?.id === "cold-a",
+    "filterLeads: recordType=cold_call is isolated"
+  );
+  assert(
+    filterLeads(typedRows, { recordType: "lead" }, { canViewOthers: true }).every(
+      (l) => l.id !== "cold-a"
+    ),
+    "filterLeads: recordType=lead never includes cold_call"
+  );
+
+  const dashWithCold = buildCrmDashboard(
+    [...leads, lead("cold-kpi", hagar, { recordType: "cold_call" })],
+    stages,
+    feedbackTypes,
+    feedback,
+    employees,
+    { range: "all" },
+    { canViewOthers: true }
+  );
+  assert(
+    dashWithCold.kpis.totalLeads === 4,
+    "dashboard: cold_call rows excluded from KPI totals"
+  );
+
   const teamLeads = filterLeads(leads, {}, {
     actorEmployeeId: hagar,
     teamOwnerIds: [hagar, salem],

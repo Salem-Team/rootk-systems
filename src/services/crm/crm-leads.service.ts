@@ -38,7 +38,13 @@ export { createCrmLead, updateCrmLead } from "@/services/crm/crm-lead-mutations.
 export async function getCrmLeadCounts(
   filters: Pick<
     CrmLeadFilters,
-    "status" | "source" | "ownerEmployeeId" | "search" | "tag" | "followUp"
+    | "status"
+    | "source"
+    | "ownerEmployeeId"
+    | "search"
+    | "tag"
+    | "followUp"
+    | "recordType"
   > = {}
 ): Promise<ApiResponse<CrmLeadStageCounts>> {
   const scoped = scopeCrmFiltersToActor(filters);
@@ -49,12 +55,15 @@ export async function getCrmLeadCounts(
     await simulateDelay();
     assertCap("view");
     await ensureCatalog();
-    const all = await crmLeadRepository.findForList(
-      leadListMode({ ...scoped, status: scoped.status ?? "active" })
-    );
+    const withType = {
+      ...scoped,
+      status: scoped.status ?? "active",
+      recordType: scoped.recordType ?? "lead",
+    };
+    const all = await crmLeadRepository.findForList(leadListMode(withType));
     const filtered = await filterStoredLeads(
       all,
-      { ...scoped, status: scoped.status ?? "active" },
+      withType,
       await crmLeadFilterScope()
     );
     const byStage: Record<string, number> = {};

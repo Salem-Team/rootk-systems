@@ -28,14 +28,25 @@ export class CrmPhoneLookupService {
 
     const ownerIds = await this.shared.resolveOwnerIds(companyId, actor);
     const owner = this.shared.scopeOwnerFilter(actor, ownerIds);
-    const row = await this.prisma.crmLead.findFirst({
-      where: {
-        companyId,
-        deletedAt: null,
-        ...owner,
-        ...phoneIdentityWhere(canonical),
-      },
-    });
+    const row =
+      (await this.prisma.crmLead.findFirst({
+        where: {
+          companyId,
+          deletedAt: null,
+          recordType: "lead",
+          ...owner,
+          ...phoneIdentityWhere(canonical),
+        },
+      })) ??
+      (await this.prisma.crmLead.findFirst({
+        where: {
+          companyId,
+          deletedAt: null,
+          recordType: "cold_call",
+          ...owner,
+          ...phoneIdentityWhere(canonical),
+        },
+      }));
 
     if (row) return { lead: mapLead(row), ownedByOther: false };
 
@@ -60,6 +71,7 @@ export class CrmPhoneLookupService {
       where: {
         companyId,
         deletedAt: null,
+        recordType: "lead",
         phoneNormalized: { not: null },
         ...owner,
       },
@@ -74,6 +86,7 @@ export class CrmPhoneLookupService {
       where: {
         companyId,
         deletedAt: null,
+        recordType: "lead",
         phoneNormalized: { in: duplicateKeys },
         ...owner,
       },

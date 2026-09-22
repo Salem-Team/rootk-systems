@@ -102,6 +102,7 @@ export const createLeadSchema = z.object({
   notes: z.string().optional().default(""),
   request: z.string().optional().default(""),
   budget: z.string().optional().default(""),
+  recordType: z.enum(["lead", "cold_call"]).optional().default("lead"),
 });
 
 export const updateLeadSchema = createLeadSchema.partial().extend({

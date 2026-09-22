@@ -17,10 +17,14 @@ import {
 } from "@/lib/crm/leads-excel";
 import { importCrmLeads } from "@/services/crm.service";
 import { useTranslation } from "@/hooks/use-translation";
+import type { CrmRecordType } from "@/types/crm";
 
 const MAX_IMPORT_ROWS = 500;
 
-export function useCrmLeadsImport(onImported?: () => void) {
+export function useCrmLeadsImport(
+  onImported?: () => void,
+  recordType: CrmRecordType = "lead"
+) {
   const { t } = useTranslation();
   const [fileName, setFileName] = useState("");
   const [sheet, setSheet] = useState<CrmLeadSpreadsheet | null>(null);
@@ -100,21 +104,30 @@ export function useCrmLeadsImport(onImported?: () => void) {
       return;
     }
     setBusy(true);
-    const res = await importCrmLeads(rows);
+    const res = await importCrmLeads(rows, { recordType });
     setBusy(false);
     if (!res.success || !res.data) {
       toast.error(res.message ?? t("crm.errors.saveFailed"));
       return;
     }
     const { created, failed, total } = res.data;
+    const summaryKey =
+      recordType === "cold_call" ? "crm.coldImport.summary" : "crm.import.summary";
     setSummary(
-      t("crm.import.summary", {
+      t(summaryKey, {
         created: String(created),
         failed: String(failed),
         total: String(total),
       })
     );
-    toast.success(t("crm.toast.imported", { count: String(created) }));
+    toast.success(
+      t(
+        recordType === "cold_call"
+          ? "crm.toast.coldImported"
+          : "crm.toast.imported",
+        { count: String(created) }
+      )
+    );
     onImported?.();
     return failed === 0;
   }
@@ -130,6 +143,7 @@ export function useCrmLeadsImport(onImported?: () => void) {
     busy,
     summary,
     truncated: mapped.rows.length > MAX_IMPORT_ROWS,
+    recordType,
     reset,
     onFile,
     setFieldColumn,

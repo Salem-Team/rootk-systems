@@ -82,6 +82,13 @@ export function isLeadOwnedByActor(
   return isInCrmScope(ownerEmployeeId, opts);
 }
 
+/** Pipeline CRM leads only — cold-call lists stay out of KPIs and totals. */
+export function isPipelineLead(
+  lead: Pick<CrmLead, "recordType"> | null | undefined
+): boolean {
+  return (lead?.recordType ?? "lead") === "lead";
+}
+
 export function filterLeads(
   leads: CrmLead[],
   filters: CrmLeadFilters,
@@ -105,6 +112,9 @@ export function filterLeads(
     if (!matchesLeadDeletionFilter(lead, filters, opts)) return false;
     if (filters.source && lead.source !== filters.source) return false;
     if (filters.tag && !lead.tags.includes(filters.tag)) return false;
+    const wantedType = filters.recordType ?? "lead";
+    const leadType = lead.recordType ?? "lead";
+    if (leadType !== wantedType) return false;
 
     if (filters.followUp === "none") {
       if (lead.status !== "active") return false;
@@ -163,6 +173,7 @@ export function sameLeadFilters(
     "ownerEmployeeId",
     "tag",
     "followUp",
+    "recordType",
     "sort",
     "order",
     "range",

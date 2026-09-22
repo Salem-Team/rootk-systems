@@ -86,10 +86,15 @@ function resolvePayloadContacts(
   return { primary, extras: previous?.contacts ?? [] };
 }
 
-async function throwIfContactTaken(keys: string[], excludeLeadId?: string) {
+async function throwIfContactTaken(
+  keys: string[],
+  opts?: { excludeLeadId?: string; recordType?: "lead" | "cold_call" }
+) {
   if (keys.length === 0) return;
+  const recordType = opts?.recordType ?? "lead";
   const clash = (await crmLeadRepository.findAll()).find((lead) => {
-    if (excludeLeadId && lead.id === excludeLeadId) return false;
+    if (opts?.excludeLeadId && lead.id === opts.excludeLeadId) return false;
+    if ((lead.recordType ?? "lead") !== recordType) return false;
     const existingKeys = leadCanonicalKeys(lead);
     return keys.some((key) => existingKeys.includes(key));
   });
@@ -159,7 +164,9 @@ export async function createCrmLead(
         code: "INVALID_PHONE",
       });
     }
-    await throwIfContactTaken(canonicalContactKeys([primary, ...extras]));
+    await throwIfContactTaken(canonicalContactKeys([primary, ...extras]), {
+      recordType: parsed.recordType ?? "lead",
+    });
     const { stages, subStages } = await ensureCatalog();
     if (!stages.some((s) => s.id === parsed.stageId)) {
       throw new ValidationError("Please select a valid stage");
@@ -202,6 +209,7 @@ export async function createCrmLead(
         stageId: parsed.stageId,
         subStageId,
         status: parsed.status ?? "active",
+        recordType: parsed.recordType ?? "lead",
         tags: parsed.tags ?? [],
         nextAction: parsed.nextAction ?? "none",
         nextFollowUpAt: parsed.nextFollowUpAt ?? null,
@@ -295,7 +303,10 @@ export async function updateCrmLead(
       );
       await throwIfContactTaken(
         canonicalContactKeys([resolved.primary, ...resolved.extras]),
-        existing.id
+        {
+          excludeLeadId: existing.id,
+          recordType: existing.recordType ?? "lead",
+        }
       );
       nextPhone = resolved.primary.phone;
       nextPhoneNormalized = resolved.primary.phoneNormalized;

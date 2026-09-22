@@ -75,6 +75,7 @@ export class CrmFollowUpRemindersService
       const leads = await this.prisma.crmLead.findMany({
         where: {
           deletedAt: null,
+          recordType: "lead",
           status: CrmLeadStatus.active,
           nextAction: { in: [...FOLLOW_UP_REMINDER_ACTIONS] as CrmNextAction[] },
           nextFollowUpAt: { gte: windowStart, lte: windowEnd },

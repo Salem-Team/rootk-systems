@@ -168,6 +168,7 @@ export async function fetchCrmLeads(
       ownerEmployeeId: filters.ownerEmployeeId,
       tag: filters.tag || undefined,
       followUp: filters.followUp || undefined,
+      recordType: filters.recordType || "lead",
       dateFrom: filters.dateFrom,
       dateTo: filters.dateTo,
       range: filters.range,
@@ -189,7 +190,13 @@ export type CrmLeadStageCounts = {
 export async function fetchCrmLeadCounts(
   filters: Pick<
     CrmLeadFilters,
-    "status" | "source" | "ownerEmployeeId" | "search" | "tag" | "followUp"
+    | "status"
+    | "source"
+    | "ownerEmployeeId"
+    | "search"
+    | "tag"
+    | "followUp"
+    | "recordType"
   > = {}
 ): Promise<ApiResponse<CrmLeadStageCounts>> {
   const empty: CrmLeadStageCounts = { total: 0, byStage: {} };
@@ -201,6 +208,7 @@ export async function fetchCrmLeadCounts(
       ownerEmployeeId: filters.ownerEmployeeId,
       tag: filters.tag || undefined,
       followUp: filters.followUp || undefined,
+      recordType: filters.recordType || "lead",
     })}`,
     empty
   );
@@ -255,10 +263,15 @@ export type CrmLeadsImportResult = {
 };
 
 export async function postCrmLeadsImport(
-  rows: Array<Record<string, unknown>>
+  rows: Array<Record<string, unknown>>,
+  opts?: { recordType?: "lead" | "cold_call" }
 ): Promise<ApiResponse<CrmLeadsImportResult | null>> {
   return emitIfOk(
-    await api.post(API_ROUTES.crm.leadsImport, { rows }, null)
+    await api.post(
+      API_ROUTES.crm.leadsImport,
+      { rows, recordType: opts?.recordType ?? "lead" },
+      null
+    )
   );
 }
 

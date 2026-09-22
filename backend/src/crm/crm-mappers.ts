@@ -80,6 +80,7 @@ export function mapLead(row: CrmLead) {
     stageId: row.stageId,
     subStageId: row.subStageId,
     status: row.status,
+    recordType: row.recordType,
     tags: row.tags,
     nextAction: row.nextAction,
     nextFollowUpAt: isoOrNull(row.nextFollowUpAt),

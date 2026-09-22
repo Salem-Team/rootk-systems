@@ -102,7 +102,10 @@ export function useCrmHubLoaders({
   }, [canViewDashboard, dashFilters, setDashboard]);
 
   const loadLeads = useCallback(async () => {
-    const res = await getCrmLeads(leadFilters);
+    const res = await getCrmLeads({
+      ...leadFilters,
+      recordType: leadFilters.recordType ?? "lead",
+    });
     if (res.success) setLeadsPage(ensurePaginatedLeads(res.data));
     else setLeadsPage(ensurePaginatedLeads(null));
   }, [leadFilters, setLeadsPage]);
@@ -111,6 +114,7 @@ export function useCrmHubLoaders({
     const res = await getCrmLeadCounts({
       status: "active",
       ownerEmployeeId: overviewOwnerEmployeeId,
+      recordType: leadFilters.recordType ?? "lead",
     });
     if (res.success && res.data) {
       setLeadStageCounts({
@@ -120,12 +124,13 @@ export function useCrmHubLoaders({
     } else {
       setLeadStageCounts(null);
     }
-  }, [overviewOwnerEmployeeId, setLeadStageCounts]);
+  }, [overviewOwnerEmployeeId, leadFilters.recordType, setLeadStageCounts]);
 
   const loadDelayCount = useCallback(async () => {
     const res = await getCrmLeadCounts({
       status: "active",
       followUp: "overdue",
+      recordType: "lead",
     });
     if (res.success && res.data) setDelayCount(res.data.total);
     else setDelayCount(0);
@@ -138,6 +143,7 @@ export function useCrmHubLoaders({
       status: "active",
       sort: "updatedAt",
       order: "desc",
+      recordType: "lead",
     });
     if (res.success) {
       setPipelineLeads(ensurePaginatedLeads(res.data).items);
@@ -149,7 +155,7 @@ export function useCrmHubLoaders({
   const loadActivities = useCallback(async () => {
     const [actRes, leadsRes] = await Promise.all([
       getCrmActivities(50),
-      getCrmLeads({ page: 1, pageSize: 100 }),
+      getCrmLeads({ page: 1, pageSize: 100, recordType: "lead" }),
     ]);
     if (actRes.success) setActivities(ensureCrmList(actRes.data));
     else setActivities([]);
@@ -163,7 +169,7 @@ export function useCrmHubLoaders({
   const loadFeedback = useCallback(async () => {
     const [fbRes, leadsRes] = await Promise.all([
       getCrmFeedbackList(),
-      getCrmLeads({ page: 1, pageSize: 100 }),
+      getCrmLeads({ page: 1, pageSize: 100, recordType: "lead" }),
     ]);
     if (fbRes.success) setFeedback(ensureCrmList(fbRes.data));
     else setFeedback([]);

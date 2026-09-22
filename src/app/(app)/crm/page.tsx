@@ -33,6 +33,13 @@ const CrmLeadsOverview = dynamic(
     import("@/components/crm/crm-leads-overview").then((m) => m.CrmLeadsOverview),
   { loading: panelLoading }
 );
+const CrmColdCallsOverview = dynamic(
+  () =>
+    import("@/components/crm/crm-cold-calls-overview").then(
+      (m) => m.CrmColdCallsOverview
+    ),
+  { loading: panelLoading }
+);
 const CrmLeadsPanel = dynamic(
   () => import("@/components/crm/crm-leads-panel").then((m) => m.CrmLeadsPanel),
   { loading: panelLoading }
@@ -167,7 +174,7 @@ export default function CrmPage() {
                   onImported={() => void hub.reloadVisible()}
                   className="min-h-11"
                 />
-                <Button onClick={hub.openCreate}>
+                <Button onClick={() => hub.openCreate("lead")}>
                   <Plus className="h-4 w-4" />
                   {t("crm.actions.addLead")}
                 </Button>
@@ -187,7 +194,7 @@ export default function CrmPage() {
                 <Button
                   type="button"
                   className="min-h-11 w-full rounded-xl"
-                  onClick={hub.openCreate}
+                  onClick={() => hub.openCreate("lead")}
                 >
                   <Plus className="h-4 w-4" />
                   {t("crm.actions.addLead")}
@@ -272,7 +279,7 @@ export default function CrmPage() {
               onOwnerChange={hub.setOverviewOwner}
               onOpenAllLeads={hub.openAllLeads}
               onOpenStage={hub.openStageLeads}
-              onAddLead={hub.canCreate ? hub.openCreate : undefined}
+              onAddLead={hub.canCreate ? () => hub.openCreate("lead") : undefined}
               onImported={hub.canCreate ? () => void hub.reloadVisible() : undefined}
               canCreate={hub.canCreate}
               businessTypes={hub.safeBusinessTypes}
@@ -301,7 +308,67 @@ export default function CrmPage() {
                 loading={hub.loading}
                 onRowClick={(lead) => hub.openViewLead(lead.id)}
                 onViewHistory={(lead) => hub.openViewLead(lead.id, "timeline")}
-                onAddLead={hub.canCreate ? hub.openCreate : undefined}
+                onAddLead={hub.canCreate ? () => hub.openCreate("lead") : undefined}
+                onImported={() => void hub.reloadVisible()}
+                canAssign={hub.canAssign}
+                canViewOthers={hub.canViewOthers}
+                canViewTeam={hub.canViewTeam}
+                canImport={hub.canCreate}
+                businessTypes={hub.safeBusinessTypes}
+                feedbackTypes={hub.safeFeedbackTypes}
+              />
+            </div>
+          ) : null}
+
+          {hub.tab === "coldCalls" && hub.coldCallsView === "cards" ? (
+            <CrmColdCallsOverview
+              stages={hub.safeStages}
+              stageCounts={hub.stageCounts}
+              total={hub.overviewTotal}
+              loading={hub.loading}
+              employees={hub.safeEmployees}
+              canAssign={hub.canAssign}
+              canViewOthers={hub.canViewOthers || hub.canViewTeam}
+              ownerEmployeeId={hub.overviewOwnerEmployeeId}
+              onOwnerChange={hub.setOverviewOwner}
+              onOpenAll={hub.openAllColdCalls}
+              onOpenStage={hub.openStageColdCalls}
+              onAdd={
+                hub.canCreate ? () => hub.openCreate("cold_call") : undefined
+              }
+              onImported={
+                hub.canCreate ? () => void hub.reloadVisible() : undefined
+              }
+              canCreate={hub.canCreate}
+            />
+          ) : null}
+
+          {hub.tab === "coldCalls" && hub.coldCallsView === "table" ? (
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={hub.backToColdCallCards}
+                >
+                  <ArrowLeft className="me-1.5 h-3.5 w-3.5 rtl:rotate-180" />
+                  {t("crm.coldCalls.backToStages")}
+                </Button>
+              </div>
+              <CrmLeadsPanel
+                variant="coldCalls"
+                leads={hub.safeLeadsPage}
+                stages={hub.safeStages}
+                employees={hub.safeEmployees}
+                filters={hub.leadFilters}
+                onFiltersChange={hub.setLeadFilters}
+                loading={hub.loading}
+                onRowClick={(lead) => hub.openViewLead(lead.id)}
+                onViewHistory={(lead) => hub.openViewLead(lead.id, "timeline")}
+                onAddLead={
+                  hub.canCreate ? () => hub.openCreate("cold_call") : undefined
+                }
                 onImported={() => void hub.reloadVisible()}
                 canAssign={hub.canAssign}
                 canViewOthers={hub.canViewOthers}
@@ -443,6 +510,7 @@ export default function CrmPage() {
           employees={hub.safeEmployees}
           editingLead={hub.editingLead}
           canAssign={hub.canAssign}
+          recordType={hub.createRecordType}
           onSaved={() => {
             void hub.reloadVisible();
           }}

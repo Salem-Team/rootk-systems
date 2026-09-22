@@ -4,6 +4,7 @@ import {
   CrmLeadSource,
   CrmLeadStatus,
   CrmNextAction,
+  CrmRecordType,
   type Prisma,
 } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
@@ -43,6 +44,10 @@ export class CrmLeadCreateService {
 
     const name = String(body.name ?? "").trim();
     if (!name) throw new BadRequestException("name is required");
+    const recordType =
+      body.recordType === "cold_call"
+        ? CrmRecordType.cold_call
+        : CrmRecordType.lead;
     const { primary, extras } = resolveIncomingContactList(body);
     const { phone, phoneNormalized } = primary;
     const ownerIds = await this.shared.resolveOwnerIds(companyId, actor);
@@ -53,6 +58,7 @@ export class CrmLeadCreateService {
       {
         visibleOwnerIds: ownerIds,
         actorEmployeeId: actor.employeeId,
+        recordType,
       }
     );
 
@@ -130,6 +136,7 @@ export class CrmLeadCreateService {
         {
           visibleOwnerIds: ownerIds,
           actorEmployeeId: actor.employeeId,
+          recordType,
         }
       );
       return tx.crmLead.create({
@@ -157,6 +164,7 @@ export class CrmLeadCreateService {
             "status",
             CrmLeadStatus.active
           ),
+          recordType,
           tags: asStringArray(body.tags) ?? [],
           nextAction: asEnum<CrmNextAction>(
             body.nextAction,
@@ -178,18 +186,22 @@ export class CrmLeadCreateService {
     });
 
     const nameLabel = await this.shared.actorName(actor);
+    const kindLabel = recordType === CrmRecordType.cold_call ? "cold call" : "lead";
     await this.shared.writeHistory(companyId, {
       leadId: row.id,
       action: "lead_created",
       actorId: actor.userId,
       actorName: nameLabel,
-      note: `Created lead ${row.name}`,
+      note: `Created ${kindLabel} ${row.name}`,
       newValue: row.name,
     });
     await this.shared.writeLeadActivity(companyId, {
       leadId: row.id,
       type: CrmActivityType.created,
-      title: "Lead created",
+      title:
+        recordType === CrmRecordType.cold_call
+          ? "Cold call created"
+          : "Lead created",
       description: row.name,
       actorEmployeeId: actor.employeeId,
       actorId: actor.userId,
@@ -198,7 +210,10 @@ export class CrmLeadCreateService {
     await writeActivity(this.prisma, {
       companyId,
       type: "crm_lead_created",
-      title: "CRM lead created",
+      title:
+        recordType === CrmRecordType.cold_call
+          ? "CRM cold call created"
+          : "CRM lead created",
       description: row.name,
       employeeId: ownerEmployeeId ?? undefined,
       actorId: actor.userId,

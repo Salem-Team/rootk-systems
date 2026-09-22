@@ -145,6 +145,10 @@ export class CrmLeadsImportService {
           tags,
           nextAction: item.nextAction,
           notes: item.notes,
+          request: item.request,
+          budget: item.budget,
+          recordType:
+            body.recordType === "cold_call" ? "cold_call" : "lead",
         });
         created += 1;
         results.push({ row: rowNum, ok: true, id: lead.id });

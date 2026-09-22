@@ -116,7 +116,9 @@ export async function processLocalCrmFollowUpReminders(): Promise<void> {
   if (!userId) return;
 
   const now = new Date();
-  const leads = await crmLeadRepository.findAll();
+  const leads = (await crmLeadRepository.findAll()).filter(
+    (lead) => (lead.recordType ?? "lead") === "lead"
+  );
   const due = leads.filter(
     (lead) =>
       slotsForLead(lead, now).length > 0 &&

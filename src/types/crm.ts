@@ -14,6 +14,9 @@ export type CrmLeadStatus = "active" | "inactive" | "archived";
 /** List filter only — not a stored lead status. Soft-deleted rows, admin-only. */
 export type CrmLeadListStatus = CrmLeadStatus | "deleted";
 
+/** Pipeline leads vs Excel cold-call lists (same table, isolated totals). */
+export type CrmRecordType = "lead" | "cold_call";
+
 export type CrmLeadSource =
   | "facebook"
   | "instagram"
@@ -166,6 +169,8 @@ export interface CrmLead extends BaseEntity {
   stageId: string;
   subStageId: string | null;
   status: CrmLeadStatus;
+  /** Defaults to `lead` for legacy local/demo rows. */
+  recordType?: CrmRecordType;
   tags: CrmLeadTag[];
   nextAction: CrmNextAction;
   nextFollowUpAt: string | null;
@@ -232,6 +237,8 @@ export interface CrmLeadFilters {
   ownerEmployeeId?: string;
   tag?: CrmLeadTag | "";
   followUp?: CrmFollowUpFilter | "";
+  /** Defaults to `lead` so cold calls stay out of pipeline totals. */
+  recordType?: CrmRecordType;
   dateFrom?: string;
   dateTo?: string;
   range?: CrmDateRangePreset;

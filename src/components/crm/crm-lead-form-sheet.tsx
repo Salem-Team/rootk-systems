@@ -25,6 +25,7 @@ interface CrmLeadFormSheetProps {
   editingLead?: CrmLead | null;
   canAssign?: boolean;
   defaultStageId?: string;
+  recordType?: import("@/types/crm").CrmRecordType;
   onSaved?: (lead: CrmLead) => void;
   onOpenExistingLead?: (leadId: string) => void;
 }
@@ -39,6 +40,7 @@ export function CrmLeadFormSheet({
   editingLead = null,
   canAssign = false,
   defaultStageId,
+  recordType = "lead",
   onSaved,
   onOpenExistingLead,
 }: CrmLeadFormSheetProps) {
@@ -49,11 +51,14 @@ export function CrmLeadFormSheet({
     editingLead,
     canAssign,
     defaultStageId,
+    recordType,
     onOpenChange,
     onSaved,
     onOpenExistingLead,
   });
   const { t } = form;
+  const isCold =
+    (editingLead?.recordType ?? recordType) === "cold_call";
   const safeEmployees = Array.isArray(employees) ? employees : [];
 
   return (
@@ -71,8 +76,14 @@ export function CrmLeadFormSheet({
             <SheetHeader className="space-y-1 text-start">
               <SheetTitle className="text-[1.1rem] sm:text-lg">
                 {editingLead
-                  ? t("crm.leadForm.editTitle")
-                  : t("crm.leadForm.title")}
+                  ? t(
+                      isCold
+                        ? "crm.coldCalls.editTitle"
+                        : "crm.leadForm.editTitle"
+                    )
+                  : t(
+                      isCold ? "crm.coldCalls.addTitle" : "crm.leadForm.title"
+                    )}
               </SheetTitle>
               <SheetDescription className="line-clamp-2 text-[13px] sm:line-clamp-none sm:text-sm">
                 {t("crm.leadForm.description")}

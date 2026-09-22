@@ -503,6 +503,40 @@ function main() {
     "sales profile leads are owner-scoped"
   );
 
+  // Cold calls: same table, isolated totals + dedicated hub tab / Excel import
+  for (const f of [
+    "src/components/crm/crm-cold-calls-overview.tsx",
+    "backend/prisma/migrations/20260922150000_crm_record_type/migration.sql",
+  ]) {
+    assert(existsSync(join(root, f)), `exists ${f}`);
+  }
+  assert(
+    fileContains("backend/prisma/schema.prisma", "enum CrmRecordType") &&
+      fileContains("backend/prisma/schema.prisma", "recordType") &&
+      fileContains("src/types/crm.ts", 'CrmRecordType = "lead" | "cold_call"'),
+    "CRM recordType lead|cold_call schema + types"
+  );
+  assert(
+    fileContains("backend/src/crm/crm-leads-query.ts", "resolveRecordTypeFilter") &&
+      fileContains("src/lib/crm/lead-filters.ts", 'filters.recordType ?? "lead"') &&
+      fileContains("src/lib/crm/dashboard.ts", "isPipelineLead") &&
+      fileContains("backend/src/crm/crm-dashboard.service.ts", "CrmRecordType.lead"),
+    "cold calls excluded from lead list/counts/dashboard by default"
+  );
+  assert(
+    fileContains("src/components/crm/crm-hub-sidebar.tsx", '"coldCalls"') &&
+      fileContains("src/app/(app)/crm/page.tsx", "CrmColdCallsOverview") &&
+      fileContains("src/components/crm/crm-leads-import-dialog.tsx", 'recordType === "cold_call"'),
+    "cold calls hub tab + Excel import wiring"
+  );
+  assert(
+    fileContains("src/i18n/locales/en.ts", "coldCalls:") &&
+      fileContains("src/i18n/locales/ar.ts", "coldCalls:") &&
+      fileContains("src/i18n/locales/en.ts", "coldImport:") &&
+      fileContains("src/i18n/locales/ar.ts", "coldImport:"),
+    "cold calls i18n en+ar"
+  );
+
   assert(
     existsSync(join(root, "src/constants/permissions.ts")) &&
       existsSync(join(root, "backend/src/common/permissions-catalog.ts")) &&

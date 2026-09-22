@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   ListChecks,
   MessageSquareText,
+  PhoneCall,
   TimerReset,
   Workflow,
   type LucideIcon,
@@ -22,6 +23,7 @@ import { cn } from "@/lib/utils";
 export type CrmHubTab =
   | "dashboard"
   | "leads"
+  | "coldCalls"
   | "delay"
   | "agenda"
   | "pipeline"
@@ -49,6 +51,7 @@ const VIEW_ITEMS: {
   labelKey:
     | "crm.nav.dashboard"
     | "crm.nav.leads"
+    | "crm.nav.coldCalls"
     | "crm.nav.delay"
     | "crm.nav.agenda"
     | "crm.nav.pipeline"
@@ -65,6 +68,7 @@ const VIEW_ITEMS: {
 }[] = [
   { id: "dashboard", icon: LayoutDashboard, labelKey: "crm.nav.dashboard" },
   { id: "leads", icon: ListChecks, labelKey: "crm.nav.leads" },
+  { id: "coldCalls", icon: PhoneCall, labelKey: "crm.nav.coldCalls" },
   { id: "delay", icon: TimerReset, labelKey: "crm.nav.delay" },
   { id: "agenda", icon: CalendarDays, labelKey: "crm.nav.agenda" },
   { id: "pipeline", icon: Columns3, labelKey: "crm.nav.pipeline" },

@@ -1,5 +1,10 @@
 /** Pure Prisma where-clause builder for lead listing/filtering. */
-import { CrmLeadSource, CrmLeadStatus, type Prisma } from "@prisma/client";
+import {
+  CrmLeadSource,
+  CrmLeadStatus,
+  CrmRecordType,
+  type Prisma,
+} from "@prisma/client";
 import { endOfDay } from "date-fns";
 import { isAdminRole } from "../common/roles";
 import type { Actor } from "./crm-access";
@@ -8,6 +13,13 @@ import { CrmSharedService } from "./crm-shared.service";
 import { extractHandle, looksLikeHandle } from "../lib/contact-identity";
 import { phoneSearchNeedles } from "../lib/phone-normalize";
 import { searchCanonicalFromQuery } from "./crm-phone";
+
+/** Default keeps cold-call rows out of pipeline lead totals. */
+export function resolveRecordTypeFilter(
+  value?: string | null
+): CrmRecordType {
+  return value === "cold_call" ? CrmRecordType.cold_call : CrmRecordType.lead;
+}
 
 export function buildLeadWhere(
   shared: CrmSharedService,
@@ -18,6 +30,7 @@ export function buildLeadWhere(
 ): Prisma.CrmLeadWhereInput {
   const where: Prisma.CrmLeadWhereInput = {
     companyId,
+    recordType: resolveRecordTypeFilter(query.recordType),
     ...shared.scopeOwnerFilter(actor, ownerIds),
     ...deletedLeadVisibility(actor, query),
   };

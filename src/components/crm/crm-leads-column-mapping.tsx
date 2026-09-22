@@ -15,6 +15,7 @@ import {
 import { useTranslation } from "@/hooks/use-translation";
 import type { CrmLeadSpreadsheet } from "@/lib/crm/leads-excel";
 import type { TranslationPath } from "@/i18n";
+import { cn } from "@/lib/utils";
 
 const SKIP = "__none__";
 
@@ -40,6 +41,8 @@ interface CrmLeadsColumnMappingProps {
   mapping: Partial<Record<CrmLeadCsvHeader, number>>;
   samples: Map<number, string[]>;
   onChange: (field: CrmLeadCsvHeader, columnIndex: number | undefined) => void;
+  /** Put required fields first and highlight them (cold-call import). */
+  emphasizeRequired?: boolean;
 }
 
 /** Map spreadsheet columns onto canonical CRM lead fields. */
@@ -48,40 +51,56 @@ export function CrmLeadsColumnMapping({
   mapping,
   samples,
   onChange,
+  emphasizeRequired = false,
 }: CrmLeadsColumnMappingProps) {
   const { t } = useTranslation();
+  const fields = emphasizeRequired
+    ? [
+        ...CRM_LEAD_CSV_HEADERS.filter((f) => isCrmLeadRequiredField(f)),
+        ...CRM_LEAD_CSV_HEADERS.filter((f) => !isCrmLeadRequiredField(f)),
+      ]
+    : [...CRM_LEAD_CSV_HEADERS];
 
   return (
-    <div className="max-h-64 overflow-auto rounded-md border border-border/70">
+    <div className="max-h-64 overflow-auto rounded-xl border border-border/70">
       <table className="w-full text-[12px]">
-        <thead className="sticky top-0 bg-muted/90">
+        <thead className="sticky top-0 z-[1] bg-muted/95 backdrop-blur">
           <tr className="text-start">
-            <th className="px-2 py-1.5 font-medium">{t("crm.import.mapField")}</th>
-            <th className="px-2 py-1.5 font-medium">{t("crm.import.mapColumn")}</th>
-            <th className="hidden px-2 py-1.5 font-medium sm:table-cell">
+            <th className="px-3 py-2 font-medium">{t("crm.import.mapField")}</th>
+            <th className="px-3 py-2 font-medium">{t("crm.import.mapColumn")}</th>
+            <th className="hidden px-3 py-2 font-medium sm:table-cell">
               {t("crm.import.mapSample")}
             </th>
           </tr>
         </thead>
         <tbody>
-          {CRM_LEAD_CSV_HEADERS.map((field) => {
+          {fields.map((field) => {
             const required = isCrmLeadRequiredField(field);
             const selected = mapping[field];
             const sample =
-              selected === undefined
-                ? []
-                : (samples.get(selected) ?? []);
+              selected === undefined ? [] : (samples.get(selected) ?? []);
+            const mapped = selected !== undefined;
             return (
-              <tr key={field} className="border-t border-border/50">
-                <td className="px-2 py-1.5 align-middle">
-                  <span className="font-medium">
-                    {t(FIELD_LABEL[field])}
-                  </span>
+              <tr
+                key={field}
+                className={cn(
+                  "border-t border-border/50",
+                  emphasizeRequired && required && "bg-primary/[0.03]"
+                )}
+              >
+                <td className="px-3 py-2 align-middle">
+                  <span className="font-medium">{t(FIELD_LABEL[field])}</span>
                   {required ? (
-                    <span className="ms-1 text-rose-600">*</span>
+                    <span className="ms-1 text-rose-600" title="required">
+                      *
+                    </span>
+                  ) : emphasizeRequired ? (
+                    <span className="ms-1.5 text-[10px] font-normal text-muted-foreground">
+                      {t("crm.coldImport.optional")}
+                    </span>
                   ) : null}
                 </td>
-                <td className="px-2 py-1.5">
+                <td className="px-3 py-2">
                   <Select
                     value={selected === undefined ? SKIP : String(selected)}
                     onValueChange={(value) =>
@@ -91,7 +110,15 @@ export function CrmLeadsColumnMapping({
                       )
                     }
                   >
-                    <SelectTrigger className="h-8 min-w-[8rem] text-[12px]">
+                    <SelectTrigger
+                      className={cn(
+                        "h-9 min-w-[9rem] text-[12px]",
+                        emphasizeRequired &&
+                          required &&
+                          !mapped &&
+                          "border-amber-500/50"
+                      )}
+                    >
                       <SelectValue placeholder={t("crm.import.skipColumn")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -99,14 +126,20 @@ export function CrmLeadsColumnMapping({
                         {t("crm.import.skipColumn")}
                       </SelectItem>
                       {sheet.headers.map((header, idx) => (
-                        <SelectItem key={`${header}-${idx}`} value={String(idx)}>
-                          {header || t("crm.import.unnamedColumn", { index: String(idx + 1) })}
+                        <SelectItem
+                          key={`${header}-${idx}`}
+                          value={String(idx)}
+                        >
+                          {header ||
+                            t("crm.import.unnamedColumn", {
+                              index: String(idx + 1),
+                            })}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </td>
-                <td className="hidden max-w-[180px] truncate px-2 py-1.5 text-muted-foreground sm:table-cell">
+                <td className="hidden max-w-[200px] truncate px-3 py-2 text-muted-foreground sm:table-cell">
                   {sample.length > 0 ? sample.join(" · ") : "—"}
                 </td>
               </tr>

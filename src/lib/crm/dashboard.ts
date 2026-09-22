@@ -1,5 +1,6 @@
 import {
   isLeadOwnedByActor,
+  isPipelineLead,
   type CrmLeadScopeOpts,
 } from "@/lib/crm/lead-filters";
 import type { Employee } from "@/types";
@@ -40,7 +41,9 @@ export function buildCrmDashboard(
   scoped?: CrmLeadScopeOpts
 ): CrmDashboard {
   const { from, to } = resolveCrmRange(filters);
-  let leads = allLeads.filter((l) => l.status !== "archived");
+  let leads = allLeads.filter(
+    (l) => l.status !== "archived" && isPipelineLead(l)
+  );
   leads = leads.filter((l) => isLeadOwnedByActor(l.ownerEmployeeId, scoped));
   if (filters.ownerEmployeeId) {
     leads = leads.filter((l) => l.ownerEmployeeId === filters.ownerEmployeeId);

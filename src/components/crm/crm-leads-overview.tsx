@@ -143,7 +143,9 @@ export function CrmLeadsOverview({
                 variant="outline"
                 className={cn(
                   "min-h-11 touch-manipulation sm:min-h-8",
-                  !onAddLead && !canCreate ? "col-span-2" : "col-span-2 sm:col-span-1"
+                  !onAddLead && !canCreate
+                    ? "col-span-2"
+                    : "col-span-2 sm:col-span-1"
                 )}
                 onClick={onOpenAllLeads}
               >
@@ -174,7 +176,8 @@ export function CrmLeadsOverview({
 
         {activeStages.map((stage) => {
           const count = countByStage.get(stage.id) ?? 0;
-          const subCount = (stage.subStages ?? []).filter((s) => s.active).length;
+          const subCount = (stage.subStages ?? []).filter((s) => s.active)
+            .length;
           return (
             <button
               key={stage.id}
