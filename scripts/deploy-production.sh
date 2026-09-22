@@ -57,7 +57,8 @@ npm run build 2>&1 | tail -15
 
 cd $REMOTE_DIR
 echo '== frontend build =='
-npm run build 2>&1 | tail -25
+# Prefer IPv4 when Next downloads Google Fonts (avoids flaky IPv6 / module-not-found).
+NODE_OPTIONS=--dns-result-order=ipv4first npm run build 2>&1 | tail -25
 
 test -f .next/required-server-files.json
 echo 'required-server-files.json OK'
