@@ -26,6 +26,13 @@ export {
   deleteWorkMeeting,
 } from "@/services/work/work-meeting-mutations.service";
 
+export {
+  getWorkProjects,
+  createWorkProject,
+  updateWorkProject,
+  deleteWorkProject,
+} from "@/services/work/work-projects.service";
+
 export type {
   CreateWorkMeetingDto,
   CreateWorkTaskDto,

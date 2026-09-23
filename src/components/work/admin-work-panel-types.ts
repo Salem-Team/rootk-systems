@@ -4,7 +4,7 @@ import { mediaItemsToDrafts } from "@/lib/task-media";
 import { todayIsoDate } from "@/lib/work-utils";
 import type { TaskPriority, TaskStatus, WorkMeeting, WorkTask } from "@/types/work";
 
-export type PanelTab = "tasks" | "meetings";
+export type PanelTab = "tasks" | "meetings" | "projects";
 export type TaskFilter = "all" | "open" | TaskStatus | "overdue";
 export type MeetingFilter = "all" | "today" | "upcoming" | "past";
 

@@ -18,7 +18,11 @@ export function AdminWorkDeleteDialog({
   onOpenChange,
   onConfirm,
 }: {
-  target: { kind: "task" | "meeting"; id: string; title: string } | null;
+  target: {
+    kind: "task" | "meeting" | "project";
+    id: string;
+    title: string;
+  } | null;
   busy: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;

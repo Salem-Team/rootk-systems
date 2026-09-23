@@ -1,6 +1,7 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { WorkController } from "./work.controller";
 import { WorkMeetingsService } from "./work-meetings.service";
+import { WorkProjectsService } from "./work-projects.service";
 import { WorkTasksQueryService } from "./work-tasks-query.service";
 import { WorkTasksStatusService } from "./work-tasks-status.service";
 import { WorkTasksWriteService } from "./work-tasks-write.service";
@@ -21,6 +22,7 @@ import { TargetsModule } from "../targets/targets.module";
     WorkTasksService,
     WorkTaskCommentsService,
     WorkMeetingsService,
+    WorkProjectsService,
     WorkService,
     RolesGuard,
   ],

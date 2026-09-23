@@ -85,6 +85,8 @@ export const API_ROUTES = {
       `/work/tasks/${id}/voice/${fileId}`,
     meetings: "/work/meetings",
     meetingById: (id: string) => `/work/meetings/${id}`,
+    projects: "/work/projects",
+    projectById: (id: string) => `/work/projects/${id}`,
   },
   org: {
     locations: "/org/locations",

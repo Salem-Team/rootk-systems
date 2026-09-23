@@ -1,6 +1,6 @@
 {
   "name": "rootk-systems",
-  "version": "1.0.39",
+  "version": "1.0.40",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -20,13 +20,14 @@
     "verify:duration": "npx --yes tsx scripts/verify-work-duration.ts",
     "verify:daily-plan": "npx --yes tsx scripts/verify-daily-plan.ts",
     "verify:crm-scope": "npx --yes tsx scripts/verify-crm-scope.ts",
+    "verify:projects": "npx --yes tsx scripts/verify-work-projects.ts",
     "verify:phone": "npx --yes tsx scripts/verify-phone-normalize.ts",
     "verify:crm-phone": "npx --yes tsx scripts/verify-crm-phone.ts",
     "verify:permissions": "npx --yes tsx scripts/verify-permissions.ts",
     "verify:targets": "npx --yes tsx scripts/agents/target-user-agent.ts",
     "agent:targets": "npx --yes tsx scripts/agents/target-user-agent.ts",
     "verify:store": "node scripts/verify-store-readiness.mjs",
-    "verify": "npm run smoke && npm run verify:payroll && npm run verify:payroll:multi && npm run verify:deductions && npm run verify:geo && npm run verify:evidence && npm run verify:duration && npm run verify:daily-plan && npm run verify:crm-scope && npm run verify:permissions && npm run verify:targets && npm run verify:phone && npm run verify:crm-phone && npm run verify:store",
+    "verify": "npm run smoke && npm run verify:payroll && npm run verify:payroll:multi && npm run verify:deductions && npm run verify:geo && npm run verify:evidence && npm run verify:duration && npm run verify:daily-plan && npm run verify:crm-scope && npm run verify:projects && npm run verify:permissions && npm run verify:targets && npm run verify:phone && npm run verify:crm-phone && npm run verify:store",
     "docker:db": "docker compose -f backend/docker-compose.yml up -d",
     "docker:db:down": "docker compose -f backend/docker-compose.yml down",
     "api:dev": "npm run start:dev --prefix backend",
@@ -40,7 +41,7 @@
     "cap:sync": "npx cap sync",
     "cap:sync:release": "node scripts/cap-sync-release.mjs",
     "cap:icons": "python3 scripts/generate-store-icons.py",
-    "cap:version": "MOBILE_VERSION=${MOBILE_VERSION:-1.0.39} node scripts/sync-mobile-version.mjs",
+    "cap:version": "MOBILE_VERSION=${MOBILE_VERSION:-1.0.40} node scripts/sync-mobile-version.mjs",
     "android:bundle:release": "bash scripts/android-bundle-release.sh",
     "postinstall": "patch-package"
   },

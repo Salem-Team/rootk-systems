@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type { Actor } from "./work-mappers";
 import { WorkMeetingsService } from "./work-meetings.service";
+import { WorkProjectsService } from "./work-projects.service";
 import { WorkTasksService } from "./work-tasks.service";
 
 export type { Actor };
@@ -13,7 +14,8 @@ export type { Actor };
 export class WorkService {
   constructor(
     private readonly tasks: WorkTasksService,
-    private readonly meetings: WorkMeetingsService
+    private readonly meetings: WorkMeetingsService,
+    private readonly projects: WorkProjectsService
   ) {}
 
   // ── Tasks ───────────────────────────────────────────────────────────────
@@ -110,5 +112,32 @@ export class WorkService {
 
   deleteMeeting(companyId: string, actor: Actor, id: string) {
     return this.meetings.deleteMeeting(companyId, actor, id);
+  }
+
+  // ── Projects ────────────────────────────────────────────────────────────
+
+  listProjects(companyId: string, actor: Actor) {
+    return this.projects.listProjects(companyId, actor);
+  }
+
+  createProject(
+    companyId: string,
+    actor: Actor,
+    body: Record<string, unknown>
+  ) {
+    return this.projects.createProject(companyId, actor, body);
+  }
+
+  updateProject(
+    companyId: string,
+    actor: Actor,
+    id: string,
+    body: Record<string, unknown>
+  ) {
+    return this.projects.updateProject(companyId, actor, id, body);
+  }
+
+  deleteProject(companyId: string, actor: Actor, id: string) {
+    return this.projects.deleteProject(companyId, actor, id);
   }
 }

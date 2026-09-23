@@ -48,6 +48,13 @@ enum WorkOrigin {
   personal
 }
 
+enum WorkProjectStatus {
+  planning
+  active
+  on_hold
+  completed
+}
+
 enum NotificationAudience {
   all
   admin
@@ -267,6 +274,7 @@ model Company {
   workTasks         WorkTask[]
   workTaskComments  WorkTaskComment[]
   workMeetings      WorkMeeting[]
+  workProjects      WorkProject[]
   notifications     AppNotification[]
   targetCategories  TargetCategory[]
   targetTypes       TargetType[]
@@ -681,6 +689,38 @@ model WorkMeeting {
   company Company @relation(fields: [companyId], references: [id])
 
   @@index([companyId, date])
+}
+
+/// Delivery plan: team, timeline, phases, and the tasks inside each phase.
+model WorkProject {
+  id          String            @id @default(cuid())
+  companyId   String
+  name        String
+  description String            @default("")
+  status      WorkProjectStatus @default(planning)
+  startDate   DateTime?         @db.Date
+  endDate     DateTime?         @db.Date
+  leadId      String
+  memberIds   String[]
+  /**
+   * Ordered phases:
+   * [{ id, name, description, status, startDate, endDate,
+   *    tasks: [{ id, title, description, status, priority, dueDate, estimateMin, assigneeIds }] }]
+   */
+  phases      Json              @default("[]")
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  deletedAt   DateTime?
+  isArchived  Boolean           @default(false)
+  version     Int               @default(1)
+  metadata    Json              @default("{}")
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, status])
+  @@index([companyId, leadId])
 }
 
 model AppNotification {

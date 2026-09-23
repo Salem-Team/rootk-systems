@@ -30,6 +30,7 @@ export const StorageKeys = {
   workTasks: key("work-tasks"),
   workTaskComments: key("work-task-comments"),
   workMeetings: key("work-meetings"),
+  workProjects: key("work-projects"),
   payrollState: key("payroll-state"),
   targetCategories: key("target-categories"),
   targetTypes: key("target-types"),

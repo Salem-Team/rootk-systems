@@ -12,6 +12,9 @@ import { AdminWorkMeetingList } from "@/components/work/admin-work-meeting-list"
 import { AdminWorkTaskDialog } from "@/components/work/admin-work-task-dialog";
 import { AdminWorkMeetingDialog } from "@/components/work/admin-work-meeting-dialog";
 import { AdminWorkDeleteDialog } from "@/components/work/admin-work-delete-dialog";
+import { AdminWorkProjectsPanel } from "@/components/work/admin-work-projects-panel";
+import { AdminWorkProjectSheet } from "@/components/work/admin-work-project-sheet";
+import { useAdminWorkProjects } from "@/components/work/use-admin-work-projects";
 import { TaskViewSheet } from "@/components/work/task-view-sheet";
 import { useAdminWorkPanelData } from "@/components/work/use-admin-work-panel-data";
 import { useAdminWorkPanelForms } from "@/components/work/use-admin-work-panel-forms";
@@ -44,6 +47,11 @@ export function AdminWorkAssignPanel() {
   const dateLocale = locale === "ar" ? arLocale : enUS;
 
   const data = useAdminWorkPanelData();
+  const projects = useAdminWorkProjects(
+    data.employees.some((employee) => employee.id === workEmployeeId)
+      ? workEmployeeId
+      : ""
+  );
   const forms = useAdminWorkPanelForms({
     tasks: data.tasks,
     workEmployeeId,
@@ -56,10 +64,18 @@ export function AdminWorkAssignPanel() {
     const meetingId = searchParams.get("meeting");
     const qTab = searchParams.get("tab");
     const key = `${qTab ?? ""}|${taskId ?? ""}|${meetingId ?? ""}`;
-    if (!taskId && !meetingId && qTab !== "meetings" && qTab !== "tasks") return;
+    if (
+      !taskId &&
+      !meetingId &&
+      qTab !== "meetings" &&
+      qTab !== "tasks" &&
+      qTab !== "projects"
+    ) {
+      return;
+    }
     if (deepLinkKey.current === key) return;
 
-    if (qTab === "meetings" || qTab === "tasks") {
+    if (qTab === "meetings" || qTab === "tasks" || qTab === "projects") {
       data.setTab(qTab);
     }
 
@@ -150,10 +166,13 @@ export function AdminWorkAssignPanel() {
           tab={data.tab}
           tasksCount={data.tasks.length}
           meetingsCount={data.meetings.length}
+          projectsCount={projects.projects.length}
           onCreateTask={forms.openCreateTask}
           onCreateMeeting={forms.openCreateMeeting}
+          onCreateProject={projects.openCreate}
         />
 
+        {data.tab === "projects" ? null : (
         <AdminWorkFilterBar
           tab={data.tab}
           query={data.query}
@@ -167,6 +186,7 @@ export function AdminWorkAssignPanel() {
           assigneeOptions={data.assigneeOptions}
           assigneeFilterName={data.assigneeFilterName}
         />
+        )}
 
         <TabsContent value="tasks" className="mt-4 outline-none">
           <AdminWorkTaskList
@@ -199,6 +219,20 @@ export function AdminWorkAssignPanel() {
               })
             }
             onCreateMeeting={forms.openCreateMeeting}
+          />
+        </TabsContent>
+
+        <TabsContent value="projects" className="mt-4 outline-none">
+          <AdminWorkProjectsPanel
+            projects={projects.filtered}
+            employees={data.employees}
+            loading={projects.loading}
+            query={projects.query}
+            setQuery={projects.setQuery}
+            statusFilter={projects.statusFilter}
+            setStatusFilter={projects.setStatusFilter}
+            onOpen={projects.openEdit}
+            onCreate={projects.openCreate}
           />
         </TabsContent>
       </Tabs>
@@ -234,6 +268,37 @@ export function AdminWorkAssignPanel() {
           if (!open) forms.setDeleteTarget(null);
         }}
         onConfirm={() => void forms.confirmDelete()}
+      />
+
+      <AdminWorkProjectSheet
+        open={projects.sheetOpen}
+        onOpenChange={projects.setSheetOpen}
+        isEditing={Boolean(projects.editingId)}
+        busy={projects.busy}
+        form={projects.form}
+        setForm={projects.setForm}
+        employees={data.employees}
+        onSave={() => void projects.save()}
+        onDelete={() => {
+          const current = projects.projects.find(
+            (project) => project.id === projects.editingId
+          );
+          if (!current) return;
+          projects.setDeleteTarget({ id: current.id, title: current.name });
+        }}
+      />
+
+      <AdminWorkDeleteDialog
+        target={
+          projects.deleteTarget
+            ? { kind: "project", ...projects.deleteTarget }
+            : null
+        }
+        busy={projects.busy}
+        onOpenChange={(open) => {
+          if (!open) projects.setDeleteTarget(null);
+        }}
+        onConfirm={() => void projects.confirmDelete()}
       />
 
       <TaskViewSheet

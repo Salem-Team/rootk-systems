@@ -2,6 +2,7 @@ import { getStorageAdapter } from "@/storage";
 import { StorageKeys } from "@/storage/keys";
 import { CollectionRepository } from "@/repositories/base.repository";
 import type { TaskStatus, WorkMeeting, WorkTask } from "@/types/work";
+import type { WorkProject } from "@/types/work-project";
 
 export interface WorkTaskFilter {
   employeeId?: string;
@@ -65,5 +66,17 @@ export class WorkMeetingRepository extends CollectionRepository<WorkMeeting> {
   }
 }
 
+export class WorkProjectRepository extends CollectionRepository<WorkProject> {
+  constructor() {
+    super(getStorageAdapter(), StorageKeys.workProjects);
+  }
+
+  async listRecent(): Promise<WorkProject[]> {
+    const rows = await this.findAll();
+    return [...rows].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  }
+}
+
 export const workTaskRepository = new WorkTaskRepository();
 export const workMeetingRepository = new WorkMeetingRepository();
+export const workProjectRepository = new WorkProjectRepository();

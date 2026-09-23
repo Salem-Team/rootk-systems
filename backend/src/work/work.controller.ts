@@ -254,4 +254,44 @@ export class WorkController {
   ) {
     return this.service.deleteMeeting(companyId, toActor(user), id);
   }
+
+  @Get("projects")
+  @RequirePermission("tasks.viewOwn", "tasks.viewTeam", "tasks.viewAll")
+  projects(
+    @CompanyId() companyId: string,
+    @CurrentUser() user: JwtPayload | undefined
+  ) {
+    return this.service.listProjects(companyId, toActor(user));
+  }
+
+  @Post("projects")
+  @RequirePermission("tasks.assign")
+  createProject(
+    @CompanyId() companyId: string,
+    @CurrentUser() user: JwtPayload | undefined,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.service.createProject(companyId, toActor(user), body);
+  }
+
+  @Patch("projects/:id")
+  @RequirePermission("tasks.assign", "tasks.editOthers")
+  updateProject(
+    @CompanyId() companyId: string,
+    @CurrentUser() user: JwtPayload | undefined,
+    @Param("id") id: string,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.service.updateProject(companyId, toActor(user), id, body);
+  }
+
+  @Delete("projects/:id")
+  @RequirePermission("tasks.assign", "tasks.deleteOthers")
+  deleteProject(
+    @CompanyId() companyId: string,
+    @CurrentUser() user: JwtPayload | undefined,
+    @Param("id") id: string
+  ) {
+    return this.service.deleteProject(companyId, toActor(user), id);
+  }
 }
