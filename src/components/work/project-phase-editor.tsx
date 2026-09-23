@@ -16,6 +16,29 @@ import type {
   WorkProjectTask,
 } from "@/types/work-project";
 
+function DateBound({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="flex h-10 min-w-0 items-center gap-2 rounded-xl border border-input bg-background px-2.5">
+      <span className="shrink-0 text-[12px] font-bold text-primary">{label}</span>
+      <input
+        type="date"
+        value={value}
+        aria-label={label}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-full min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none"
+      />
+    </label>
+  );
+}
+
 const selectClass = cn(
   "h-10 w-full rounded-xl border border-border/80 bg-card px-3 text-sm text-foreground",
   "hover:border-border focus-visible:border-primary/45 focus-visible:outline-none",
@@ -85,27 +108,19 @@ export function ProjectPhaseEditor({
                   placeholder={t("workAdmin.projects.phaseName")}
                   className="h-10 rounded-xl"
                 />
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_8.5rem]">
-                  <Input
-                    type="date"
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_8.5rem]">
+                  <DateBound
+                    label={t("workAdmin.projects.fieldStart")}
                     value={phase.startDate}
-                    aria-label={t("workAdmin.projects.fieldStart")}
-                    onChange={(event) =>
-                      patchPhase(phase.id, { startDate: event.target.value })
-                    }
-                    className="h-10 rounded-xl"
+                    onChange={(startDate) => patchPhase(phase.id, { startDate })}
                   />
-                  <Input
-                    type="date"
+                  <DateBound
+                    label={t("workAdmin.projects.fieldEnd")}
                     value={phase.endDate}
-                    aria-label={t("workAdmin.projects.fieldEnd")}
-                    onChange={(event) =>
-                      patchPhase(phase.id, { endDate: event.target.value })
-                    }
-                    className="h-10 rounded-xl"
+                    onChange={(endDate) => patchPhase(phase.id, { endDate })}
                   />
                   <select
-                    className={cn(selectClass, "col-span-2 sm:col-span-1")}
+                    className={selectClass}
                     value={phase.status}
                     aria-label={t("workAdmin.projects.fieldStatus")}
                     onChange={(event) =>

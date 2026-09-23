@@ -80,9 +80,10 @@ assert(
 
 assert(normalizeProjectForm({ ...baseForm(), name: " " }) === null, "rejects a missing name");
 assert(normalizeProjectForm({ ...baseForm(), leadId: "" }) === null, "rejects a missing lead");
+const flipped = normalizeProjectForm({ ...baseForm(), endDate: "2026-09-01" });
 assert(
-  normalizeProjectForm({ ...baseForm(), endDate: "2026-09-01" }) === null,
-  "rejects an end date before the start"
+  flipped?.startDate === "2026-09-01" && flipped.endDate === "2026-09-23",
+  "keeps a reversed range by putting the earlier day first"
 );
 
 const unnamed = baseForm();
@@ -96,17 +97,23 @@ const badLead = workProjectBodySchema.safeParse({
   memberIds: ["emp-2"],
 });
 assert(!badLead.success, "schema requires the lead to be on the team");
-const badPhase = workProjectBodySchema.safeParse({
-  ...normalized,
+const swappedPhase = normalizeProjectForm({
+  ...baseForm(),
   phases: [
     {
-      ...normalized!.phases[0],
-      startDate: "2026-10-02",
-      endDate: "2026-09-01",
+      ...baseForm().phases[0],
+      name: "HR",
+      startDate: "2026-09-24",
+      endDate: "2026-09-22",
+      tasks: [],
     },
   ],
 });
-assert(!badPhase.success, "schema rejects a phase that ends before it starts");
+assert(
+  swappedPhase?.phases[0]?.startDate === "2026-09-22" &&
+    swappedPhase.phases[0]?.endDate === "2026-09-24",
+  "a phase from the 22nd to the 24th is saved in order"
+);
 
 const cleaned = sanitizeProjectPhases(
   [

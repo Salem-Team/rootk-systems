@@ -6,6 +6,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import {
   emptyProjectForm,
   normalizeProjectForm,
+  projectFormIssue,
   projectToForm,
   type ProjectFormState,
 } from "@/lib/work-project";
@@ -91,9 +92,14 @@ export function useAdminWorkProjects(defaultLeadId: string) {
   }
 
   async function save() {
+    const issue = projectFormIssue(form);
+    if (issue) {
+      toast.error(t(issue));
+      return;
+    }
     const payload = normalizeProjectForm(form);
     if (!payload) {
-      toast.error(t("workAdmin.projects.validation"));
+      toast.error(t("workAdmin.projects.validationName"));
       return;
     }
     setBusy(true);

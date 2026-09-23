@@ -133,6 +133,34 @@ export function datesInOrder(start: string, end: string): boolean {
   return end >= start;
 }
 
+/** A range is the two days, whichever box they were typed in. */
+export function orderedDateRange(start: string, end: string): {
+  start: string;
+  end: string;
+} {
+  const from = String(start ?? "").slice(0, 10);
+  const to = String(end ?? "").slice(0, 10);
+  if (from && to && to < from) return { start: to, end: from };
+  return { start: from, end: to };
+}
+
+export function projectFormIssue(
+  form: ProjectFormState
+):
+  | "workAdmin.projects.validationName"
+  | "workAdmin.projects.validationLead"
+  | "workAdmin.projects.validationPhase"
+  | null {
+  if (!form.name.trim()) return "workAdmin.projects.validationName";
+  if (!form.leadId.trim()) return "workAdmin.projects.validationLead";
+  const unnamedWithTasks = form.phases.some(
+    (phase) =>
+      !phase.name.trim() && phase.tasks.some((task) => task.title.trim())
+  );
+  if (unnamedWithTasks) return "workAdmin.projects.validationPhase";
+  return null;
+}
+
 function asPhaseStatus(value: string): ProjectPhaseStatus {
   return PHASE_STATUSES.has(value as ProjectPhaseStatus)
     ? (value as ProjectPhaseStatus)
@@ -156,7 +184,7 @@ export function normalizeProjectForm(form: ProjectFormState): ProjectFormState |
   const name = form.name.trim();
   const leadId = form.leadId.trim();
   if (!name || !leadId) return null;
-  if (!datesInOrder(form.startDate, form.endDate)) return null;
+  const projectDates = orderedDateRange(form.startDate, form.endDate);
   const memberIds = Array.from(
     new Set([leadId, ...form.memberIds.map((id) => id.trim())].filter(Boolean))
   );
@@ -178,14 +206,14 @@ export function normalizeProjectForm(form: ProjectFormState): ProjectFormState |
       .filter((task) => task.title);
     if (!phaseName && tasks.length > 0) return null;
     if (!phaseName) continue;
-    if (!datesInOrder(phase.startDate, phase.endDate)) return null;
+    const phaseDates = orderedDateRange(phase.startDate, phase.endDate);
     phases.push({
       ...phase,
       name: phaseName,
       description: phase.description.trim(),
       status: asPhaseStatus(phase.status),
-      startDate: String(phase.startDate ?? "").slice(0, 10),
-      endDate: String(phase.endDate ?? "").slice(0, 10),
+      startDate: phaseDates.start,
+      endDate: phaseDates.end,
       tasks,
     });
   }
@@ -193,8 +221,8 @@ export function normalizeProjectForm(form: ProjectFormState): ProjectFormState |
     name,
     description: form.description.trim(),
     status: form.status,
-    startDate: String(form.startDate ?? "").slice(0, 10),
-    endDate: String(form.endDate ?? "").slice(0, 10),
+    startDate: projectDates.start,
+    endDate: projectDates.end,
     leadId,
     memberIds,
     phases,

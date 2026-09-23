@@ -93,8 +93,9 @@ export function sanitizeProjectPhases(
         },
       ];
     });
-    const startDate = cleanDate(phase.startDate);
-    const endDate = cleanDate(phase.endDate);
+    const range = orderRange(cleanDate(phase.startDate), cleanDate(phase.endDate));
+    const startDate = range.start;
+    const endDate = range.end;
     return [
       {
         id: clip(phase.id, 40) || `ph_${phaseIndex}`,
@@ -134,20 +135,12 @@ function assertPhasePayload(raw: unknown) {
     if (!name && hasTitledTask) {
       throw new BadRequestException("Name every phase that has tasks");
     }
-    const startDate = cleanDate(phase.startDate);
-    const endDate = cleanDate(phase.endDate);
-    if (startDate && endDate && endDate < startDate) {
-      throw new BadRequestException(
-        "Phase end date cannot be before the start date"
-      );
-    }
   }
 }
 
-function assertTimeline(start: string, end: string) {
-  if (start && end && end < start) {
-    throw new BadRequestException("End date cannot be before the start date");
-  }
+function orderRange(start: string, end: string) {
+  if (start && end && end < start) return { start: end, end: start };
+  return { start, end };
 }
 
 @Injectable()
@@ -257,9 +250,9 @@ export class WorkProjectsService {
     if (!name || !leadId) {
       throw new BadRequestException("Project name and lead are required");
     }
-    const startDate = cleanDate(body.startDate);
-    const endDate = cleanDate(body.endDate);
-    assertTimeline(startDate, endDate);
+    const range = orderRange(cleanDate(body.startDate), cleanDate(body.endDate));
+    const startDate = range.start;
+    const endDate = range.end;
     assertPhasePayload(body.phases);
     const memberIds = Array.from(
       new Set(

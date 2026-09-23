@@ -17,25 +17,15 @@ export const workProjectTaskSchema = z.object({
   assigneeIds: z.array(z.string()).max(20).default([]),
 });
 
-export const workProjectPhaseSchema = z
-  .object({
-    id: z.string().min(1).max(40),
-    name: z.string().trim().min(1).max(120),
-    description: z.string().trim().max(2000).default(""),
-    status: z.enum(["upcoming", "active", "done"]),
-    startDate: dateField.default(""),
-    endDate: dateField.default(""),
-    tasks: z.array(workProjectTaskSchema).max(40).default([]),
-  })
-  .superRefine((value, ctx) => {
-    if (value.startDate && value.endDate && value.endDate < value.startDate) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["endDate"],
-        message: "Phase end date is before the start date",
-      });
-    }
-  });
+export const workProjectPhaseSchema = z.object({
+  id: z.string().min(1).max(40),
+  name: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(2000).default(""),
+  status: z.enum(["upcoming", "active", "done"]),
+  startDate: dateField.default(""),
+  endDate: dateField.default(""),
+  tasks: z.array(workProjectTaskSchema).max(40).default([]),
+});
 
 export const workProjectBodySchema = z
   .object({
@@ -49,13 +39,6 @@ export const workProjectBodySchema = z
     phases: z.array(workProjectPhaseSchema).max(24).default([]),
   })
   .superRefine((value, ctx) => {
-    if (value.startDate && value.endDate && value.endDate < value.startDate) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["endDate"],
-        message: "End date is before the start date",
-      });
-    }
     if (!value.memberIds.includes(value.leadId)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
