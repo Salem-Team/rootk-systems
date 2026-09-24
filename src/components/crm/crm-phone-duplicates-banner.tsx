@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "@/hooks/use-translation";
 import { getCrmPhoneDuplicates } from "@/services/crm.service";
+import { LtrNum } from "@/components/shared/ltr-num";
 import { displayCrmPhone } from "@/lib/crm/phone-links";
 import { Button } from "@/components/ui/button";
 import type { CrmPhoneDuplicateGroup } from "@/types/crm";
@@ -34,9 +35,9 @@ export function CrmPhoneDuplicatesBanner({
       <p className="mt-0.5 text-muted-foreground">{t("crm.duplicate.bannerDesc")}</p>
       {first ? (
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span className="font-mono tabular-nums">
+          <LtrNum className="font-mono tabular-nums">
             {displayCrmPhone(first.leads[0]?.phone ?? "", first.phoneNormalized)}
-          </span>
+          </LtrNum>
           {first.leads.slice(0, 3).map((lead) => (
             <Button
               key={lead.id}

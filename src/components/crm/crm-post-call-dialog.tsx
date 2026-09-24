@@ -16,6 +16,7 @@ import {
 import { CrmDateTimeField } from "@/components/crm/crm-datetime-field";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { LtrNum } from "@/components/shared/ltr-num";
 import { useTranslation } from "@/hooks/use-translation";
 import { crmUserFacingMessage } from "@/lib/crm/client-error";
 import { formatCallClock } from "@/lib/crm/call-duration";
@@ -181,9 +182,9 @@ export function CrmPostCallDialog({
                     : "crm.call.duration"
                 )}
               </span>
-              <span className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
+              <LtrNum className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
                 {durationLabel}
-              </span>
+              </LtrNum>
             </div>
           ) : null}
 

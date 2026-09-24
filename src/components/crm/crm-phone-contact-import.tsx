@@ -15,6 +15,7 @@ import {
 import { useTranslation } from "@/hooks/use-translation";
 import { pickPhoneContact } from "@/lib/native/contacts";
 import { isNativeApp } from "@/lib/native/platform";
+import { LtrNum } from "@/components/shared/ltr-num";
 import { displayCrmPhone } from "@/lib/crm/phone-links";
 import { matchCrmLeadByPhone } from "@/services/crm.service";
 import { crmUserFacingMessage } from "@/lib/crm/client-error";
@@ -103,7 +104,9 @@ export function CrmPhoneContactImport({
             <div className="rounded-xl border border-border/60 px-3 py-2.5 text-[13px]">
               <p className="font-semibold">{confirm.name || t("crm.contacts.unnamed")}</p>
               <p className="mt-1 font-mono tabular-nums">
-                {displayCrmPhone(confirm.phone, confirm.phoneNormalized)}
+                <LtrNum>
+                  {displayCrmPhone(confirm.phone, confirm.phoneNormalized)}
+                </LtrNum>
               </p>
             </div>
           ) : null}

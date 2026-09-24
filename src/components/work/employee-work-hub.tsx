@@ -9,6 +9,7 @@ import { EmployeeWorkMeetingsPanel } from "@/components/work/employee-work-meeti
 import { EmployeeWorkDayPanel } from "@/components/work/employee-work-day-panel";
 import { EmployeeWorkMobileSheet } from "@/components/work/employee-work-mobile-sheet";
 import { EmployeeWorkComposer } from "@/components/work/employee-work-composer";
+import { EmployeeWorkProjectsPanel } from "@/components/work/employee-work-projects-panel";
 import { TaskCompletionEvidenceDialog } from "@/components/work/task-completion-evidence-dialog";
 import { useEmployeeWorkHubData } from "@/components/work/use-employee-work-hub-data";
 import { useEmployeeWorkHubActions } from "@/components/work/use-employee-work-hub-actions";
@@ -16,7 +17,7 @@ import type { WorkTab } from "@/components/work/employee-work-hub-types";
 import { getWorkEmployeeIdFromUser, useSessionStore } from "@/stores/session-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { ar as arLocale, enUS } from "date-fns/locale";
-import { CalendarDays, ListTodo, Target } from "lucide-react";
+import { CalendarDays, FolderKanban, ListTodo, Target } from "lucide-react";
 
 export function EmployeeWorkHub() {
   const { t, locale } = useTranslation();
@@ -67,7 +68,7 @@ export function EmployeeWorkHub() {
         className="space-y-4"
       >
         <MobileSegmentedTabs>
-          <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-xl bg-muted/60 p-1 sm:inline-grid sm:w-auto sm:rounded-2xl sm:p-1.5">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-xl bg-muted/60 p-1 sm:inline-grid sm:w-auto sm:grid-cols-4 sm:rounded-2xl sm:p-1.5">
             <TabsTrigger
               value="tasks"
               className="min-h-11 gap-1 touch-manipulation rounded-lg px-2 text-[12px] font-semibold sm:rounded-xl sm:px-4 sm:text-[13px]"
@@ -81,6 +82,13 @@ export function EmployeeWorkHub() {
             >
               <CalendarDays className="hidden h-3.5 w-3.5 sm:me-1.5 sm:inline" aria-hidden />
               {t("workHub.tabMeetings")}
+            </TabsTrigger>
+            <TabsTrigger
+              value="projects"
+              className="min-h-11 gap-1 touch-manipulation rounded-lg px-2 text-[12px] font-semibold sm:rounded-xl sm:px-4 sm:text-[13px]"
+            >
+              <FolderKanban className="hidden h-3.5 w-3.5 sm:me-1.5 sm:inline" aria-hidden />
+              {t("workHub.tabProjects")}
             </TabsTrigger>
             <TabsTrigger
               value="day"
@@ -131,6 +139,13 @@ export function EmployeeWorkHub() {
           />
         </TabsContent>
 
+        <TabsContent value="projects" className="mt-0 outline-none">
+          <EmployeeWorkProjectsPanel
+            employeeId={workEmployeeId}
+            employees={data.employees}
+          />
+        </TabsContent>
+
         <TabsContent value="day" className="mt-0 outline-none">
           <EmployeeWorkDayPanel
             checklist={data.checklist}
@@ -141,7 +156,7 @@ export function EmployeeWorkHub() {
       </Tabs>
 
       <EmployeeWorkMobileSheet
-        open={data.mobileDetailOpen}
+        open={data.mobileDetailOpen && data.tab !== "projects"}
         isMobile={data.isMobile}
         onOpenChange={data.setMobileDetailOpen}
         tab={data.tab}

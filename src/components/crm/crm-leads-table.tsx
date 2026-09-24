@@ -25,6 +25,7 @@ import {
   formatRequestCompact,
   type CrmRequestProduct,
 } from "@/lib/crm/request-budget-presets";
+import { LtrNum } from "@/components/shared/ltr-num";
 import { cn } from "@/lib/utils";
 import type { CrmLead, CrmLeadFilters, CrmStage, PaginatedLeads } from "@/types/crm";
 
@@ -222,9 +223,9 @@ export function CrmLeadsTable({
                     {lead.nextFollowUpAt ? (
                       <>
                         <span aria-hidden>·</span>
-                        <span className="tabular-nums">
+                        <LtrNum className="tabular-nums">
                           {formatMaybeDate(lead.nextFollowUpAt)}
-                        </span>
+                        </LtrNum>
                       </>
                     ) : null}
                   </div>
@@ -232,9 +233,9 @@ export function CrmLeadsTable({
                   {(lead.request || lead.budget) ? (
                     <div className="mt-2 flex items-start gap-2 rounded-xl bg-muted/40 px-2.5 py-1.5">
                       {lead.budget ? (
-                        <span className="shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold tabular-nums text-primary">
+                        <LtrNum className="shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold tabular-nums text-primary">
                           {budgetPreview(lead.budget) || "—"}
-                        </span>
+                        </LtrNum>
                       ) : null}
                       {lead.request ? (
                         <p className="min-w-0 flex-1 truncate text-[11px] leading-snug text-muted-foreground">
@@ -371,12 +372,12 @@ export function CrmLeadsTable({
                 </DataTableCell>
                 <DataTableCell>
                   {lead.budget ? (
-                    <span
+                    <LtrNum
                       className="inline-flex rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[12px] font-semibold tabular-nums tracking-tight text-primary"
                       title={lead.budget}
                     >
                       {budgetPreview(lead.budget) || "—"}
-                    </span>
+                    </LtrNum>
                   ) : (
                     <span className="text-[12px] text-muted-foreground/50">—</span>
                   )}
@@ -414,10 +415,10 @@ export function CrmLeadsTable({
                   </div>
                 </DataTableCell>
                 <DataTableCell className="hidden text-[12px] text-muted-foreground 2xl:table-cell">
-                  {formatMaybeDate(lead.lastActivityAt)}
+                  <LtrNum>{formatMaybeDate(lead.lastActivityAt)}</LtrNum>
                 </DataTableCell>
                 <DataTableCell className="hidden text-[12px] text-muted-foreground xl:table-cell">
-                  {formatMaybeDate(lead.nextFollowUpAt)}
+                  <LtrNum>{formatMaybeDate(lead.nextFollowUpAt)}</LtrNum>
                 </DataTableCell>
                 <DataTableCell className="hidden lg:table-cell">
                   <span className={cn("text-[12px]", lead.deletedAt && "font-medium text-rose-600 dark:text-rose-400")}>

@@ -7,7 +7,7 @@ export const PRIORITY_VARIANT = {
   low: "info",
 } as const;
 
-export type WorkTab = "tasks" | "meetings" | "day";
+export type WorkTab = "tasks" | "meetings" | "day" | "projects";
 export type OriginFilter = "all" | "assigned" | "personal";
 export type ComposerMode = "task" | "meeting" | null;
 

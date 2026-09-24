@@ -142,9 +142,12 @@ export function CrmIntlPhoneInput({
                         {row.flag}
                       </span>
                       <span className="min-w-0 flex-1 truncate">{row.name}</span>
-                      <span className="shrink-0 font-mono text-[12px] text-muted-foreground">
+                      <bdi
+                        dir="ltr"
+                        className="shrink-0 font-mono text-[12px] text-muted-foreground"
+                      >
                         +{row.calling}
-                      </span>
+                      </bdi>
                       {active ? <Check className="h-3.5 w-3.5 shrink-0" /> : null}
                     </button>
                   </li>

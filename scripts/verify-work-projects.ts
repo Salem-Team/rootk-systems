@@ -11,12 +11,14 @@ import {
   emptyProjectPhase,
   emptyProjectTask,
   normalizeProjectForm,
+  projectIncludesEmployee,
   summarizePhases,
 } from "../src/lib/work-project";
 import { workProjectBodySchema } from "../src/schemas/work-project.schema";
 import {
   WorkProjectsService,
   projectCalendarDate,
+  projectVisibleToEmployee,
   sanitizeProjectPhases,
 } from "../backend/src/work/work-projects.service";
 
@@ -235,6 +237,52 @@ try {
   phaseRejected = true;
 }
 assert(phaseRejected, "service rejects tasks in an unnamed phase");
+
+const taskOnly = {
+  leadId: "emp-9",
+  memberIds: ["emp-9"],
+  phases: [{ tasks: [{ assigneeIds: ["emp-task"] }] }],
+};
+assert(
+  projectVisibleToEmployee(taskOnly, "emp-task"),
+  "a task assignee can see the project"
+);
+assert(
+  !projectVisibleToEmployee(taskOnly, "emp-outsider"),
+  "someone outside the project cannot see it"
+);
+assert(
+  projectIncludesEmployee(
+    {
+      leadId: "emp-9",
+      memberIds: ["emp-9"],
+      phases: [
+        {
+          id: "ph",
+          name: "HR",
+          description: "",
+          status: "active",
+          startDate: "",
+          endDate: "",
+          tasks: [
+            {
+              id: "t",
+              title: "Call",
+              description: "",
+              status: "todo",
+              priority: "medium",
+              dueDate: "",
+              estimateMin: 0,
+              assigneeIds: ["emp-task"],
+            },
+          ],
+        },
+      ],
+    },
+    "emp-task"
+  ),
+  "local list keeps a task assignee"
+);
 }
 
 function loadDatabaseUrl() {

@@ -3,6 +3,7 @@
 import { CrmMentionChips, CrmMentionText } from "@/components/crm/crm-mention-text";
 import { CrmLeadRequestBudgetEditor } from "@/components/crm/crm-lead-request-budget-editor";
 import { BidiBlocks, BidiText } from "@/components/shared/bidi-text";
+import { LtrNum } from "@/components/shared/ltr-num";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/hooks/use-translation";
@@ -215,9 +216,9 @@ export function CrmLeadSheetTabs({
                     <p className="text-[0.92rem] font-semibold leading-snug sm:text-[13px]">
                       <BidiText text={item.title} />
                     </p>
-                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                    <LtrNum className="shrink-0 font-mono text-[10px] text-muted-foreground">
                       {formatMaybeDateTime(item.occurredAt)}
-                    </span>
+                    </LtrNum>
                   </div>
                   {item.description ? (
                     <div className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground sm:mt-1 sm:text-[12px]">
@@ -273,7 +274,7 @@ export function CrmLeadSheetTabs({
                     </span>
                   </p>
                   <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
-                    {formatMaybeDateTime(item.createdAt)}
+                    <LtrNum>{formatMaybeDateTime(item.createdAt)}</LtrNum>
                   </p>
                 </li>
               ))}

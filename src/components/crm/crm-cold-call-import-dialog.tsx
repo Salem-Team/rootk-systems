@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { CrmLeadsColumnMapping } from "@/components/crm/crm-leads-column-mapping";
+import { LtrNum } from "@/components/shared/ltr-num";
 import { useCrmLeadsImport } from "@/hooks/use-crm-leads-import";
 import { downloadCrmLeadsTemplate } from "@/lib/crm/leads-excel";
 import { cn } from "@/lib/utils";
@@ -283,7 +284,7 @@ export function CrmColdCallImportDialog({
                           >
                             <td className="px-3 py-2">{row.name}</td>
                             <td className="px-3 py-2 font-mono tabular-nums">
-                              {row.phone}
+                              <LtrNum>{row.phone}</LtrNum>
                             </td>
                             <td className="px-3 py-2 text-muted-foreground">
                               {row.source || "—"}

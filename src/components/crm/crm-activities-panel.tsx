@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-state";
 import { BidiBlocks } from "@/components/shared/bidi-text";
+import { LtrNum } from "@/components/shared/ltr-num";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatIsoDateTime } from "@/lib/format-time";
 import { ensureCrmList } from "@/lib/crm-normalize";
@@ -88,9 +89,9 @@ export function CrmActivitiesPanel({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <p className="text-[13px] font-semibold">{item.title}</p>
-                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                    <LtrNum className="shrink-0 font-mono text-[10px] text-muted-foreground">
                       {formatWhen(item.occurredAt)}
-                    </span>
+                    </LtrNum>
                   </div>
                   {item.description ? (
                     <BidiBlocks

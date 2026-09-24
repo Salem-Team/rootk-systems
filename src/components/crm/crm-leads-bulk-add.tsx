@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { LtrNum } from "@/components/shared/ltr-num";
 import { useCrmLeadsBulkAdd } from "@/hooks/use-crm-leads-bulk-add";
 import { businessTypeLabel } from "@/lib/crm/business-type-label";
 import type { Employee } from "@/types";
@@ -259,7 +260,7 @@ export function CrmLeadsBulkAdd({
                             ) : null}
                           </td>
                           <td className="px-2 py-1.5 font-mono align-top">
-                            {row.phone}
+                            <LtrNum>{row.phone}</LtrNum>
                           </td>
                         </tr>
                       );

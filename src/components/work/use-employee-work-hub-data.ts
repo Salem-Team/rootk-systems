@@ -79,7 +79,14 @@ export function useEmployeeWorkHubData(workEmployeeId: string) {
 
   useEffect(() => {
     const qTab = searchParams.get("tab");
-    if (qTab === "meetings" || qTab === "day" || qTab === "tasks") setTab(qTab);
+    if (
+      qTab === "meetings" ||
+      qTab === "day" ||
+      qTab === "tasks" ||
+      qTab === "projects"
+    ) {
+      setTab(qTab);
+    }
     const taskId = searchParams.get("task");
     const meetingId = searchParams.get("meeting");
     if (taskId) {

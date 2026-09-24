@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useTranslation } from "@/hooks/use-translation";
+import { BidiText } from "@/components/shared/bidi-text";
 import { displayCrmPhone } from "@/lib/crm/phone-links";
 import type { CrmLead } from "@/types/crm";
 
@@ -68,7 +69,7 @@ export function CrmIncomingCallDialog({
                 {t("crm.call.incoming.budget")}
               </p>
               <p className="mt-1 text-base font-semibold">
-                {shown(lead.budget, empty)}
+                <BidiText text={shown(lead.budget, empty)} />
               </p>
             </div>
           </DialogBody>

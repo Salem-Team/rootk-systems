@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { CrmMentionText } from "@/components/crm/crm-mention-text";
 import { CrmSalesProfileLeadsDialog } from "@/components/crm/crm-sales-profile-leads-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
+import { LtrNum } from "@/components/shared/ltr-num";
 import {
   Sheet,
   SheetContent,
@@ -245,9 +246,9 @@ export function CrmSalesProfileSheet({
                     >
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-[13px] font-medium">{a.title}</p>
-                        <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                        <LtrNum className="shrink-0 font-mono text-[10px] text-muted-foreground">
                           {formatWhen(a.occurredAt)}
-                        </span>
+                        </LtrNum>
                       </div>
                     </li>
                   ))

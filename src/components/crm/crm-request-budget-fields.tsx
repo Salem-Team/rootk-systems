@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Building2, Sparkles, Wallet } from "lucide-react";
+import { BidiText } from "@/components/shared/bidi-text";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -262,7 +263,7 @@ export function CrmRequestBudgetFields({
                 aria-pressed={selected}
               >
                 <span className="text-[12.5px] font-semibold leading-snug sm:text-[12px]">
-                  {t(`crm.requestBudget.budgetTiers.${tier}`)}
+                  <BidiText text={t(`crm.requestBudget.budgetTiers.${tier}`)} />
                 </span>
               </motion.button>
             );

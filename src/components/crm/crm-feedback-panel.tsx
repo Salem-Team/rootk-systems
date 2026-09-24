@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { LtrNum } from "@/components/shared/ltr-num";
 import { format, parseISO } from "date-fns";
 import { useReducedMotion } from "framer-motion";
 import {
@@ -211,9 +212,9 @@ export function CrmFeedbackPanel({
                     <p className="text-[13px] font-semibold">
                       {typeMap.get(item.feedbackTypeId) ?? item.feedbackTypeId}
                     </p>
-                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                    <LtrNum className="shrink-0 font-mono text-[10px] text-muted-foreground">
                       {formatWhen(item.createdAt)}
-                    </span>
+                    </LtrNum>
                   </div>
                   {item.customerFeedback ? (
                     <p className="text-[12px] text-muted-foreground">

@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useTranslation } from "@/hooks/use-translation";
+import { LtrNum } from "@/components/shared/ltr-num";
 import { displayCrmPhone } from "@/lib/crm/phone-links";
 import type { CrmDuplicateLeadSummary } from "@/types/crm";
 import { BidiText } from "@/components/shared/bidi-text";
@@ -45,7 +46,7 @@ export function CrmDuplicateLeadDialog({
           <div className="rounded-xl border border-border/60 px-3 py-2.5 text-[13px]">
             <p className="font-semibold"><BidiText text={lead.name} /></p>
             <p className="mt-1 font-mono tabular-nums text-muted-foreground">
-              {displayCrmPhone(lead.phone, lead.phoneNormalized)}
+              <LtrNum>{displayCrmPhone(lead.phone, lead.phoneNormalized)}</LtrNum>
             </p>
           </div>
         ) : null}

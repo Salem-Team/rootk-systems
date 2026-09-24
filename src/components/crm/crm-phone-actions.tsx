@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { LtrNum } from "@/components/shared/ltr-num";
 import { useTranslation } from "@/hooks/use-translation";
 import {
   contactProfileHref,
@@ -58,7 +59,7 @@ export function CrmPhoneActions({
   if (!callUrl && !profileUrl) {
     return (
       <span className={cn(isPhone && "font-mono tabular-nums", className)}>
-        {label}
+        <LtrNum>{label}</LtrNum>
       </span>
     );
   }
@@ -95,7 +96,7 @@ export function CrmPhoneActions({
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          {label}
+          <LtrNum className="min-w-0 truncate">{label}</LtrNum>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

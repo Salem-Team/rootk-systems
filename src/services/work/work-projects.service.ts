@@ -11,7 +11,7 @@ import { createId } from "@/lib/id";
 import { isApiMode } from "@/lib/env";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { emitWorkUpdated } from "@/lib/events";
-import { emptyWorkProject } from "@/lib/work-project";
+import { emptyWorkProject, projectIncludesEmployee } from "@/lib/work-project";
 import { workProjectRepository } from "@/repositories/work.repository";
 import {
   workProjectBodySchema,
@@ -48,10 +48,7 @@ function canManageProjects(): boolean {
 
 function visibleToActor(rows: WorkProject[], employeeId: string): WorkProject[] {
   if (canSeeAllProjects()) return rows;
-  return rows.filter(
-    (project) =>
-      project.leadId === employeeId || project.memberIds.includes(employeeId)
-  );
+  return rows.filter((project) => projectIncludesEmployee(project, employeeId));
 }
 
 export async function getWorkProjects(): Promise<ApiResponse<WorkProject[]>> {

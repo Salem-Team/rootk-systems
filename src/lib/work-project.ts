@@ -179,6 +179,20 @@ function asPriority(value: string): TaskPriority {
     : "medium";
 }
 
+/** Lead, team member, or owner of a task inside the project. */
+export function projectIncludesEmployee(
+  project: Pick<WorkProject, "leadId" | "memberIds" | "phases">,
+  employeeId: string
+): boolean {
+  if (!employeeId) return false;
+  if (project.leadId === employeeId || project.memberIds.includes(employeeId)) {
+    return true;
+  }
+  return project.phases.some((phase) =>
+    phase.tasks.some((task) => task.assigneeIds.includes(employeeId))
+  );
+}
+
 /** Drop blank rows and keep task owners inside the project team. */
 export function normalizeProjectForm(form: ProjectFormState): ProjectFormState | null {
   const name = form.name.trim();

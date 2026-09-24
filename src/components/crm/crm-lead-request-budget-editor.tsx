@@ -11,6 +11,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
+import { BidiText } from "@/components/shared/bidi-text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -282,7 +283,7 @@ export function CrmLeadRequestBudgetEditor({
                   aria-pressed={selected}
                 >
                   <span className="text-[12.5px] font-semibold leading-snug sm:text-[12px]">
-                    {t(`crm.requestBudget.budgetTiers.${tier}`)}
+                    <BidiText text={t(`crm.requestBudget.budgetTiers.${tier}`)} />
                   </span>
                 </motion.button>
               );

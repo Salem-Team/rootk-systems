@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useTranslation } from "@/hooks/use-translation";
 import { filterAndPaginateClientCallRows } from "@/lib/crm/interaction-analytics";
+import { LtrNum } from "@/components/shared/ltr-num";
 import { displayCrmPhone } from "@/lib/crm/phone-links";
 import type { CrmClientCallRow } from "@/types/crm";
 
@@ -31,7 +32,7 @@ function ClientIdentity({ row }: { row: CrmClientCallRow }) {
       <p className="truncate text-[13px] font-semibold">{row.leadName}</p>
       {row.phone ? (
         <p className="truncate font-mono text-[11px] tabular-nums text-muted-foreground">
-          {phone}
+          <LtrNum>{phone}</LtrNum>
         </p>
       ) : null}
       {row.ownerEmployeeName ? (

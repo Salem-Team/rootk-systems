@@ -1,6 +1,7 @@
 "use client";
 
 import { CrmPhoneActions } from "@/components/crm/crm-phone-actions";
+import { LtrNum } from "@/components/shared/ltr-num";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -99,7 +100,7 @@ export function CrmSalesProfileLeadsDialog({
                   {lead.nextFollowUpAt ? (
                     <span>
                       {t("crm.leadSheet.nextFollowUp")} ·{" "}
-                      {formatWhen(lead.nextFollowUpAt)}
+                      <LtrNum>{formatWhen(lead.nextFollowUpAt)}</LtrNum>
                     </span>
                   ) : null}
                 </div>

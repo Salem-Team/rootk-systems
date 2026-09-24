@@ -9,11 +9,14 @@ const RTL_LETTER =
 const LATIN_LETTER = /[A-Za-z\u00C0-\u024F]/;
 
 /**
- * Contiguous Latin words / short phrases (emails, urls, 90%).
- * Space-separated only — bare list numbers like "1." stay outside the island.
+ * LTR islands inside Arabic:
+ * - ranges and compact amounts (50–100, 50–100k, <50k, 500k+)
+ * - one phone (010 1234 5678, +20 …) so digit groups do not reverse
+ * - Latin words / emails / urls / 90%
+ * Bare list markers like "1." stay outside the island.
  */
 const LTR_RUN =
-  /(?:[A-Za-z\u00C0-\u024F][\w+._:@/#&?=%~'’-]*%?)(?:[ \t]+(?:[A-Za-z\u00C0-\u024F][\w+._:@/#&?=%~'’-]*%?|[0-9]+%)){0,10}|(?:[0-9]+%)/g;
+  /(?:[<>+]?\s*)?\d[\d.,]*\s*[–—-]\s*\d[\d.,]*(?:\s*[kKmM])?|<\s*\d[\d.,]*(?:\s*[kKmM])?|\d[\d.,]*\s*[kKmM]\+|(?:\+\d{1,3}[\s-]?)?(?:\d{2,4}[\s.-]){1,4}\d{2,4}|\d{7,15}|(?:[A-Za-z\u00C0-\u024F][\w+._:@/#&?=%~'’-]*%?)(?:[ \t]+(?:[A-Za-z\u00C0-\u024F][\w+._:@/#&?=%~'’-]*%?|[0-9]+%)){0,10}|(?:[0-9]+%)/g;
 
 /** Prefer RTL base when any Arabic is present — even if the line starts in English. */
 export function resolveTextDir(text: string): "rtl" | "ltr" | "auto" {

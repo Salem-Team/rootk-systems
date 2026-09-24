@@ -3,6 +3,7 @@
 import { format, parseISO } from "date-fns";
 import { CrmMentionText } from "@/components/crm/crm-mention-text";
 import { BidiBlocks } from "@/components/shared/bidi-text";
+import { LtrNum } from "@/components/shared/ltr-num";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -135,9 +136,9 @@ export function CrmCallFeedbackDialog({
                         {item.recordedByEmployeeName || "—"}
                       </span>
                     </span>
-                    <span className="font-mono tabular-nums">
+                    <LtrNum className="font-mono tabular-nums">
                       {formatWhen(item.createdAt)}
-                    </span>
+                    </LtrNum>
                     {item.nextAction && item.nextAction !== "none" ? (
                       <span>
                         {t("crm.feedback.nextAction")}:{" "}

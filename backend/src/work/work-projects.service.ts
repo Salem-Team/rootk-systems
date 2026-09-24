@@ -49,9 +49,43 @@ function clip(value: unknown, max: number): string {
   return String(value ?? "").trim().slice(0, max);
 }
 
+function cleanAssigneeIds(
+  raw: unknown,
+  allowed: Set<string>,
+  restrict: boolean
+): string[] {
+  if (!Array.isArray(raw)) return [];
+  const ids = Array.from(
+    new Set(raw.map((id) => String(id).trim()).filter(Boolean))
+  );
+  const picked = restrict ? ids.filter((id) => allowed.has(id)) : ids;
+  return picked.slice(0, 20);
+}
+
+/** Lead, project member, or owner of a task inside the project. */
+export function projectVisibleToEmployee(
+  row: { leadId: string; memberIds: string[]; phases: unknown },
+  employeeId: string
+): boolean {
+  if (!employeeId) return false;
+  if (row.leadId === employeeId || row.memberIds.includes(employeeId)) return true;
+  if (!Array.isArray(row.phases)) return false;
+  return row.phases.some((phase) => {
+    if (!phase || typeof phase !== "object") return false;
+    const tasks = (phase as { tasks?: unknown }).tasks;
+    if (!Array.isArray(tasks)) return false;
+    return tasks.some((task) => {
+      if (!task || typeof task !== "object") return false;
+      const ids = (task as { assigneeIds?: unknown }).assigneeIds;
+      return Array.isArray(ids) && ids.map(String).includes(employeeId);
+    });
+  });
+}
+
 export function sanitizeProjectPhases(
   raw: unknown,
-  memberIds: string[]
+  memberIds: string[],
+  restrictAssignees = true
 ): ProjectPhase[] {
   if (!Array.isArray(raw)) return [];
   const allowed = new Set(memberIds);
@@ -66,12 +100,7 @@ export function sanitizeProjectPhases(
       const task = taskItem as Record<string, unknown>;
       const title = clip(task.title, 160);
       if (!title) return [];
-      const assigneeIds = Array.isArray(task.assigneeIds)
-        ? task.assigneeIds
-            .map((id) => String(id))
-            .filter((id) => allowed.has(id))
-            .slice(0, 20)
-        : [];
+      const assigneeIds = cleanAssigneeIds(task.assigneeIds, allowed, restrictAssignees);
       const estimate = Number(task.estimateMin);
       return [
         {
@@ -154,11 +183,7 @@ export class WorkProjectsService {
     });
     const visible = this.canSeeEveryProject(actor)
       ? rows
-      : rows.filter(
-          (row) =>
-            row.leadId === actor.employeeId ||
-            row.memberIds.includes(actor.employeeId)
-        );
+      : rows.filter((row) => projectVisibleToEmployee(row, actor.employeeId));
     return visible.map((row) => this.mapProject(row));
   }
 
@@ -305,7 +330,7 @@ export class WorkProjectsService {
       endDate: row.endDate ? dateOnly(row.endDate) : "",
       leadId: row.leadId,
       memberIds: row.memberIds,
-      phases: sanitizeProjectPhases(row.phases, row.memberIds),
+      phases: sanitizeProjectPhases(row.phases, row.memberIds, false),
       ...auditFields(row),
     };
   }
