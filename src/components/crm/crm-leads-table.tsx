@@ -284,7 +284,7 @@ export function CrmLeadsTable({
               <SelectAllCheckbox />
             </DataTableHead>
             <DataTableHead>{t("crm.leads.colLead")}</DataTableHead>
-            <DataTableHead className="hidden sm:table-cell">
+            <DataTableHead className="hidden whitespace-nowrap sm:table-cell">
               {t("crm.leads.colPhone")}
             </DataTableHead>
             <DataTableHead className="max-w-[11rem]">
@@ -352,7 +352,7 @@ export function CrmLeadsTable({
                   </div>
                 </DataTableCell>
                 <DataTableCell
-                  className="hidden sm:table-cell"
+                  className="hidden whitespace-nowrap sm:table-cell"
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
