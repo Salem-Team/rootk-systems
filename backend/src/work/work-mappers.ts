@@ -194,6 +194,8 @@ export function mapTask(row: WorkTask, actor?: Actor) {
     })),
     assignedAt: iso(row.assignedAt ?? row.createdAt),
     completedAt,
+    projectId: row.projectId ?? undefined,
+    phaseId: row.phaseId ?? undefined,
     ...auditFields(row),
   };
 }

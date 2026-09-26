@@ -20,6 +20,7 @@ import {
   isSystemAdminEmail,
   SYSTEM_ADMIN_USER_ID,
 } from "../common/protected-accounts";
+import { employeeLoginStillExists } from "../users/living-employee";
 
 function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -202,6 +203,9 @@ export class AuthService {
     if (!row || !verifyPassword(password, row.passwordHash)) {
       throw new UnauthorizedException("Invalid email or password");
     }
+    if (!(await employeeLoginStillExists(this.prisma, row))) {
+      throw new UnauthorizedException("Invalid email or password");
+    }
     return this.buildSession(row);
   }
 
@@ -226,6 +230,9 @@ export class AuthService {
       },
     });
     if (!target) throw new NotFoundException("User not found");
+    if (!(await employeeLoginStillExists(this.prisma, target))) {
+      throw new NotFoundException("User not found");
+    }
 
     return this.buildSession(target, actor.sub);
   }

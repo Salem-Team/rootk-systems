@@ -1,10 +1,14 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useRef, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { FolderKanban, Loader2, Plus } from "lucide-react";
+import { AdminWorkDeleteDialog } from "@/components/work/admin-work-delete-dialog";
+import { AdminWorkTaskDialog } from "@/components/work/admin-work-task-dialog";
 import { EmployeeMultiPicker } from "@/components/work/employee-multi-picker";
 import { Field } from "@/components/work/admin-work-field";
 import { ProjectPhaseEditor } from "@/components/work/project-phase-editor";
+import { TaskViewSheet } from "@/components/work/task-view-sheet";
+import { useProjectPhaseTasks } from "@/components/work/use-project-phase-tasks";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,11 +29,14 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/hooks/use-translation";
+import { normalizeProjectForm } from "@/lib/work-project";
+import { updateWorkProject } from "@/services/work.service";
 import type { TranslationPath } from "@/i18n";
 import { emptyProjectPhase } from "@/lib/work-project";
 import type { ProjectFormState } from "@/lib/work-project";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
+import type { WorkMeeting, WorkTask } from "@/types/work";
 import type { ProjectStatus } from "@/types/work-project";
 
 const inputClass = "h-11 rounded-xl text-base sm:h-10 sm:text-sm";
@@ -78,27 +85,60 @@ export function AdminWorkProjectSheet({
   open,
   onOpenChange,
   isEditing,
+  projectId,
   busy,
   form,
   setForm,
   employees,
+  workTasks,
+  meetings,
+  reloadTasks,
+  tasksReady,
   onSave,
   onDelete,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isEditing: boolean;
+  projectId: string | null;
   busy: boolean;
   form: ProjectFormState;
-  setForm: (next: ProjectFormState) => void;
+  setForm: Dispatch<SetStateAction<ProjectFormState>>;
   employees: Employee[];
+  workTasks: WorkTask[];
+  meetings: WorkMeeting[];
+  reloadTasks: () => Promise<void>;
+  tasksReady: boolean;
   onSave: () => void;
   onDelete: () => void;
 }) {
   const { t } = useTranslation();
-  const members = employees.filter((employee) =>
-    form.memberIds.includes(employee.id)
-  );
+  const formRef = useRef(form);
+  formRef.current = form;
+  const phaseTasks = useProjectPhaseTasks({
+    projectId,
+    phases: form.phases,
+    setPhases: (update) =>
+      setForm((current) => ({ ...current, phases: update(current.phases) })),
+    workTasks,
+    reloadTasks,
+    tasksReady,
+    onLinked: (links) => {
+      if (!projectId || links.length === 0) return;
+      const phases = formRef.current.phases.map((phase) => ({
+        ...phase,
+        tasks: phase.tasks.map((task) => {
+          const link = links.find(
+            (row) => row.phaseId === phase.id && row.taskId === task.id
+          );
+          return link ? { ...task, workTaskId: link.workTaskId } : task;
+        }),
+      }));
+      const payload = normalizeProjectForm({ ...formRef.current, phases });
+      if (!payload) return;
+      void updateWorkProject(projectId, payload);
+    },
+  });
 
   function setLead(leadId: string) {
     setForm({
@@ -111,6 +151,7 @@ export function AdminWorkProjectSheet({
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[min(94dvh,880px)] w-full max-w-none flex-col gap-0 overflow-hidden p-0 sm:w-[min(92vw,42rem)] sm:max-w-[min(92vw,42rem)] sm:p-0">
         <DialogHeader className="shrink-0 border-b border-border/55 px-4 pb-3.5 pt-1 sm:px-5 sm:pt-5">
@@ -258,8 +299,14 @@ export function AdminWorkProjectSheet({
             >
               <ProjectPhaseEditor
                 phases={form.phases}
-                members={members}
+                members={employees}
+                projectId={projectId}
+                workTasks={workTasks}
                 onChange={(phases) => setForm({ ...form, phases })}
+                onAddTask={phaseTasks.openCreate}
+                onOpenTask={phaseTasks.setViewing}
+                onEditTask={phaseTasks.openEdit}
+                onDeleteTask={phaseTasks.setDeleteTarget}
               />
             </SectionCard>
           </div>
@@ -289,5 +336,45 @@ export function AdminWorkProjectSheet({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <AdminWorkTaskDialog
+      open={phaseTasks.open}
+      onOpenChange={phaseTasks.setOpen}
+      isEditing={Boolean(phaseTasks.editingTask)}
+      busy={phaseTasks.busy}
+      taskForm={phaseTasks.form}
+      setTaskForm={phaseTasks.setForm}
+      editingTask={phaseTasks.editingTask}
+      employees={employees}
+      meetings={meetings}
+      hideOrganicAds
+      onSave={(options) => void phaseTasks.save(options)}
+    />
+    <TaskViewSheet
+      task={phaseTasks.viewing}
+      open={Boolean(phaseTasks.viewing)}
+      onOpenChange={(next) => {
+        if (!next) phaseTasks.setViewing(null);
+      }}
+      employees={new Map(employees.map((employee) => [employee.id, employee]))}
+      onEdit={phaseTasks.openEdit}
+    />
+    <AdminWorkDeleteDialog
+      target={
+        phaseTasks.deleteTarget
+          ? {
+              kind: "task",
+              id: phaseTasks.deleteTarget.id,
+              title: phaseTasks.deleteTarget.title,
+            }
+          : null
+      }
+      busy={phaseTasks.busy}
+      onOpenChange={(next) => {
+        if (!next) phaseTasks.setDeleteTarget(null);
+      }}
+      onConfirm={() => void phaseTasks.confirmDelete()}
+    />
+    </>
   );
 }

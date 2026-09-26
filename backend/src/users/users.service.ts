@@ -12,6 +12,7 @@ import {
   readAdminVisiblePassword,
   withAdminVisiblePassword,
 } from "../common/user-password-preview";
+import { isLiveEmployeeAccount } from "./living-employee";
 
 const DEFAULT_NOTIFICATIONS = {
   ...DEFAULT_COMPANY_NOTIFICATIONS,
@@ -31,7 +32,8 @@ export class UsersService {
       },
       orderBy: { email: "asc" },
     });
-    return rows.map(mapUser);
+    const live = await this.liveEmployees(companyId);
+    return rows.filter((row) => isLiveEmployeeAccount(row, live)).map(mapUser);
   }
 
   /** Admin accounts list — includes last admin-set plaintext password when available. */
@@ -40,12 +42,22 @@ export class UsersService {
       where: { companyId, deletedAt: null },
       orderBy: [{ role: "asc" }, { email: "asc" }],
     });
-    return rows.map((row) => {
-      const user = mapUser(row);
-      return {
-        ...user,
-        loginPassword: readAdminVisiblePassword(row.metadata),
-      };
+    const live = await this.liveEmployees(companyId);
+    return rows
+      .filter((row) => isLiveEmployeeAccount(row, live))
+      .map((row) => {
+        const user = mapUser(row);
+        return {
+          ...user,
+          loginPassword: readAdminVisiblePassword(row.metadata),
+        };
+      });
+  }
+
+  private liveEmployees(companyId: string) {
+    return this.prisma.employee.findMany({
+      where: { companyId, deletedAt: null },
+      select: { id: true, email: true },
     });
   }
 

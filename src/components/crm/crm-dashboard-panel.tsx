@@ -80,20 +80,22 @@ export function CrmDashboardPanel({
     conversionRate: 0,
   };
 
-  const trendData = useMemo(
-    () =>
-      (safe?.leadsTrend ?? []).map((row) => ({
-        ...row,
-        label: (() => {
-          try {
-            return format(parseISO(row.date), "d MMM", { locale: dateLocale });
-          } catch {
-            return row.date;
-          }
-        })(),
-      })),
-    [safe?.leadsTrend, dateLocale]
-  );
+  const trendData = useMemo(() => {
+    const wonByDate = new Map(
+      (safe?.conversionTrend ?? []).map((row) => [row.date, row.value])
+    );
+    return (safe?.leadsTrend ?? []).map((row) => ({
+      label: (() => {
+        try {
+          return format(parseISO(row.date), "d MMM", { locale: dateLocale });
+        } catch {
+          return row.date;
+        }
+      })(),
+      leads: row.value,
+      won: wonByDate.get(row.date) ?? 0,
+    }));
+  }, [safe?.leadsTrend, safe?.conversionTrend, dateLocale]);
 
   if (loading && !safe) {
     return <TableSkeleton rows={6} />;

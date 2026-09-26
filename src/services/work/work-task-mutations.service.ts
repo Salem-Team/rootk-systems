@@ -157,6 +157,8 @@ export async function createWorkTask(
           label: s.label,
           done: s.done ?? false,
         })),
+        projectId: parsed.data.projectId,
+        phaseId: parsed.data.phaseId,
       } satisfies Omit<WorkTask, keyof import("@/types").BaseEntity>,
       actor
     );

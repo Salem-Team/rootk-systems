@@ -121,6 +121,14 @@ export class WorkTasksWriteService {
         media: media as unknown as Prisma.InputJsonValue,
         assignedAt: now,
         completedAt: initialStatus === TaskStatus.completed ? now : null,
+        projectId:
+          typeof body.projectId === "string" && body.projectId.trim()
+            ? body.projectId.trim()
+            : null,
+        phaseId:
+          typeof body.phaseId === "string" && body.phaseId.trim()
+            ? body.phaseId.trim()
+            : null,
         createdBy: actor.userId,
         updatedBy: actor.userId,
       },

@@ -14,6 +14,8 @@ export interface WorkProjectTask {
   dueDate: string;
   estimateMin: number;
   assigneeIds: string[];
+  /** Real work-task id once the row is promoted into the task system. */
+  workTaskId?: string;
 }
 
 export interface WorkProjectPhase {

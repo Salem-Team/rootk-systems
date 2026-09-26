@@ -607,6 +607,9 @@ model WorkTask {
   media                 Json         @default("[]")
   /// When the task was assigned / became actionable (defaults to create time).
   assignedAt            DateTime     @default(now())
+  /// Set when the task belongs to a project phase.
+  projectId             String?
+  phaseId               String?
   /// When all assignees marked the task completed (null if any still open).
   completedAt           DateTime?
   createdAt             DateTime     @default(now())
@@ -627,6 +630,7 @@ model WorkTask {
   @@index([companyId, dueDate])
   @@index([companyId, targetId])
   @@index([companyId, completedAt])
+  @@index([companyId, projectId])
 }
 
 /** Threaded discussion on a work task — text and/or a short voice note. */

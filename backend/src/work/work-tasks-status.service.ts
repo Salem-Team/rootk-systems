@@ -239,6 +239,12 @@ export class WorkTasksStatusService {
           ? { media: media as unknown as Prisma.InputJsonValue }
           : {}),
         completedAt: rolledCompletedAt,
+        ...(typeof body.projectId === "string"
+          ? { projectId: body.projectId.trim() || null }
+          : {}),
+        ...(typeof body.phaseId === "string"
+          ? { phaseId: body.phaseId.trim() || null }
+          : {}),
         updatedBy: actor.userId,
         version: { increment: 1 },
       },

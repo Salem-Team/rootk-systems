@@ -226,6 +226,7 @@ export function AdminWorkAssignPanel() {
           <AdminWorkProjectsPanel
             projects={projects.filtered}
             employees={data.employees}
+            workTasks={data.tasks}
             loading={projects.loading}
             query={projects.query}
             setQuery={projects.setQuery}
@@ -274,10 +275,15 @@ export function AdminWorkAssignPanel() {
         open={projects.sheetOpen}
         onOpenChange={projects.setSheetOpen}
         isEditing={Boolean(projects.editingId)}
+        projectId={projects.editingId}
         busy={projects.busy}
         form={projects.form}
         setForm={projects.setForm}
         employees={data.employees}
+        workTasks={data.tasks}
+        meetings={data.meetings}
+        reloadTasks={data.reload}
+        tasksReady={!data.loading}
         onSave={() => void projects.save()}
         onDelete={() => {
           const current = projects.projects.find(

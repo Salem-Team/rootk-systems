@@ -70,6 +70,7 @@ export function AdminWorkTaskDialog({
   employees,
   meetings,
   onSave,
+  hideOrganicAds = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -81,6 +82,7 @@ export function AdminWorkTaskDialog({
   employees: Employee[];
   meetings: WorkMeeting[];
   onSave: (options?: { addAnother?: boolean }) => void;
+  hideOrganicAds?: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -313,7 +315,7 @@ export function AdminWorkTaskDialog({
                 />
               </SectionCard>
 
-              {!isEditing ? (
+              {!isEditing && !hideOrganicAds ? (
                 <SectionCard title={t("workAdmin.sectionOptions")}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -364,7 +366,7 @@ export function AdminWorkTaskDialog({
               ) : null}
             </aside>
 
-            {!isEditing ? (
+            {!isEditing && !hideOrganicAds ? (
               <SectionCard title={t("workAdmin.sectionOptions")} className="lg:hidden">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

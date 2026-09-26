@@ -38,6 +38,7 @@ type ProjectTask = {
   dueDate: string;
   estimateMin: number;
   assigneeIds: string[];
+  workTaskId: string;
 };
 
 function cleanDate(value: unknown): string {
@@ -119,6 +120,7 @@ export function sanitizeProjectPhases(
               ? Math.min(Math.round(estimate), 100000)
               : 0,
           assigneeIds,
+          workTaskId: clip(task.workTaskId, 80),
         },
       ];
     });
@@ -183,7 +185,7 @@ export class WorkProjectsService {
     });
     const visible = this.canSeeEveryProject(actor)
       ? rows
-      : rows.filter((row) => projectVisibleToEmployee(row, actor.employeeId));
+      : await this.projectsVisibleToEmployee(companyId, actor.employeeId, rows);
     return visible.map((row) => this.mapProject(row));
   }
 
@@ -246,6 +248,29 @@ export class WorkProjectsService {
       },
     });
     return true;
+  }
+
+  private async projectsVisibleToEmployee<T extends { id: string; leadId: string; memberIds: string[]; phases: unknown }>(
+    companyId: string,
+    employeeId: string,
+    rows: T[]
+  ) {
+    const linked = await this.prisma.workTask.findMany({
+      where: {
+        companyId,
+        deletedAt: null,
+        projectId: { not: null },
+        assigneeIds: { has: employeeId },
+      },
+      select: { projectId: true },
+    });
+    const assignedProjectIds = new Set(
+      linked.map((task) => task.projectId).filter((id): id is string => Boolean(id))
+    );
+    return rows.filter(
+      (row) =>
+        projectVisibleToEmployee(row, employeeId) || assignedProjectIds.has(row.id)
+    );
   }
 
   private canSeeEveryProject(actor: Actor) {

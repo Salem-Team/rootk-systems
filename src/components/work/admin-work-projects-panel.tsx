@@ -12,6 +12,7 @@ import type { TranslationPath } from "@/i18n";
 import { summarizePhases } from "@/lib/work-project";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
+import type { WorkTask } from "@/types/work";
 import type { ProjectStatus, WorkProject } from "@/types/work-project";
 import type { ProjectStatusFilter } from "@/components/work/use-admin-work-projects";
 
@@ -64,6 +65,7 @@ function formatRange(
 export function AdminWorkProjectsPanel({
   projects,
   employees,
+  workTasks = [],
   loading,
   query,
   setQuery,
@@ -74,6 +76,7 @@ export function AdminWorkProjectsPanel({
 }: {
   projects: WorkProject[];
   employees: Employee[];
+  workTasks?: WorkTask[];
   loading: boolean;
   query: string;
   setQuery: (value: string) => void;
@@ -145,7 +148,22 @@ export function AdminWorkProjectsPanel({
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {projects.map((project) => {
-            const summary = summarizePhases(project.phases);
+            const linked = workTasks.filter((task) => task.projectId === project.id);
+            const summary = linked.length
+              ? {
+                  phases: project.phases.filter((phase) => phase.name.trim()).length,
+                  tasks: linked.length,
+                  minutes: linked.reduce(
+                    (total, task) => total + Math.max(0, task.estimateMin || 0),
+                    0
+                  ),
+                  pct: Math.round(
+                    (linked.filter((task) => task.status === "completed").length /
+                      linked.length) *
+                      100
+                  ),
+                }
+              : summarizePhases(project.phases);
             const lead = employeeMap.get(project.leadId);
             const time = plannedTime(summary.minutes, t);
             const range = formatRange(

@@ -65,6 +65,9 @@ export interface WorkTask extends BaseEntity {
   assignedAt?: string;
   /** ISO timestamp when marked completed (null/undefined while open). */
   completedAt?: string | null;
+  /** Set when this assignment lives inside a project phase. */
+  projectId?: string;
+  phaseId?: string;
 }
 
 export type WorkTaskMediaKind = "image" | "video";

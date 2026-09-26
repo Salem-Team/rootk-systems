@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/hooks/use-translation";
-import { emptyProjectTask } from "@/lib/work-project";
 import { cn } from "@/lib/utils";
+import { statusLabelKey } from "@/components/work/employee-work-hub-types";
 import type { Employee } from "@/types";
-import type { TaskPriority, TaskStatus } from "@/types/work";
+import type { WorkTask } from "@/types/work";
 import type {
   ProjectPhaseStatus,
   WorkProjectPhase,
@@ -39,50 +39,59 @@ function DateBound({
   );
 }
 
+function phaseTasks(phase: WorkProjectPhase, projectId: string | null, workTasks: WorkTask[]) {
+  if (!projectId) return [];
+  return workTasks.filter(
+    (task) => task.projectId === projectId && task.phaseId === phase.id
+  );
+}
+
+function draftTasks(phase: WorkProjectPhase, projectId: string | null, workTasks: WorkTask[]) {
+  const linked = phaseTasks(phase, projectId, workTasks);
+  const ids = new Set(linked.map((task) => task.id));
+  const titles = new Set(linked.map((task) => task.title.trim()));
+  return phase.tasks.filter((task) => {
+    if (!task.title.trim()) return false;
+    if (task.workTaskId && ids.has(task.workTaskId)) return false;
+    return !titles.has(task.title.trim());
+  });
+}
+
 const selectClass = cn(
   "h-10 w-full rounded-xl border border-border/80 bg-card px-3 text-sm text-foreground",
   "hover:border-border focus-visible:border-primary/45 focus-visible:outline-none",
   "focus-visible:ring-[3px] focus-visible:ring-ring/18"
 );
 
-function taskNeedsDetails(task: WorkProjectTask) {
-  return (
-    Boolean(task.dueDate) ||
-    task.estimateMin > 0 ||
-    task.status !== "todo" ||
-    task.priority !== "medium"
-  );
-}
-
 export function ProjectPhaseEditor({
   phases,
   members,
+  projectId,
+  workTasks,
   onChange,
+  onAddTask,
+  onOpenTask,
+  onEditTask,
+  onDeleteTask,
 }: {
   phases: WorkProjectPhase[];
   members: Employee[];
+  projectId: string | null;
+  workTasks: WorkTask[];
   onChange: (phases: WorkProjectPhase[]) => void;
+  onAddTask: (phaseId: string, draft?: WorkProjectTask) => void;
+  onOpenTask: (task: WorkTask) => void;
+  onEditTask: (task: WorkTask) => void;
+  onDeleteTask: (task: WorkTask) => void;
 }) {
   const { t } = useTranslation();
   const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({});
-  const [openDetails, setOpenDetails] = useState<Record<string, boolean>>({});
+  const names = new Map(members.map((member) => [member.id, member.name]));
 
   function patchPhase(id: string, patch: Partial<WorkProjectPhase>) {
     onChange(
       phases.map((phase) => (phase.id === id ? { ...phase, ...patch } : phase))
     );
-  }
-
-  function patchTask(
-    phase: WorkProjectPhase,
-    taskId: string,
-    patch: Partial<WorkProjectTask>
-  ) {
-    patchPhase(phase.id, {
-      tasks: phase.tasks.map((task) =>
-        task.id === taskId ? { ...task, ...patch } : task
-      ),
-    });
   }
 
   return (
@@ -176,147 +185,67 @@ export function ProjectPhaseEditor({
             </div>
 
             <ul className="mt-3 space-y-2 ps-8">
-              {phase.tasks.map((task) => {
-                const detailsOpen =
-                  openDetails[task.id] ?? taskNeedsDetails(task);
+              {phaseTasks(phase, projectId, workTasks).map((task) => {
+                const owner = task.assigneeIds
+                  .map((id) => names.get(id))
+                  .filter(Boolean)
+                  .join("، ");
                 return (
-                  <li
-                    key={task.id}
-                    className="rounded-xl border border-border/60 bg-muted/20 p-2"
-                  >
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                      <Input
-                        value={task.title}
-                        onChange={(event) =>
-                          patchTask(phase, task.id, { title: event.target.value })
-                        }
-                        placeholder={t("workAdmin.projects.taskTitle")}
-                        className="h-10 min-w-0 flex-1 rounded-xl bg-card"
-                      />
-                      <select
-                        className={cn(selectClass, "w-full shrink-0 bg-card sm:w-40")}
-                        value={task.assigneeIds[0] ?? ""}
-                        aria-label={t("workAdmin.projects.taskOwner")}
-                        onChange={(event) =>
-                          patchTask(phase, task.id, {
-                            assigneeIds: event.target.value
-                              ? [event.target.value]
-                              : [],
-                          })
-                        }
+                  <li key={task.id}>
+                    <div className="flex items-center gap-1 rounded-xl border border-border/60 bg-card pe-1">
+                      <button
+                        type="button"
+                        className="min-w-0 flex-1 px-3 py-2.5 text-start"
+                        onClick={() => onOpenTask(task)}
                       >
-                        <option value="">
-                          {t("workAdmin.projects.taskUnassigned")}
-                        </option>
-                        {members.map((member) => (
-                          <option key={member.id} value={member.id}>
-                            {member.name}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="flex shrink-0 justify-end">
+                        <span className="block truncate text-[13px] font-semibold">
+                          {task.title}
+                        </span>
+                        <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                          {t(statusLabelKey(task.status))}
+                          {owner ? ` · ${owner}` : ""}
+                        </span>
+                      </button>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground"
-                        aria-expanded={detailsOpen}
-                        aria-label={
-                          detailsOpen
-                            ? t("workAdmin.projects.hideDetails")
-                            : t("workAdmin.projects.showDetails")
-                        }
-                        onClick={() =>
-                          setOpenDetails((current) => ({
-                            ...current,
-                            [task.id]: !detailsOpen,
-                          }))
-                        }
+                        className="h-9 w-9 shrink-0 rounded-xl text-muted-foreground"
+                        aria-label={t("workAdmin.editTask")}
+                        onClick={() => onEditTask(task)}
                       >
-                        <ChevronDown
-                          className={cn(
-                            "h-4 w-4 transition-transform",
-                            detailsOpen && "rotate-180"
-                          )}
-                        />
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground"
+                        className="h-9 w-9 shrink-0 rounded-xl text-muted-foreground"
                         aria-label={t("workAdmin.projects.removeTask")}
-                        onClick={() =>
-                          patchPhase(phase.id, {
-                            tasks: phase.tasks.filter((item) => item.id !== task.id),
-                          })
-                        }
+                        onClick={() => onDeleteTask(task)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
-                      </div>
                     </div>
-                    {detailsOpen ? (
-                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                        <select
-                          className={cn(selectClass, "bg-card")}
-                          value={task.status}
-                          aria-label={t("workAdmin.projects.fieldStatus")}
-                          onChange={(event) =>
-                            patchTask(phase, task.id, {
-                              status: event.target.value as TaskStatus,
-                            })
-                          }
-                        >
-                          <option value="todo">{t("ops.statusTodo")}</option>
-                          <option value="in_progress">
-                            {t("ops.statusInProgress")}
-                          </option>
-                          <option value="completed">
-                            {t("ops.statusCompleted")}
-                          </option>
-                        </select>
-                        <select
-                          className={cn(selectClass, "bg-card")}
-                          value={task.priority}
-                          aria-label={t("workAdmin.fieldPriority")}
-                          onChange={(event) =>
-                            patchTask(phase, task.id, {
-                              priority: event.target.value as TaskPriority,
-                            })
-                          }
-                        >
-                          <option value="low">{t("ops.priority.low")}</option>
-                          <option value="medium">{t("ops.priority.medium")}</option>
-                          <option value="high">{t("ops.priority.high")}</option>
-                        </select>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={task.estimateMin || ""}
-                          aria-label={t("workAdmin.projects.taskEstimate")}
-                          placeholder={t("workAdmin.projects.taskEstimate")}
-                          onChange={(event) =>
-                            patchTask(phase, task.id, {
-                              estimateMin: Number(event.target.value) || 0,
-                            })
-                          }
-                          className="h-10 rounded-xl bg-card"
-                        />
-                        <Input
-                          type="date"
-                          value={task.dueDate}
-                          aria-label={t("workAdmin.projects.taskDue")}
-                          onChange={(event) =>
-                            patchTask(phase, task.id, { dueDate: event.target.value })
-                          }
-                          className="h-10 rounded-xl bg-card"
-                        />
-                      </div>
-                    ) : null}
                   </li>
                 );
               })}
+              {draftTasks(phase, projectId, workTasks).map((task) => (
+                <li key={task.id}>
+                  <button
+                    type="button"
+                    className="w-full rounded-xl border border-dashed border-border/80 px-3 py-2.5 text-start"
+                    onClick={() => onAddTask(phase.id, task)}
+                  >
+                    <span className="block truncate text-[13px] font-semibold">
+                      {task.title}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                      {t("workAdmin.projects.taskSystemHint")}
+                    </span>
+                  </button>
+                </li>
+              ))}
             </ul>
 
             <Button
@@ -324,11 +253,7 @@ export function ProjectPhaseEditor({
               variant="ghost"
               size="sm"
               className="mt-2 h-9 rounded-xl ps-8 text-muted-foreground"
-              onClick={() =>
-                patchPhase(phase.id, {
-                  tasks: [...phase.tasks, emptyProjectTask()],
-                })
-              }
+              onClick={() => onAddTask(phase.id)}
             >
               <Plus className="h-3.5 w-3.5" />
               {t("workAdmin.projects.addTask")}

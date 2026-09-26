@@ -143,6 +143,7 @@ export function EmployeeWorkHub() {
           <EmployeeWorkProjectsPanel
             employeeId={workEmployeeId}
             employees={data.employees}
+            workTasks={data.tasks}
           />
         </TabsContent>
 

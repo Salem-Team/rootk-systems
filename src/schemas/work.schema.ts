@@ -112,6 +112,8 @@ export const createWorkTaskSchema = z.object({
       })
     )
     .default([]),
+  projectId: z.string().trim().min(1).max(80).optional(),
+  phaseId: z.string().trim().min(1).max(80).optional(),
 });
 
 export const updateWorkTaskSchema = createWorkTaskSchema.partial().extend({

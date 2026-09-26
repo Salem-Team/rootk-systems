@@ -15,6 +15,7 @@ export const workProjectTaskSchema = z.object({
   dueDate: dateField.default(""),
   estimateMin: z.number().int().min(0).max(100000).default(0),
   assigneeIds: z.array(z.string()).max(20).default([]),
+  workTaskId: z.string().trim().max(80).optional(),
 });
 
 export const workProjectPhaseSchema = z.object({

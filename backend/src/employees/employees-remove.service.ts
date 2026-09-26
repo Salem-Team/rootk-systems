@@ -13,8 +13,17 @@ export class EmployeesRemoveService {
     });
     if (!current) throw new NotFoundException("Employee not found");
 
+    const email = current.email.trim();
     const linkedUsers = await this.prisma.user.findMany({
-      where: { companyId, employeeId: id },
+      where: {
+        companyId,
+        OR: [
+          { employeeId: id },
+          ...(email
+            ? [{ email: { equals: email, mode: "insensitive" as const } }]
+            : []),
+        ],
+      },
       select: { id: true, role: true, email: true },
     });
 
