@@ -49,6 +49,36 @@ export function mediaKindForMime(mime: string): WorkTaskMediaKind | null {
   return null;
 }
 
+const GENERIC_MEDIA_NAME =
+  /^(image|img|photo|screenshot|blob|file|pasted)(\s*\(\d+\))?(\.\w+)?$/i;
+
+/** Clipboard screenshots often share one name. Give each a readable label. */
+export function readableMediaName(file: File): string {
+  const raw = file.name.trim().slice(0, 120);
+  if (raw && !GENERIC_MEDIA_NAME.test(raw)) return raw;
+  const ext = (raw.split(".").pop() || "png").toLowerCase().replace(/^\./, "");
+  const stamp = new Date().toISOString().slice(11, 19).replace(/:/g, "");
+  const suffix = crypto.randomUUID().slice(0, 4);
+  return `image-${stamp}-${suffix}.${ext}`;
+}
+
+/** Keep duplicate file names distinguishable in a gallery. */
+export function labelMediaItems(items: WorkTaskMediaItem[]): WorkTaskMediaItem[] {
+  const seen = new Map<string, number>();
+  return items.map((item) => {
+    const name = (item.name ?? "").trim() || "image";
+    const count = (seen.get(name) ?? 0) + 1;
+    seen.set(name, count);
+    if (count === 1) return item;
+    const dot = name.lastIndexOf(".");
+    const labeled =
+      dot > 0
+        ? `${name.slice(0, dot)} (${count})${name.slice(dot)}`
+        : `${name} (${count})`;
+    return { ...item, name: labeled };
+  });
+}
+
 export function formatMediaBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -155,7 +185,7 @@ export async function fileToMediaDraft(
       localId: `local-${crypto.randomUUID()}`,
       kind,
       mime,
-      name: file.name.slice(0, 120) || "media",
+      name: readableMediaName(file),
       sizeBytes: file.size,
       dataBase64,
       previewUrl: URL.createObjectURL(file),

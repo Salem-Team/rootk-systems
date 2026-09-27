@@ -413,6 +413,8 @@ export const en = {
     videoTooLarge: "Video is too large (max 28MB).",
     unsupported: "Unsupported file. Use an image or video.",
     loadFailed: "Couldn't load this file.",
+    missing: "This file is no longer on the server. Upload it again with the proof.",
+    retry: "Try again",
   },
   workEvidence: {
     completeTitle: "Confirm task completion",

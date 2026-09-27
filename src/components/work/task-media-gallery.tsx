@@ -5,7 +5,11 @@ import { createPortal } from "react-dom";
 import { Film, ImageIcon, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
-import { formatMediaBytes, type WorkTaskMediaItem } from "@/lib/task-media";
+import {
+  formatMediaBytes,
+  labelMediaItems,
+  type WorkTaskMediaItem,
+} from "@/lib/task-media";
 import { cn } from "@/lib/utils";
 import {
   invalidateAuthMediaUrl,
@@ -20,6 +24,7 @@ function MediaThumb({
   onOpen: () => void;
 }) {
   const { url, loading, error } = useAuthMediaUrl(item.url);
+  const [broken, setBroken] = useState(false);
 
   return (
     <button
@@ -31,8 +36,8 @@ function MediaThumb({
         <span className="absolute inset-0 flex items-center justify-center">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </span>
-      ) : error || !url ? (
-        <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-muted-foreground">
+      ) : error || broken || !url ? (
+        <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-2 text-center text-muted-foreground">
           {item.kind === "video" ? (
             <Film className="h-5 w-5" />
           ) : (
@@ -47,6 +52,7 @@ function MediaThumb({
           className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
           onError={() => {
             if (item.url) invalidateAuthMediaUrl(item.url);
+            setBroken(true);
           }}
         />
       ) : (
@@ -58,7 +64,14 @@ function MediaThumb({
           preload="metadata"
         />
       )}
-      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent px-2.5 pb-2 pt-6 text-[11px] font-medium text-white">
+      <span
+        className={cn(
+          "absolute inset-x-0 bottom-0 px-2.5 pb-2 pt-6 text-[11px] font-medium",
+          url && !error && !broken
+            ? "bg-gradient-to-t from-black/65 to-transparent text-white"
+            : "text-foreground/80"
+        )}
+      >
         <span className="line-clamp-1">{item.name}</span>
       </span>
       {item.kind === "video" ? (
@@ -79,7 +92,8 @@ function MediaLightbox({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const { url, loading, error } = useAuthMediaUrl(item.url);
+  const { url, loading, error, failure, retry } = useAuthMediaUrl(item.url);
+  const [broken, setBroken] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -105,7 +119,7 @@ function MediaLightbox({
             <p className="truncate text-sm font-semibold text-white">
               {item.name}
             </p>
-            <p className="text-[11px] text-white/60">
+            <p className="text-[11px] text-white/60" dir="ltr">
               {formatMediaBytes(item.sizeBytes)}
             </p>
           </div>
@@ -113,7 +127,7 @@ function MediaLightbox({
             type="button"
             size="icon-sm"
             variant="ghost"
-            className="text-white hover:bg-white/10"
+            className="h-9 w-9 shrink-0 rounded-full text-white hover:bg-white/15"
             onClick={onClose}
             aria-label={t("common.close")}
           >
@@ -123,8 +137,27 @@ function MediaLightbox({
         <div className="flex max-h-[min(78vh,720px)] items-center justify-center bg-black">
           {loading ? (
             <Loader2 className="h-8 w-8 animate-spin text-white/70" />
-          ) : error || !url ? (
-            <p className="p-8 text-sm text-white/70">{t("workMedia.loadFailed")}</p>
+          ) : error || broken || !url ? (
+            <div className="flex max-w-sm flex-col items-center gap-3 px-6 py-10 text-center">
+              <p className="text-sm text-white/80">
+                {failure === "missing"
+                  ? t("workMedia.missing")
+                  : t("workMedia.loadFailed")}
+              </p>
+              {failure === "missing" ? null : (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setBroken(false);
+                    retry();
+                  }}
+                >
+                  {t("workMedia.retry")}
+                </Button>
+              )}
+            </div>
           ) : item.kind === "image" ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -133,6 +166,7 @@ function MediaLightbox({
               className="max-h-[min(78vh,720px)] w-full object-contain"
               onError={() => {
                 if (item.url) invalidateAuthMediaUrl(item.url);
+                setBroken(true);
               }}
             />
           ) : (
@@ -161,8 +195,9 @@ export function TaskMediaGallery({
 }) {
   const { t } = useTranslation();
   const [active, setActive] = useState<WorkTaskMediaItem | null>(null);
+  const labeled = labelMediaItems(items);
 
-  if (!items.length) return null;
+  if (!labeled.length) return null;
 
   return (
     <section className={cn("space-y-2.5", className)}>
@@ -172,12 +207,12 @@ export function TaskMediaGallery({
             {t("workMedia.galleryTitle")}
           </p>
           <p className="text-[11px] tabular-nums text-muted-foreground">
-            {items.length}
+            {labeled.length}
           </p>
         </div>
       )}
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-        {items.map((item) => (
+        {labeled.map((item) => (
           <MediaThumb
             key={item.id}
             item={item}

@@ -28,6 +28,8 @@ rsync -az --delete \
   --exclude '.env.production' \
   --exclude 'backend/.env' \
   --exclude 'public/downloads/' \
+  --exclude 'uploads/' \
+  --exclude 'backend/uploads/' \
   --exclude '*.apk' \
   --exclude '*.aab' \
   --exclude 'tmp/' \
@@ -62,6 +64,12 @@ NODE_OPTIONS=--dns-result-order=ipv4first npm run build 2>&1 | tail -25
 
 test -f .next/required-server-files.json
 echo 'required-server-files.json OK'
+
+echo '== persistent uploads =='
+mkdir -p /var/lib/rootk-systems/uploads
+chmod 755 /var/lib/rootk-systems/uploads
+touch backend/.env
+grep -q '^ROOTK_UPLOADS_DIR=' backend/.env || echo 'ROOTK_UPLOADS_DIR=/var/lib/rootk-systems/uploads' >> backend/.env
 
 echo '== pm2 restart =='
 pm2 restart rootk-systems-api --update-env

@@ -102,8 +102,11 @@ export function TaskEvidenceDisplay({
             <div className="mt-3">
               <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("workEvidence.fieldMedia")}
+                <span className="ms-1.5 tabular-nums" dir="ltr">
+                  {media.length}
+                </span>
               </p>
-              <TaskMediaGallery items={media} />
+              <TaskMediaGallery items={media} hideHeader />
             </div>
           ) : null}
 

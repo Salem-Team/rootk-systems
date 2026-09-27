@@ -110,7 +110,10 @@ export function TaskViewSheet({
           <>
             <SheetHeader className="shrink-0 border-b border-border/60 px-4 pb-4 pt-1 pe-14 sm:px-6 sm:pe-14 sm:pt-3">
               <SheetTitle className="pe-8 text-start text-[1.05rem] leading-snug sm:text-lg">
-                <BidiText text={task.title} />
+                <BidiText
+                  text={task.title}
+                  className="[&_bdi]:[overflow-wrap:anywhere]"
+                />
               </SheetTitle>
               <SheetDescription className="text-start text-[13px]">
                 {t("workAdmin.viewTaskDesc")}

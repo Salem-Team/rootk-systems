@@ -9,6 +9,8 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT: "3031",
+        // Outside the rsync tree so deploys cannot delete proof photos or voice notes.
+        ROOTK_UPLOADS_DIR: "/var/lib/rootk-systems/uploads",
       },
       max_memory_restart: "512M",
     },

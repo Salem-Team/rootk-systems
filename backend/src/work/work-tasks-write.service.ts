@@ -287,7 +287,11 @@ export class WorkTasksWriteService {
       throw new NotFoundException("Media not found");
     }
     return {
-      file: new StreamableFile(createReadStream(abs)),
+      file: new StreamableFile(createReadStream(abs), {
+        type: item.mime,
+        disposition: "inline",
+        length: size,
+      }),
       mime: item.mime,
       size,
     };

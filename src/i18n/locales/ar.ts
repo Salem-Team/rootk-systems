@@ -412,6 +412,8 @@ export const ar: TranslationKeys = {
     videoTooLarge: "الفيديو كبير أوي (الحد 28MB).",
     unsupported: "نوع الملف مش مدعوم. استخدم صورة أو فيديو.",
     loadFailed: "مقدرناش نحمّل الملف.",
+    missing: "الملف اتمسح من السيرفر. ارفعه تاني من إثبات الإنجاز.",
+    retry: "حاول تاني",
   },
   workEvidence: {
     completeTitle: "تأكيد إنجاز المهمة",

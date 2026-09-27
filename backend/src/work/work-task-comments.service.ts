@@ -6,6 +6,7 @@ import {
   StreamableFile,
 } from "@nestjs/common";
 import { createReadStream } from "fs";
+import { stat } from "fs/promises";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -290,10 +291,20 @@ export class WorkTaskCommentsService {
     });
     if (!row) throw new NotFoundException("Voice note not found");
     const abs = voiceAbsolutePath(companyId, fileId);
-    const stream = createReadStream(abs);
+    let size = 0;
+    try {
+      size = (await stat(abs)).size;
+    } catch {
+      throw new NotFoundException("Voice note not found");
+    }
+    const mime = row.voiceMime || "audio/webm";
     return {
-      file: new StreamableFile(stream),
-      mime: row.voiceMime || "audio/webm",
+      file: new StreamableFile(createReadStream(abs), {
+        type: mime,
+        disposition: "inline",
+        length: size,
+      }),
+      mime,
     };
   }
 

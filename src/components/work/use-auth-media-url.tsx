@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 import { Film, ImageIcon, Loader2 } from "lucide-react";
 import { isApiMode } from "@/lib/env";
+import { NotFoundError } from "@/lib/errors";
 import { getHttpClient } from "@/lib/http-client";
 import type { WorkTaskMediaKind } from "@/lib/task-media";
 import { cn } from "@/lib/utils";
+
+export type AuthMediaFailure = "missing" | "failed";
 
 type Entry = {
   url: string | null;
@@ -38,6 +41,36 @@ function remember(src: string, entry: Entry) {
   }
 }
 
+function mimeFromPath(src: string): string | null {
+  const path = src.split("?")[0]!.toLowerCase();
+  if (path.endsWith(".png")) return "image/png";
+  if (path.endsWith(".jpg") || path.endsWith(".jpeg")) return "image/jpeg";
+  if (path.endsWith(".webp")) return "image/webp";
+  if (path.endsWith(".gif")) return "image/gif";
+  if (path.endsWith(".mp4")) return "video/mp4";
+  if (path.endsWith(".webm")) return "video/webm";
+  if (path.endsWith(".mov")) return "video/quicktime";
+  return null;
+}
+
+/** Browsers hide the real type when the API streams as octet-stream. */
+async function playableBlob(blob: Blob, src: string): Promise<Blob | null> {
+  if (!blob.size) return null;
+  const type = blob.type.toLowerCase().split(";")[0]!.trim();
+  if (
+    type.startsWith("image/") ||
+    type.startsWith("video/") ||
+    type.startsWith("audio/")
+  ) {
+    return blob;
+  }
+  if (type === "application/json" || type.startsWith("text/")) return null;
+  const guessed = mimeFromPath(src);
+  if (!guessed) return null;
+  if (type && type !== "application/octet-stream") return null;
+  return new Blob([await blob.arrayBuffer()], { type: guessed });
+}
+
 function loadMediaUrl(src: string): Promise<string | null> {
   if (isDirectUrl(src)) return Promise.resolve(src);
   const existing = cache.get(src);
@@ -50,23 +83,22 @@ function loadMediaUrl(src: string): Promise<string | null> {
   const entry: Entry = { url: null, owned: false, promise: null };
   entry.promise = getHttpClient()
     .requestBlob(apiPath(src))
-    .then((blob) => {
-      const type = blob.type.toLowerCase();
-      const playable =
-        type.startsWith("image/") ||
-        type.startsWith("video/") ||
-        type.startsWith("audio/");
-      if (!blob.size || !playable) throw new Error("not media");
-      const objectUrl = URL.createObjectURL(blob);
+    .then(async (blob) => {
+      const playable = await playableBlob(blob, src);
+      if (!playable) throw new Error("not media");
+      const objectUrl = URL.createObjectURL(playable);
       entry.url = objectUrl;
       entry.owned = true;
       entry.promise = null;
       remember(src, entry);
       return objectUrl;
     })
-    .catch(() => {
+    .catch((error: unknown) => {
       entry.promise = null;
       cache.delete(src);
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
       return null;
     });
   cache.set(src, entry);
@@ -89,13 +121,14 @@ export function invalidateAuthMediaUrl(src: string) {
 export function useAuthMediaUrl(src?: string) {
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(Boolean(src));
-  const [error, setError] = useState(false);
+  const [failure, setFailure] = useState<AuthMediaFailure | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!src) {
       setUrl(null);
       setLoading(false);
-      setError(true);
+      setFailure("failed");
       return;
     }
     let cancelled = false;
@@ -103,26 +136,42 @@ export function useAuthMediaUrl(src?: string) {
     if (cached?.url || isDirectUrl(src)) {
       setUrl(cached?.url && !isDirectUrl(src) ? cached.url : src);
       setLoading(false);
-      setError(false);
+      setFailure(null);
       if (cached?.url) remember(src, cached);
       if (!isDirectUrl(src)) return;
     } else {
       setUrl(null);
       setLoading(true);
-      setError(false);
+      setFailure(null);
     }
-    void loadMediaUrl(src).then((next) => {
-      if (cancelled) return;
-      setUrl(next);
-      setError(!next);
-      setLoading(false);
-    });
+    void loadMediaUrl(src)
+      .then((next) => {
+        if (cancelled) return;
+        setUrl(next);
+        setFailure(next ? null : "failed");
+        setLoading(false);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setUrl(null);
+        setFailure(error instanceof NotFoundError ? "missing" : "failed");
+        setLoading(false);
+      });
     return () => {
       cancelled = true;
     };
-  }, [src]);
+  }, [src, attempt]);
 
-  return { url, loading, error };
+  return {
+    url,
+    loading,
+    error: failure != null,
+    failure,
+    retry() {
+      if (src) invalidateAuthMediaUrl(src);
+      setAttempt((value) => value + 1);
+    },
+  };
 }
 
 /** Image or video preview that sends the session token on every open. */
