@@ -2,6 +2,10 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { auditFields, dateOnly, parseDate } from "../common/mappers";
+import {
+  readEmployeeSchedules,
+  sanitizeEmployeeSchedule,
+} from "./employee-schedule";
 
 const DEFAULT_CONFIG = {
   workingDays: ["sunday", "monday", "tuesday", "wednesday", "thursday"],
@@ -65,6 +69,7 @@ export class ScheduleService {
       gracePeriodMinutes:
         cfg.gracePeriodMinutes ?? DEFAULT_CONFIG.gracePeriodMinutes,
       breakMinutes: cfg.breakMinutes ?? DEFAULT_CONFIG.breakMinutes,
+      employeeSchedules: readEmployeeSchedules(schedule.metadata),
       holidays: holidays.map((h) => ({
         id: h.id,
         name: h.name,
@@ -119,6 +124,10 @@ export class ScheduleService {
           incoming.deductionPolicy !== undefined
             ? incoming.deductionPolicy
             : currentMeta.deductionPolicy,
+        employeeSchedules:
+          incoming.employeeSchedules !== undefined
+            ? incoming.employeeSchedules
+            : currentMeta.employeeSchedules,
       };
     }
 
@@ -127,6 +136,68 @@ export class ScheduleService {
       data: {
         config: next as Prisma.InputJsonValue,
         metadata: nextMeta as Prisma.InputJsonValue,
+        updatedBy: actorId,
+        version: { increment: 1 },
+      },
+    });
+    return this.get(companyId);
+  }
+
+  async saveEmployeeSchedule(
+    companyId: string,
+    actorId: string,
+    employeeId: string,
+    body: Record<string, unknown>
+  ) {
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: employeeId, companyId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!employee) throw new NotFoundException("Employee not found");
+    const config = sanitizeEmployeeSchedule(body);
+    return this.writeEmployeeMap(companyId, actorId, (current) => ({
+      ...current,
+      [employeeId]: config,
+    }));
+  }
+
+  async clearEmployeeSchedule(
+    companyId: string,
+    actorId: string,
+    employeeId: string
+  ) {
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: employeeId, companyId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!employee) throw new NotFoundException("Employee not found");
+    return this.writeEmployeeMap(companyId, actorId, (current) => {
+      const next = { ...current };
+      delete next[employeeId];
+      return next;
+    });
+  }
+
+  private async writeEmployeeMap(
+    companyId: string,
+    actorId: string,
+    change: (
+      current: ReturnType<typeof readEmployeeSchedules>
+    ) => ReturnType<typeof readEmployeeSchedules>
+  ) {
+    const schedule = await this.ensureSchedule(companyId, actorId);
+    const currentMeta =
+      schedule.metadata && typeof schedule.metadata === "object"
+        ? ({ ...(schedule.metadata as object) } as Record<string, unknown>)
+        : { ...DEFAULT_METADATA };
+    const nextMap = change(readEmployeeSchedules(currentMeta));
+    await this.prisma.workSchedule.update({
+      where: { id: schedule.id },
+      data: {
+        metadata: {
+          ...currentMeta,
+          employeeSchedules: nextMap,
+        } as unknown as Prisma.InputJsonValue,
         updatedBy: actorId,
         version: { increment: 1 },
       },

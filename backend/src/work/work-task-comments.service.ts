@@ -6,6 +6,7 @@ import {
   StreamableFile,
 } from "@nestjs/common";
 import { createReadStream } from "fs";
+import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { auditFields } from "../common/mappers";
@@ -19,6 +20,13 @@ import {
   saveCompanyVoiceFile,
   voiceAbsolutePath,
 } from "./work-voice-storage";
+import {
+  assertMediaPayload,
+  commentImagesFromMetadata,
+  deleteCompanyTaskMedia,
+  saveCompanyTaskMedia,
+  type StoredTaskMedia,
+} from "./work-task-media-storage";
 
 function mapComment(row: {
   id: string;
@@ -55,6 +63,10 @@ function mapComment(row: {
     voiceUrl: row.voiceFileId
       ? `/work/tasks/${row.taskId}/voice/${row.voiceFileId}`
       : null,
+    images: commentImagesFromMetadata(row.metadata).map((image) => ({
+      ...image,
+      url: `/work/tasks/${row.taskId}/media/${image.id}`,
+    })),
     ...auditFields(row),
   };
 }
@@ -125,8 +137,10 @@ export class WorkTaskCommentsService {
           })
         : null;
 
-    if (!text && !voiceInput) {
-      throw new BadRequestException("Add a comment or a voice note");
+    const imageInputs = Array.isArray(body.images) ? body.images : [];
+
+    if (!text && !voiceInput && imageInputs.length === 0) {
+      throw new BadRequestException("Add a comment, a voice note, or a screenshot");
     }
     if (text.length > 4000) {
       throw new BadRequestException("Comment is too long");
@@ -161,25 +175,67 @@ export class WorkTaskCommentsService {
       voiceMime = parsed.mime;
     }
 
-    const author = await this.resolveAuthor(companyId, actor);
-    const row = await this.prisma.workTaskComment.create({
-      data: {
-        companyId,
-        taskId,
-        parentId,
-        authorUserId: actor.userId,
-        authorEmployeeId: actor.employeeId || null,
-        authorName: author,
-        body: text,
-        voiceFileId,
-        voiceDurationMs,
-        voiceMime,
-        createdBy: actor.userId,
-        updatedBy: actor.userId,
-      },
-    });
+    const images: StoredTaskMedia[] = [];
+    try {
+      for (const entry of imageInputs) {
+        if (!entry || typeof entry !== "object") continue;
+        const parsed = assertMediaPayload(entry as Record<string, unknown>);
+        if (parsed.kind !== "image") {
+          throw new BadRequestException("Screenshots must be images");
+        }
+        const id = await saveCompanyTaskMedia(
+          companyId,
+          parsed.buffer,
+          parsed.mime,
+          "image"
+        );
+        images.push({
+          id,
+          kind: "image",
+          mime: parsed.mime,
+          name: parsed.name,
+          sizeBytes: parsed.buffer.length,
+        });
+      }
+    } catch (error) {
+      await this.discardCommentFiles(companyId, voiceFileId, images);
+      throw error;
+    }
 
-    await this.notifyComment(companyId, actor, task, row.id, text, Boolean(voiceFileId));
+    const author = await this.resolveAuthor(companyId, actor);
+    let row;
+    try {
+      row = await this.prisma.workTaskComment.create({
+        data: {
+          companyId,
+          taskId,
+          parentId,
+          authorUserId: actor.userId,
+          authorEmployeeId: actor.employeeId || null,
+          authorName: author,
+          body: text,
+          voiceFileId,
+          voiceDurationMs,
+          voiceMime,
+          metadata: { images } as unknown as Prisma.InputJsonValue,
+          createdBy: actor.userId,
+          updatedBy: actor.userId,
+        },
+      });
+    } catch (error) {
+      await this.discardCommentFiles(companyId, voiceFileId, images);
+      throw error;
+    }
+
+    await this.notifyComment(
+      companyId,
+      actor,
+      task,
+      row.id,
+      text,
+      Boolean(voiceFileId),
+      images.length > 0
+    );
     return mapComment(row);
   }
 
@@ -210,6 +266,9 @@ export class WorkTaskCommentsService {
     if (row.voiceFileId) {
       await deleteCompanyVoiceFile(companyId, row.voiceFileId);
     }
+    for (const image of commentImagesFromMetadata(row.metadata)) {
+      await deleteCompanyTaskMedia(companyId, image.id);
+    }
     return { id: commentId, deleted: true };
   }
 
@@ -238,6 +297,17 @@ export class WorkTaskCommentsService {
     };
   }
 
+  private async discardCommentFiles(
+    companyId: string,
+    voiceFileId: string | null,
+    images: StoredTaskMedia[]
+  ) {
+    if (voiceFileId) await deleteCompanyVoiceFile(companyId, voiceFileId);
+    for (const image of images) {
+      await deleteCompanyTaskMedia(companyId, image.id);
+    }
+  }
+
   private async resolveAuthor(companyId: string, actor: Actor): Promise<string> {
     if (actor.employeeId) {
       const emp = await this.prisma.employee.findFirst({
@@ -260,7 +330,8 @@ export class WorkTaskCommentsService {
     task: { id: string; title: string; assigneeIds: string[]; createdBy: string | null },
     commentId: string,
     text: string,
-    hasVoice: boolean
+    hasVoice: boolean,
+    hasImages: boolean
   ) {
     const employeeIds = new Set(task.assigneeIds);
     if (task.createdBy) {
@@ -291,7 +362,9 @@ export class WorkTaskCommentsService {
       ? text.slice(0, 80)
       : hasVoice
         ? "Voice note"
-        : "";
+        : hasImages
+          ? "Screenshot"
+          : "";
 
     await this.notifications.notifyDomain({
       companyId,

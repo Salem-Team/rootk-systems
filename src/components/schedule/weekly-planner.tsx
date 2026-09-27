@@ -72,9 +72,10 @@ const KIND_META: Record<
 
 interface WeeklyPlannerProps {
   schedule: WorkSchedule;
+  subject?: string | null;
 }
 
-export function WeeklyPlanner({ schedule }: WeeklyPlannerProps) {
+export function WeeklyPlanner({ schedule, subject }: WeeklyPlannerProps) {
   const { t, locale } = useTranslation();
   const hoursLabel = formatClockRange(
     schedule.fromTime,
@@ -86,7 +87,9 @@ export function WeeklyPlanner({ schedule }: WeeklyPlannerProps) {
     <section className="surface-panel overflow-hidden">
       <div className="panel-header">
         <h3 className="text-[0.95rem] font-semibold tracking-tight">
-          {t("schedule.weeklyPlanner")}
+          {subject
+            ? t("schedule.weeklyForEmployee", { name: subject })
+            : t("schedule.weeklyPlanner")}
         </h3>
         <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground sm:text-sm">
           <span className="hidden sm:inline">

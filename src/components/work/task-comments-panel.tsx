@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
 import {
+  ImageIcon,
   Loader2,
   MessageSquare,
   MessageSquarePlus,
@@ -17,6 +18,7 @@ import { BidiBlocks, BidiText } from "@/components/shared/bidi-text";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { TaskMediaPicker } from "@/components/work/task-media-picker";
 import { VoicePlayer } from "@/components/voice/voice-player";
 import {
   VoiceRecorderControl,
@@ -24,7 +26,13 @@ import {
 } from "@/components/voice/voice-recorder-control";
 import { useTranslation } from "@/hooks/use-translation";
 import { WORK_UPDATED_EVENT } from "@/lib/events";
+import { isApiMode } from "@/lib/env";
 import { formatIsoDateTime, DATETIME_12H_SHORT } from "@/lib/format-time";
+import { getHttpClient } from "@/lib/http-client";
+import {
+  revokeMediaDraftPreviews,
+  type WorkTaskMediaDraft,
+} from "@/lib/task-media";
 import { cn } from "@/lib/utils";
 import {
   createTaskComment,
@@ -43,6 +51,63 @@ function relativeTime(iso: string, locale: "en" | "ar"): string {
   } catch {
     return formatIsoDateTime(iso, locale, DATETIME_12H_SHORT);
   }
+}
+
+function CommentImage({ src, alt }: { src: string; alt: string }) {
+  const { t } = useTranslation();
+  const [url, setUrl] = useState<string | null>(
+    src.startsWith("data:") || src.startsWith("blob:") ? src : null
+  );
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+    if (src.startsWith("data:") || src.startsWith("blob:") || !isApiMode()) {
+      setUrl(src);
+      return;
+    }
+    let revoked: string | null = null;
+    let cancelled = false;
+    setUrl(null);
+    const path = src.startsWith("/api/")
+      ? src.slice(4)
+      : src.startsWith("/")
+        ? src
+        : `/${src}`;
+    void getHttpClient()
+      .requestBlob(path)
+      .then((blob) => {
+        const objectUrl = URL.createObjectURL(blob);
+        revoked = objectUrl;
+        if (!cancelled) setUrl(objectUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+      if (revoked) URL.revokeObjectURL(revoked);
+    };
+  }, [src]);
+
+  if (failed) {
+    return (
+      <p className="rounded-xl border border-border/60 bg-muted/40 px-3 py-4 text-[12px] text-muted-foreground">
+        {t("workMedia.loadFailed")}
+      </p>
+    );
+  }
+  if (!url) {
+    return <div className="aspect-video animate-pulse rounded-xl bg-muted" />;
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={url}
+      alt={alt}
+      className="max-h-56 w-full rounded-xl border border-border/60 object-cover"
+    />
+  );
 }
 
 function CommentCard({
@@ -96,10 +161,16 @@ function CommentCard({
             <p className="truncate text-[13px] font-semibold sm:text-sm">
               <BidiText text={comment.authorName || t("workComments.someone")} />
             </p>
-            {voiceSrc && !comment.body ? (
+            {voiceSrc && !comment.body && !(comment.images?.length) ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
                 <Mic className="h-3 w-3" aria-hidden />
                 {t("workComments.voiceOnly")}
+              </span>
+            ) : null}
+            {!voiceSrc && !comment.body && comment.images?.length ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                <ImageIcon className="h-3 w-3" aria-hidden />
+                {comment.images.length}
               </span>
             ) : null}
             <time
@@ -122,6 +193,17 @@ function CommentCard({
               src={voiceSrc}
               durationMs={comment.voiceDurationMs}
             />
+          ) : null}
+          {comment.images?.length ? (
+            <div className="mt-2.5 grid grid-cols-2 gap-2">
+              {comment.images.map((image) => (
+                <CommentImage
+                  key={image.id}
+                  src={image.url}
+                  alt={image.name || t("workMedia.title")}
+                />
+              ))}
+            </div>
           ) : null}
           <div className="-ms-2 mt-1.5 flex flex-wrap items-center gap-0.5">
             {onReply ? (
@@ -171,9 +253,11 @@ function Composer({
   const { t } = useTranslation();
   const [body, setBody] = useState("");
   const [voice, setVoice] = useState<VoiceDraft | null>(null);
+  const [shots, setShots] = useState<WorkTaskMediaDraft[]>([]);
   const [busy, setBusy] = useState(false);
   const isReply = Boolean(parentId);
-  const canSend = Boolean(body.trim() || voice);
+  const imageDrafts = shots.filter((draft) => draft.kind === "image" && draft.dataBase64);
+  const canSend = Boolean(body.trim() || voice || imageDrafts.length);
 
   async function submit() {
     if (busy || !canSend) return;
@@ -188,6 +272,11 @@ function Composer({
             durationMs: voice.durationMs,
           }
         : null,
+      images: imageDrafts.map((draft) => ({
+        dataBase64: draft.dataBase64,
+        mime: draft.mime,
+        name: draft.name,
+      })),
     });
     setBusy(false);
     if (!res.success) {
@@ -196,6 +285,8 @@ function Composer({
     }
     setBody("");
     setVoice(null);
+    revokeMediaDraftPreviews(shots);
+    setShots([]);
     toast.success(t("workComments.posted"));
     onDone();
   }
@@ -236,6 +327,11 @@ function Composer({
         onChange={setVoice}
         disabled={busy}
         compact={isReply}
+      />
+      <TaskMediaPicker
+        imagesOnly
+        drafts={shots}
+        onChange={setShots}
       />
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
         {onCancel ? (

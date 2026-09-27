@@ -120,6 +120,19 @@ export interface WorkSchedule extends BaseEntity {
   gracePeriodMinutes: number;
   breakMinutes: number;
   holidays: Holiday[];
+  /** Per-employee overrides. A missing id follows the company schedule. */
+  employeeSchedules?: Record<
+    string,
+    {
+      workingDays: DayOfWeek[];
+      weekendDays: DayOfWeek[];
+      wfhDays: DayOfWeek[];
+      fromTime: string;
+      toTime: string;
+      gracePeriodMinutes: number;
+      breakMinutes: number;
+    }
+  >;
 }
 
 export interface CompanySettings extends BaseEntity {

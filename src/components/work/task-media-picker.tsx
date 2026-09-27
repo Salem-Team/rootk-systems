@@ -7,7 +7,6 @@ import { useTranslation } from "@/hooks/use-translation";
 import {
   acceptMediaAttr,
   canAddMediaDraft,
-  clipboardBlobToMediaFile,
   fileToMediaDraft,
   formatMediaBytes,
   mediaFilesFromDataTransfer,
@@ -16,14 +15,37 @@ import {
 } from "@/lib/task-media";
 import { cn } from "@/lib/utils";
 
+const pasteOwners = new Set<number>();
+let focusedPasteOwner: number | null = null;
+let pasteOwnerSeq = 0;
+let lastGlobalPaste = { key: "", at: 0 };
+
+function registerPasteOwner() {
+  const id = ++pasteOwnerSeq;
+  pasteOwners.add(id);
+  focusedPasteOwner = id;
+  return {
+    id,
+    release() {
+      pasteOwners.delete(id);
+      if (focusedPasteOwner === id) {
+        const rest = [...pasteOwners];
+        focusedPasteOwner = rest.length ? rest[rest.length - 1]! : null;
+      }
+    },
+  };
+}
+
 export function TaskMediaPicker({
   drafts,
   onChange,
   className,
+  imagesOnly = false,
 }: {
   drafts: WorkTaskMediaDraft[];
   onChange: (next: WorkTaskMediaDraft[]) => void;
   className?: string;
+  imagesOnly?: boolean;
 }) {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -34,12 +56,17 @@ export function TaskMediaPicker({
   const [pasteFlash, setPasteFlash] = useState(false);
   const pasteFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const ownerId = useRef(0);
+
   draftsRef.current = drafts;
 
   useEffect(() => {
+    const owner = registerPasteOwner();
+    ownerId.current = owner.id;
     return () => {
       revokeMediaDraftPreviews(draftsRef.current);
       if (pasteFlashTimer.current) clearTimeout(pasteFlashTimer.current);
+      owner.release();
     };
   }, []);
 
@@ -58,6 +85,10 @@ export function TaskMediaPicker({
       let next = [...draftsRef.current];
       let added = 0;
       for (const file of list) {
+        if (imagesOnly && file.type.startsWith("video/")) {
+          setError(t("workMedia.imagesOnly"));
+          continue;
+        }
         const kindGuess = file.type.startsWith("video/") ? "video" : "image";
         if (!canAddMediaDraft(next, kindGuess === "video" ? "video" : "image")) {
           setError(t("workMedia.limitReached"));
@@ -89,7 +120,7 @@ export function TaskMediaPicker({
       if (inputRef.current) inputRef.current.value = "";
       if (opts?.fromPaste && added > 0) flashPasteSuccess();
     },
-    [flashPasteSuccess, onChange, t]
+    [flashPasteSuccess, imagesOnly, onChange, t]
   );
 
   useEffect(() => {
@@ -104,29 +135,18 @@ export function TaskMediaPicker({
         return;
       }
 
-      const fromTransfer = mediaFilesFromDataTransfer(e.clipboardData);
-      if (fromTransfer.length > 0) {
-        e.preventDefault();
-        void ingestFiles(fromTransfer, { fromPaste: true });
+      const built = mediaFilesFromDataTransfer(e.clipboardData);
+      if (built.length === 0) return;
+      if (pasteOwners.size > 1 && focusedPasteOwner !== ownerId.current) {
         return;
       }
-
-      // Some OS/browsers only expose image/* items (no FileList yet).
-      const items = e.clipboardData?.items;
-      if (!items?.length) return;
-      const built: File[] = [];
-      let i = 0;
-      for (const item of Array.from(items)) {
-        if (item.kind !== "file") continue;
-        const blob = item.getAsFile();
-        if (!blob) continue;
-        const file = clipboardBlobToMediaFile(blob, i);
-        if (file) {
-          built.push(file);
-          i += 1;
-        }
+      const key = built.map((file) => `${file.size}:${file.type}`).join("|");
+      const now = Date.now();
+      if (lastGlobalPaste.key === key && now - lastGlobalPaste.at < 600) {
+        e.preventDefault();
+        return;
       }
-      if (built.length === 0) return;
+      lastGlobalPaste = { key, at: now };
       e.preventDefault();
       void ingestFiles(built, { fromPaste: true });
     }
@@ -149,6 +169,9 @@ export function TaskMediaPicker({
         tabIndex={0}
         role="group"
         aria-label={t("workMedia.title")}
+        onFocus={() => {
+          focusedPasteOwner = ownerId.current;
+        }}
         onDragEnter={(e) => {
           e.preventDefault();
           setDragging(true);
@@ -199,7 +222,7 @@ export function TaskMediaPicker({
               {pasteFlash ? t("workMedia.pasted") : t("workMedia.title")}
             </p>
             <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
-              {t("workMedia.hint")}
+              {imagesOnly ? t("workMedia.screenshotHint") : t("workMedia.hint")}
             </p>
             <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-lg bg-muted/60 px-2 py-1 text-[11px] font-medium text-muted-foreground">
               <ClipboardPaste className="size-3 opacity-80" />
@@ -221,7 +244,11 @@ export function TaskMediaPicker({
           <input
             ref={inputRef}
             type="file"
-            accept={acceptMediaAttr()}
+            accept={
+              imagesOnly
+                ? "image/jpeg,image/png,image/webp,image/gif"
+                : acceptMediaAttr()
+            }
             multiple
             className="hidden"
             onChange={(e) => {

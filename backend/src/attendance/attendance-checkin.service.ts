@@ -56,7 +56,7 @@ export class AttendanceCheckinService {
       });
     }
 
-    const schedule = await this.shared.scheduleBundle(companyId);
+    const schedule = await this.shared.scheduleBundle(companyId, employeeId);
     if (body.wfh) {
       const allowed = isEmployeeWfhAllowed({
         metadata: schedule.metadata,

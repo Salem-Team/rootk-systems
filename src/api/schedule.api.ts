@@ -1,6 +1,7 @@
 import { api } from "@/api/http";
 import { API_ROUTES, toQuery } from "@/api/routes";
 import type { ApiResponse, DayOfWeek, Holiday, WorkSchedule } from "@/types";
+import type { EmployeeWorkSchedule } from "@/lib/employee-schedule";
 
 const EMPTY_SCHEDULE: WorkSchedule = {
   id: "",
@@ -46,6 +47,19 @@ export function patchWorkSchedule(
   }
 ): Promise<ApiResponse<WorkSchedule>> {
   return api.patch(API_ROUTES.schedule.root, patch, EMPTY_SCHEDULE);
+}
+
+export function putEmployeeSchedule(
+  employeeId: string,
+  body: EmployeeWorkSchedule
+): Promise<ApiResponse<WorkSchedule>> {
+  return api.put(API_ROUTES.schedule.employee(employeeId), body, EMPTY_SCHEDULE);
+}
+
+export function deleteEmployeeSchedule(
+  employeeId: string
+): Promise<ApiResponse<WorkSchedule>> {
+  return api.delete(API_ROUTES.schedule.employee(employeeId), EMPTY_SCHEDULE);
 }
 
 /** GET /schedule/holidays */

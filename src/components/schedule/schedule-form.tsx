@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { SectionPanel } from "@/components/shared/section-panel";
@@ -24,12 +24,47 @@ const WEEK_ORDER: DayOfWeek[] = [
   "saturday",
 ];
 
+export interface ScheduleClockPayload {
+  fromTime: string;
+  toTime: string;
+  gracePeriodMinutes: number;
+  breakMinutes: number;
+  workingDays: DayOfWeek[];
+  weekendDays: DayOfWeek[];
+  wfhDays: DayOfWeek[];
+}
+
 interface ScheduleFormProps {
   schedule: WorkSchedule;
   onSaved?: (schedule: WorkSchedule) => void;
+  title?: string;
+  description?: string;
+  saveLabel?: string;
+  successMessage?: string;
+  idPrefix?: string;
+  persist?: (
+    payload: ScheduleClockPayload
+  ) => Promise<{ success: boolean; data?: WorkSchedule; message?: string }>;
+  secondaryAction?: {
+    label: string;
+    onClick: () => void;
+    disabled?: boolean;
+  };
+  disabled?: boolean;
 }
 
-export function ScheduleForm({ schedule, onSaved }: ScheduleFormProps) {
+export function ScheduleForm({
+  schedule,
+  onSaved,
+  title,
+  description,
+  saveLabel,
+  successMessage,
+  idPrefix = "company",
+  persist,
+  secondaryAction,
+  disabled = false,
+}: ScheduleFormProps) {
   const { t } = useTranslation();
   const [fromTime, setFromTime] = useState(schedule.fromTime);
   const [toTime, setToTime] = useState(schedule.toTime);
@@ -41,14 +76,26 @@ export function ScheduleForm({ schedule, onSaved }: ScheduleFormProps) {
   const [wfhDays, setWfhDays] = useState<DayOfWeek[]>(schedule.wfhDays);
   const [saving, setSaving] = useState(false);
 
+  const syncKey = [
+    schedule.fromTime,
+    schedule.toTime,
+    schedule.gracePeriodMinutes,
+    schedule.breakMinutes,
+    schedule.workingDays.join(","),
+    schedule.wfhDays.join(","),
+  ].join("|");
+  const scheduleRef = useRef(schedule);
+  scheduleRef.current = schedule;
+
   useEffect(() => {
-    setFromTime(schedule.fromTime);
-    setToTime(schedule.toTime);
-    setGracePeriodMinutes(schedule.gracePeriodMinutes);
-    setBreakMinutes(schedule.breakMinutes);
-    setWorkingDays(schedule.workingDays);
-    setWfhDays(schedule.wfhDays);
-  }, [schedule]);
+    const current = scheduleRef.current;
+    setFromTime(current.fromTime);
+    setToTime(current.toTime);
+    setGracePeriodMinutes(current.gracePeriodMinutes);
+    setBreakMinutes(current.breakMinutes);
+    setWorkingDays(current.workingDays);
+    setWfhDays(current.wfhDays);
+  }, [syncKey]);
 
   function toggleWorkingDay(day: DayOfWeek) {
     setWorkingDays((prev) => {
@@ -68,8 +115,9 @@ export function ScheduleForm({ schedule, onSaved }: ScheduleFormProps) {
   }
 
   async function handleSave() {
-    if (!fromTime || !toTime) {
-      toast.error(t("common.error"));
+    if (saving || disabled) return;
+    if (!fromTime || !toTime || toTime <= fromTime) {
+      toast.error(t("schedule.invalidHours"));
       return;
     }
     if (workingDays.length === 0) {
@@ -80,7 +128,7 @@ export function ScheduleForm({ schedule, onSaved }: ScheduleFormProps) {
     setSaving(true);
     try {
       const weekendDays = WEEK_ORDER.filter((d) => !workingDays.includes(d));
-      const res = await updateWorkSchedule({
+      const payload: ScheduleClockPayload = {
         fromTime,
         toTime,
         gracePeriodMinutes: Number(gracePeriodMinutes) || 0,
@@ -88,14 +136,17 @@ export function ScheduleForm({ schedule, onSaved }: ScheduleFormProps) {
         workingDays,
         weekendDays,
         wfhDays: wfhDays.filter((d) => workingDays.includes(d)),
-      });
+      };
+      const res = persist
+        ? await persist(payload)
+        : await updateWorkSchedule(payload);
 
-      if (!res.success) {
-        toast.error(t("common.error"));
+      if (!res.success || !res.data) {
+        toast.error(res.message ?? t("common.error"));
         return;
       }
 
-      toast.success(t("schedule.scheduleSaved"));
+      toast.success(successMessage ?? t("schedule.scheduleSaved"));
       onSaved?.(res.data);
     } catch {
       toast.error(t("common.error"));
@@ -106,23 +157,23 @@ export function ScheduleForm({ schedule, onSaved }: ScheduleFormProps) {
 
   return (
     <SectionPanel
-      title={t("schedule.title")}
-      description={t("schedule.description")}
+      title={title ?? t("schedule.title")}
+      description={description ?? t("schedule.description")}
       interactive={false}
     >
       <div className="space-y-6 sm:space-y-8">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label={t("schedule.fromTime")} htmlFor="fromTime">
+          <Field label={t("schedule.fromTime")} htmlFor={`${idPrefix}-fromTime`}>
             <Time12Input
-              id="fromTime"
+              id={`${idPrefix}-fromTime`}
               value={fromTime}
               onChange={setFromTime}
               aria-label={t("schedule.fromTime")}
             />
           </Field>
-          <Field label={t("schedule.toTime")} htmlFor="toTime">
+          <Field label={t("schedule.toTime")} htmlFor={`${idPrefix}-toTime`}>
             <Time12Input
-              id="toTime"
+              id={`${idPrefix}-toTime`}
               value={toTime}
               onChange={setToTime}
               aria-label={t("schedule.toTime")}
@@ -130,10 +181,10 @@ export function ScheduleForm({ schedule, onSaved }: ScheduleFormProps) {
           </Field>
           <Field
             label={`${t("schedule.gracePeriod")} (${t("schedule.minutes")})`}
-            htmlFor="grace"
+            htmlFor={`${idPrefix}-grace`}
           >
             <Input
-              id="grace"
+              id={`${idPrefix}-grace`}
               type="number"
               min={0}
               max={120}
@@ -143,10 +194,10 @@ export function ScheduleForm({ schedule, onSaved }: ScheduleFormProps) {
           </Field>
           <Field
             label={`${t("schedule.breakTime")} (${t("schedule.minutes")})`}
-            htmlFor="break"
+            htmlFor={`${idPrefix}-break`}
           >
             <Input
-              id="break"
+              id={`${idPrefix}-break`}
               type="number"
               min={0}
               max={180}
@@ -219,15 +270,27 @@ export function ScheduleForm({ schedule, onSaved }: ScheduleFormProps) {
           </div>
         </div>
 
-        <div className="flex justify-end border-t border-border/50 pt-4">
+        <div className="flex flex-col-reverse gap-2 border-t border-border/50 pt-4 sm:flex-row sm:justify-end">
+          {secondaryAction ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={secondaryAction.onClick}
+              disabled={saving || secondaryAction.disabled}
+              size="lg"
+              className="w-full sm:w-auto"
+            >
+              {secondaryAction.label}
+            </Button>
+          ) : null}
           <Button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || disabled}
             size="lg"
             className="w-full sm:w-auto"
           >
             {saving ? <Loader2 className="animate-spin" /> : <Save />}
-            {t("schedule.saveSchedule")}
+            {saveLabel ?? t("schedule.saveSchedule")}
           </Button>
         </div>
       </div>

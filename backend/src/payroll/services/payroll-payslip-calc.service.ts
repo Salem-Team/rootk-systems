@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { dateOnly, parseDate } from "../../common/mappers";
+import { readEmployeeSchedules } from "../../schedule/employee-schedule";
 import { calculateEmployeePayslip } from "../../lib/payroll-engine";
 import type {
   DayOfWeek,
@@ -26,7 +27,10 @@ export class PayrollPayslipCalcService {
     private readonly policiesService: PayrollPoliciesService
   ) {}
 
-  private async loadScheduleContext(companyId: string): Promise<{
+  private async loadScheduleContext(
+    companyId: string,
+    employeeId: string
+  ): Promise<{
     schedule: SchedulePayrollContext;
     holidayDates: Set<string>;
   }> {
@@ -41,14 +45,24 @@ export class PayrollPayslipCalcService {
     const weekendDays = (Array.isArray(cfg.weekendDays)
       ? cfg.weekendDays
       : ["friday", "saturday"]) as DayOfWeek[];
+    const custom = readEmployeeSchedules(scheduleRow?.metadata)[employeeId];
+    const fromTime = custom?.fromTime ?? String(cfg.fromTime ?? "09:00");
+    const toTime = custom?.toTime ?? String(cfg.toTime ?? "18:00");
+    const breakMinutes = custom?.breakMinutes ?? Number(cfg.breakMinutes ?? 60);
+    const [fromH, fromM] = fromTime.split(":").map(Number);
+    const [toH, toM] = toTime.split(":").map(Number);
+    const span = Math.max((toH ?? 0) * 60 + (toM ?? 0) - ((fromH ?? 0) * 60 + (fromM ?? 0)), 0);
     const schedule: SchedulePayrollContext = {
-      workingDays,
-      weekendDays,
-      gracePeriodMinutes: Number(cfg.gracePeriodMinutes ?? 15),
-      breakMinutes: Number(cfg.breakMinutes ?? 60),
-      fromTime: String(cfg.fromTime ?? "09:00"),
-      toTime: String(cfg.toTime ?? "18:00"),
-      minimumWorkingMinutes: Number(cfg.minimumWorkingMinutes ?? 480),
+      workingDays: (custom?.workingDays ?? workingDays) as DayOfWeek[],
+      weekendDays: (custom?.weekendDays ?? weekendDays) as DayOfWeek[],
+      gracePeriodMinutes:
+        custom?.gracePeriodMinutes ?? Number(cfg.gracePeriodMinutes ?? 15),
+      breakMinutes,
+      fromTime,
+      toTime,
+      minimumWorkingMinutes: custom
+        ? Math.max(span - breakMinutes, 0)
+        : Number(cfg.minimumWorkingMinutes ?? 480),
     };
     const holidayDates = new Set(
       (scheduleRow?.holidays ?? [])
@@ -67,7 +81,7 @@ export class PayrollPayslipCalcService {
   ) {
     const [{ schedule, holidayDates }, rules, attendance, leaves] =
       await Promise.all([
-        this.loadScheduleContext(companyId),
+        this.loadScheduleContext(companyId, employeeId),
         this.policiesService.loadEngineRules(companyId),
         this.prisma.attendanceRecord.findMany({
           where: {

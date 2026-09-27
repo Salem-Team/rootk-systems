@@ -193,6 +193,8 @@ export interface CrmLeadActivity extends BaseEntity {
   title: string;
   description: string;
   actorEmployeeId: string | null;
+  /** Resolved display name of the person who logged the event. */
+  actorName?: string;
   occurredAt: string;
   /** Present when type is meeting. */
   meetingMode?: CrmMeetingMode | null;
@@ -215,6 +217,8 @@ export interface CrmLeadFeedback extends BaseEntity {
   meetingLocation: CrmMeetingLocation | null;
   notes: string;
   recordedByEmployeeId: string | null;
+  /** Resolved display name of the person who recorded the note. */
+  recordedByName?: string;
   mentionedUserIds?: string[];
   mentionedUsers?: { id: string; name: string }[];
 }

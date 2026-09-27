@@ -6,6 +6,7 @@ import {
   type GeoPoint,
 } from "@/lib/geo";
 import type { WorkClockSchedule } from "@/lib/work-time";
+import { readEmployeeSchedules } from "@/lib/employee-schedule";
 import { locationsRepository, scheduleRepository } from "@/repositories";
 import type { AttendanceRecord } from "@/types";
 import type { ScheduleAdminMetadata } from "@/types/org";
@@ -41,14 +42,20 @@ export function emptyRecord(
   };
 }
 
-export async function loadWorkClock(): Promise<WorkClockSchedule> {
+export async function loadWorkClock(
+  employeeId?: string | null
+): Promise<WorkClockSchedule> {
   const schedule = await scheduleRepository.getSyncSafe();
+  const custom = employeeId
+    ? readEmployeeSchedules(schedule)[employeeId]
+    : undefined;
   const meta = (schedule.metadata ?? {}) as ScheduleAdminMetadata;
   return {
-    fromTime: schedule.fromTime,
-    toTime: schedule.toTime,
-    gracePeriodMinutes: schedule.gracePeriodMinutes,
-    breakMinutes: schedule.breakMinutes,
+    fromTime: custom?.fromTime ?? schedule.fromTime,
+    toTime: custom?.toTime ?? schedule.toTime,
+    gracePeriodMinutes:
+      custom?.gracePeriodMinutes ?? schedule.gracePeriodMinutes,
+    breakMinutes: custom?.breakMinutes ?? schedule.breakMinutes,
     attendancePolicy: meta.attendancePolicy,
   };
 }

@@ -19,6 +19,7 @@ const emptyComment = (): WorkTaskComment => ({
   voiceDurationMs: null,
   voiceMime: null,
   voiceUrl: null,
+  images: [],
   createdAt: "",
   updatedAt: "",
   createdBy: "",

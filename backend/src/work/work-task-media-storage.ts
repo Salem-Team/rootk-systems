@@ -5,9 +5,7 @@ import { dirname, join, resolve } from "path";
 
 export const MEDIA_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 export const MEDIA_VIDEO_MAX_BYTES = 28 * 1024 * 1024;
-export const MEDIA_MAX_IMAGES = 6;
 export const MEDIA_MAX_VIDEOS = 2;
-export const MEDIA_MAX_ITEMS = 8;
 
 export const MEDIA_IMAGE_MIME = new Set([
   "image/jpeg",
@@ -167,7 +165,14 @@ export function parseStoredMedia(raw: unknown): StoredTaskMedia[] {
       sizeBytes: Math.max(0, Number(row.sizeBytes ?? 0) || 0),
     });
   }
-  return items.slice(0, MEDIA_MAX_ITEMS);
+  return items;
+}
+
+export function commentImagesFromMetadata(metadata: unknown): StoredTaskMedia[] {
+  if (!metadata || typeof metadata !== "object") return [];
+  const images = (metadata as { images?: unknown }).images;
+  if (!Array.isArray(images)) return [];
+  return parseStoredMedia(images).filter((item) => item.kind === "image");
 }
 
 /** Resolve create/update media payload into stored refs; delete dropped files. */
@@ -183,7 +188,6 @@ export async function resolveTaskMediaPayload(
 
   const next: StoredTaskMedia[] = [];
   const keptIds = new Set<string>();
-  let images = 0;
   let videos = 0;
 
   for (const entry of incoming) {
@@ -194,10 +198,9 @@ export async function resolveTaskMediaPayload(
     if (existingId && !row.dataBase64) {
       const found = previous.find((item) => item.id === existingId);
       if (!found) continue;
-      if (found.kind === "image") images += 1;
-      else videos += 1;
-      if (images > MEDIA_MAX_IMAGES || videos > MEDIA_MAX_VIDEOS) {
-        throw new BadRequestException("Too many media files");
+      if (found.kind === "video") videos += 1;
+      if (videos > MEDIA_MAX_VIDEOS) {
+        throw new BadRequestException("Too many videos");
       }
       next.push(found);
       keptIds.add(found.id);
@@ -205,13 +208,9 @@ export async function resolveTaskMediaPayload(
     }
 
     const parsed = assertMediaPayload(row);
-    if (parsed.kind === "image") images += 1;
-    else videos += 1;
-    if (images > MEDIA_MAX_IMAGES || videos > MEDIA_MAX_VIDEOS) {
-      throw new BadRequestException("Too many media files");
-    }
-    if (next.length >= MEDIA_MAX_ITEMS) {
-      throw new BadRequestException("Too many media files");
+    if (parsed.kind === "video") videos += 1;
+    if (videos > MEDIA_MAX_VIDEOS) {
+      throw new BadRequestException("Too many videos");
     }
     const id = await saveCompanyTaskMedia(
       companyId,

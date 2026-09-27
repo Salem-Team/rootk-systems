@@ -5,6 +5,7 @@ import {
   VOICE_MAX_DURATION_MS,
   VOICE_MIN_DURATION_MS,
 } from "@/lib/voice/voice-note";
+import { TASK_MEDIA_IMAGE_MAX } from "@/lib/task-media";
 import {
   fetchTaskComments,
   postTaskComment,
@@ -22,6 +23,21 @@ import type { ApiResponse } from "@/types";
 
 function newId(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+}
+
+function validateImages(images: CreateWorkTaskCommentInput["images"]) {
+  if (!images?.length) return null;
+  for (const image of images) {
+    const mime = String(image.mime ?? "").trim().toLowerCase();
+    if (!mime.startsWith("image/")) return "Screenshots must be images";
+    const raw = String(image.dataBase64 ?? "").replace(
+      /^data:[^;]+;base64,/,
+      ""
+    );
+    const bytes = Math.floor((raw.length * 3) / 4);
+    if (!raw || bytes > TASK_MEDIA_IMAGE_MAX) return "Image is too large";
+  }
+  return null;
 }
 
 function validateVoice(voice: CreateWorkTaskCommentInput["voice"]) {
@@ -71,8 +87,13 @@ export async function createTaskComment(
 ): Promise<ApiResponse<WorkTaskComment | null>> {
   const body = String(input.body ?? "").trim();
   const voiceError = validateVoice(input.voice ?? null);
+  const imageError = validateImages(input.images ?? null);
   if (voiceError) return fail(null, voiceError);
-  if (!body && !input.voice) return fail(null, "Add a comment or a voice note");
+  if (imageError) return fail(null, imageError);
+  const images = (input.images ?? []).filter((image) => image.dataBase64);
+  if (!body && !input.voice && images.length === 0) {
+    return fail(null, "Add a comment, a voice note, or a screenshot");
+  }
   if (body.length > 4000) return fail(null, "Comment is too long");
 
   if (isApiMode()) {
@@ -81,6 +102,7 @@ export async function createTaskComment(
         body: body || undefined,
         parentId: input.parentId ?? null,
         voice: input.voice ?? null,
+        images: images.length ? images : null,
       });
       if (res.success) emitWorkUpdated();
       return res;
@@ -101,6 +123,16 @@ export async function createTaskComment(
     const dataUrl = voice
       ? `data:${voice.mime};base64,${String(voice.dataBase64).replace(/^data:[^;]+;base64,/, "")}`
       : null;
+    const storedImages = images.map((image) => {
+      const raw = String(image.dataBase64).replace(/^data:[^;]+;base64,/, "");
+      return {
+        id: newId("img"),
+        mime: image.mime,
+        name: image.name || "screenshot",
+        sizeBytes: Math.floor((raw.length * 3) / 4),
+        url: `data:${image.mime};base64,${raw}`,
+      };
+    });
     const comment: WorkTaskComment = {
       id: newId("tcmt"),
       taskId,
@@ -113,6 +145,7 @@ export async function createTaskComment(
       voiceDurationMs: voice?.durationMs ?? null,
       voiceMime: voice?.mime ?? null,
       voiceUrl: dataUrl,
+      images: storedImages,
       companyId: task.companyId || "local",
       createdAt: now,
       updatedAt: now,

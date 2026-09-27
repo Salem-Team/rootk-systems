@@ -7,6 +7,7 @@ import {
   isValidGeoPoint,
   type GeofencedOffice,
 } from "../lib/geo";
+import { overlayEmployeeClock } from "../schedule/employee-schedule";
 import { DEFAULT_SCHEDULE, type PunchLocation, type ScheduleBundle } from "./attendance-mappers";
 
 /** Shared attendance helpers: working-hours schedule and office geofencing. */
@@ -14,7 +15,10 @@ import { DEFAULT_SCHEDULE, type PunchLocation, type ScheduleBundle } from "./att
 export class AttendanceSharedService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async scheduleBundle(companyId: string): Promise<ScheduleBundle> {
+  async scheduleBundle(
+    companyId: string,
+    employeeId?: string | null
+  ): Promise<ScheduleBundle> {
     const schedule = await this.prisma.workSchedule.findUnique({
       where: { companyId },
     });
@@ -28,17 +32,21 @@ export class AttendanceSharedService {
       meta.attendancePolicy && typeof meta.attendancePolicy === "object"
         ? (meta.attendancePolicy as { halfDayHours?: number })
         : {};
-    return {
-      fromTime: cfg?.fromTime ?? DEFAULT_SCHEDULE.fromTime,
-      toTime: cfg?.toTime ?? DEFAULT_SCHEDULE.toTime,
-      gracePeriodMinutes:
-        cfg?.gracePeriodMinutes ?? DEFAULT_SCHEDULE.gracePeriodMinutes,
-      breakMinutes: cfg?.breakMinutes ?? DEFAULT_SCHEDULE.breakMinutes,
-      halfDayHours:
-        attendancePolicy.halfDayHours ?? DEFAULT_SCHEDULE.halfDayHours,
-      wfhDays: Array.isArray(cfg?.wfhDays) ? (cfg!.wfhDays as string[]) : [],
-      metadata: schedule?.metadata ?? {},
-    };
+    return overlayEmployeeClock(
+      {
+        fromTime: cfg?.fromTime ?? DEFAULT_SCHEDULE.fromTime,
+        toTime: cfg?.toTime ?? DEFAULT_SCHEDULE.toTime,
+        gracePeriodMinutes:
+          cfg?.gracePeriodMinutes ?? DEFAULT_SCHEDULE.gracePeriodMinutes,
+        breakMinutes: cfg?.breakMinutes ?? DEFAULT_SCHEDULE.breakMinutes,
+        halfDayHours:
+          attendancePolicy.halfDayHours ?? DEFAULT_SCHEDULE.halfDayHours,
+        wfhDays: Array.isArray(cfg?.wfhDays) ? (cfg!.wfhDays as string[]) : [],
+        metadata: schedule?.metadata ?? {},
+      },
+      schedule?.metadata,
+      employeeId
+    );
   }
 
   private async loadGeofencedOffices(

@@ -3,6 +3,7 @@ import { isApiMode } from "@/lib/env";
 import { ConflictError, ValidationError } from "@/lib/errors";
 import { enrichWithAudit, touchEntity } from "@/lib/entity";
 import { mockNow, toCompanyIso, todayKey } from "@/lib/mock-date";
+import { effectiveEmployeeSchedule } from "@/lib/employee-schedule";
 import { computeLateMinutes } from "@/lib/work-time";
 import { isEmployeeWfhAllowed } from "@/lib/wfh-policy";
 import { attendanceRepository, employeeRepository, scheduleRepository } from "@/repositories";
@@ -43,8 +44,12 @@ export async function checkIn(
     }
 
     const actorId = getWorkEmployeeId();
-    const schedule = await scheduleRepository.getSyncSafe();
-    const clock = await loadWorkClock();
+    const targetId = parsed.data.employeeId || actorId;
+    const schedule = effectiveEmployeeSchedule(
+      await scheduleRepository.getSyncSafe(),
+      targetId
+    );
+    const clock = await loadWorkClock(targetId);
     const now = mockNow();
     const date = todayKey();
     const items = await attendanceRepository.list();

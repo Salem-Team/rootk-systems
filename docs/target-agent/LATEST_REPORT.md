@@ -1,24 +1,24 @@
 # Target User Agent — Test Report
 
-Generated: **2026-09-22T19:29:02.598Z**
+Generated: **2026-09-27T10:28:26.116Z**
 
 Result: **10/10 passed**
 
-Agent target id: `pt_16a32468ebf64e96`
+Agent target id: `pt_12468ed8bb884bd9`
 
 ## Scenarios (real user flows)
 
 | # | Actor | Scenario | Result | Detail |
 |---|-------|----------|--------|--------|
 | 1 | admin | Open Target Catalog | ✅ PASS | 4 categories, 7 types |
-| 2 | admin | Create category + type (Operations / Site Visits) | ✅ PASS | category=tcat_25d09443d97644c7 type=ttype_b33f8b6f691b47b0 |
-| 3 | admin | Assign target + auto-create 5 tasks | ✅ PASS | target=pt_16a32468ebf64e96, linkedTasks=5, progress=0% |
+| 2 | admin | Create category + type (Operations / Site Visits) | ✅ PASS | category=tcat_b8f44addc8834814 type=ttype_1fb4439771b248ac |
+| 3 | admin | Assign target + auto-create 5 tasks | ✅ PASS | target=pt_12468ed8bb884bd9, linkedTasks=5, progress=0% |
 | 4 | employee | Complete 2 tasks → target progress auto-updates to 40% | ✅ PASS | completedQuantity=2, percentage=40% |
 | 5 | employee | Employee cannot edit target (permission gate) | ✅ PASS | correctly forbidden |
-| 6 | admin | Send performance warning | ✅ PASS | warning=tw_7a0be2127ab54191 |
-| 7 | employee | Employee acknowledges warning | ✅ PASS | acknowledgedAt=2026-09-22T19:28:56.506Z |
-| 8 | admin | Dashboard + delayed center load with agent target visible | ✅ PASS | total=7, completed=1, delayedTargets=5, avgScore=27.5 |
-| 9 | employee | Employee performance page shows target + warning | ✅ PASS | score=34.2, targets=3, warnings=1 |
+| 6 | admin | Send performance warning | ✅ PASS | warning=tw_296eac3f133b497f |
+| 7 | employee | Employee acknowledges warning | ✅ PASS | acknowledgedAt=2026-09-27T10:28:19.722Z |
+| 8 | admin | Dashboard + delayed center load with agent target visible | ✅ PASS | total=7, completed=1, delayedTargets=5, avgScore=27.7 |
+| 9 | employee | Employee performance page shows target + warning | ✅ PASS | score=34.6, targets=3, warnings=1 |
 | 10 | employee | Complete remaining tasks → target reaches 100% / completed | ✅ PASS | status=completed, percentage=100% |
 
 ## How to view in the app
@@ -38,7 +38,7 @@ Agent target id: `pt_16a32468ebf64e96`
   "delayed": 1,
   "critical": 5,
   "completionRate": 14.3,
-  "averagePerformance": 27.5,
+  "averagePerformance": 27.7,
   "employeesAtRisk": 4,
   "upcomingDeadlines": 5,
   "byCategory": [
@@ -61,7 +61,7 @@ Agent target id: `pt_16a32468ebf64e96`
       "count": 3
     },
     {
-      "id": "tcat_25d09443d97644c7",
+      "id": "tcat_b8f44addc8834814",
       "name": "Agent Demo — Operations",
       "color": "#0F766E",
       "count": 1
@@ -93,7 +93,7 @@ Agent target id: `pt_16a32468ebf64e96`
     {
       "department": "Design",
       "count": 3,
-      "avgScore": 54.7
+      "avgScore": 55.1
     },
     {
       "department": "Engineering",
@@ -115,7 +115,7 @@ Agent target id: `pt_16a32468ebf64e96`
     },
     {
       "employeeId": "emp-003",
-      "score": 34.2,
+      "score": 34.6,
       "completed": 0,
       "total": 3
     },
@@ -159,7 +159,7 @@ Agent target id: `pt_16a32468ebf64e96`
     },
     {
       "employeeId": "emp-003",
-      "score": 34.2,
+      "score": 34.6,
       "completed": 0,
       "total": 3
     },
@@ -171,31 +171,6 @@ Agent target id: `pt_16a32468ebf64e96`
     }
   ],
   "completionTrend": [
-    {
-      "date": "2026-09-09",
-      "created": 0,
-      "completed": 0
-    },
-    {
-      "date": "2026-09-10",
-      "created": 0,
-      "completed": 0
-    },
-    {
-      "date": "2026-09-11",
-      "created": 0,
-      "completed": 0
-    },
-    {
-      "date": "2026-09-12",
-      "created": 0,
-      "completed": 0
-    },
-    {
-      "date": "2026-09-13",
-      "created": 0,
-      "completed": 0
-    },
     {
       "date": "2026-09-14",
       "created": 0,
@@ -238,6 +213,31 @@ Agent target id: `pt_16a32468ebf64e96`
     },
     {
       "date": "2026-09-22",
+      "created": 0,
+      "completed": 0
+    },
+    {
+      "date": "2026-09-23",
+      "created": 0,
+      "completed": 0
+    },
+    {
+      "date": "2026-09-24",
+      "created": 0,
+      "completed": 0
+    },
+    {
+      "date": "2026-09-25",
+      "created": 0,
+      "completed": 0
+    },
+    {
+      "date": "2026-09-26",
+      "created": 0,
+      "completed": 0
+    },
+    {
+      "date": "2026-09-27",
       "created": 7,
       "completed": 1
     }

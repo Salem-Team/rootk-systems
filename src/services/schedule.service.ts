@@ -1,16 +1,22 @@
 import {
+  deleteEmployeeSchedule,
   deleteHoliday,
   fetchHolidays,
   fetchWorkSchedule,
   patchWorkSchedule,
   postHoliday,
+  putEmployeeSchedule,
 } from "@/api/schedule.api";
 import { isApiMode, isLocalMode } from "@/lib/env";
 import { ValidationError } from "@/lib/errors";
 import { demoTodayKey } from "@/lib/mock-date";
 import { isEmployeeWfhAllowed } from "@/lib/wfh-policy";
+import {
+  effectiveEmployeeSchedule,
+  type EmployeeWorkSchedule,
+} from "@/lib/employee-schedule";
 import { employeeRepository, scheduleRepository } from "@/repositories";
-import { createHolidaySchema, updateWorkScheduleSchema } from "@/schemas";
+import { createHolidaySchema, employeeWorkScheduleSchema, updateWorkScheduleSchema } from "@/schemas";
 import { fromError, ok } from "@/services/api-result";
 import type { ApiResponse, DayOfWeek, Department, Holiday, WorkSchedule } from "@/types";
 
@@ -99,6 +105,47 @@ export async function updateWorkSchedule(
   }
 }
 
+export async function saveEmployeeWorkSchedule(
+  employeeId: string,
+  body: EmployeeWorkSchedule
+): Promise<ApiResponse<WorkSchedule>> {
+  const parsed = employeeWorkScheduleSchema.safeParse(body);
+  if (!parsed.success) {
+    return fromError(
+      new ValidationError("Invalid employee schedule", parsed.error.flatten()),
+      EMPTY_SCHEDULE
+    );
+  }
+  if (isApiMode()) return putEmployeeSchedule(employeeId, parsed.data);
+  try {
+    const updated = await scheduleRepository.saveEmployeeSchedule(
+      employeeId,
+      parsed.data
+    );
+    return ok(updated, "Employee schedule updated");
+  } catch (error) {
+    return fromError(
+      error,
+      await scheduleRepository.get().catch(() => EMPTY_SCHEDULE)
+    );
+  }
+}
+
+export async function clearEmployeeWorkSchedule(
+  employeeId: string
+): Promise<ApiResponse<WorkSchedule>> {
+  if (isApiMode()) return deleteEmployeeSchedule(employeeId);
+  try {
+    const updated = await scheduleRepository.clearEmployeeSchedule(employeeId);
+    return ok(updated, "Employee schedule cleared");
+  } catch (error) {
+    return fromError(
+      error,
+      await scheduleRepository.get().catch(() => EMPTY_SCHEDULE)
+    );
+  }
+}
+
 /** POST /schedule/holidays */
 export async function addHoliday(
   holiday: Holiday | Omit<Holiday, keyof import("@/types").BaseEntity>
@@ -161,7 +208,11 @@ export async function getWfhEligibility(
     }
     if (!department) return ok({ allowed: false });
     return ok({
-      allowed: isEmployeeWfhAllowed(scheduleRes.data, department, dateKey),
+      allowed: isEmployeeWfhAllowed(
+        effectiveEmployeeSchedule(scheduleRes.data, employeeId),
+        department,
+        dateKey
+      ),
     });
   } catch (error) {
     return fromError(error, { allowed: false });

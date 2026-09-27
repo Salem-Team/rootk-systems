@@ -227,6 +227,15 @@ export function CrmLeadSheetTabs({
                       {formatMaybeDateTime(item.occurredAt)}
                     </LtrNum>
                   </div>
+                  <p className="mt-1.5 text-[12px] leading-snug text-foreground sm:text-[12px]">
+                    {t("crm.feedback.recordedBy")}:{" "}
+                    <span className="font-semibold">
+                      {item.actorName?.trim() ||
+                        (item.actorEmployeeId
+                          ? (employeeNameById.get(item.actorEmployeeId) ?? "—")
+                          : "—")}
+                    </span>
+                  </p>
                   {item.description ? (
                     <div className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground sm:mt-1 sm:text-[12px]">
                       <CrmMentionText text={item.description} />
@@ -263,6 +272,16 @@ export function CrmLeadSheetTabs({
                         : t("crm.feedback.activeCall")}
                     </span>
                   </div>
+                  <p className="mt-1.5 text-[12px] leading-snug text-foreground">
+                    {t("crm.feedback.recordedBy")}:{" "}
+                    <span className="font-semibold">
+                      {item.recordedByName?.trim() ||
+                        (item.recordedByEmployeeId
+                          ? (employeeNameById.get(item.recordedByEmployeeId) ??
+                            "—")
+                          : "—")}
+                    </span>
+                  </p>
                   {item.customerFeedback ? (
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground sm:mt-1 sm:text-[12px]">
                       <CrmMentionText
@@ -272,15 +291,7 @@ export function CrmLeadSheetTabs({
                     </p>
                   ) : null}
                   <CrmMentionChips users={item.mentionedUsers} />
-                  <p className="mt-2 text-[11px] text-muted-foreground">
-                    {t("crm.feedback.recordedBy")}:{" "}
-                    <span className="font-medium text-foreground">
-                      {item.recordedByEmployeeId
-                        ? (employeeNameById.get(item.recordedByEmployeeId) ?? "—")
-                        : "—"}
-                    </span>
-                  </p>
-                  <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+                  <p className="mt-1.5 font-mono text-[10px] text-muted-foreground">
                     <LtrNum>{formatMaybeDateTime(item.createdAt)}</LtrNum>
                   </p>
                 </li>

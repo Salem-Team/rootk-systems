@@ -38,7 +38,7 @@ export async function checkOut(
     }
 
     const actorId = getWorkEmployeeId();
-    const clock = await loadWorkClock();
+    const clock = await loadWorkClock(parsed.data.employeeId || actorId);
     const now = mockNow();
     const date = todayKey();
     const items = await attendanceRepository.list();

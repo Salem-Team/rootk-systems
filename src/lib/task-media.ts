@@ -27,9 +27,7 @@ export interface WorkTaskMediaDraft {
 
 export const TASK_MEDIA_IMAGE_MAX = 5 * 1024 * 1024;
 export const TASK_MEDIA_VIDEO_MAX = 28 * 1024 * 1024;
-export const TASK_MEDIA_MAX_IMAGES = 6;
 export const TASK_MEDIA_MAX_VIDEOS = 2;
-export const TASK_MEDIA_MAX_ITEMS = 8;
 
 const IMAGE_MIME = new Set([
   "image/jpeg",
@@ -61,36 +59,41 @@ export function acceptMediaAttr(): string {
   return "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime";
 }
 
-/** Extract image/video files from a paste or drop clipboard/dataTransfer. */
+/** Extract image/video files from a paste or drop. Prefer `files` so a pasted screenshot is not also read from `items` (that duplicate is what uploaded the same image twice). */
 export function mediaFilesFromDataTransfer(
   data: DataTransfer | null | undefined
 ): File[] {
   if (!data) return [];
-  const out: File[] = [];
-  const seen = new Set<string>();
 
+  const fromFiles: File[] = [];
   if (data.files?.length) {
     for (const file of Array.from(data.files)) {
-      if (!mediaKindForMime(file.type)) continue;
-      const key = `${file.name}:${file.size}:${file.type}:${file.lastModified}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push(file);
+      if (mediaKindForMime(file.type)) fromFiles.push(file);
     }
   }
+  if (fromFiles.length > 0) return dedupeMediaFiles(fromFiles);
 
+  const fromItems: File[] = [];
   if (data.items?.length) {
     for (const item of Array.from(data.items)) {
       if (item.kind !== "file") continue;
       const file = item.getAsFile();
       if (!file || !mediaKindForMime(file.type)) continue;
-      const key = `${file.name}:${file.size}:${file.type}:${file.lastModified}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push(file);
+      fromItems.push(file);
     }
   }
+  return dedupeMediaFiles(fromItems);
+}
 
+function dedupeMediaFiles(files: File[]): File[] {
+  const seen = new Set<string>();
+  const out: File[] = [];
+  for (const file of files) {
+    const key = `${file.size}:${file.type.split(";")[0]!.trim().toLowerCase()}:${file.name}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(file);
+  }
   return out;
 }
 
@@ -164,10 +167,8 @@ export function canAddMediaDraft(
   drafts: WorkTaskMediaDraft[],
   kind: WorkTaskMediaKind
 ): boolean {
-  if (drafts.length >= TASK_MEDIA_MAX_ITEMS) return false;
-  const images = drafts.filter((d) => d.kind === "image").length;
+  if (kind === "image") return true;
   const videos = drafts.filter((d) => d.kind === "video").length;
-  if (kind === "image") return images < TASK_MEDIA_MAX_IMAGES;
   return videos < TASK_MEDIA_MAX_VIDEOS;
 }
 

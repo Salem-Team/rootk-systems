@@ -38,6 +38,7 @@ export const API_ROUTES = {
     root: "/schedule",
     holidays: "/schedule/holidays",
     holidayById: (id: string) => `/schedule/holidays/${id}`,
+    employee: (employeeId: string) => `/schedule/employees/${employeeId}`,
   },
   dailyPlan: {
     root: "/daily-plan",

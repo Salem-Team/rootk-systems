@@ -40,7 +40,7 @@ export class AttendanceCheckoutService {
       ? null
       : await this.shared.assertOfficeGeofence(companyId, body.location, "check-out");
 
-    const schedule = await this.shared.scheduleBundle(companyId);
+    const schedule = await this.shared.scheduleBundle(companyId, employeeId);
     const now = new Date();
     const settled = settleWorkDay({
       dateKey,

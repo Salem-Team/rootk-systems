@@ -103,8 +103,17 @@ export class CrmActivitiesService {
     ]);
 
     // Flat activity list — matches frontend timeline expectation.
-    // (history/feedback remain available via dedicated endpoints)
-    return activities.map(mapLeadActivity);
+    const names = await this.namesByEmployeeId(
+      companyId,
+      activities.map((row) => ({
+        employeeId: row.actorEmployeeId,
+        userId: row.createdBy,
+      }))
+    );
+    return activities.map((row) => ({
+      ...mapLeadActivity(row),
+      actorName: this.actorLabel(row.actorEmployeeId, row.createdBy, names),
+    }));
   }
 
   async addFeedback(
@@ -376,8 +385,95 @@ export class CrmActivitiesService {
       take: pageSize,
     });
 
-    // Flat array — matches frontend `CrmLeadFeedback[]`.
-    return rows.map(mapLeadFeedback);
+    const names = await this.namesByEmployeeId(
+      companyId,
+      rows.map((row) => ({
+        employeeId: row.recordedByEmployeeId,
+        userId: row.createdBy,
+      }))
+    );
+    return rows.map((row) => ({
+      ...mapLeadFeedback(row),
+      recordedByName: this.actorLabel(
+        row.recordedByEmployeeId,
+        row.createdBy,
+        names
+      ),
+    }));
+  }
+
+  private actorLabel(
+    employeeId: string | null | undefined,
+    userId: string | null | undefined,
+    names: { employees: Map<string, string>; users: Map<string, string> }
+  ) {
+    const employeeName = employeeId ? names.employees.get(employeeId) : "";
+    if (employeeName) return employeeName;
+    const userName = userId ? names.users.get(userId) : "";
+    return userName || "";
+  }
+
+  private async namesByEmployeeId(
+    companyId: string,
+    rows: { employeeId?: string | null; userId?: string | null }[]
+  ) {
+    const employeeIds = [
+      ...new Set(
+        rows
+          .map((row) => row.employeeId?.trim())
+          .filter((id): id is string => Boolean(id))
+      ),
+    ];
+    const userIds = [
+      ...new Set(
+        rows
+          .map((row) => row.userId?.trim())
+          .filter((id): id is string => Boolean(id))
+      ),
+    ];
+    const [employees, users] = await Promise.all([
+      employeeIds.length
+        ? this.prisma.employee.findMany({
+            where: { companyId, id: { in: employeeIds } },
+            select: { id: true, name: true },
+          })
+        : [],
+      userIds.length
+        ? this.prisma.user.findMany({
+            where: { companyId, id: { in: userIds }, deletedAt: null },
+            select: {
+              id: true,
+              employeeId: true,
+              displayName: true,
+              firstName: true,
+              lastName: true,
+            },
+          })
+        : [],
+    ]);
+    const employeeNames = new Map(employees.map((row) => [row.id, row.name]));
+    const missingEmployeeIds = users
+      .map((user) => user.employeeId?.trim() || "")
+      .filter((id) => id.length > 0 && !employeeNames.has(id));
+    if (missingEmployeeIds.length) {
+      const extra = await this.prisma.employee.findMany({
+        where: { companyId, id: { in: missingEmployeeIds } },
+        select: { id: true, name: true },
+      });
+      for (const row of extra) employeeNames.set(row.id, row.name);
+    }
+    const userNames = new Map<string, string>();
+    for (const user of users) {
+      const fromEmployee = user.employeeId
+        ? employeeNames.get(user.employeeId)
+        : "";
+      const fromAccount =
+        [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
+        user.displayName?.trim() ||
+        "";
+      userNames.set(user.id, fromEmployee || fromAccount);
+    }
+    return { employees: employeeNames, users: userNames };
   }
 
   private async resolveMentionUsers(

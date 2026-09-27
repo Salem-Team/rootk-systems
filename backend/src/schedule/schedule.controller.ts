@@ -1,4 +1,4 @@
-import { Controller, UseGuards, Get, Post, Patch, Delete, Body, Param, Query } from "@nestjs/common";
+import { Controller, UseGuards, Get, Post, Patch, Put, Delete, Body, Param, Query } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import { ScheduleService } from "./schedule.service";
 import { ActorId, CompanyId } from "../common/tenant";
@@ -26,6 +26,34 @@ export class ScheduleController {
     @Body() body: Record<string, unknown>
   ) {
     return this.service.patch(companyId, actorId, body);
+  }
+
+  @Put("employees/:employeeId")
+  @Roles(AppRole.admin)
+  @RequirePermission("schedule.editPolicies", "schedule.manageShifts")
+  saveEmployee(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @Param("employeeId") employeeId: string,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.service.saveEmployeeSchedule(
+      companyId,
+      actorId,
+      employeeId,
+      body
+    );
+  }
+
+  @Delete("employees/:employeeId")
+  @Roles(AppRole.admin)
+  @RequirePermission("schedule.editPolicies", "schedule.manageShifts")
+  clearEmployee(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @Param("employeeId") employeeId: string
+  ) {
+    return this.service.clearEmployeeSchedule(companyId, actorId, employeeId);
   }
 
   @Get("holidays")

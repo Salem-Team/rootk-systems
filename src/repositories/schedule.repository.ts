@@ -5,6 +5,10 @@ import { getStorageAdapter } from "@/storage";
 import { StorageKeys } from "@/storage/keys";
 import { BaseRepository } from "@/repositories/base.repository";
 import { enrichWithAudit } from "@/lib/entity";
+import {
+  readEmployeeSchedules,
+  type EmployeeWorkSchedule,
+} from "@/lib/employee-schedule";
 import type { Holiday, WorkSchedule } from "@/types";
 
 export class ScheduleRepository extends BaseRepository {
@@ -63,7 +67,51 @@ export class ScheduleRepository extends BaseRepository {
       return {
         ...next,
         holidays: [...next.holidays],
+        employeeSchedules: readEmployeeSchedules(next),
       };
+    });
+  }
+
+  async saveEmployeeSchedule(
+    employeeId: string,
+    config: EmployeeWorkSchedule,
+    actorId = "system"
+  ): Promise<WorkSchedule> {
+    return this.withLatency(async () => {
+      const current = await this.read();
+      const employeeSchedules = {
+        ...readEmployeeSchedules(current),
+        [employeeId]: config,
+      };
+      const next = touchEntity<WorkSchedule>(current, actorId, {
+        employeeSchedules,
+        metadata: {
+          ...current.metadata,
+          employeeSchedules,
+        },
+      });
+      await this.write(next);
+      return { ...next, holidays: [...next.holidays], employeeSchedules };
+    });
+  }
+
+  async clearEmployeeSchedule(
+    employeeId: string,
+    actorId = "system"
+  ): Promise<WorkSchedule> {
+    return this.withLatency(async () => {
+      const current = await this.read();
+      const employeeSchedules = { ...readEmployeeSchedules(current) };
+      delete employeeSchedules[employeeId];
+      const next = touchEntity<WorkSchedule>(current, actorId, {
+        employeeSchedules,
+        metadata: {
+          ...current.metadata,
+          employeeSchedules,
+        },
+      });
+      await this.write(next);
+      return { ...next, holidays: [...next.holidays], employeeSchedules };
     });
   }
 

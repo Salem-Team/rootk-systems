@@ -15,9 +15,10 @@ import {
   resolveTaskAssigneeProgress,
   type Actor,
 } from "./work-mappers";
-import { assertCanAssignToTeam } from "../lib/team";
-import { assertCanMutateWorkTask } from "./work-access";
+import { assertCanAssignToTeam, listDirectReportIds } from "../lib/team";
+import { assertCanMutateWorkTask, workTaskListScope } from "./work-access";
 import {
+  commentImagesFromMetadata,
   parseStoredMedia,
   resolveTaskMediaPayload,
   deleteCompanyTaskMedia,
@@ -234,7 +235,22 @@ export class WorkTasksWriteService {
       actor.role === "employee" &&
       !current.assigneeIds.includes(actor.employeeId)
     ) {
-      throw new ForbiddenException("You can only view media for your tasks");
+      const scope = workTaskListScope(actor);
+      const created =
+        current.createdBy === actor.userId ||
+        current.createdBy === actor.employeeId;
+      let allowed = scope === "all" || created;
+      if (!allowed && scope === "managed" && actor.employeeId) {
+        const reports = await listDirectReportIds(
+          this.prisma,
+          companyId,
+          actor.employeeId
+        );
+        allowed = current.assigneeIds.some((id) => reports.includes(id));
+      }
+      if (!allowed) {
+        throw new ForbiddenException("You can only view media for your tasks");
+      }
     }
     const fromBrief = parseStoredMedia(current.media).find((m) => m.id === fileId);
     const fromEvidence = parseStoredMedia(current.evidenceMedia).find(
@@ -243,7 +259,22 @@ export class WorkTasksWriteService {
     const fromProgress = resolveTaskAssigneeProgress(current)
       .flatMap((p) => p.evidenceMedia ?? [])
       .find((m) => m.id === fileId);
-    const item = fromBrief ?? fromEvidence ?? fromProgress;
+    let item = fromBrief ?? fromEvidence ?? fromProgress;
+    if (!item) {
+      const comments = await this.prisma.workTaskComment.findMany({
+        where: { companyId, taskId, deletedAt: null },
+        select: { metadata: true },
+      });
+      for (const comment of comments) {
+        const hit = commentImagesFromMetadata(comment.metadata).find(
+          (image) => image.id === fileId
+        );
+        if (hit) {
+          item = hit;
+          break;
+        }
+      }
+    }
     if (!item) throw new NotFoundException("Media not found");
     const buffer = await readCompanyTaskMedia(companyId, fileId);
     return {

@@ -21,6 +21,24 @@ export const updateWorkScheduleSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
+export const employeeWorkScheduleSchema = z
+  .object({
+    workingDays: z.array(dayOfWeekSchema).min(1),
+    weekendDays: z.array(dayOfWeekSchema),
+    wfhDays: z.array(dayOfWeekSchema),
+    fromTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    toTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    gracePeriodMinutes: z.number().int().min(0).max(180),
+    breakMinutes: z.number().int().min(0).max(240),
+  })
+  .refine(
+    (value) => value.wfhDays.every((day) => value.workingDays.includes(day)),
+    { message: "WFH days must be working days" }
+  )
+  .refine((value) => value.toTime > value.fromTime, {
+    message: "End time must be after start time",
+  });
+
 export const createHolidaySchema = z.object({
   id: z.string().optional(),
   name: z.string().trim().min(2).max(200),

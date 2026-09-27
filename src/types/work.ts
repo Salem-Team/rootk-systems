@@ -116,6 +116,15 @@ export interface WorkTaskComment extends BaseEntity {
   voiceMime?: string | null;
   /** API path or local data URL for playback. */
   voiceUrl?: string | null;
+  images?: WorkTaskCommentImage[];
+}
+
+export interface WorkTaskCommentImage {
+  id: string;
+  mime: string;
+  name: string;
+  sizeBytes: number;
+  url: string;
 }
 
 export interface CreateWorkTaskCommentInput {
@@ -126,4 +135,9 @@ export interface CreateWorkTaskCommentInput {
     mime: string;
     durationMs: number;
   } | null;
+  images?: {
+    dataBase64: string;
+    mime: string;
+    name: string;
+  }[] | null;
 }
