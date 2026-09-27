@@ -62,7 +62,7 @@ export function localMediaFromPayload(
       if (existing) items.push(existing);
     }
   }
-  return items.slice(0, 8);
+  return items;
 }
 
 /** Alias for completion proof media in local mode. */

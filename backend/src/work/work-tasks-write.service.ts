@@ -4,6 +4,8 @@ import {
   NotFoundException,
   StreamableFile,
 } from "@nestjs/common";
+import { createReadStream } from "fs";
+import { stat } from "fs/promises";
 import { TaskPriority, TaskStatus, WorkOrigin, Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { parseDate } from "../common/mappers";
@@ -22,7 +24,7 @@ import {
   parseStoredMedia,
   resolveTaskMediaPayload,
   deleteCompanyTaskMedia,
-  readCompanyTaskMedia,
+  taskMediaAbsolutePath,
 } from "./work-task-media-storage";
 
 export type { Actor };
@@ -276,10 +278,18 @@ export class WorkTasksWriteService {
       }
     }
     if (!item) throw new NotFoundException("Media not found");
-    const buffer = await readCompanyTaskMedia(companyId, fileId);
+    let abs = "";
+    let size = 0;
+    try {
+      abs = taskMediaAbsolutePath(companyId, fileId);
+      size = (await stat(abs)).size;
+    } catch {
+      throw new NotFoundException("Media not found");
+    }
     return {
-      file: new StreamableFile(buffer),
+      file: new StreamableFile(createReadStream(abs)),
       mime: item.mime,
+      size,
     };
   }
 }

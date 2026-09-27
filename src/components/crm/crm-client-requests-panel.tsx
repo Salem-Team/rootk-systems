@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { BidiText } from "@/components/shared/bidi-text";
+import { TechnicalProposalEditor } from "@/components/crm/technical-proposal-editor";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -256,6 +257,11 @@ export function CrmClientRequestsPanel({
             placeholder={t(`crm.clientRequests.placeholders.${kind}`)}
             className="mt-3 min-h-24 resize-y text-[14px]"
           />
+          {kind === "technical_proposal" ? (
+            <p className="mt-2 text-[12px] leading-snug text-muted-foreground">
+              {t("crm.clientRequests.proposal.sendHint")}
+            </p>
+          ) : null}
           <Button
             type="button"
             className="mt-3 h-11 w-full"
@@ -347,6 +353,21 @@ export function CrmClientRequestsPanel({
                     <p className="whitespace-pre-wrap text-[14px] leading-relaxed">
                       <BidiText text={item.message} />
                     </p>
+                    {item.kind === "technical_proposal" ? (
+                      <TechnicalProposalEditor
+                        requestId={item.id}
+                        leadName={item.leadName}
+                        initial={item.proposal ?? null}
+                        canEdit={canReply && !readOnly}
+                        onSaved={(saved) =>
+                          setItems((prev) =>
+                            prev.map((row) =>
+                              row.id === saved.id ? saved : row
+                            )
+                          )
+                        }
+                      />
+                    ) : null}
                     {item.kind === "price_exception" &&
                     (item.listedPrice || item.requestedPrice) ? (
                       <dl className="grid grid-cols-2 gap-2">

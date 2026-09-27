@@ -20,6 +20,7 @@ export {
   deleteEmployee,
   updateEmployee,
   updateEmployeeStatus,
+  updateEmployeeWhatsappAccounts,
 } from "./employees-mutations";
 
 /** GET /employees */

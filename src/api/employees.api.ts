@@ -5,6 +5,7 @@ import type {
 } from "@/api/contracts";
 import { api } from "@/api/http";
 import { API_ROUTES, toQuery } from "@/api/routes";
+import type { WhatsappAccount } from "@/lib/whatsapp-accounts";
 import type { ApiResponse, Employee, EmployeeStatus } from "@/types";
 import type { EmployeeProfileExtras } from "@/types/employee-profile";
 
@@ -71,6 +72,18 @@ export function patchEmployee(
   input: UpdateEmployeeInput
 ): Promise<ApiResponse<Employee>> {
   return api.patch(API_ROUTES.employees.byId(id), input, EMPTY_EMPLOYEE);
+}
+
+/** PATCH /employees/:id/whatsapp-accounts */
+export function patchEmployeeWhatsappAccounts(
+  id: string,
+  accounts: WhatsappAccount[]
+): Promise<ApiResponse<Employee>> {
+  return api.patch(
+    API_ROUTES.employees.whatsappAccounts(id),
+    { accounts },
+    EMPTY_EMPLOYEE
+  );
 }
 
 /** PATCH /employees/:id/status */

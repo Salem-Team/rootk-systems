@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, ClipboardPaste, ImagePlus, Loader2, Trash2, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AuthMediaPreview } from "@/components/work/use-auth-media-url";
 import { useTranslation } from "@/hooks/use-translation";
 import {
   acceptMediaAttr,
@@ -269,23 +270,12 @@ export function TaskMediaPicker({
               key={item.localId}
               className="group relative overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm"
             >
-              <div className="aspect-[4/3] bg-muted/40">
-                {item.kind === "image" ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={item.previewUrl}
-                    alt={item.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <video
-                    src={item.previewUrl}
-                    className="h-full w-full object-cover"
-                    muted
-                    playsInline
-                    preload="metadata"
-                  />
-                )}
+              <div className="relative aspect-[4/3] bg-muted/40">
+                <AuthMediaPreview
+                  src={item.previewUrl}
+                  kind={item.kind}
+                  alt={item.name}
+                />
               </div>
               <div className="flex items-center justify-between gap-1 border-t border-border/60 px-2 py-1.5">
                 <div className="min-w-0">

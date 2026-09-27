@@ -19,6 +19,7 @@ export const API_ROUTES = {
     root: "/employees",
     byId: (id: string) => `/employees/${id}`,
     status: (id: string) => `/employees/${id}/status`,
+    whatsappAccounts: (id: string) => `/employees/${id}/whatsapp-accounts`,
     /** Aggregated attendance/leave/activity for profile drawers */
     profileExtras: (id: string) => `/employees/${id}/profile-extras`,
   },
@@ -165,6 +166,7 @@ export const API_ROUTES = {
     leadClientRequests: (id: string) => `/crm/leads/${id}/client-requests`,
     clientRequests: "/crm/client-requests",
     clientRequestReplies: (id: string) => `/crm/client-requests/${id}/replies`,
+    clientRequestProposal: (id: string) => `/crm/client-requests/${id}/proposal`,
     leadMatch: "/crm/leads/match",
     leadDuplicates: "/crm/leads/duplicates",
     dashboard: "/crm/dashboard",

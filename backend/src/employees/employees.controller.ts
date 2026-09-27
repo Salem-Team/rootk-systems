@@ -1,6 +1,7 @@
 import { Controller, UseGuards, Get, Post, Patch, Delete, Body, Param, Query } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import { EmployeesService } from "./employees.service";
+import { CurrentUser, type JwtPayload } from "../common/decorators/current-user";
 import { ActorId, CompanyId } from "../common/tenant";
 import { Roles } from "../common/roles.decorator";
 import { RolesGuard } from "../common/roles.guard";
@@ -47,6 +48,16 @@ export class EmployeesController {
     @Body() body: Record<string, unknown>
   ) {
     return this.service.create(companyId, actorId, body as never);
+  }
+
+  @Patch(":id/whatsapp-accounts")
+  updateWhatsappAccounts(
+    @CompanyId() companyId: string,
+    @CurrentUser() user: JwtPayload | undefined,
+    @Param("id") id: string,
+    @Body() body: unknown
+  ) {
+    return this.service.updateWhatsappAccounts(companyId, user, id, body);
   }
 
   @Patch(":id/status")

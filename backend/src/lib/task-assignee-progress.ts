@@ -58,7 +58,7 @@ function asEvidenceMedia(raw: unknown): EvidenceMediaRef[] {
       sizeBytes: Math.max(0, Number(row.sizeBytes ?? 0) || 0),
     });
   }
-  return out.slice(0, 8);
+  return out;
 }
 
 function asProgressList(raw: unknown): TaskAssigneeProgress[] {

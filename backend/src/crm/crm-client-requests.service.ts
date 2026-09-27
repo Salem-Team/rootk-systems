@@ -21,6 +21,10 @@ import { NotificationsService } from "../notifications/notifications.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { assertCap, type Actor } from "./crm-access";
 import { CrmSharedService } from "./crm-shared.service";
+import {
+  readTechnicalProposal,
+  sanitizeTechnicalProposal,
+} from "./technical-proposal";
 
 const KINDS = new Set<string>(Object.values(CrmClientRequestKind));
 
@@ -71,6 +75,7 @@ function mapRequest(row: RequestRow) {
     requestedPrice: row.requestedPrice,
     requestedByEmployeeId: row.requestedByEmployeeId ?? "",
     replies: row.replies.map(mapReply),
+    proposal: readTechnicalProposal(row.metadata),
     ...auditFields(row),
   };
 }
@@ -227,6 +232,46 @@ export class CrmClientRequestsService {
     };
   }
 
+  async saveProposal(
+    companyId: string,
+    actor: Actor,
+    requestId: string,
+    body: unknown
+  ) {
+    if (!canManageRequests(actor)) {
+      throw new ForbiddenException("Only management can edit the proposal");
+    }
+    const proposal = sanitizeTechnicalProposal(body);
+    const current = await this.prisma.crmClientRequest.findFirst({
+      where: { id: requestId, companyId, deletedAt: null },
+      include: requestInclude,
+    });
+    if (!current) throw new NotFoundException("Request not found");
+    if (current.kind !== CrmClientRequestKind.technical_proposal) {
+      throw new BadRequestException("This request is not a technical proposal");
+    }
+
+    const metadata =
+      current.metadata &&
+      typeof current.metadata === "object" &&
+      !Array.isArray(current.metadata)
+        ? (current.metadata as Record<string, unknown>)
+        : {};
+
+    const row = await this.prisma.crmClientRequest.update({
+      where: { id: requestId },
+      data: {
+        status: CrmClientRequestStatus.answered,
+        metadata: { ...metadata, proposal } as Prisma.InputJsonValue,
+        updatedBy: actor.userId,
+        version: { increment: 1 },
+      },
+      include: requestInclude,
+    });
+    await this.notifyRequester(companyId, actor, row, true);
+    return mapRequest(row);
+  }
+
   private async actorName(companyId: string, employeeId?: string | null) {
     const id = employeeId?.trim();
     if (!id) return "";
@@ -285,7 +330,8 @@ export class CrmClientRequestsService {
   private async notifyRequester(
     companyId: string,
     actor: Actor,
-    row: RequestRow
+    row: RequestRow,
+    proposalReady = false
   ) {
     const employeeId = row.requestedByEmployeeId?.trim();
     if (!employeeId || employeeId === actor.employeeId) return;
@@ -300,8 +346,12 @@ export class CrmClientRequestsService {
       category: "work",
       priority: "high",
       audience: NotificationAudience.employee,
-      titleKey: "notifications.crmClientRequestReplyTitle",
-      bodyKey: "notifications.crmClientRequestReplyBody",
+      titleKey: proposalReady
+        ? "notifications.crmClientRequestProposalTitle"
+        : "notifications.crmClientRequestReplyTitle",
+      bodyKey: proposalReady
+        ? "notifications.crmClientRequestProposalBody"
+        : "notifications.crmClientRequestReplyBody",
       vars: { lead: row.lead.name, kind: row.kind },
       href: `/crm?lead=${row.leadId}&sheet=requests`,
       entityType: "crm_client_request",

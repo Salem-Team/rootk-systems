@@ -243,6 +243,20 @@ export class CrmService {
     return this.clientRequests.reply(companyId, actor, requestId, body);
   }
 
+  saveClientRequestProposal(
+    companyId: string,
+    actor: Actor,
+    requestId: string,
+    body: unknown
+  ) {
+    return this.clientRequests.saveProposal(
+      companyId,
+      actor,
+      requestId,
+      body
+    );
+  }
+
   // ── Analytics ───────────────────────────────────────────────────────────
 
   dashboard(

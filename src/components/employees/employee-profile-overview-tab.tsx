@@ -7,14 +7,17 @@ import { fadeInUp } from "@/lib/animations";
 import type { Employee } from "@/types";
 import type { EmployeeProfileExtras } from "@/types/employee-profile";
 import type { TranslationPath } from "@/i18n";
+import { EmployeeWhatsappSettings } from "./employee-whatsapp-settings";
 import { InfoRow, Section } from "./employee-profile-info-row";
 
 export function EmployeeProfileOverviewTab({
   employee,
   extras,
+  onEmployeeUpdated,
 }: {
   employee: Employee;
   extras: EmployeeProfileExtras;
+  onEmployeeUpdated?: (employee: Employee) => void;
 }) {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
@@ -36,6 +39,11 @@ export function EmployeeProfileOverviewTab({
           />
         </div>
       </Section>
+
+      <EmployeeWhatsappSettings
+        employee={employee}
+        onSaved={onEmployeeUpdated}
+      />
 
       <Section title={t("employees.jobInfo")}>
         <div className="rounded-xl border border-border bg-muted/20 px-3.5">

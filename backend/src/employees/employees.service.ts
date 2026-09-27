@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import type { JwtPayload } from "../common/decorators/current-user";
 import { EmployeesCreateService } from "./employees-create.service";
 import { EmployeesQueryService } from "./employees-query.service";
 import { EmployeesRemoveService } from "./employees-remove.service";
@@ -66,6 +67,15 @@ export class EmployeesService {
 
   updateStatus(companyId: string, actorId: string, id: string, status: string) {
     return this.updateService.updateStatus(companyId, actorId, id, status);
+  }
+
+  updateWhatsappAccounts(
+    companyId: string,
+    actor: JwtPayload | undefined,
+    id: string,
+    body: unknown
+  ) {
+    return this.updateService.updateWhatsappAccounts(companyId, actor, id, body);
   }
 
   remove(companyId: string, actorId: string, id: string) {

@@ -40,6 +40,7 @@ interface EmployeeProfileDrawerProps {
   onSelectEmployee: (employee: Employee) => void;
   onEditEmployee?: (employee: Employee) => void;
   onDeleted?: (id: string) => void;
+  onEmployeeUpdated?: (employee: Employee) => void;
 }
 
 export function EmployeeProfileDrawer({
@@ -50,6 +51,7 @@ export function EmployeeProfileDrawer({
   onSelectEmployee,
   onEditEmployee,
   onDeleted,
+  onEmployeeUpdated,
 }: EmployeeProfileDrawerProps) {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
@@ -196,6 +198,7 @@ export function EmployeeProfileDrawer({
                         <EmployeeProfileOverviewTab
                           employee={employee}
                           extras={extras}
+                          onEmployeeUpdated={onEmployeeUpdated}
                         />
                       </TabsContent>
 

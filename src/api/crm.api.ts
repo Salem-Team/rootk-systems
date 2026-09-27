@@ -31,6 +31,7 @@ import type {
   CrmStage,
   CrmSubStage,
   PaginatedLeads,
+  TechnicalProposalDocument,
 } from "@/types/crm";
 import type {
   BulkLeadsInput,
@@ -419,6 +420,7 @@ export async function fetchCrmClientRequests(query?: {
     ensureCrmList<CrmClientRequest>(res.data).map((row) => ({
       ...row,
       replies: Array.isArray(row.replies) ? row.replies : [],
+      proposal: row.proposal ?? null,
     }))
   );
 }
@@ -443,5 +445,14 @@ export async function postCrmClientRequestReply(
 ): Promise<ApiResponse<CrmClientRequest | null>> {
   return emitIfOk(
     await api.post(API_ROUTES.crm.clientRequestReplies(requestId), body, null)
+  );
+}
+
+export async function putCrmClientRequestProposal(
+  requestId: string,
+  body: TechnicalProposalDocument
+): Promise<ApiResponse<CrmClientRequest | null>> {
+  return emitIfOk(
+    await api.put(API_ROUTES.crm.clientRequestProposal(requestId), body, null)
   );
 }

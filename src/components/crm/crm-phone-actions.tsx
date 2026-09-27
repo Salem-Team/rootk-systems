@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { ExternalLink, MessageCircle, Phone, Send } from "lucide-react";
+import { CrmWhatsappSendDialog } from "@/components/crm/crm-whatsapp-send-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +47,7 @@ export function CrmPhoneActions({
   className,
 }: CrmPhoneActionsProps) {
   const { t } = useTranslation();
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
   const trimmed = phone.trim();
   const kind = detectContactKind(trimmed, phoneNormalized);
   const callUrl = telHrefForContact(trimmed, phoneNormalized);
@@ -81,7 +84,10 @@ export function CrmPhoneActions({
     });
   }
 
+  const openWhatsapp = kind === "phone" || kind === "whatsapp";
+
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
@@ -113,7 +119,18 @@ export function CrmPhoneActions({
             </a>
           </DropdownMenuItem>
         ) : null}
-        {profileUrl ? (
+        {profileUrl && openWhatsapp ? (
+          <DropdownMenuItem
+            className="cursor-pointer"
+            onSelect={() => {
+              window.setTimeout(() => setWhatsappOpen(true), 0);
+            }}
+          >
+            <MessageCircle aria-hidden />
+            {t("crm.nextAction.whatsapp")}
+          </DropdownMenuItem>
+        ) : null}
+        {profileUrl && !openWhatsapp ? (
           <DropdownMenuItem asChild>
             <a
               href={profileUrl}
@@ -122,13 +139,22 @@ export function CrmPhoneActions({
               className="cursor-pointer"
             >
               {profileIcon(kind)}
-              {kind === "phone" || kind === "whatsapp"
-                ? t("crm.nextAction.whatsapp")
-                : t("crm.leads.openProfile")}
+              {t("crm.leads.openProfile")}
             </a>
           </DropdownMenuItem>
         ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
+    {openWhatsapp ? (
+      <CrmWhatsappSendDialog
+        open={whatsappOpen}
+        onOpenChange={setWhatsappOpen}
+        targetPhone={trimmed}
+        targetHref={profileUrl ?? ""}
+        leadId={leadId}
+        leadName={leadName}
+      />
+    ) : null}
+    </>
   );
 }

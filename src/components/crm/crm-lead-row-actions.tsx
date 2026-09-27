@@ -1,7 +1,8 @@
 "use client";
 
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 import { History, MessageCircle, Phone } from "lucide-react";
+import { CrmWhatsappSendDialog } from "@/components/crm/crm-whatsapp-send-dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -51,6 +52,7 @@ export function CrmLeadRowActions({
   className,
 }: CrmLeadRowActionsProps) {
   const { t } = useTranslation();
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
   const primary = allLeadContacts(
     lead.phone,
     lead.phoneNormalized,
@@ -108,18 +110,17 @@ export function CrmLeadRowActions({
 
         <ActionTip label={t("crm.nextAction.whatsapp")}>
           {waUrl ? (
-            <a
-              href={waUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
               aria-label={t("crm.nextAction.whatsapp")}
               className={cn(
                 actionBtnClass,
                 "hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400"
               )}
+              onClick={() => setWhatsappOpen(true)}
             >
               <MessageCircle className="h-4 w-4 md:h-3.5 md:w-3.5" aria-hidden />
-            </a>
+            </button>
           ) : (
             <button
               type="button"
@@ -143,6 +144,16 @@ export function CrmLeadRowActions({
           </button>
         </ActionTip>
       </div>
+      {waUrl ? (
+        <CrmWhatsappSendDialog
+          open={whatsappOpen}
+          onOpenChange={setWhatsappOpen}
+          targetPhone={phone}
+          targetHref={waUrl}
+          leadId={lead.id}
+          leadName={lead.name}
+        />
+      ) : null}
     </TooltipProvider>
   );
 }

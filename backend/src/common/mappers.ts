@@ -1,4 +1,5 @@
 import { BadRequestException } from "@nestjs/common";
+import { readWhatsappAccounts } from "../lib/whatsapp-accounts";
 
 /** Shared serializers: Prisma DateTime/Json → frontend ISO / shapes. */
 
@@ -129,6 +130,7 @@ export function mapEmployee(row: EmployeeRow) {
     managerEmployeeIds: row.managerEmployeeIds ?? [],
     managerEmployeeId: (row.managerEmployeeIds ?? [])[0] || undefined,
     avatar: row.avatarUrl ?? undefined,
+    whatsappAccounts: readWhatsappAccounts(row.metadata),
     ...auditFields(row),
   };
 }

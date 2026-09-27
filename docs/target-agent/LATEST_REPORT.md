@@ -1,24 +1,24 @@
 # Target User Agent — Test Report
 
-Generated: **2026-09-27T10:28:26.116Z**
+Generated: **2026-09-27T10:50:32.243Z**
 
 Result: **10/10 passed**
 
-Agent target id: `pt_12468ed8bb884bd9`
+Agent target id: `pt_91a5d0c28fb14f37`
 
 ## Scenarios (real user flows)
 
 | # | Actor | Scenario | Result | Detail |
 |---|-------|----------|--------|--------|
 | 1 | admin | Open Target Catalog | ✅ PASS | 4 categories, 7 types |
-| 2 | admin | Create category + type (Operations / Site Visits) | ✅ PASS | category=tcat_b8f44addc8834814 type=ttype_1fb4439771b248ac |
-| 3 | admin | Assign target + auto-create 5 tasks | ✅ PASS | target=pt_12468ed8bb884bd9, linkedTasks=5, progress=0% |
+| 2 | admin | Create category + type (Operations / Site Visits) | ✅ PASS | category=tcat_468b9869c83c4ced type=ttype_ca00f6ff98e941e3 |
+| 3 | admin | Assign target + auto-create 5 tasks | ✅ PASS | target=pt_91a5d0c28fb14f37, linkedTasks=5, progress=0% |
 | 4 | employee | Complete 2 tasks → target progress auto-updates to 40% | ✅ PASS | completedQuantity=2, percentage=40% |
 | 5 | employee | Employee cannot edit target (permission gate) | ✅ PASS | correctly forbidden |
-| 6 | admin | Send performance warning | ✅ PASS | warning=tw_296eac3f133b497f |
-| 7 | employee | Employee acknowledges warning | ✅ PASS | acknowledgedAt=2026-09-27T10:28:19.722Z |
+| 6 | admin | Send performance warning | ✅ PASS | warning=tw_6e0abb8df04f436d |
+| 7 | employee | Employee acknowledges warning | ✅ PASS | acknowledgedAt=2026-09-27T10:50:26.441Z |
 | 8 | admin | Dashboard + delayed center load with agent target visible | ✅ PASS | total=7, completed=1, delayedTargets=5, avgScore=27.7 |
-| 9 | employee | Employee performance page shows target + warning | ✅ PASS | score=34.6, targets=3, warnings=1 |
+| 9 | employee | Employee performance page shows target + warning | ✅ PASS | score=34.5, targets=3, warnings=1 |
 | 10 | employee | Complete remaining tasks → target reaches 100% / completed | ✅ PASS | status=completed, percentage=100% |
 
 ## How to view in the app
@@ -61,7 +61,7 @@ Agent target id: `pt_12468ed8bb884bd9`
       "count": 3
     },
     {
-      "id": "tcat_b8f44addc8834814",
+      "id": "tcat_468b9869c83c4ced",
       "name": "Agent Demo — Operations",
       "color": "#0F766E",
       "count": 1
@@ -115,7 +115,7 @@ Agent target id: `pt_12468ed8bb884bd9`
     },
     {
       "employeeId": "emp-003",
-      "score": 34.6,
+      "score": 34.5,
       "completed": 0,
       "total": 3
     },
@@ -159,7 +159,7 @@ Agent target id: `pt_12468ed8bb884bd9`
     },
     {
       "employeeId": "emp-003",
-      "score": 34.6,
+      "score": 34.5,
       "completed": 0,
       "total": 3
     },

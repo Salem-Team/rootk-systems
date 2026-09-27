@@ -230,6 +230,22 @@ export type CrmClientRequestKind =
 
 export type CrmClientRequestStatus = "open" | "answered";
 
+export interface TechnicalProposalSection {
+  id: string;
+  title: string;
+  intro: string;
+  bullets: string[];
+}
+
+export interface TechnicalProposalDocument {
+  title: string;
+  subtitle: string;
+  intro: string;
+  sections: TechnicalProposalSection[];
+  noteTitle: string;
+  note: string;
+}
+
 export interface CrmClientRequestReply extends BaseEntity {
   id: string;
   requestId: string;
@@ -250,6 +266,7 @@ export interface CrmClientRequest extends BaseEntity {
   requestedPrice: string;
   requestedByEmployeeId: string;
   replies: CrmClientRequestReply[];
+  proposal?: TechnicalProposalDocument | null;
 }
 
 export interface CrmLeadHistoryEvent extends BaseEntity {

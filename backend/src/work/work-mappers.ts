@@ -156,11 +156,31 @@ export function mapTask(row: WorkTask, actor?: Actor) {
   const status = (mine?.status as TaskStatus | undefined) ?? row.status;
   const evidenceLinks = mine?.evidenceLinks ?? row.evidenceLinks ?? [];
   const evidenceNotes = mine?.evidenceNotes ?? row.evidenceNotes ?? "";
-  const evidenceMediaRaw = mine?.evidenceMedia ?? parseStoredMedia(row.evidenceMedia);
+  const storedEvidence = parseStoredMedia(row.evidenceMedia);
+  const evidenceMediaRaw = dedupeStoredMedia(
+    isEmployeeSelf
+      ? mine?.evidenceMedia?.length
+        ? mine.evidenceMedia
+        : row.assigneeIds.length <= 1
+          ? storedEvidence
+          : (mine?.evidenceMedia ?? [])
+      : [
+          ...storedEvidence,
+          ...fullProgress.flatMap((progress) => progress.evidenceMedia ?? []),
+        ]
+  );
   const completedAt = mine
     ? mine.completedAt ?? null
     : isoOrNull(row.completedAt);
-  const progressForActor = isEmployeeSelf && mine ? [mine] : fullProgress;
+  const progressForActor = (isEmployeeSelf && mine ? [mine] : fullProgress).map(
+    (progress) => ({
+      ...progress,
+      evidenceMedia: (progress.evidenceMedia ?? []).map((item) => ({
+        ...item,
+        url: mediaUrlForTask(row.id, item.id),
+      })),
+    })
+  );
   const summary = taskAssigneeCompletionSummary(fullProgress);
 
   return {
@@ -216,6 +236,17 @@ export function mapMeeting(row: WorkMeeting) {
     origin: row.origin,
     ...auditFields(row),
   };
+}
+
+function dedupeStoredMedia<T extends { id: string }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const item of items) {
+    if (!item.id || seen.has(item.id)) continue;
+    seen.add(item.id);
+    out.push(item);
+  }
+  return out;
 }
 
 export function isPersonal(origin: WorkOrigin | string | null | undefined) {

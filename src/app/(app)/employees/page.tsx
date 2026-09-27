@@ -261,6 +261,15 @@ function EmployeesPageContent() {
           onDeleted={(id) => {
             void handleDeleted(id);
           }}
+          onEmployeeUpdated={(employee) => {
+            setSelected(employee);
+            setEmployees((current) =>
+              current.map((row) => (row.id === employee.id ? employee : row))
+            );
+            setRoster((current) =>
+              current.map((row) => (row.id === employee.id ? employee : row))
+            );
+          }}
         />
 
         <EmployeeFormDialog

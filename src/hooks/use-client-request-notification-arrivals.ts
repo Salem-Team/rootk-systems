@@ -22,6 +22,7 @@ const REQUEST_TITLE_KEYS = new Set([
   "notifications.crmClientRequestTitle",
   "notifications.crmClientRequestFollowUpTitle",
   "notifications.crmClientRequestReplyTitle",
+  "notifications.crmClientRequestProposalTitle",
 ]);
 
 function isClientRequestNotification(item: AppNotification): boolean {

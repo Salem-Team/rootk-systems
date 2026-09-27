@@ -1,76 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Film, ImageIcon, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
-import { isApiMode } from "@/lib/env";
-import { getHttpClient } from "@/lib/http-client";
 import { formatMediaBytes, type WorkTaskMediaItem } from "@/lib/task-media";
 import { cn } from "@/lib/utils";
-
-function useAuthMediaUrl(src?: string) {
-  const [url, setUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(Boolean(src));
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    let revoked: string | null = null;
-    let cancelled = false;
-    setError(false);
-    setLoading(Boolean(src));
-    setUrl(null);
-
-    async function resolve() {
-      if (!src) {
-        if (!cancelled) {
-          setLoading(false);
-          setError(true);
-        }
-        return;
-      }
-      if (
-        src.startsWith("data:") ||
-        src.startsWith("blob:") ||
-        !isApiMode()
-      ) {
-        if (!cancelled) {
-          setUrl(src);
-          setLoading(false);
-        }
-        return;
-      }
-      try {
-        const client = getHttpClient();
-        const path = src.startsWith("/api/")
-          ? src.slice(4)
-          : src.startsWith("/")
-            ? src
-            : `/${src}`;
-        const blob = await client.requestBlob(path);
-        const objectUrl = URL.createObjectURL(blob);
-        revoked = objectUrl;
-        if (!cancelled) {
-          setUrl(objectUrl);
-          setLoading(false);
-        }
-      } catch {
-        if (!cancelled) {
-          setError(true);
-          setLoading(false);
-        }
-      }
-    }
-
-    void resolve();
-    return () => {
-      cancelled = true;
-      if (revoked) URL.revokeObjectURL(revoked);
-    };
-  }, [src]);
-
-  return { url, loading, error };
-}
+import {
+  invalidateAuthMediaUrl,
+  useAuthMediaUrl,
+} from "@/components/work/use-auth-media-url";
 
 function MediaThumb({
   item,
@@ -105,6 +45,9 @@ function MediaThumb({
           src={url}
           alt={item.name}
           className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+          onError={() => {
+            if (item.url) invalidateAuthMediaUrl(item.url);
+          }}
         />
       ) : (
         <video
@@ -188,6 +131,9 @@ function MediaLightbox({
               src={url}
               alt={item.name}
               className="max-h-[min(78vh,720px)] w-full object-contain"
+              onError={() => {
+                if (item.url) invalidateAuthMediaUrl(item.url);
+              }}
             />
           ) : (
             <video
@@ -207,9 +153,11 @@ function MediaLightbox({
 export function TaskMediaGallery({
   items,
   className,
+  hideHeader = false,
 }: {
   items: WorkTaskMediaItem[];
   className?: string;
+  hideHeader?: boolean;
 }) {
   const { t } = useTranslation();
   const [active, setActive] = useState<WorkTaskMediaItem | null>(null);
@@ -218,14 +166,16 @@ export function TaskMediaGallery({
 
   return (
     <section className={cn("space-y-2.5", className)}>
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-          {t("workMedia.galleryTitle")}
-        </p>
-        <p className="text-[11px] tabular-nums text-muted-foreground">
-          {items.length}
-        </p>
-      </div>
+      {hideHeader ? null : (
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            {t("workMedia.galleryTitle")}
+          </p>
+          <p className="text-[11px] tabular-nums text-muted-foreground">
+            {items.length}
+          </p>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
         {items.map((item) => (
           <MediaThumb
@@ -235,9 +185,12 @@ export function TaskMediaGallery({
           />
         ))}
       </div>
-      {active ? (
-        <MediaLightbox item={active} onClose={() => setActive(null)} />
-      ) : null}
+      {active && typeof document !== "undefined"
+        ? createPortal(
+            <MediaLightbox item={active} onClose={() => setActive(null)} />,
+            document.body
+          )
+        : null}
     </section>
   );
 }

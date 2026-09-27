@@ -195,14 +195,16 @@ export class WorkController {
     @Param("fileId") fileId: string,
     @Res({ passthrough: true }) res: Response
   ) {
-    const { file, mime } = await this.service.streamTaskMedia(
+    const { file, mime, size } = await this.service.streamTaskMedia(
       companyId,
       toActor(user),
       id,
       fileId
     );
     res.setHeader("Content-Type", mime);
-    res.setHeader("Cache-Control", "private, max-age=3600");
+    res.setHeader("Content-Length", String(size));
+    res.setHeader("Content-Disposition", "inline");
+    res.setHeader("Cache-Control", "private, max-age=86400");
     return file;
   }
 

@@ -97,6 +97,7 @@ export class HttpClient {
     const response = await this.rawRequest(path, {
       ...options,
       method: options.method ?? "GET",
+      headers: { Accept: "*/*", ...options.headers },
     });
     if (response.status === 401 && !options.skipAuth) {
       const refreshOutcome = await this.tryRefresh();
@@ -104,6 +105,7 @@ export class HttpClient {
         const retry = await this.rawRequest(path, {
           ...options,
           method: options.method ?? "GET",
+          headers: { Accept: "*/*", ...options.headers },
         });
         if (retry.ok) return retry.blob();
         throw await this.toAppError(retry, path);

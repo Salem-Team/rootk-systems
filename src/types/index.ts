@@ -64,6 +64,8 @@ export interface Employee extends BaseEntity {
   managerEmployeeIds?: string[];
   /** First direct manager — legacy alias of `managerEmployeeIds[0]`. */
   managerEmployeeId?: string;
+  /** WhatsApp lines this employee sends from. */
+  whatsappAccounts?: import("../../shared/whatsapp-accounts").WhatsappAccount[];
 }
 
 export interface AttendanceRecord extends BaseEntity {

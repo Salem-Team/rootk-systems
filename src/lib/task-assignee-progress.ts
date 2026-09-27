@@ -13,6 +13,7 @@ export interface TaskAssigneeProgress {
     mime: string;
     name: string;
     sizeBytes: number;
+    url?: string;
   }>;
 }
 
@@ -40,15 +41,17 @@ function asEvidenceMedia(raw: unknown): TaskAssigneeProgress["evidenceMedia"] {
     const kind = row.kind === "video" ? "video" : row.kind === "image" ? "image" : null;
     const mime = String(row.mime ?? "").trim();
     if (!id || !kind || !mime) continue;
+    const url = typeof row.url === "string" ? row.url.trim() : "";
     out.push({
       id,
       kind,
       mime,
       name: String(row.name ?? "media").slice(0, 120),
       sizeBytes: Math.max(0, Number(row.sizeBytes ?? 0) || 0),
+      ...(url ? { url } : {}),
     });
   }
-  return out.slice(0, 8);
+  return out;
 }
 
 function asProgressList(raw: unknown): TaskAssigneeProgress[] {
@@ -256,6 +259,7 @@ export function ensureTaskAssigneeProgress<
 export function presentAssigneeProgressForEmployee<
   T extends Pick<
     WorkTask,
+    | "id"
     | "assigneeIds"
     | "status"
     | "completedAt"
@@ -268,14 +272,33 @@ export function presentAssigneeProgressForEmployee<
   const ensured = ensureTaskAssigneeProgress(task);
   const mine = findAssigneeProgress(ensured.assigneeProgress, employeeId);
   if (!mine) return ensured;
+  const knownUrls = new Map(
+    (task.evidenceMedia ?? [])
+      .filter((item) => item.url)
+      .map((item) => [item.id, item.url] as const)
+  );
+  const progressMedia = (mine.evidenceMedia ?? []).map((item) => ({
+    ...item,
+    url: item.url || knownUrls.get(item.id),
+  }));
+  const evidenceMedia = (
+    progressMedia.length > 0
+      ? progressMedia
+      : task.assigneeIds.length <= 1
+        ? (task.evidenceMedia ?? [])
+        : progressMedia
+  ).map((item) => ({
+    ...item,
+    url: item.url || `/work/tasks/${task.id}/media/${item.id}`,
+  }));
   return {
     ...ensured,
     assigneeIds: [employeeId],
-    assigneeProgress: [mine],
+    assigneeProgress: [{ ...mine, evidenceMedia }],
     status: mine.status,
     completedAt: mine.completedAt ?? null,
     evidenceLinks: mine.evidenceLinks ?? [],
     evidenceNotes: mine.evidenceNotes ?? "",
-    evidenceMedia: mine.evidenceMedia ?? [],
+    evidenceMedia,
   };
 }

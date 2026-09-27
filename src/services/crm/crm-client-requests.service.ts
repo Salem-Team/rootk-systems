@@ -2,6 +2,7 @@ import {
   fetchCrmClientRequests,
   postCrmClientRequest,
   postCrmClientRequestReply,
+  putCrmClientRequestProposal,
 } from "@/api/crm.api";
 import { isProtectedAdminAccount } from "@/lib/protected-accounts";
 import { isApiMode } from "@/lib/env";
@@ -31,6 +32,7 @@ import type {
   CrmClientRequest,
   CrmClientRequestKind,
   CrmClientRequestReply,
+  TechnicalProposalDocument,
 } from "@/types/crm";
 
 const KINDS = new Set<CrmClientRequestKind>([
@@ -173,6 +175,7 @@ export async function createCrmClientRequest(
             : "",
         requestedByEmployeeId: actorEmployeeId() ?? "",
         replies: [] as CrmClientRequestReply[],
+        proposal: null,
       },
       actorId
     );
@@ -240,6 +243,57 @@ export async function replyCrmClientRequest(
       }
     } else {
       await notifyManager(lead.name, current.kind, requestId, true);
+    }
+    return ok(next);
+  } catch (error) {
+    return fromError(error, null);
+  }
+}
+
+export async function saveCrmTechnicalProposal(
+  requestId: string,
+  document: TechnicalProposalDocument
+): Promise<ApiResponse<CrmClientRequest | null>> {
+  if (isApiMode()) return putCrmClientRequestProposal(requestId, document);
+  try {
+    if (!canManageRequests()) {
+      throw new ValidationError("Only management can edit the proposal");
+    }
+    const current = await crmClientRequestRepository.findById(requestId);
+    if (!current || current.deletedAt) {
+      throw new NotFoundError("Request not found");
+    }
+    if (current.kind !== "technical_proposal") {
+      throw new ValidationError("This request is not a technical proposal");
+    }
+    const lead = await findReadableCrmLead(current.leadId);
+    if (!lead) throw new NotFoundError("Lead not found");
+    const actorId = getSessionUserId() || "system";
+    const next = touchEntity(current, actorId, {
+      status: "answered",
+      proposal: document,
+      leadName: lead.name,
+      leadPhone: lead.phone,
+    });
+    await crmClientRequestRepository.update(requestId, next);
+    const users = await userRepository.findAll();
+    const requester = users.find(
+      (user) => user.employeeId === current.requestedByEmployeeId
+    );
+    if (requester && requester.id !== actorId) {
+      await notifyQuietly({
+        titleKey: "notifications.crmClientRequestProposalTitle",
+        bodyKey: "notifications.crmClientRequestProposalBody",
+        vars: { lead: lead.name, kind: current.kind },
+        category: "work",
+        priority: "high",
+        audience: "employee",
+        recipientIds: [requester.id],
+        href: `/crm?lead=${current.leadId}&sheet=requests`,
+        entityType: "crm_client_request",
+        entityId: requestId,
+        actorId,
+      });
     }
     return ok(next);
   } catch (error) {

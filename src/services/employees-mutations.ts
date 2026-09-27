@@ -2,11 +2,18 @@ import {
   deleteEmployeeRemote,
   patchEmployee,
   patchEmployeeStatus,
+  patchEmployeeWhatsappAccounts,
   postEmployee,
 } from "@/api/employees.api";
 import type { CreateEmployeeInput, UpdateEmployeeInput } from "@/api/contracts";
 import { isApiMode } from "@/lib/env";
+import { hasPermissionId } from "@/constants/permissions";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
+import {
+  parseWhatsappAccountsInput,
+  withWhatsappAccounts,
+  type WhatsappAccount,
+} from "@/lib/whatsapp-accounts";
 import { createAuditFields, touchEntity } from "@/lib/entity";
 import { createId } from "@/lib/id";
 import { employeeRepository } from "@/repositories";
@@ -204,6 +211,48 @@ export async function updateEmployee(
     }
 
     return ok(updated, "Employee updated");
+  } catch (error) {
+    return fromError(error, emptyEmployee());
+  }
+}
+
+/** PATCH /employees/:id/whatsapp-accounts */
+export async function updateEmployeeWhatsappAccounts(
+  id: string,
+  accounts: WhatsappAccount[]
+): Promise<ApiResponse<Employee>> {
+  if (isApiMode()) return patchEmployeeWhatsappAccounts(id, accounts);
+  try {
+    const session = useSessionStore.getState();
+    const canEdit = hasPermissionId(
+      "employees.edit",
+      session.permissions,
+      session.role
+    );
+    const isSelf = getWorkEmployeeId() === id;
+    if (!canEdit && !isSelf) {
+      throw new ForbiddenError("You do not have permission for this action");
+    }
+    const parsed = parseWhatsappAccountsInput({ accounts });
+    if (!parsed.ok) {
+      throw new ValidationError(
+        parsed.reason === "phone"
+          ? "Each WhatsApp account needs a valid phone number"
+          : parsed.reason === "label"
+            ? "Each WhatsApp account needs a name"
+            : "Invalid WhatsApp accounts"
+      );
+    }
+    const actor = getSessionUserId();
+    const updated = await employeeRepository.mutate(id, (current) => {
+      const metadata = withWhatsappAccounts(current.metadata, parsed.accounts);
+      return touchEntity(current, actor, {
+        metadata,
+        whatsappAccounts: parsed.accounts,
+      });
+    });
+    if (!updated) throw new NotFoundError("Employee not found");
+    return ok(updated, "WhatsApp accounts updated");
   } catch (error) {
     return fromError(error, emptyEmployee());
   }

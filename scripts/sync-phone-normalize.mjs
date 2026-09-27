@@ -15,3 +15,7 @@ copyFileSync(
   join(root, "shared", "lead-contacts.ts"),
   join(root, "backend", "src", "lib", "lead-contacts.ts")
 );
+copyFileSync(
+  join(root, "shared", "whatsapp-accounts.ts"),
+  join(root, "backend", "src", "lib", "whatsapp-accounts.ts")
+);

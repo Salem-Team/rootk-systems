@@ -18,6 +18,7 @@ import { BidiBlocks, BidiText } from "@/components/shared/bidi-text";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { TaskMediaGallery } from "@/components/work/task-media-gallery";
 import { TaskMediaPicker } from "@/components/work/task-media-picker";
 import { VoicePlayer } from "@/components/voice/voice-player";
 import {
@@ -26,9 +27,7 @@ import {
 } from "@/components/voice/voice-recorder-control";
 import { useTranslation } from "@/hooks/use-translation";
 import { WORK_UPDATED_EVENT } from "@/lib/events";
-import { isApiMode } from "@/lib/env";
 import { formatIsoDateTime, DATETIME_12H_SHORT } from "@/lib/format-time";
-import { getHttpClient } from "@/lib/http-client";
 import {
   revokeMediaDraftPreviews,
   type WorkTaskMediaDraft,
@@ -51,63 +50,6 @@ function relativeTime(iso: string, locale: "en" | "ar"): string {
   } catch {
     return formatIsoDateTime(iso, locale, DATETIME_12H_SHORT);
   }
-}
-
-function CommentImage({ src, alt }: { src: string; alt: string }) {
-  const { t } = useTranslation();
-  const [url, setUrl] = useState<string | null>(
-    src.startsWith("data:") || src.startsWith("blob:") ? src : null
-  );
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    setFailed(false);
-    if (src.startsWith("data:") || src.startsWith("blob:") || !isApiMode()) {
-      setUrl(src);
-      return;
-    }
-    let revoked: string | null = null;
-    let cancelled = false;
-    setUrl(null);
-    const path = src.startsWith("/api/")
-      ? src.slice(4)
-      : src.startsWith("/")
-        ? src
-        : `/${src}`;
-    void getHttpClient()
-      .requestBlob(path)
-      .then((blob) => {
-        const objectUrl = URL.createObjectURL(blob);
-        revoked = objectUrl;
-        if (!cancelled) setUrl(objectUrl);
-      })
-      .catch(() => {
-        if (!cancelled) setFailed(true);
-      });
-    return () => {
-      cancelled = true;
-      if (revoked) URL.revokeObjectURL(revoked);
-    };
-  }, [src]);
-
-  if (failed) {
-    return (
-      <p className="rounded-xl border border-border/60 bg-muted/40 px-3 py-4 text-[12px] text-muted-foreground">
-        {t("workMedia.loadFailed")}
-      </p>
-    );
-  }
-  if (!url) {
-    return <div className="aspect-video animate-pulse rounded-xl bg-muted" />;
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={url}
-      alt={alt}
-      className="max-h-56 w-full rounded-xl border border-border/60 object-cover"
-    />
-  );
 }
 
 function CommentCard({
@@ -195,15 +137,20 @@ function CommentCard({
             />
           ) : null}
           {comment.images?.length ? (
-            <div className="mt-2.5 grid grid-cols-2 gap-2">
-              {comment.images.map((image) => (
-                <CommentImage
-                  key={image.id}
-                  src={image.url}
-                  alt={image.name || t("workMedia.title")}
-                />
-              ))}
-            </div>
+            <TaskMediaGallery
+              hideHeader
+              className="mt-2.5"
+              items={comment.images.map((image) => ({
+                id: image.id,
+                kind: "image" as const,
+                mime: image.mime,
+                name: image.name || t("workMedia.title"),
+                sizeBytes: image.sizeBytes,
+                url:
+                  image.url ||
+                  `/work/tasks/${comment.taskId}/media/${image.id}`,
+              }))}
+            />
           ) : null}
           <div className="-ms-2 mt-1.5 flex flex-wrap items-center gap-0.5">
             {onReply ? (

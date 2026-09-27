@@ -1,9 +1,21 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { EmployeeStatus, Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { mapEmployee, parseDate } from "../common/mappers";
 import { hashPassword } from "../auth/password.util";
+import { userHasPermission } from "../common/permissions";
+import type { JwtPayload } from "../common/decorators/current-user";
 import { withAdminVisiblePassword } from "../common/user-password-preview";
+import {
+  parseWhatsappAccountsInput,
+  withWhatsappAccounts,
+} from "../lib/whatsapp-accounts";
 import { assertOptionalPassword } from "./employees-validators";
 import { resolveManagerAssignment } from "./employees-manager";
 
@@ -124,6 +136,49 @@ export class EmployeesUpdateService {
       data: {
         status: status as EmployeeStatus,
         updatedBy: actorId,
+        version: { increment: 1 },
+      },
+    });
+    return mapEmployee(row);
+  }
+
+  async updateWhatsappAccounts(
+    companyId: string,
+    actor: JwtPayload | undefined,
+    id: string,
+    body: unknown
+  ) {
+    if (!actor?.sub) throw new UnauthorizedException("Authentication required");
+    const canEdit = userHasPermission(actor, "employees.edit");
+    const isSelf = Boolean(actor.employeeId) && actor.employeeId === id;
+    if (!canEdit && !isSelf) {
+      throw new ForbiddenException("You do not have permission for this action");
+    }
+
+    const parsed = parseWhatsappAccountsInput(body);
+    if (!parsed.ok) {
+      throw new BadRequestException(
+        parsed.reason === "phone"
+          ? "Each WhatsApp account needs a valid phone number"
+          : parsed.reason === "label"
+            ? "Each WhatsApp account needs a name"
+            : "Invalid WhatsApp accounts"
+      );
+    }
+
+    const current = await this.prisma.employee.findFirst({
+      where: { id, companyId, deletedAt: null },
+    });
+    if (!current) throw new NotFoundException("Employee not found");
+
+    const row = await this.prisma.employee.update({
+      where: { id },
+      data: {
+        metadata: withWhatsappAccounts(
+          current.metadata,
+          parsed.accounts
+        ) as Prisma.InputJsonValue,
+        updatedBy: actor.sub,
         version: { increment: 1 },
       },
     });

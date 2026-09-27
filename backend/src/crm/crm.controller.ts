@@ -465,6 +465,22 @@ export class CrmController {
     );
   }
 
+  @Put("client-requests/:requestId/proposal")
+  saveClientRequestProposal(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @CurrentUser() user: JwtPayload,
+    @Param("requestId") requestId: string,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.service.saveClientRequestProposal(
+      companyId,
+      toDomainActor(user, actorId),
+      requestId,
+      body
+    );
+  }
+
   @Post("client-requests/:requestId/replies")
   replyClientRequest(
     @CompanyId() companyId: string,

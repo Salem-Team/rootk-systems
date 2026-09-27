@@ -18,6 +18,7 @@ import {
   type ProgressRingTone,
 } from "@/components/targets/target-progress-ring";
 import { BidiBlocks, BidiText } from "@/components/shared/bidi-text";
+import { TaskEvidenceDisplay } from "@/components/work/task-evidence-display";
 import { TaskMediaGallery } from "@/components/work/task-media-gallery";
 import { TaskCommentsPanel } from "@/components/work/task-comments-panel";
 import { useTranslation } from "@/hooks/use-translation";
@@ -28,6 +29,25 @@ import {
 } from "@/lib/task-assignee-progress";
 import type { Employee } from "@/types";
 import type { WorkTask } from "@/types/work";
+import type { WorkTaskMediaItem } from "@/lib/task-media";
+
+function proofMediaForView(task: WorkTask): WorkTaskMediaItem[] {
+  const seen = new Set<string>();
+  const items: WorkTaskMediaItem[] = [];
+  const push = (item: WorkTaskMediaItem | undefined) => {
+    if (!item?.id || seen.has(item.id)) return;
+    seen.add(item.id);
+    items.push({
+      ...item,
+      url: item.url || `/work/tasks/${task.id}/media/${item.id}`,
+    });
+  };
+  for (const item of task.evidenceMedia ?? []) push(item);
+  for (const row of task.assigneeProgress ?? []) {
+    for (const item of row.evidenceMedia ?? []) push(item);
+  }
+  return items;
+}
 
 /** Progress % for a work task (multi-assignee rollup, else status + subtasks). */
 export function workTaskProgress(task: WorkTask): number {
@@ -69,6 +89,10 @@ export function TaskViewSheet({
     () => (task ? workTaskProgress(task) : 0),
     [task]
   );
+  const proofTask = useMemo(() => {
+    if (!task) return null;
+    return { ...task, evidenceMedia: proofMediaForView(task) };
+  }, [task]);
 
   const tone: ProgressRingTone =
     percentage >= 100
@@ -136,8 +160,15 @@ export function TaskViewSheet({
               ) : null}
 
               {task.media && task.media.length > 0 ? (
-                <TaskMediaGallery items={task.media} />
+                <TaskMediaGallery
+                  items={task.media.map((item) => ({
+                    ...item,
+                    url: item.url || `/work/tasks/${task.id}/media/${item.id}`,
+                  }))}
+                />
               ) : null}
+
+              {proofTask ? <TaskEvidenceDisplay task={proofTask} /> : null}
 
               <div>
                 <p className="mb-2 text-[12px] font-semibold text-muted-foreground">
