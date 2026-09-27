@@ -36,12 +36,16 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 max-w-full px-2 pb-[max(0.55rem,env(safe-area-inset-bottom))] pt-2 sm:px-3 lg:hidden"
+      className={cn(
+        "fixed inset-x-0 bottom-0 z-40 max-w-full pb-[max(0.55rem,env(safe-area-inset-bottom))] pt-2 lg:hidden",
+        items.length >= 6 ? "px-1" : "px-2 sm:px-3"
+      )}
       aria-label={t("common.mobileNav")}
     >
       <ul
         className={cn(
-          "mx-auto grid max-w-lg gap-0.5 rounded-2xl border border-border/65 bg-card/92 p-1.5 shadow-[var(--shadow-float)] backdrop-blur-2xl supports-[backdrop-filter]:bg-card/80",
+          "mx-auto grid w-full max-w-lg rounded-2xl border border-border/65 bg-card/92 shadow-[var(--shadow-float)] backdrop-blur-2xl supports-[backdrop-filter]:bg-card/80",
+          items.length >= 6 ? "gap-0 p-1" : "gap-0.5 p-1.5",
           items.length <= 4
             ? "grid-cols-4"
             : items.length === 5
@@ -56,30 +60,50 @@ export function MobileBottomNav() {
             : pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = isMore ? Menu : item.icon;
 
+          const label =
+            item.key === "tasks" && showTasksAdminLabel
+              ? t("nav.tasksAdminShort")
+              : item.key === "tasks"
+                ? t("nav.tasksShort")
+                : item.key === "crm"
+                  ? t("nav.crmShort")
+                  : item.key === "clientRequests"
+                    ? t("nav.clientRequestsShort")
+                    : isMore
+                      ? t("nav.more")
+                      : t(`nav.${item.key}`);
+          const labelClass = cn(
+            "relative z-10 block w-full text-center font-semibold leading-none tracking-tight whitespace-nowrap",
+            items.length >= 6
+              ? "text-[9px]"
+              : "text-[10px] sm:text-[11px]"
+          );
+
           if (isMore) {
             return (
-              <li key={item.key}>
+              <li key={item.key} className="min-w-0">
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(true)}
-                  className="relative flex min-h-[3.25rem] w-full flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 text-[9px] font-semibold text-muted-foreground transition-colors touch-manipulation hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:min-h-[3.5rem] sm:px-1 sm:py-1.5 sm:text-[10px]"
+                  className="relative flex min-h-[3.35rem] w-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0 py-1 text-muted-foreground transition-colors touch-manipulation hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
                   aria-label={t("common.openMenu")}
                 >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted/70">
+                  <span className="flex h-7 w-7 items-center justify-center">
                     <Icon className="h-4 w-4" />
                   </span>
-                  <span>{t(`nav.${item.key}`)}</span>
+                  <span className={labelClass}>{label}</span>
                 </button>
               </li>
             );
           }
 
           return (
-            <li key={item.href}>
+            <li key={item.href} className="min-w-0">
               <Link
                 href={item.href}
+                title={label}
                 className={cn(
-                  "relative flex min-h-[3.25rem] flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 text-[9px] font-semibold transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:min-h-[3.5rem] sm:px-1 sm:py-1.5 sm:text-[10px]",
+                  "relative flex min-h-[3.35rem] w-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0 py-1 font-semibold transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
                   active
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
@@ -88,17 +112,17 @@ export function MobileBottomNav() {
               >
                 {active ? (
                   reduceMotion ? (
-                    <span className="absolute inset-x-1 top-1 h-[2.65rem] rounded-xl bg-primary/12" />
+                    <span className="absolute inset-x-0.5 top-0.5 h-7 rounded-xl bg-primary/12" />
                   ) : (
                     <motion.span
                       layoutId="mobile-nav-active"
-                      className="absolute inset-x-1 top-1 h-[2.65rem] rounded-xl bg-primary/12"
+                      className="absolute inset-x-0.5 top-0.5 h-7 rounded-xl bg-primary/12"
                       transition={layoutSpring}
                     />
                   )
                 ) : null}
                 <motion.span
-                  className="relative z-10 flex h-8 w-8 items-center justify-center"
+                  className="relative z-10 flex h-7 w-7 items-center justify-center"
                   animate={
                     reduceMotion
                       ? undefined
@@ -115,17 +139,7 @@ export function MobileBottomNav() {
                     </span>
                   ) : null}
                 </motion.span>
-                <span className="relative z-10 max-w-full truncate px-0.5 text-[10px] leading-tight sm:text-[11px]">
-                  {item.key === "tasks" && showTasksAdminLabel
-                    ? t("nav.tasksAdminShort")
-                    : item.key === "tasks"
-                      ? t("nav.tasksShort")
-                      : item.key === "crm"
-                        ? t("nav.crmShort")
-                        : item.key === "clientRequests"
-                          ? t("nav.clientRequestsShort")
-                          : t(`nav.${item.key}`)}
-                </span>
+                <span className={labelClass}>{label}</span>
               </Link>
             </li>
           );
