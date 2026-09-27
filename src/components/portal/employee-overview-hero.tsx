@@ -63,29 +63,29 @@ export function EmployeeOverviewHero({
           }}
         />
 
-        <div className="relative flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/55">
-              {format(demoNow(), "EEEE · d MMM", { locale: dateLocale })}
-            </p>
-            <h2 className="font-display mt-1.5 text-[1.45rem] font-bold leading-tight tracking-tight text-white">
-              {t("portal.welcome", { name: user.firstName || user.displayName })}
-            </h2>
-            <p className="mt-1.5 text-[13px] leading-snug text-white/72">
+        <div className="relative">
+          <p className="text-[11px] font-medium text-white/60">
+            {format(demoNow(), "EEEE · d MMM", { locale: dateLocale })}
+          </p>
+          <h2 className="font-display mt-1.5 text-[1.4rem] font-bold leading-tight tracking-tight text-balance text-white sm:text-[1.55rem]">
+            {t("portal.welcome", { name: user.firstName || user.displayName })}
+          </h2>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <p className="min-w-0 text-[13px] leading-snug text-white/72">
               {done
                 ? t("employeeHome.heroDone")
                 : isLive
                   ? t("employeeHome.heroLive")
                   : t("employeeHome.heroReady")}
             </p>
+            {todayRecord ? (
+              <StatusBadge status={todayRecord.status} onDark />
+            ) : (
+              <span className="shrink-0 rounded-full border border-amber-200/80 bg-amber-200 px-2.5 py-1 text-[11px] font-semibold text-amber-950">
+                {t("attendance.notCheckedInShort")}
+              </span>
+            )}
           </div>
-          {todayRecord ? (
-            <StatusBadge status={todayRecord.status} onDark />
-          ) : (
-            <span className="shrink-0 rounded-full border border-amber-200/80 bg-amber-200 px-2.5 py-1 text-[11px] font-semibold text-amber-950">
-              {t("attendance.notCheckedIn")}
-            </span>
-          )}
         </div>
 
         <div className="relative mt-4 grid grid-cols-3 gap-1.5 sm:gap-2">

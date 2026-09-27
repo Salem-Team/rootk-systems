@@ -4,6 +4,7 @@ import { CrmController } from "./crm.controller";
 import { WebsiteLeadIngestController } from "./website-lead-ingest.controller";
 import { CrmActivitiesService } from "./crm-activities.service";
 import { CrmCallsService } from "./crm-calls.service";
+import { CrmClientRequestsService } from "./crm-client-requests.service";
 import { CrmBusinessTypesService } from "./crm-business-types.service";
 import { CrmDashboardService } from "./crm-dashboard.service";
 import { CrmFeedbackTypesService } from "./crm-feedback-types.service";
@@ -43,6 +44,7 @@ import { NotificationsModule } from "../notifications/notifications.module";
     CrmLeadsService,
     CrmActivitiesService,
     CrmCallsService,
+    CrmClientRequestsService,
     CrmPhoneLookupService,
     CrmDashboardService,
     CrmPerformanceService,

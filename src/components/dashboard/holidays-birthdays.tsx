@@ -35,7 +35,7 @@ export function HolidaysPanel({ holidays }: { holidays: Holiday[] }) {
           <PartyPopper className="h-3.5 w-3.5 text-primary" aria-hidden />
           {t("dashboard.upcomingHolidays")}
         </h3>
-        <p className="mt-0.5 text-sm text-muted-foreground">
+        <p className="mt-0.5 hidden text-sm text-muted-foreground sm:block">
           {t("dashboard.upcomingHolidaysDesc")}
         </p>
       </div>
@@ -98,7 +98,7 @@ export function BirthdaysPanel({ items }: { items: BirthdayItem[] }) {
           <Cake className="h-3.5 w-3.5 text-primary" aria-hidden />
           {t("dashboard.birthdays")}
         </h3>
-        <p className="mt-0.5 text-sm text-muted-foreground">
+        <p className="mt-0.5 hidden text-sm text-muted-foreground sm:block">
           {t("dashboard.birthdaysDesc")}
         </p>
       </div>

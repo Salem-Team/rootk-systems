@@ -88,9 +88,12 @@ export function CompanyCalendarMini({
           <CalendarDays className="h-3.5 w-3.5 text-primary" aria-hidden />
           {t("dashboard.companyCalendar")}
         </h3>
-        <p className="mt-0.5 text-sm text-muted-foreground">
+        <p className="mt-0.5 hidden text-sm text-muted-foreground sm:block">
           {format(parseISO(`${monthKey}-01`), "MMMM yyyy", { locale: dateLocale })} ·{" "}
           {t("dashboard.companyCalendarDesc")}
+        </p>
+        <p className="mt-0.5 text-[12px] font-medium text-muted-foreground sm:hidden">
+          {format(parseISO(`${monthKey}-01`), "MMMM yyyy", { locale: dateLocale })}
         </p>
       </div>
       <div className="panel-body space-y-4">
@@ -110,7 +113,7 @@ export function CompanyCalendarMini({
           ].map((d) => (
             <div
               key={d}
-              className="pb-1 text-center text-[9px] font-medium uppercase text-muted-foreground"
+              className="truncate px-0 pb-1 text-center text-[10px] font-medium leading-none text-muted-foreground"
             >
               {d}
             </div>
@@ -120,7 +123,7 @@ export function CompanyCalendarMini({
               key={cell.date}
               role="gridcell"
               className={cn(
-                "aspect-square rounded-md border border-transparent p-0.5 text-center text-[10px] tabular-nums",
+                "flex aspect-square flex-col items-center justify-center overflow-hidden rounded-md border border-transparent p-0.5 text-center text-[10px] tabular-nums leading-none",
                 cell.inMonth
                   ? "bg-muted/30 text-foreground"
                   : "text-muted-foreground/30",

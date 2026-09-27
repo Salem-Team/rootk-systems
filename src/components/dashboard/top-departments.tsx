@@ -29,7 +29,7 @@ export function TopDepartments({ stats }: { stats: DepartmentStat[] }) {
           <Award className="h-3.5 w-3.5 text-primary" aria-hidden />
           {t("dashboard.topDepartments")}
         </h3>
-        <p className="mt-0.5 text-sm text-muted-foreground">
+        <p className="mt-0.5 hidden text-sm text-muted-foreground sm:block">
           {t("dashboard.topDepartmentsDesc")}
         </p>
       </div>
@@ -42,11 +42,14 @@ export function TopDepartments({ stats }: { stats: DepartmentStat[] }) {
         {top.map((row, index) => (
           <motion.li key={row.department} variants={fadeInUp} className="space-y-1.5">
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-muted text-[11px] font-semibold tabular-nums">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted text-[11px] font-semibold tabular-nums">
                   {index + 1}
                 </span>
-                <DepartmentBadge department={row.department} />
+                <DepartmentBadge
+                  department={row.department}
+                  className="min-w-0 max-w-full truncate"
+                />
               </div>
               <span className="text-sm font-semibold tabular-nums">
                 {row.rate}%

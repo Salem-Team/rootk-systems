@@ -72,6 +72,13 @@ const CrmFeedbackPanel = dynamic(
     import("@/components/crm/crm-feedback-panel").then((m) => m.CrmFeedbackPanel),
   { loading: panelLoading }
 );
+const CrmClientRequestsPanel = dynamic(
+  () =>
+    import("@/components/crm/crm-client-requests-panel").then(
+      (m) => m.CrmClientRequestsPanel
+    ),
+  { loading: panelLoading }
+);
 const CrmPerformancePanel = dynamic(
   () =>
     import("@/components/crm/crm-performance-panel").then(
@@ -433,6 +440,14 @@ export default function CrmPage() {
               reasons={hub.safeDashboard?.feedbackReasons}
               loading={hub.loading}
               onLeadClick={(id) => hub.openViewLead(id)}
+            />
+          ) : null}
+
+          {hub.tab === "clientRequests" ? (
+            <CrmClientRequestsPanel
+              variant="inbox"
+              employees={hub.safeEmployees}
+              onOpenLead={(id) => hub.openViewLead(id, "requests")}
             />
           ) : null}
 

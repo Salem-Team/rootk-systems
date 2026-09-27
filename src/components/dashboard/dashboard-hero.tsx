@@ -66,7 +66,7 @@ export function DashboardHero({
 
         <nav
           aria-label={t("dashboard.quickActions")}
-          className="scroll-x -mx-3 flex max-w-full snap-x snap-mandatory gap-2 px-3 pb-0.5 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden"
+          className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end"
         >
           {QUICK_LINKS.map((link) => {
             const Icon = link.icon;
@@ -75,14 +75,19 @@ export function DashboardHero({
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "inline-flex h-11 shrink-0 snap-start items-center gap-2 rounded-xl border border-border/80 bg-card px-3.5 text-[13px] font-medium touch-manipulation",
-                  "shadow-[0_1px_2px_rgba(11,20,36,0.03)] transition-colors sm:h-9 sm:rounded-lg sm:px-3",
+                  "flex min-h-12 min-w-0 items-center gap-2.5 rounded-2xl border border-border/80 bg-card px-3 text-[13px] font-semibold leading-tight touch-manipulation",
+                  "shadow-[0_1px_2px_rgba(11,20,36,0.04)] transition-colors",
+                  "sm:inline-flex sm:h-9 sm:min-h-0 sm:w-auto sm:gap-2 sm:rounded-lg sm:px-3 sm:font-medium",
                   "hover:border-primary/30 hover:bg-primary/[0.04] hover:text-primary",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                  "active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
                 )}
               >
-                <Icon className="h-3.5 w-3.5 opacity-70" aria-hidden />
-                {t(link.labelKey)}
+                <span className="icon-well h-8 w-8 shrink-0 sm:h-auto sm:w-auto sm:border-0 sm:bg-transparent sm:shadow-none">
+                  <Icon className="h-3.5 w-3.5 opacity-80" aria-hidden />
+                </span>
+                <span className="min-w-0 line-clamp-2 leading-snug sm:truncate">
+                  {t(link.labelKey)}
+                </span>
               </Link>
             );
           })}

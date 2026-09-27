@@ -422,4 +422,62 @@ export class CrmController {
   ) {
     return this.service.updateWebsiteAutoLead(companyId, actorId, body);
   }
+
+  @Get("client-requests")
+  listClientRequests(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @CurrentUser() user: JwtPayload,
+    @Query() query: Record<string, string | undefined>
+  ) {
+    return this.service.listClientRequests(
+      companyId,
+      toDomainActor(user, actorId),
+      query
+    );
+  }
+
+  @Get("leads/:id/client-requests")
+  listLeadClientRequests(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string
+  ) {
+    return this.service.listClientRequests(companyId, toDomainActor(user, actorId), {
+      leadId: id,
+    });
+  }
+
+  @Post("leads/:id/client-requests")
+  createClientRequest(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.service.createClientRequest(
+      companyId,
+      toDomainActor(user, actorId),
+      id,
+      body
+    );
+  }
+
+  @Post("client-requests/:requestId/replies")
+  replyClientRequest(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @CurrentUser() user: JwtPayload,
+    @Param("requestId") requestId: string,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.service.replyClientRequest(
+      companyId,
+      toDomainActor(user, actorId),
+      requestId,
+      body
+    );
+  }
 }

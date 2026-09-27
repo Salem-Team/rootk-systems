@@ -35,7 +35,7 @@ export function RecentLeavePanel({ requests }: { requests: LeaveRequest[] }) {
             <FileText className="h-3.5 w-3.5 text-primary" aria-hidden />
             {t("dashboard.recentLeaveRequests")}
           </h3>
-          <p className="mt-0.5 text-sm text-muted-foreground">
+          <p className="mt-0.5 hidden text-sm text-muted-foreground sm:block">
             {t("dashboard.recentLeaveRequestsDesc")}
           </p>
         </div>

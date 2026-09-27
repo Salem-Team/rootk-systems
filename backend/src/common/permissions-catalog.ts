@@ -132,6 +132,7 @@ export const PERMISSION_CATALOG = [
   { id: "crm.viewAudit", module: "crm", employeeDefault: false },
   { id: "crm.logActivities", module: "crm", employeeDefault: true },
   { id: "crm.addFeedback", module: "crm", employeeDefault: true },
+  { id: "crm.replyClientRequests", module: "crm", employeeDefault: false },
 
   // Employees
   { id: "employees.view", module: "employees", employeeDefault: false },

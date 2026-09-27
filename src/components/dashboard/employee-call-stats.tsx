@@ -43,14 +43,14 @@ export function EmployeeCallStats({ rows }: { rows: DailyReportRow[] }) {
             <h2 className="text-[0.95rem] font-semibold tracking-tight">
               {t("dashboard.callStatsTitle")}
             </h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">
+            <p className="mt-0.5 hidden text-sm text-muted-foreground sm:block">
               {t("dashboard.callStatsDesc")}
             </p>
           </div>
           <PhoneCall className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
         </div>
 
-        <div className="mt-4 flex items-center gap-4">
+        <div className="mt-3 flex items-center gap-3 sm:mt-4 sm:gap-4">
           <CallRing active={totals.active} inactive={totals.inactive} total={totalCalls} />
           <dl className="grid flex-1 grid-cols-1 gap-2">
             <CallKpi label={t("reports.colCalls")} value={totalCalls} />
@@ -79,7 +79,7 @@ export function EmployeeCallStats({ rows }: { rows: DailyReportRow[] }) {
         />
       ) : (
         <>
-          <ul className="grid max-h-[14rem] gap-2 overflow-auto p-3 md:hidden">
+          <ul className="grid gap-2 p-3 md:hidden">
             {topRows.map((row) => {
               const total =
                 (row.crmActiveCalls ?? 0) + (row.crmInactiveCalls ?? 0);

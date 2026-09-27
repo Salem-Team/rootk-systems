@@ -51,7 +51,7 @@ export function WeeklyChart({ data }: { data: WeeklyStat[] }) {
             <h3 className="text-[0.95rem] font-semibold tracking-tight">
               {t("dashboard.weeklyTitle")}
             </h3>
-            <p className="mt-0.5 text-sm text-muted-foreground">
+            <p className="mt-0.5 hidden text-sm text-muted-foreground sm:block">
               {t("dashboard.weeklyDesc")}
             </p>
           </div>
@@ -66,7 +66,7 @@ export function WeeklyChart({ data }: { data: WeeklyStat[] }) {
             aria-label={t("dashboard.weeklyTitle")}
           >
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="presentFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={CHART.present} stopOpacity={0.3} />
@@ -78,8 +78,20 @@ export function WeeklyChart({ data }: { data: WeeklyStat[] }) {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-              <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: MUTED }} interval={0} />
-              <YAxis width={32} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: MUTED }} />
+              <XAxis
+                dataKey="day"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 10, fill: MUTED }}
+                interval={0}
+                minTickGap={0}
+              />
+              <YAxis
+                width={28}
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 10, fill: MUTED }}
+              />
               <Tooltip contentStyle={chartTooltipStyle} />
               <Area
                 type="monotone"

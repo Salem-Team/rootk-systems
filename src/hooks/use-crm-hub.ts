@@ -119,8 +119,15 @@ export function useCrmHub() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const lead = new URLSearchParams(window.location.search).get("lead");
-    if (lead) openViewLead(lead);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tab") === "clientRequests") setTab("clientRequests");
+    const lead = params.get("lead");
+    if (lead) {
+      openViewLead(
+        lead,
+        params.get("tab") === "clientRequests" ? "requests" : "overview"
+      );
+    }
 
     function onOpenLead(event: Event) {
       const id = (event as CustomEvent<string>).detail?.trim();

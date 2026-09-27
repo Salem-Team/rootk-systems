@@ -84,18 +84,25 @@ export function KpiCard({
     <>
       <div className="flex items-start justify-between gap-2 sm:gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <p className="section-label !mb-0 line-clamp-2 leading-snug">{label}</p>
             {badge ? (
-              <Badge
-                variant="info"
-                className="h-5 max-w-full px-1.5 text-[10px] font-semibold"
-              >
-                {badge}
-              </Badge>
+              <>
+                <span
+                  className="inline-flex h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 sm:hidden"
+                  title={badge}
+                  aria-label={badge}
+                />
+                <Badge
+                  variant="info"
+                  className="hidden h-5 max-w-full px-1.5 text-[10px] font-semibold sm:inline-flex"
+                >
+                  {badge}
+                </Badge>
+              </>
             ) : null}
           </div>
-          <p className="stat-value mt-1.5 text-[1.28rem] leading-none sm:mt-2.5 sm:text-[1.55rem] md:text-[1.7rem]">
+          <p className="stat-value mt-2 text-[1.45rem] leading-none sm:mt-2.5 sm:text-[1.55rem] md:text-[1.7rem]">
             <AnimatedCounter
               value={value}
               suffix={suffix}
@@ -103,7 +110,7 @@ export function KpiCard({
             />
           </p>
           {hint ? (
-            <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-muted-foreground sm:mt-1.5">
+            <p className="mt-1.5 hidden text-[11px] leading-snug text-muted-foreground sm:line-clamp-2 sm:block">
               {hint}
             </p>
           ) : null}

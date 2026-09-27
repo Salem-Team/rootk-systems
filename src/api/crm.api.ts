@@ -23,6 +23,7 @@ import type {
   CrmLeadFeedback,
   CrmLeadFilters,
   CrmCall,
+  CrmClientRequest,
   CrmPhoneDuplicateGroup,
   CrmPhoneMatchResult,
   CrmSalesPerformanceRow,
@@ -399,5 +400,48 @@ export async function postCrmLeadCall(
 ): Promise<ApiResponse<CrmCall | null>> {
   return emitIfOk(
     await api.post(API_ROUTES.crm.leadCalls(leadId), body, null)
+  );
+}
+
+export async function fetchCrmClientRequests(query?: {
+  leadId?: string;
+  status?: string;
+}): Promise<ApiResponse<CrmClientRequest[]>> {
+  const res = await api.getList<CrmClientRequest>(
+    `${API_ROUTES.crm.clientRequests}${toQuery({
+      leadId: query?.leadId,
+      status: query?.status,
+    })}`,
+    []
+  );
+  return withData(
+    res,
+    ensureCrmList<CrmClientRequest>(res.data).map((row) => ({
+      ...row,
+      replies: Array.isArray(row.replies) ? row.replies : [],
+    }))
+  );
+}
+
+export async function postCrmClientRequest(
+  leadId: string,
+  body: {
+    kind: string;
+    message: string;
+    listedPrice?: string;
+    requestedPrice?: string;
+  }
+): Promise<ApiResponse<CrmClientRequest | null>> {
+  return emitIfOk(
+    await api.post(API_ROUTES.crm.leadClientRequests(leadId), body, null)
+  );
+}
+
+export async function postCrmClientRequestReply(
+  requestId: string,
+  body: { body: string }
+): Promise<ApiResponse<CrmClientRequest | null>> {
+  return emitIfOk(
+    await api.post(API_ROUTES.crm.clientRequestReplies(requestId), body, null)
   );
 }

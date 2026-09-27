@@ -79,7 +79,7 @@ export function CheckInPanel() {
                 {format(demoNow(), "EEEE, MMMM d, yyyy", { locale: dateLocale })}
               </p>
             </div>
-            <div className="inline-flex items-center gap-2 rounded-lg border border-border/70 bg-muted/30 px-2.5 py-1.5">
+            <div className="inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-border/70 bg-muted/30 px-2.5 py-1.5">
               <MapPin className="h-3.5 w-3.5 text-primary" aria-hidden />
               <span className="text-[12px] font-medium">
                 {canCheckIn && wfh && wfhAllowed

@@ -217,7 +217,7 @@ export function AdminDashboard() {
             {t("dashboard.moreInsights")}
           </h2>
         </div>
-        <div className="grid min-w-0 gap-3 sm:gap-5 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
           <Reveal preset="scale" className="min-w-0">
             <TopDepartments stats={deptStats} />
           </Reveal>

@@ -50,6 +50,7 @@ export const StorageKeys = {
   crmLeadActivities: key("crm-lead-activities"),
   crmLeadFeedback: key("crm-lead-feedback"),
   crmLeadHistory: key("crm-lead-history"),
+  crmClientRequests: key("crm-client-requests"),
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];

@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { Actor } from "./crm-access";
 import { CrmActivitiesService } from "./crm-activities.service";
 import { CrmCallsService } from "./crm-calls.service";
+import { CrmClientRequestsService } from "./crm-client-requests.service";
 import { CrmBusinessTypesService } from "./crm-business-types.service";
 import { CrmDashboardService } from "./crm-dashboard.service";
 import { CrmFeedbackTypesService } from "./crm-feedback-types.service";
@@ -39,6 +40,7 @@ export class CrmService {
     private readonly reportsService: CrmReportsService,
     private readonly phoneLookup: CrmPhoneLookupService,
     private readonly calls: CrmCallsService,
+    private readonly clientRequests: CrmClientRequestsService,
     private readonly websiteAutoAssign: CrmWebsiteAutoAssignService
   ) {}
 
@@ -210,6 +212,35 @@ export class CrmService {
     body: Record<string, unknown>
   ) {
     return this.calls.recordCall(companyId, actor, leadId, body);
+  }
+
+  listClientRequests(
+    companyId: string,
+    actor: Actor,
+    query: Record<string, string | undefined>
+  ) {
+    return this.clientRequests.list(companyId, actor, {
+      leadId: query.leadId,
+      status: query.status,
+    });
+  }
+
+  createClientRequest(
+    companyId: string,
+    actor: Actor,
+    leadId: string,
+    body: Record<string, unknown>
+  ) {
+    return this.clientRequests.create(companyId, actor, leadId, body);
+  }
+
+  replyClientRequest(
+    companyId: string,
+    actor: Actor,
+    requestId: string,
+    body: Record<string, unknown>
+  ) {
+    return this.clientRequests.reply(companyId, actor, requestId, body);
   }
 
   // ── Analytics ───────────────────────────────────────────────────────────

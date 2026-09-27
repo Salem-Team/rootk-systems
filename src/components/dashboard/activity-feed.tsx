@@ -119,9 +119,18 @@ export function ActivityFeed({
                             <p className="truncate text-xs text-muted-foreground">
                               <BidiText text={copy.description} />
                             </p>
+                            <time
+                              className="mt-0.5 block text-[11px] tabular-nums text-muted-foreground sm:hidden"
+                              dateTime={activity.timestamp}
+                            >
+                              {formatDistanceToNow(new Date(activity.timestamp), {
+                                addSuffix: true,
+                                locale: dateLocale,
+                              })}
+                            </time>
                           </div>
                           <time
-                            className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
+                            className="hidden shrink-0 text-[11px] tabular-nums text-muted-foreground sm:block"
                             dateTime={activity.timestamp}
                           >
                             {formatDistanceToNow(new Date(activity.timestamp), {

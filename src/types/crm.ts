@@ -219,6 +219,35 @@ export interface CrmLeadFeedback extends BaseEntity {
   mentionedUsers?: { id: string; name: string }[];
 }
 
+export type CrmClientRequestKind =
+  | "price_exception"
+  | "technical_proposal"
+  | "contract";
+
+export type CrmClientRequestStatus = "open" | "answered";
+
+export interface CrmClientRequestReply extends BaseEntity {
+  id: string;
+  requestId: string;
+  body: string;
+  authorEmployeeId: string;
+  fromManagement: boolean;
+}
+
+export interface CrmClientRequest extends BaseEntity {
+  id: string;
+  leadId: string;
+  leadName: string;
+  leadPhone: string;
+  kind: CrmClientRequestKind;
+  status: CrmClientRequestStatus;
+  message: string;
+  listedPrice: string;
+  requestedPrice: string;
+  requestedByEmployeeId: string;
+  replies: CrmClientRequestReply[];
+}
+
 export interface CrmLeadHistoryEvent extends BaseEntity {
   id: string;
   leadId: string | null;

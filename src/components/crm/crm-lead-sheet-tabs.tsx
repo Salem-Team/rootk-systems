@@ -1,6 +1,7 @@
 "use client";
 
 import { CrmMentionChips, CrmMentionText } from "@/components/crm/crm-mention-text";
+import { CrmClientRequestsPanel } from "@/components/crm/crm-client-requests-panel";
 import { CrmLeadRequestBudgetEditor } from "@/components/crm/crm-lead-request-budget-editor";
 import { BidiBlocks, BidiText } from "@/components/shared/bidi-text";
 import { LtrNum } from "@/components/shared/ltr-num";
@@ -100,7 +101,7 @@ export function CrmLeadSheetTabs({
       className="mt-0 flex min-h-0 flex-1 flex-col"
     >
       <div className="sticky top-0 z-10 -mx-3 bg-card/95 px-3 pb-2 pt-2 backdrop-blur-xl supports-[backdrop-filter]:bg-card/90 sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:pb-0 sm:pt-3 sm:backdrop-blur-none">
-        <TabsList className="!grid h-11 w-full !grid-cols-3 gap-1 rounded-xl border border-border/70 bg-muted/55 p-1 shadow-none sm:!w-full sm:h-10 sm:!justify-stretch">
+        <TabsList className="!grid h-11 w-full !grid-cols-4 gap-1 rounded-xl border border-border/70 bg-muted/55 p-1 shadow-none sm:!w-full sm:h-10 sm:!justify-stretch">
           <TabsTrigger
             value="overview"
             className="min-h-0 w-full touch-manipulation truncate rounded-lg px-1.5 text-[11.5px] font-semibold leading-tight sm:text-[13px] sm:font-medium"
@@ -115,9 +116,15 @@ export function CrmLeadSheetTabs({
           </TabsTrigger>
           <TabsTrigger
             value="feedback"
-            className="min-h-0 w-full touch-manipulation truncate rounded-lg px-1.5 text-[11.5px] font-semibold leading-tight sm:text-[13px] sm:font-medium"
+            className="min-h-0 w-full touch-manipulation truncate rounded-lg px-1 text-[11px] font-semibold leading-tight sm:text-[13px] sm:font-medium"
           >
             {t("crm.leadSheet.feedback")}
+          </TabsTrigger>
+          <TabsTrigger
+            value="requests"
+            className="min-h-0 w-full touch-manipulation truncate rounded-lg px-1 text-[11px] font-semibold leading-tight sm:text-[13px] sm:font-medium"
+          >
+            {t("crm.leadSheet.requests")}
           </TabsTrigger>
         </TabsList>
       </div>
@@ -280,6 +287,15 @@ export function CrmLeadSheetTabs({
               ))}
             </ul>
           )}
+        </TabsContent>
+
+        <TabsContent value="requests" className="mt-3 outline-none">
+          <CrmClientRequestsPanel
+            leadId={lead.id}
+            variant="lead"
+            readOnly={Boolean(lead.deletedAt)}
+            employees={employees}
+          />
         </TabsContent>
       </div>
     </Tabs>

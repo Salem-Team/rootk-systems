@@ -14,6 +14,12 @@ export function formatAtTimestamp(raw: unknown, locale: "en" | "ar"): string {
   return formatted === "—" ? raw : formatted;
 }
 
+const CRM_REQUEST_KIND_KEYS: Record<string, TranslationPath> = {
+  price_exception: "crm.clientRequests.kinds.price_exception",
+  technical_proposal: "crm.clientRequests.kinds.technical_proposal",
+  contract: "crm.clientRequests.kinds.contract",
+};
+
 const CRM_NEXT_ACTION_KEYS: Record<string, TranslationPath> = {
   call: "crm.nextAction.call",
   whatsapp: "crm.nextAction.whatsapp",
@@ -44,6 +50,14 @@ export function notificationVars(
   ) {
     const actionKey = CRM_NEXT_ACTION_KEYS[base.action];
     if (actionKey) base.action = t(actionKey);
+  }
+  if (
+    (item.bodyKey === "notifications.crmClientRequestBody" ||
+      item.bodyKey === "notifications.crmClientRequestReplyBody") &&
+    typeof base.kind === "string"
+  ) {
+    const kindKey = CRM_REQUEST_KIND_KEYS[base.kind];
+    if (kindKey) base.kind = t(kindKey);
   }
   if (!DURATION_BODY_KEYS.has(item.bodyKey)) return base;
   const minutes = Number(base.minutes ?? 0);

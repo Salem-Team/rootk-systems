@@ -93,7 +93,6 @@ export function PortalSectionNav({
   const { t } = useTranslation();
   const [sheetOpen, setSheetOpen] = useState(false);
   const activeItem = ITEM_MAP[active];
-  const ActiveIcon = activeItem.icon;
 
   const grouped = useMemo(
     () =>
@@ -111,56 +110,56 @@ export function PortalSectionNav({
 
   return (
     <>
-      {/* Mobile: single compact sticky strip */}
       <div className="sticky top-[var(--chrome-sticky-top)] z-20 -mx-3 border-b border-border/50 bg-background/94 px-3 py-2 backdrop-blur-xl sm:-mx-4 sm:px-4 lg:hidden">
         <div
-          className="flex items-center gap-1"
+          className="grid grid-cols-5 gap-1"
           role="tablist"
           aria-label={t("portal.navLabel")}
         >
-          <div className="scroll-x flex min-w-0 flex-1 gap-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {MOBILE_QUICK.map((id) => {
-              const item = ITEM_MAP[id];
-              const Icon = item.icon;
-              const isActive = active === id;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => select(id)}
-                  className={cn(
-                    "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl px-3 text-[12px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    isActive
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  <Icon className="h-3.5 w-3.5" aria-hidden />
-                  <span className="max-w-[5.5rem] truncate">{t(item.labelKey)}</span>
-                </button>
-              );
-            })}
-            {!MOBILE_QUICK.includes(active) ? (
-              <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl bg-primary/12 px-3 text-[12px] font-semibold text-primary">
-                <ActiveIcon className="h-3.5 w-3.5" aria-hidden />
-                <span className="max-w-[5.5rem] truncate">
-                  {t(activeItem.labelKey)}
+          {MOBILE_QUICK.map((id) => {
+            const item = ITEM_MAP[id];
+            const Icon = item.icon;
+            const isActive = active === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => select(id)}
+                className={cn(
+                  "flex min-h-[3.6rem] min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-0.5 py-1.5 text-[10px] font-semibold leading-tight transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted/45 text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                <span className="line-clamp-2 w-full text-center leading-[1.15]">
+                  {t(item.labelKey)}
                 </span>
-              </span>
-            ) : null}
-          </div>
-
+              </button>
+            );
+          })}
           <button
             type="button"
             onClick={() => setSheetOpen(true)}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border/80 bg-card text-foreground shadow-sm transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className={cn(
+              "flex min-h-[3.6rem] min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-0.5 py-1.5 text-[10px] font-semibold leading-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              !MOBILE_QUICK.includes(active)
+                ? "bg-primary/12 text-primary"
+                : "border border-border/70 bg-card text-foreground"
+            )}
             aria-haspopup="dialog"
             aria-expanded={sheetOpen}
             aria-label={t("portal.allSections")}
           >
-            <LayoutGrid className="h-4 w-4" aria-hidden />
+            <LayoutGrid className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="line-clamp-2 w-full text-center leading-[1.15]">
+              {!MOBILE_QUICK.includes(active)
+                ? t(activeItem.labelKey)
+                : t("portal.allSections")}
+            </span>
           </button>
         </div>
       </div>
