@@ -11,7 +11,12 @@ import {
   Prisma,
 } from "@prisma/client";
 import { auditFields } from "../common/mappers";
-import { AppRole } from "../common/roles";
+import {
+  SYSTEM_ADMIN_EMAIL_ALIASES,
+  SYSTEM_ADMIN_EMPLOYEE_ID,
+  SYSTEM_ADMIN_USER_ID,
+  isProtectedAdminAccount,
+} from "../common/protected-accounts";
 import { NotificationsService } from "../notifications/notifications.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { assertCap, type Actor } from "./crm-access";
@@ -36,8 +41,10 @@ function clip(value: unknown, max: number): string {
 }
 
 function canManageRequests(actor: Actor): boolean {
-  if (actor.role === AppRole.admin) return true;
-  return (actor.permissions ?? []).includes("crm.replyClientRequests");
+  return isProtectedAdminAccount({
+    userId: actor.userId,
+    employeeId: actor.employeeId,
+  });
 }
 
 function mapReply(row: RequestRow["replies"][number]) {
@@ -86,9 +93,11 @@ export class CrmClientRequestsService {
     if (leadId) {
       await this.shared.requireLead(companyId, actor, leadId);
     }
-    const ownerIds = leadId
-      ? null
-      : await this.shared.resolveOwnerIds(companyId, actor);
+    const manager = canManageRequests(actor);
+    const ownerIds =
+      leadId || manager
+        ? null
+        : await this.shared.resolveOwnerIds(companyId, actor);
     const status =
       query.status === "open" || query.status === "answered"
         ? query.status
@@ -153,7 +162,7 @@ export class CrmClientRequestsService {
       include: requestInclude,
     });
 
-    await this.notifyManagement(companyId, actor, row);
+    await this.notifyManagement(companyId, actor, row, false);
     return mapRequest(row);
   }
 
@@ -209,7 +218,7 @@ export class CrmClientRequestsService {
     if (fromManagement) {
       await this.notifyRequester(companyId, actor, row);
     } else {
-      await this.notifyManagement(companyId, actor, row);
+      await this.notifyManagement(companyId, actor, row, true);
     }
 
     return {
@@ -218,37 +227,58 @@ export class CrmClientRequestsService {
     };
   }
 
+  private async actorName(companyId: string, employeeId?: string | null) {
+    const id = employeeId?.trim();
+    if (!id) return "";
+    const employee = await this.prisma.employee.findFirst({
+      where: { id, companyId, deletedAt: null },
+      select: { name: true },
+    });
+    return employee?.name?.trim() || "";
+  }
+
   private async notifyManagement(
     companyId: string,
     actor: Actor,
-    row: RequestRow
+    row: RequestRow,
+    followUp: boolean
   ) {
-    const admins = await this.prisma.user.findMany({
+    const manager = await this.prisma.user.findFirst({
       where: {
         companyId,
-        role: AppRole.admin,
         deletedAt: null,
         isActive: true,
+        OR: [
+          { id: SYSTEM_ADMIN_USER_ID },
+          { employeeId: SYSTEM_ADMIN_EMPLOYEE_ID },
+          { email: { in: [...SYSTEM_ADMIN_EMAIL_ALIASES] } },
+        ],
       },
       select: { id: true },
     });
-    const recipientIds = admins
-      .map((user) => user.id)
-      .filter((id) => id && id !== actor.userId);
-    if (recipientIds.length === 0) return;
+    if (!manager || manager.id === actor.userId) return;
+    const actorName = await this.actorName(companyId, actor.employeeId);
     await this.notifications.notifyDomain({
       companyId,
       actorId: actor.userId,
-      category: "system",
+      category: "work",
       priority: "high",
       audience: NotificationAudience.admin,
-      titleKey: "notifications.crmClientRequestTitle",
-      bodyKey: "notifications.crmClientRequestBody",
-      vars: { lead: row.lead.name, kind: row.kind },
-      href: "/crm?tab=clientRequests",
+      titleKey: followUp
+        ? "notifications.crmClientRequestFollowUpTitle"
+        : "notifications.crmClientRequestTitle",
+      bodyKey: followUp
+        ? "notifications.crmClientRequestFollowUpBody"
+        : "notifications.crmClientRequestBody",
+      vars: {
+        lead: row.lead.name,
+        kind: row.kind,
+        actor: actorName || "—",
+      },
+      href: "/client-requests",
       entityType: "crm_client_request",
       entityId: row.id,
-      recipientIds,
+      recipientIds: [manager.id],
     });
   }
 
@@ -267,13 +297,13 @@ export class CrmClientRequestsService {
     await this.notifications.notifyDomain({
       companyId,
       actorId: actor.userId,
-      category: "system",
+      category: "work",
       priority: "high",
       audience: NotificationAudience.employee,
       titleKey: "notifications.crmClientRequestReplyTitle",
       bodyKey: "notifications.crmClientRequestReplyBody",
       vars: { lead: row.lead.name, kind: row.kind },
-      href: `/crm?tab=clientRequests&lead=${row.leadId}`,
+      href: `/crm?lead=${row.leadId}&sheet=requests`,
       entityType: "crm_client_request",
       entityId: row.id,
       recipientIds: [user.id],

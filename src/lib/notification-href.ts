@@ -73,6 +73,9 @@ export function resolveNotificationHref(
         return withQuery("/crm", { lead: entityId });
       }
     }
+    if (entity === "crm_client_request") {
+      return href || "/client-requests";
+    }
     if (entity === "payroll" || entity === "payroll_run") {
       return href || "/payroll";
     }

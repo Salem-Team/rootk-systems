@@ -11,6 +11,7 @@ import { APP_NAV, navForRole } from "@/constants/navigation";
 import { hasAnyPermissionId } from "@/constants/permissions";
 import { useUiStore } from "@/stores/ui-store";
 import { useSessionStore } from "@/stores/session-store";
+import { useOpenClientRequestCount } from "@/hooks/use-open-client-request-count";
 import { usePendingLeaveCount } from "@/hooks/use-pending-leave-count";
 import { useOpenTaskCount } from "@/hooks/use-open-task-count";
 import { useTranslation } from "@/hooks/use-translation";
@@ -32,10 +33,12 @@ export function Sidebar() {
   const permissions = useSessionStore((s) => s.permissions);
   const pendingLeave = usePendingLeaveCount();
   const openTaskCount = useOpenTaskCount();
+  const openClientRequests = useOpenClientRequestCount();
   const { t, isRtl } = useTranslation();
   const reduceMotion = useReducedMotion();
   const CollapseIcon = isRtl ? ChevronRight : ChevronLeft;
-  const items = navForRole(role, APP_NAV, permissions);
+  const user = useSessionStore((s) => s.user);
+  const items = navForRole(role, APP_NAV, permissions, user);
   const showTasksAdminLabel = hasAnyPermissionId(
     ["tasks.viewAll", "tasks.assign", "tasks.editOthers"],
     permissions,
@@ -81,7 +84,9 @@ export function Sidebar() {
                 ? pendingLeave
                 : item.badge && item.key === "tasks"
                   ? openTaskCount
-                  : 0;
+                  : item.badge && item.key === "clientRequests"
+                    ? openClientRequests
+                    : 0;
             const showBadge = badgeCount > 0;
             const link = (
               <Link

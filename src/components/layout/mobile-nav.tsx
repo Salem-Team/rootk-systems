@@ -11,6 +11,7 @@ import { APP_NAV, MOBILE_NAV, navForRole } from "@/constants/navigation";
 import { hasAnyPermissionId } from "@/constants/permissions";
 import { useUiStore } from "@/stores/ui-store";
 import { useSessionStore } from "@/stores/session-store";
+import { useOpenClientRequestCount } from "@/hooks/use-open-client-request-count";
 import { usePendingLeaveCount } from "@/hooks/use-pending-leave-count";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
@@ -24,7 +25,9 @@ export function MobileBottomNav() {
   const setMobileMenuOpen = useUiStore((s) => s.setMobileMenuOpen);
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
-  const items = navForRole(role, MOBILE_NAV, permissions);
+  const user = useSessionStore((s) => s.user);
+  const openClientRequests = useOpenClientRequestCount();
+  const items = navForRole(role, MOBILE_NAV, permissions, user);
   const showTasksAdminLabel = hasAnyPermissionId(
     ["tasks.viewAll", "tasks.assign", "tasks.editOthers"],
     permissions,
@@ -39,7 +42,11 @@ export function MobileBottomNav() {
       <ul
         className={cn(
           "mx-auto grid max-w-lg gap-0.5 rounded-2xl border border-border/65 bg-card/92 p-1.5 shadow-[var(--shadow-float)] backdrop-blur-2xl supports-[backdrop-filter]:bg-card/80",
-          items.length <= 4 ? "grid-cols-4" : "grid-cols-5"
+          items.length <= 4
+            ? "grid-cols-4"
+            : items.length === 5
+              ? "grid-cols-5"
+              : "grid-cols-6"
         )}
       >
         {items.map((item) => {
@@ -102,6 +109,11 @@ export function MobileBottomNav() {
                   transition={layoutSpring}
                 >
                   <Icon className="h-4 w-4" />
+                  {item.key === "clientRequests" && openClientRequests > 0 ? (
+                    <span className="absolute -end-1 -top-1 min-w-4 rounded-full bg-primary px-1 text-center font-mono text-[9px] font-semibold leading-4 text-primary-foreground">
+                      {openClientRequests > 99 ? "99+" : openClientRequests}
+                    </span>
+                  ) : null}
                 </motion.span>
                 <span className="relative z-10 max-w-full truncate px-0.5 text-[10px] leading-tight sm:text-[11px]">
                   {item.key === "tasks" && showTasksAdminLabel
@@ -110,7 +122,9 @@ export function MobileBottomNav() {
                       ? t("nav.tasksShort")
                       : item.key === "crm"
                         ? t("nav.crmShort")
-                        : t(`nav.${item.key}`)}
+                        : item.key === "clientRequests"
+                          ? t("nav.clientRequestsShort")
+                          : t(`nav.${item.key}`)}
                 </span>
               </Link>
             </li>
@@ -128,9 +142,11 @@ export function MobileDrawer() {
   const role = useSessionStore((s) => s.role);
   const permissions = useSessionStore((s) => s.permissions);
   const pendingLeave = usePendingLeaveCount();
+  const openClientRequests = useOpenClientRequestCount();
   const { t, isRtl } = useTranslation();
   const reduceMotion = useReducedMotion();
-  const items = navForRole(role, APP_NAV, permissions);
+  const user = useSessionStore((s) => s.user);
+  const items = navForRole(role, APP_NAV, permissions, user);
   const showTasksAdminLabel = hasAnyPermissionId(
     ["tasks.viewAll", "tasks.assign", "tasks.editOthers"],
     permissions,
@@ -217,7 +233,9 @@ export function MobileDrawer() {
                   const badgeCount =
                     item.badge && item.key === "leave" && showLeaveReviewBadge
                       ? pendingLeave
-                      : 0;
+                      : item.badge && item.key === "clientRequests"
+                        ? openClientRequests
+                        : 0;
                   return (
                     <Link
                       key={item.href}

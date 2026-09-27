@@ -11,7 +11,6 @@ import {
   Gauge,
   LayoutDashboard,
   ListChecks,
-  Inbox,
   MessageSquareText,
   PhoneCall,
   TimerReset,
@@ -30,7 +29,6 @@ export type CrmHubTab =
   | "pipeline"
   | "activities"
   | "feedback"
-  | "clientRequests"
   | "performance"
   | "stages"
   | "businessTypes"
@@ -59,7 +57,6 @@ const VIEW_ITEMS: {
     | "crm.nav.pipeline"
     | "crm.nav.activities"
     | "crm.nav.feedback"
-    | "crm.nav.clientRequests"
     | "crm.nav.performance"
     | "crm.nav.stages"
     | "crm.nav.businessTypes"
@@ -77,7 +74,6 @@ const VIEW_ITEMS: {
   { id: "pipeline", icon: Columns3, labelKey: "crm.nav.pipeline" },
   { id: "activities", icon: Activity, labelKey: "crm.nav.activities" },
   { id: "feedback", icon: MessageSquareText, labelKey: "crm.nav.feedback" },
-  { id: "clientRequests", icon: Inbox, labelKey: "crm.nav.clientRequests" },
   {
     id: "performance",
     icon: Gauge,

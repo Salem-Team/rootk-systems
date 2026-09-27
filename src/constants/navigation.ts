@@ -4,6 +4,7 @@ import {
   type PermissionId,
 } from "@/constants/permissions";
 import { AppRole } from "@/constants/roles";
+import { isProtectedAdminAccount } from "@/lib/protected-accounts";
 import type { UserRole } from "@/types";
 import {
   LayoutDashboard,
@@ -21,6 +22,7 @@ import {
   Megaphone,
   ContactRound,
   KeyRound,
+  Inbox,
   type LucideIcon,
 } from "lucide-react";
 
@@ -41,6 +43,7 @@ export type NavKey =
   | "targets"
   | "organicAds"
   | "crm"
+  | "clientRequests"
   | "team"
   | "dailyPlan";
 
@@ -52,6 +55,8 @@ export interface AppNavItem {
   anyOf?: PermissionId[];
   /** When true, sidebar may show a live count badge (e.g. pending leave). */
   badge?: boolean;
+  /** Shown only for Mohamed Salem's management account. */
+  onlySystemAdmin?: boolean;
 }
 
 export const APP_NAV: AppNavItem[] = [
@@ -115,6 +120,14 @@ export const APP_NAV: AppNavItem[] = [
     icon: ContactRound,
     roles: [AppRole.admin, AppRole.employee],
     anyOf: ["crm.viewLeads"],
+  },
+  {
+    key: "clientRequests",
+    href: "/client-requests",
+    icon: Inbox,
+    roles: [AppRole.admin, AppRole.employee],
+    onlySystemAdmin: true,
+    badge: true,
   },
   {
     key: "employees",
@@ -194,6 +207,14 @@ export const MOBILE_NAV: AppNavItem[] = [
     anyOf: ["crm.viewLeads"],
   },
   {
+    key: "clientRequests",
+    href: "/client-requests",
+    icon: Inbox,
+    roles: [AppRole.admin, AppRole.employee],
+    onlySystemAdmin: true,
+    badge: true,
+  },
+  {
     key: "tasks",
     href: "/tasks",
     icon: ListTodo,
@@ -223,9 +244,21 @@ export const ADMIN_CONTROL_SURFACES = [
 export function navForRole(
   role: UserRole,
   items: AppNavItem[] = APP_NAV,
-  permissions?: readonly PermissionId[]
+  permissions?: readonly PermissionId[],
+  identity?: { id?: string; employeeId?: string; email?: string }
 ) {
   return items.filter((item) => {
+    if (item.onlySystemAdmin) {
+      if (
+        !isProtectedAdminAccount({
+          userId: identity?.id,
+          employeeId: identity?.employeeId,
+          email: identity?.email,
+        })
+      ) {
+        return false;
+      }
+    }
     if (item.anyOf?.length) {
       return hasAnyPermissionId(item.anyOf, permissions, role);
     }

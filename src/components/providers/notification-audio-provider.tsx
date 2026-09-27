@@ -17,6 +17,7 @@ import {
 } from "@/lib/notification-utils";
 import { getSettings } from "@/services/settings.service";
 import { getUserPreferences } from "@/services/user-preferences.service";
+import { useClientRequestNotificationArrivals } from "@/hooks/use-client-request-notification-arrivals";
 import { useSessionStore } from "@/stores/session-store";
 import type { AppNotification, NotificationAudience } from "@/types";
 
@@ -36,6 +37,7 @@ export function NotificationAudioProvider({
   const userId = useSessionStore((s) => s.user.id);
   const employeeId = useSessionStore((s) => s.user.employeeId);
   const role = useSessionStore((s) => s.role);
+  useClientRequestNotificationArrivals();
 
   useEffect(() => bindNotificationAudioUnlock(), []);
 

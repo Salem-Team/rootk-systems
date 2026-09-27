@@ -16,8 +16,8 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useHasPermission } from "@/hooks/use-permission";
 import { useTranslation } from "@/hooks/use-translation";
+import { isProtectedAdminAccount } from "@/lib/protected-accounts";
 import { cn } from "@/lib/utils";
 import {
   createCrmClientRequest,
@@ -52,15 +52,22 @@ export function CrmClientRequestsPanel({
   readOnly = false,
   employees = [],
   onOpenLead,
+  hideIntro = false,
 }: {
   leadId?: string;
   variant: "lead" | "inbox";
   readOnly?: boolean;
   employees?: Employee[];
   onOpenLead?: (leadId: string) => void;
+  hideIntro?: boolean;
 }) {
   const { t, locale } = useTranslation();
-  const canReply = useHasPermission("crm.replyClientRequests");
+  const user = useSessionStore((s) => s.user);
+  const canReply = isProtectedAdminAccount({
+    userId: user.id,
+    employeeId: user.employeeId,
+    email: user.email,
+  });
   const myEmployeeId = useSessionStore((s) => s.user.employeeId);
   const dateLocale = locale === "ar" ? arLocale : enUS;
   const [items, setItems] = useState<CrmClientRequest[]>([]);
@@ -152,17 +159,24 @@ export function CrmClientRequestsPanel({
     <div className="space-y-3">
       {variant === "inbox" ? (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold tracking-tight">
-              {t("crm.clientRequests.title")}
-            </h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              {canReply
-                ? t("crm.clientRequests.inboxDesc")
-                : t("crm.clientRequests.inboxMine")}
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-1 rounded-xl border border-border/70 bg-muted/40 p-1">
+          {hideIntro ? null : (
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold tracking-tight">
+                {t("crm.clientRequests.title")}
+              </h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                {canReply
+                  ? t("crm.clientRequests.inboxDesc")
+                  : t("crm.clientRequests.inboxMine")}
+              </p>
+            </div>
+          )}
+          <div
+            className={cn(
+              "grid grid-cols-2 gap-1 rounded-xl border border-border/70 bg-muted/40 p-1",
+              hideIntro && "sm:ms-auto sm:w-64"
+            )}
+          >
             {(["open", "answered"] as const).map((value) => (
               <button
                 key={value}

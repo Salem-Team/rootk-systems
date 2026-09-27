@@ -120,12 +120,14 @@ export function useCrmHub() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
-    if (params.get("tab") === "clientRequests") setTab("clientRequests");
     const lead = params.get("lead");
     if (lead) {
+      const sheet = params.get("sheet");
       openViewLead(
         lead,
-        params.get("tab") === "clientRequests" ? "requests" : "overview"
+        sheet === "requests" || params.get("tab") === "clientRequests"
+          ? "requests"
+          : "overview"
       );
     }
 

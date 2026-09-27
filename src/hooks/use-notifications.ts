@@ -41,7 +41,7 @@ export function useNotifications(options?: {
   }, [load]);
 
   useLiveReload(load, [NOTIFICATION_UPDATED_EVENT], {
-    intervalMs: 30_000,
+    intervalMs: 12_000,
     skipInitial: true,
   });
 

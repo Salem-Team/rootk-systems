@@ -53,6 +53,7 @@ export function notificationVars(
   }
   if (
     (item.bodyKey === "notifications.crmClientRequestBody" ||
+      item.bodyKey === "notifications.crmClientRequestFollowUpBody" ||
       item.bodyKey === "notifications.crmClientRequestReplyBody") &&
     typeof base.kind === "string"
   ) {

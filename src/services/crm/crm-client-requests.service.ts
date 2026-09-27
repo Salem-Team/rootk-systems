@@ -3,12 +3,13 @@ import {
   postCrmClientRequest,
   postCrmClientRequestReply,
 } from "@/api/crm.api";
-import { hasPermissionId } from "@/constants/permissions";
+import { isProtectedAdminAccount } from "@/lib/protected-accounts";
 import { isApiMode } from "@/lib/env";
 import { enrichWithAudit, touchEntity } from "@/lib/entity";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 import { createId } from "@/lib/id";
 import { notifyQuietly } from "@/services/notification-core.service";
+import { resolveAccountFullName } from "@/lib/user-display-name";
 import {
   crmClientRequestRepository,
   crmLeadRepository,
@@ -22,9 +23,8 @@ import {
   resolveCrmOwnerIds,
 } from "@/services/crm/crm-shared";
 import {
-  getSessionPermissions,
-  getSessionRole,
   getSessionUserId,
+  useSessionStore,
 } from "@/stores/session-store";
 import type { ApiResponse } from "@/types";
 import type {
@@ -40,34 +40,54 @@ const KINDS = new Set<CrmClientRequestKind>([
 ]);
 
 function canManageRequests(): boolean {
-  return hasPermissionId(
-    "crm.replyClientRequests",
-    getSessionPermissions(),
-    getSessionRole()
-  );
+  const user = useSessionStore.getState().user;
+  return isProtectedAdminAccount({
+    userId: user.id,
+    employeeId: user.employeeId,
+    email: user.email,
+  });
 }
 
 function clip(value: unknown, max: number): string {
   return String(value ?? "").trim().slice(0, max);
 }
 
-async function notifyAdmins(leadName: string, kind: string, requestId: string) {
+async function notifyManager(
+  leadName: string,
+  kind: string,
+  requestId: string,
+  followUp: boolean
+) {
   const actorId = getSessionUserId() || "system";
+  const actorName =
+    resolveAccountFullName(useSessionStore.getState().user) || "—";
   const users = await userRepository.findAll();
   const recipientIds = users
-    .filter((user) => user.role === "admin" && user.isActive !== false)
-    .map((user) => user.id)
-    .filter((id) => id !== actorId);
+    .filter(
+      (user) =>
+        user.isActive !== false &&
+        user.id !== actorId &&
+        isProtectedAdminAccount({
+          userId: user.id,
+          employeeId: user.employeeId,
+          email: user.email,
+        })
+    )
+    .map((user) => user.id);
   if (recipientIds.length === 0) return;
   await notifyQuietly({
-    titleKey: "notifications.crmClientRequestTitle",
-    bodyKey: "notifications.crmClientRequestBody",
-    vars: { lead: leadName, kind },
-    category: "system",
+    titleKey: followUp
+      ? "notifications.crmClientRequestFollowUpTitle"
+      : "notifications.crmClientRequestTitle",
+    bodyKey: followUp
+      ? "notifications.crmClientRequestFollowUpBody"
+      : "notifications.crmClientRequestBody",
+    vars: { lead: leadName, kind, actor: actorName },
+    category: "work",
     priority: "high",
     audience: "admin",
     recipientIds,
-    href: "/crm?tab=clientRequests",
+    href: "/client-requests",
     entityType: "crm_client_request",
     entityId: requestId,
     actorId,
@@ -89,7 +109,7 @@ export async function listCrmClientRequests(query?: {
       if (!lead) throw new NotFoundError("Lead not found");
       await assertLeadAccess(lead);
       rows = rows.filter((row) => row.leadId === query.leadId);
-    } else {
+    } else if (!canManageRequests()) {
       const ownerIds = await resolveCrmOwnerIds();
       if (ownerIds) {
         const leads = await crmLeadRepository.findAll();
@@ -157,7 +177,7 @@ export async function createCrmClientRequest(
       actorId
     );
     await crmClientRequestRepository.create(row);
-    await notifyAdmins(lead.name, input.kind, row.id);
+    await notifyManager(lead.name, input.kind, row.id, false);
     return ok(row);
   } catch (error) {
     return fromError(error, null);
@@ -208,18 +228,18 @@ export async function replyCrmClientRequest(
           titleKey: "notifications.crmClientRequestReplyTitle",
           bodyKey: "notifications.crmClientRequestReplyBody",
           vars: { lead: lead.name, kind: current.kind },
-          category: "system",
+          category: "work",
           priority: "high",
           audience: "employee",
           recipientIds: [requester.id],
-          href: `/crm?tab=clientRequests&lead=${lead.id}`,
+          href: `/crm?lead=${current.leadId}&sheet=requests`,
           entityType: "crm_client_request",
           entityId: requestId,
           actorId,
         });
       }
     } else {
-      await notifyAdmins(lead.name, current.kind, requestId);
+      await notifyManager(lead.name, current.kind, requestId, true);
     }
     return ok(next);
   } catch (error) {
