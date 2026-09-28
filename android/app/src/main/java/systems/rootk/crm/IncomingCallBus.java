@@ -67,8 +67,10 @@ final class IncomingCallBus {
         String leadId = card == null ? "" : card.leadId;
         deliver(raw, "ringing", leadId);
         if (card == null) return;
-        boolean activity = IncomingLeadActivity.present(context, card);
-        if (!activity) IncomingLeadOverlay.show(context, card);
+        // Overlay does not pause the dialer. The activity is a second chance when
+        // the system hides overlays behind the incoming-call screen.
+        IncomingLeadOverlay.show(context, card);
+        IncomingLeadActivity.present(context, card);
         IncomingCallNotifier.showCard(context, card);
     }
 
