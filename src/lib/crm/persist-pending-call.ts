@@ -1,3 +1,8 @@
+import {
+  enrichPendingCallOutcome,
+  pendingCallWasNotPlaced,
+  shouldAutoRecordNoAnswer,
+} from "@/lib/crm/enrich-pending-call";
 import { pendingCallDurationSeconds, type PendingCrmCall } from "@/lib/crm/pending-call";
 import { nativePlatform } from "@/lib/native/platform";
 import { recordCrmLeadCall } from "@/services/crm.service";
@@ -31,6 +36,24 @@ export async function persistPendingCrmCall(
     nextAction: options.nextAction ?? "none",
     nextFollowUpAt: options.nextFollowUpAt ?? null,
   });
+}
+
+/**
+ * A new dial replaces the stored pending call. Only keep the previous one
+ * when Android CallLog shows a real outbound attempt.
+ */
+export async function settleDisplacedPendingCall(
+  previous: PendingCrmCall
+): Promise<ApiResponse<CrmCall | null> | null> {
+  const enriched = await enrichPendingCallOutcome(previous);
+  if (pendingCallWasNotPlaced(enriched)) return null;
+  if (shouldAutoRecordNoAnswer(enriched)) {
+    return persistPendingCrmCall(enriched, { status: "unknown" });
+  }
+  if (enriched.placed === true && enriched.detectedStatus === "answered") {
+    return persistPendingCrmCall(enriched, { status: "answered" });
+  }
+  return null;
 }
 
 /** True when the call is already stored (success or idempotent replay). */

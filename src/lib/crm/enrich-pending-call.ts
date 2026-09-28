@@ -1,17 +1,13 @@
 import {
-  pendingCallDurationSeconds,
   updatePendingCall,
   type PendingCrmCall,
 } from "@/lib/crm/pending-call";
 import { lookupOutboundCallInsight } from "@/lib/native/call-insight";
 import { nativePlatform } from "@/lib/native/platform";
 
-/** Away shorter than this with no CallLog hit → treat as no answer. */
-const SHORT_AWAY_NO_ANSWER_MS = 12_000;
-
 /**
- * Enrich a pending dial with OS talk duration / answered flag (Android CallLog),
- * or a short-away heuristic when CallLog is unavailable.
+ * Enrich a pending dial from Android CallLog.
+ * Opening the dialer or contacts without placing a call is not a no-answer.
  */
 export async function enrichPendingCallOutcome(
   pending: PendingCrmCall
@@ -27,36 +23,44 @@ export async function enrichPendingCallOutcome(
     if (insight?.found) {
       const talk = Math.max(0, Math.round(Number(insight.durationSeconds) || 0));
       const answered = insight.answered === true || talk > 0;
-      const next = updatePendingCall({
-        externalCallId: pending.externalCallId,
+      return applyPendingPatch(pending, {
         talkDurationSeconds: talk,
         detectedStatus: answered ? "answered" : "unknown",
         osConfirmed: true,
+        placed: true,
       });
-      return next ?? pending;
     }
-  }
-
-  // Fallback when CallLog missing (iOS / web / permission denied).
-  const awayMs = pending.endedAt
-    ? Math.max(0, Date.parse(pending.endedAt) - startedMs)
-    : Date.now() - startedMs;
-  if (Number.isFinite(awayMs) && awayMs < SHORT_AWAY_NO_ANSWER_MS) {
-    const next = updatePendingCall({
-      externalCallId: pending.externalCallId,
-      talkDurationSeconds: 0,
-      detectedStatus: "unknown",
-      osConfirmed: false,
-    });
-    return next ?? pending;
+    if (insight && insight.found === false) {
+      return applyPendingPatch(pending, {
+        talkDurationSeconds: 0,
+        detectedStatus: null,
+        osConfirmed: false,
+        placed: false,
+      });
+    }
   }
 
   return pending;
 }
 
+function applyPendingPatch(
+  pending: PendingCrmCall,
+  patch: Partial<PendingCrmCall>
+): PendingCrmCall {
+  const next: PendingCrmCall = { ...pending, ...patch };
+  return updatePendingCall({ ...next, externalCallId: pending.externalCallId }) ?? next;
+}
+
+/** CallLog confirmed an outbound attempt that never connected. */
 export function shouldAutoRecordNoAnswer(pending: PendingCrmCall): boolean {
-  if (pending.detectedStatus !== "unknown") return false;
-  if (pending.osConfirmed) return true;
-  // Short-away heuristic: auto-record so the user isn't asked after a quick hangup.
-  return pendingCallDurationSeconds(pending) === 0;
+  return (
+    pending.placed === true &&
+    pending.osConfirmed === true &&
+    pending.detectedStatus === "unknown"
+  );
+}
+
+/** Dialer or contacts opened, but the phone never placed the call. */
+export function pendingCallWasNotPlaced(pending: PendingCrmCall): boolean {
+  return pending.placed === false;
 }

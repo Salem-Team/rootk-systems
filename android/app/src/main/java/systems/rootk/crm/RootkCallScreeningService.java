@@ -19,10 +19,17 @@ public class RootkCallScreeningService extends CallScreeningService {
             && details.getCallDirection() != Call.Details.DIRECTION_INCOMING) {
             return;
         }
+        IncomingCallBus.publishRinging(this, numberFrom(details));
+    }
+
+    private static String numberFrom(Call.Details details) {
         Uri handle = details.getHandle();
-        if (handle == null) return;
-        String number = handle.getSchemeSpecificPart();
-        IncomingCallBus.publishRinging(this, number);
+        if (handle == null) return "";
+        String raw = handle.getSchemeSpecificPart();
+        if (raw == null || raw.isEmpty()) raw = handle.toString();
+        int at = raw.indexOf('@');
+        if (at > 0) raw = raw.substring(0, at);
+        return raw == null ? "" : raw.trim();
     }
 
     private static CallResponse allowCall() {

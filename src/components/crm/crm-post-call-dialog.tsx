@@ -115,9 +115,12 @@ export function CrmPostCallDialog({
   }
 
   async function handleOpenChange(next: boolean) {
-    if (!next && pendingRef.current && !recordedRef.current) {
-      // Dismiss / escape / skip still counts the dial in user performance.
-      await persist("unknown", { silent: true });
+    const current = pendingRef.current;
+    if (!next && current && !recordedRef.current) {
+      const confirmedDial = current.placed === true || current.osConfirmed === true;
+      if (confirmedDial) {
+        await persist("unknown", { silent: true });
+      }
     }
     onOpenChange(next);
   }

@@ -101,11 +101,12 @@ final class IncomingCallBus {
     static synchronized void replayRecent() {
         if (pendingAt == 0 || pendingAt == lastReplayedPendingAt) return;
         if (System.currentTimeMillis() - pendingAt > 120_000L) return;
-        if (pendingLeadId.isEmpty() || pendingNumber.isEmpty()) return;
+        if (pendingLeadId.isEmpty() && pendingNumber.isEmpty()) return;
         Emitter current = emitter;
         if (current == null) return;
         lastReplayedPendingAt = pendingAt;
-        current.onIncoming(pendingNumber, "recall", pendingLeadId);
+        String state = "open".equals(pendingState) ? "open" : "recall";
+        current.onIncoming(pendingNumber, state, pendingLeadId);
     }
 
     static synchronized Snapshot consumePending() {
@@ -128,18 +129,8 @@ final class IncomingCallBus {
     }
 
     private static String tailDigits(String raw) {
-        String digits = digitsOnly(raw);
-        if (digits.length() <= 9) return digits;
-        return digits.substring(digits.length() - 9);
-    }
-
-    private static String digitsOnly(String raw) {
-        if (raw == null || raw.isEmpty()) return "";
-        StringBuilder sb = new StringBuilder(raw.length());
-        for (int i = 0; i < raw.length(); i++) {
-            char c = raw.charAt(i);
-            if (c >= '0' && c <= '9') sb.append(c);
-        }
-        return sb.toString();
+        java.util.List<String> keys = IncomingLeadIndex.phoneKeys(raw);
+        if (keys.isEmpty()) return "";
+        return keys.get(keys.size() - 1);
     }
 }

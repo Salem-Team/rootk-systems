@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { CrmPostCallDialog } from "@/components/crm/crm-post-call-dialog";
 import {
   enrichPendingCallOutcome,
+  pendingCallWasNotPlaced,
   shouldAutoRecordNoAnswer,
 } from "@/lib/crm/enrich-pending-call";
 import {
@@ -24,8 +25,9 @@ import { isNativeApp } from "@/lib/native/platform";
 import { useTranslation } from "@/hooks/use-translation";
 
 /**
- * After a tel: dial, enrich duration from Android CallLog (talk time, not ring),
- * auto-record no-answer when the customer never answered, otherwise prompt.
+ * After a tel: dial, read Android CallLog.
+ * No outbound row means the dialer/contacts closed without a call — drop it.
+ * Duration 0 on a real outbound row is no-answer. Talk time opens the prompt.
  */
 export function CrmPostCallHost() {
   const { t } = useTranslation();
@@ -47,6 +49,12 @@ export function CrmPostCallHost() {
       busyRef.current = true;
       try {
         const enriched = await enrichPendingCallOutcome(frozen);
+        if (pendingCallWasNotPlaced(enriched)) {
+          clearPendingCall(enriched.externalCallId);
+          setOpen(false);
+          setPending(null);
+          return;
+        }
         if (shouldAutoRecordNoAnswer(enriched)) {
           const res = await persistPendingCrmCall(enriched, {
             status: "unknown",

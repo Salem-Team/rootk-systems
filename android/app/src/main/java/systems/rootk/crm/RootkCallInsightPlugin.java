@@ -52,7 +52,7 @@ public class RootkCallInsightPlugin extends Plugin {
                 JSObject data = new JSObject();
                 data.put("leadId", leadId == null ? "" : leadId);
                 notifyListeners("openIncomingLead", data);
-                bringAppToFront();
+                bringAppToFront(leadId);
             }
 
             @Override
@@ -61,6 +61,12 @@ public class RootkCallInsightPlugin extends Plugin {
                 IncomingCallNotifier.cancel(getContext());
             }
         });
+        try {
+            registerPhoneReceiver();
+            watchStarted = true;
+        } catch (RuntimeException ignored) {
+            watchStarted = false;
+        }
     }
 
     @PluginMethod
@@ -350,16 +356,19 @@ public class RootkCallInsightPlugin extends Plugin {
         phoneReceiver = null;
     }
 
-    private void bringAppToFront() {
+    private void bringAppToFront(String leadId) {
         Context ctx = getContext();
         if (ctx == null) return;
         Intent launch = ctx.getPackageManager().getLaunchIntentForPackage(ctx.getPackageName());
-        if (launch == null) return;
+        if (launch == null) launch = new Intent(ctx, MainActivity.class);
         launch.addFlags(
             Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_SINGLE_TOP
                 | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
         );
+        if (leadId != null && !leadId.isEmpty()) {
+            launch.putExtra(IncomingCallNotifier.EXTRA_LEAD, leadId);
+        }
         ctx.startActivity(launch);
     }
 

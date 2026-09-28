@@ -3587,6 +3587,17 @@ export const en = {
           "Allow display over other apps so the request and budget card can sit on top of the ringing screen.",
         screeningHint:
           "Allow ROOTK to identify incoming calls so the number is captured while it is ringing, and the request and budget can be shown.",
+        enableTitle: "Show the client while the phone rings",
+        enableDesc:
+          "When a saved number calls, ROOTK shows their name, request, and budget on the incoming-call screen.",
+        enableAction: "Turn on",
+        enableLater: "Later",
+        enableMissing: "These permissions are needed once so the card can appear while the phone is ringing.",
+        enabled: "Client name and budget will show when they call.",
+        stepScreening: "Identify the incoming number",
+        stepOverlay: "Card over the ringing screen",
+        stepPhone: "Call state and call log",
+        stepNotifications: "Notification with name and budget",
       },
     },
     contacts: {

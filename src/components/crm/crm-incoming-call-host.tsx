@@ -5,31 +5,30 @@ import { useRouter } from "next/navigation";
 import { App } from "@capacitor/app";
 import { toast } from "sonner";
 import { CrmIncomingCallDialog } from "@/components/crm/crm-incoming-call-dialog";
+import { CrmIncomingCallEnable } from "@/components/crm/crm-incoming-call-enable";
 import { useHasAnyPermission } from "@/hooks/use-permission";
 import { useTranslation } from "@/hooks/use-translation";
 import { displayCrmPhone } from "@/lib/crm/phone-links";
 import { CRM_UPDATED_EVENT, emitCrmOpenLead } from "@/lib/events";
 import {
-  askOverlayPermission,
-  askScreeningRole,
+  activateIncomingCaller,
   cancelIncomingLeadNotification,
   consumePendingIncomingCall,
   dismissIncomingLeadCard,
-  ensureIncomingCallAccess,
+  incomingCallerReady,
   incomingCallsSupported,
   listenForIncomingCalls,
   presentIncomingLeadCard,
-  readIncomingCapabilities,
+  readIncomingCallReadiness,
   replayRecentIncomingCall,
   startIncomingCallWatch,
   stopIncomingCallWatch,
   syncIncomingLeadCache,
+  type IncomingCallReadiness,
 } from "@/lib/native/incoming-call";
 import { matchCrmLeadByPhone } from "@/services/crm/crm-calls.service";
 import { getCrmLeads } from "@/services/crm/crm-leads.service";
-import type { CrmLead, CrmLeadStatus } from "@/types/crm";
-
-let promptedThisLaunch = false;
+import type { CrmLead, CrmLeadStatus, CrmRecordType } from "@/types/crm";
 
 function tail(phone: string) {
   return phone.replace(/\D/g, "").slice(-9);
@@ -43,20 +42,26 @@ function clip(value: string, max = 160) {
 
 async function loadCallableLeads(): Promise<CrmLead[]> {
   const items: CrmLead[] = [];
+  const recordTypes: CrmRecordType[] = ["lead", "cold_call"];
   const statuses: CrmLeadStatus[] = ["active", "inactive"];
-  for (const status of statuses) {
-    for (let page = 1; page <= 15; page += 1) {
-      const res = await getCrmLeads({
-        status,
-        page,
-        pageSize: 100,
-        sort: "updatedAt",
-        order: "desc",
-      });
-      const batch = res.data?.items ?? [];
-      items.push(...batch);
-      const totalPages = res.data?.totalPages ?? page;
-      if (batch.length < 100 || page >= totalPages) break;
+  for (const recordType of recordTypes) {
+    for (const status of statuses) {
+      for (let page = 1; page <= 20; page += 1) {
+        const res = await getCrmLeads({
+          status,
+          recordType,
+          page,
+          pageSize: 100,
+          sort: "updatedAt",
+          order: "desc",
+        });
+        if (!res.success) throw new Error("crm leads unavailable");
+        const batch = res.data?.items ?? [];
+        items.push(...batch);
+        const totalPages = res.data?.totalPages ?? page;
+        const size = res.data?.pageSize || 100;
+        if (batch.length < size || page >= totalPages) break;
+      }
     }
   }
   return items;
@@ -84,8 +89,13 @@ export function CrmIncomingCallHost() {
 
   const recentRef = useRef<{ tail: string; at: number }>({ tail: "", at: 0 });
   const tokenRef = useRef(0);
+  const dismissedEnableRef = useRef(false);
+  const syncRef = useRef<() => Promise<void>>(async () => undefined);
   const [lead, setLead] = useState<CrmLead | null>(null);
   const [open, setOpen] = useState(false);
+  const [enableOpen, setEnableOpen] = useState(false);
+  const [activating, setActivating] = useState(false);
+  const [readiness, setReadiness] = useState<IncomingCallReadiness | null>(null);
 
   const openLead = useCallback((leadId: string) => {
     setOpen(false);
@@ -94,6 +104,21 @@ export function CrmIncomingCallHost() {
     void cancelIncomingLeadNotification();
     routerRef.current.push(`/crm?lead=${encodeURIComponent(leadId)}`);
     emitCrmOpenLead(leadId);
+  }, []);
+
+  const onActivate = useCallback(async () => {
+    setActivating(true);
+    try {
+      const next = await activateIncomingCaller();
+      await syncRef.current();
+      setReadiness(next);
+      if (incomingCallerReady(next)) {
+        setEnableOpen(false);
+        toast.success(tRef.current("crm.call.incoming.enabled"));
+      }
+    } finally {
+      setActivating(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -105,7 +130,12 @@ export function CrmIncomingCallHost() {
 
     async function syncCache() {
       const translate = tRef.current;
-      const leads = await loadCallableLeads();
+      let leads: CrmLead[] = [];
+      try {
+        leads = await loadCallableLeads();
+      } catch {
+        return;
+      }
       if (cancelled) return;
       await syncIncomingLeadCache(leads, {
         rtl: localeRef.current === "ar",
@@ -153,14 +183,23 @@ export function CrmIncomingCallHost() {
       setOpen(true);
     }
 
+    syncRef.current = syncCache;
+
+    async function refreshReadiness() {
+      const next = await readIncomingCallReadiness();
+      if (cancelled) return next;
+      setReadiness(next);
+      if (incomingCallerReady(next)) setEnableOpen(false);
+      else if (!dismissedEnableRef.current) setEnableOpen(true);
+      return next;
+    }
+
     const onCrm = () => {
       void syncCache();
     };
     window.addEventListener(CRM_UPDATED_EVENT, onCrm);
 
     void (async () => {
-      await ensureIncomingCallAccess();
-      if (cancelled) return;
       detach = await listenForIncomingCalls(
         (event) => {
           if (event.state === "open" && event.leadId) {
@@ -195,27 +234,14 @@ export function CrmIncomingCallHost() {
         if (!isActive) return;
         void syncCache();
         void replayRecentIncomingCall();
+        void refreshReadiness();
       });
       if (cancelled) {
         void appHandle.remove();
         return;
       }
       detachApp = appHandle;
-
-      if (promptedThisLaunch) return;
-      promptedThisLaunch = true;
-      const caps = await readIncomingCapabilities();
-      if (cancelled) return;
-      if (!caps.screening) {
-        toast.message(tRef.current("crm.call.incoming.screeningHint"));
-        await askScreeningRole();
-      }
-      if (cancelled) return;
-      const afterRole = await readIncomingCapabilities();
-      if (!afterRole.overlay) {
-        toast.message(tRef.current("crm.call.incoming.overlayHint"));
-        await askOverlayPermission();
-      }
+      await refreshReadiness();
     })();
 
     return () => {
@@ -228,18 +254,30 @@ export function CrmIncomingCallHost() {
   }, [enabled, openLead]);
 
   return (
-    <CrmIncomingCallDialog
-      lead={lead}
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (!next) {
-          setLead(null);
-          void cancelIncomingLeadNotification();
-          void dismissIncomingLeadCard();
-        }
-      }}
-      onOpenLead={openLead}
-    />
+    <>
+      <CrmIncomingCallEnable
+        open={enableOpen}
+        busy={activating}
+        readiness={readiness}
+        onOpenChange={(next) => {
+          setEnableOpen(next);
+          if (!next) dismissedEnableRef.current = true;
+        }}
+        onActivate={() => void onActivate()}
+      />
+      <CrmIncomingCallDialog
+        lead={lead}
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) {
+            setLead(null);
+            void cancelIncomingLeadNotification();
+            void dismissIncomingLeadCard();
+          }
+        }}
+        onOpenLead={openLead}
+      />
+    </>
   );
 }

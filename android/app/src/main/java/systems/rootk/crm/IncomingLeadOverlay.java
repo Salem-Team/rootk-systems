@@ -1,6 +1,7 @@
 package systems.rootk.crm;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Typeface;
@@ -77,6 +78,7 @@ final class IncomingLeadOverlay {
             overlayType(),
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                 | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
                 | legacyShowWhenLocked(),
             PixelFormat.TRANSLUCENT
         );
@@ -141,7 +143,11 @@ final class IncomingLeadOverlay {
             actions.addView(actionButton(context, model.openLabel, true, () -> {
                 detachView();
                 Listener current = listener;
-                if (current != null) current.onOpen(model.leadId);
+                if (current != null) {
+                    current.onOpen(model.leadId);
+                } else {
+                    launchApp(context, model.leadId, model.phone);
+                }
             }));
         }
         actions.addView(actionButton(context, model.dismissLabel, false, () -> {
@@ -198,9 +204,28 @@ final class IncomingLeadOverlay {
         return button;
     }
 
+    private static void launchApp(Context context, String leadId, String number) {
+        Context app = context.getApplicationContext();
+        Intent launch = app.getPackageManager().getLaunchIntentForPackage(app.getPackageName());
+        if (launch == null) launch = new Intent(app, MainActivity.class);
+        launch.addFlags(
+            Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP
+                | Intent.FLAG_ACTIVITY_CLEAR_TOP
+        );
+        launch.putExtra(IncomingCallNotifier.EXTRA_LEAD, leadId == null ? "" : leadId);
+        launch.putExtra(IncomingCallNotifier.EXTRA_NUMBER, number == null ? "" : number);
+        try {
+            app.startActivity(launch);
+        } catch (RuntimeException ignored) {
+            /* activity start blocked until the user returns */
+        }
+    }
+
     @SuppressWarnings("deprecation")
     private static int legacyShowWhenLocked() {
-        return WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED;
+        return WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+            | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON;
     }
 
     @SuppressWarnings("deprecation")

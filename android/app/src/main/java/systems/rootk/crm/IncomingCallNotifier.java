@@ -35,14 +35,16 @@ final class IncomingCallNotifier {
 
     static void showCard(Context context, IncomingLeadIndex.Card card) {
         if (card == null) return;
-        String title = card.title == null || card.title.isEmpty() ? card.name : card.title;
-        show(context, title, card.notificationBody(), card.leadId, card.phone, true);
+        String title = card.name == null || card.name.isEmpty() ? card.title : card.name;
+        String budgetLine = line(card.budgetLabel, card.budget);
+        String text = budgetLine.isEmpty() ? card.notificationBody() : budgetLine;
+        show(context, title, text, card.notificationBody(), card.leadId, card.phone, true);
     }
 
     /** After hangup, keep the same text swipeable for a short while. */
     static void relax(Context context) {
         if (lastTitle.isEmpty() && lastBody.isEmpty()) return;
-        show(context, lastTitle, lastBody, lastLead, lastNumber, false);
+        show(context, lastTitle, lastBody, lastBody, lastLead, lastNumber, false);
     }
 
     static void show(
@@ -52,12 +54,13 @@ final class IncomingCallNotifier {
         String leadId,
         String number
     ) {
-        show(context, title, body, leadId, number, true);
+        show(context, title, body, body, leadId, number, true);
     }
 
     private static void show(
         Context context,
         String title,
+        String collapsed,
         String body,
         String leadId,
         String number,
@@ -67,14 +70,14 @@ final class IncomingCallNotifier {
         Context app = context.getApplicationContext();
         if (!NotificationManagerCompat.from(app).areNotificationsEnabled()) return;
         lastTitle = title == null ? "" : title;
-        lastBody = body == null ? "" : body;
+        lastBody = body == null || body.isEmpty() ? (collapsed == null ? "" : collapsed) : body;
         lastLead = leadId == null ? "" : leadId;
         lastNumber = number == null ? "" : number;
         ensureChannel(app);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(app, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_call)
             .setContentTitle(lastTitle.isEmpty() ? "ROOTK" : lastTitle)
-            .setContentText(lastBody)
+            .setContentText(collapsed == null || collapsed.isEmpty() ? lastBody : collapsed)
             .setStyle(new NotificationCompat.BigTextStyle().bigText(lastBody))
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setPriority(NotificationCompat.PRIORITY_MAX)
@@ -129,5 +132,11 @@ final class IncomingCallNotifier {
         channel.setDescription("Who is calling, and their request and budget");
         channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
         manager.createNotificationChannel(channel);
+    }
+
+    private static String line(String label, String value) {
+        if (value == null || value.isEmpty()) return "";
+        if (label == null || label.isEmpty()) return value;
+        return label + ": " + value;
     }
 }

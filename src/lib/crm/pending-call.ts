@@ -14,10 +14,16 @@ export type PendingCrmCall = {
   source: "web" | "android" | "ios";
   /** Connected/talk seconds from OS CallLog when available (excludes ring). */
   talkDurationSeconds?: number | null;
-  /** Outcome detected from OS (or short-away heuristic). */
+  /** Outcome detected from OS CallLog. */
   detectedStatus?: CrmCallStatus | null;
   /** True when duration/outcome came from OS CallLog. */
   osConfirmed?: boolean;
+  /**
+   * Android CallLog: true = an outbound row exists for this dial,
+   * false = the log was readable and no call was placed (dialer/contacts only).
+   * null = CallLog was not checked.
+   */
+  placed?: boolean | null;
 };
 
 function storage(): Storage | null {
@@ -45,6 +51,7 @@ export function beginPendingCall(
     | "talkDurationSeconds"
     | "detectedStatus"
     | "osConfirmed"
+    | "placed"
   > & {
     source?: PendingCrmCall["source"];
   }
@@ -63,6 +70,7 @@ export function beginPendingCall(
     talkDurationSeconds: null,
     detectedStatus: null,
     osConfirmed: false,
+    placed: null,
   };
   writePending(pending);
   return pending;

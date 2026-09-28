@@ -12,7 +12,10 @@ import {
 import { useTranslation } from "@/hooks/use-translation";
 import { allLeadContacts } from "@/lib/crm/lead-contacts";
 import { beginPendingCall, readPendingCall } from "@/lib/crm/pending-call";
-import { persistPendingCrmCall } from "@/lib/crm/persist-pending-call";
+import {
+  isPendingCallPersisted,
+  settleDisplacedPendingCall,
+} from "@/lib/crm/persist-pending-call";
 import { telHref, whatsappHref } from "@/lib/crm/phone-links";
 import { emitCrmUpdated } from "@/lib/events";
 import { nativePlatform } from "@/lib/native/platform";
@@ -67,8 +70,8 @@ export function CrmLeadRowActions({
     if (!phone) return;
     const previous = readPendingCall();
     if (previous?.externalCallId) {
-      void persistPendingCrmCall(previous, { status: "unknown" }).then((res) => {
-        if (res.success) emitCrmUpdated();
+      void settleDisplacedPendingCall(previous).then((res) => {
+        if (res && isPendingCallPersisted(res)) emitCrmUpdated();
       });
     }
     beginPendingCall({

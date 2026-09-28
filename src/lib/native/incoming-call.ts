@@ -1,3 +1,4 @@
+import { buildIncomingCallerIndex } from "@/lib/crm/incoming-caller";
 import { displayCrmPhone } from "@/lib/crm/phone-links";
 import { isNativeApp, nativePlatform } from "@/lib/native/platform";
 import {
@@ -28,6 +29,29 @@ export function incomingCallsSupported(): boolean {
   return isNativeApp() && nativePlatform() === "android";
 }
 
+export type IncomingCallReadiness = {
+  screening: boolean;
+  overlay: boolean;
+  phone: boolean;
+  notifications: boolean;
+};
+
+const notReady: IncomingCallReadiness = {
+  screening: false,
+  overlay: false,
+  phone: false,
+  notifications: false,
+};
+
+export function incomingCallerReady(readiness: IncomingCallReadiness): boolean {
+  return (
+    readiness.screening &&
+    readiness.overlay &&
+    readiness.phone &&
+    readiness.notifications
+  );
+}
+
 export async function ensureIncomingCallAccess(): Promise<void> {
   if (!incomingCallsSupported()) return;
   try {
@@ -47,6 +71,44 @@ export async function ensureIncomingCallAccess(): Promise<void> {
   } catch {
     /* notification prompt unavailable */
   }
+}
+
+export async function readIncomingCallReadiness(): Promise<IncomingCallReadiness> {
+  if (!incomingCallsSupported()) return notReady;
+  const caps = await readIncomingCapabilities();
+  let phone = false;
+  try {
+    const perms = await rootkCallInsight.checkPermissions();
+    phone = perms.callLog === "granted" && perms.phoneState === "granted";
+  } catch {
+    phone = false;
+  }
+  let notificationsGranted = false;
+  const plugin = await notifications();
+  if (plugin) {
+    try {
+      const current = await plugin.checkPermissions();
+      notificationsGranted = current.display === "granted";
+    } catch {
+      notificationsGranted = false;
+    }
+  }
+  return {
+    screening: caps.screening,
+    overlay: caps.overlay,
+    phone,
+    notifications: notificationsGranted,
+  };
+}
+
+/** Ask only for the grants still missing, in the order the system expects. */
+export async function activateIncomingCaller(): Promise<IncomingCallReadiness> {
+  await ensureIncomingCallAccess();
+  const caps = await readIncomingCapabilities();
+  if (!caps.screening) await askScreeningRole();
+  const afterRole = await readIncomingCapabilities();
+  if (!afterRole.overlay) await askOverlayPermission();
+  return readIncomingCallReadiness();
 }
 
 export async function replayRecentIncomingCall(): Promise<void> {
@@ -71,64 +133,14 @@ export async function syncIncomingLeadCache(
   }
 ): Promise<void> {
   if (!incomingCallsSupported()) return;
-  const byTail: Record<
-    string,
-    { id: string; name: string; phone: string; company: string; request: string; budget: string }
-  > = {};
-  for (const lead of leads) {
-    const request = clip(lead.request) || labels.empty;
-    const budget = clip(lead.budget) || labels.empty;
-    const row = {
-      id: lead.id,
-      name: lead.name,
-      phone: displayCrmPhone(lead.phone, lead.phoneNormalized),
-      company: lead.companyName.trim(),
-      request,
-      budget,
-    };
-    for (const key of phoneTails(lead)) {
-      if (!byTail[key]) byTail[key] = row;
-    }
-  }
+  const index = buildIncomingCallerIndex(leads, labels, displayCrmPhone);
   try {
     await rootkCallInsight.syncIncomingLeads({
-      index: JSON.stringify({
-        rtl: labels.rtl,
-        labels: {
-          title: labels.title,
-          request: labels.request,
-          budget: labels.budget,
-          empty: labels.empty,
-          open: labels.open,
-          hide: labels.hide,
-        },
-        byTail,
-      }),
+      index: JSON.stringify(index),
     });
   } catch {
     /* native index unavailable until the Android build includes it */
   }
-}
-
-function clip(value: string, max = 180) {
-  const text = value.trim();
-  if (text.length <= max) return text;
-  return `${text.slice(0, max - 1)}…`;
-}
-
-function phoneTails(lead: CrmLead): string[] {
-  const values = [
-    lead.phone,
-    lead.phoneNormalized,
-    ...(lead.contacts ?? []).flatMap((contact) => [contact.phone, contact.phoneNormalized]),
-  ];
-  const tails = new Set<string>();
-  for (const value of values) {
-    if (!value) continue;
-    const digits = value.replace(/\D/g, "");
-    if (digits.length >= 7) tails.add(digits.slice(-9));
-  }
-  return [...tails];
 }
 
 export async function startIncomingCallWatch(): Promise<void> {

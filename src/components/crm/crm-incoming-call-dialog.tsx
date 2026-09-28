@@ -28,7 +28,7 @@ function shown(value: string, empty: string) {
   return text || empty;
 }
 
-/** In-app fallback when the call-screen card cannot draw over other apps. */
+/** In-app card: who is calling, what they need, and their budget. */
 export function CrmIncomingCallDialog({
   lead,
   open,
@@ -40,23 +40,25 @@ export function CrmIncomingCallDialog({
 
   return (
     <Dialog open={open && Boolean(lead)} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="overflow-hidden sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Phone className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+          <DialogDescription className="text-xs font-semibold uppercase tracking-wide text-primary">
             {t("crm.call.incoming.title")}
+          </DialogDescription>
+          <DialogTitle className="text-xl leading-snug">
+            {lead?.name || t("crm.call.incoming.title")}
           </DialogTitle>
-          <DialogDescription>{lead?.name}</DialogDescription>
         </DialogHeader>
         {lead ? (
           <DialogBody className="space-y-3">
-            <p className="text-sm text-muted-foreground" dir="ltr">
+            <p className="flex items-center gap-2 text-sm text-muted-foreground" dir="ltr">
+              <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
               {displayCrmPhone(lead.phone, lead.phoneNormalized)}
             </p>
             {lead.companyName.trim() ? (
               <p className="text-sm text-foreground">{lead.companyName}</p>
             ) : null}
-            <div className="rounded-xl bg-muted/70 px-3 py-2">
+            <div className="rounded-xl border border-border/70 bg-muted/50 px-3 py-2.5">
               <p className="text-xs text-muted-foreground">
                 {t("crm.call.incoming.request")}
               </p>
@@ -64,11 +66,11 @@ export function CrmIncomingCallDialog({
                 {shown(lead.request, empty)}
               </p>
             </div>
-            <div className="rounded-xl bg-primary/10 px-3 py-2">
-              <p className="text-xs text-muted-foreground">
+            <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2.5">
+              <p className="text-xs font-medium text-amber-800 dark:text-amber-200">
                 {t("crm.call.incoming.budget")}
               </p>
-              <p className="mt-1 text-base font-semibold">
+              <p className="mt-1 text-lg font-semibold leading-snug text-foreground">
                 <BidiText text={shown(lead.budget, empty)} />
               </p>
             </div>
