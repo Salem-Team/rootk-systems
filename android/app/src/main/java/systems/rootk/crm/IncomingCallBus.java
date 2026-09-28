@@ -67,7 +67,8 @@ final class IncomingCallBus {
         String leadId = card == null ? "" : card.leadId;
         deliver(raw, "ringing", leadId);
         if (card == null) return;
-        IncomingLeadOverlay.show(context, card);
+        boolean activity = IncomingLeadActivity.present(context, card);
+        if (!activity) IncomingLeadOverlay.show(context, card);
         IncomingCallNotifier.showCard(context, card);
     }
 

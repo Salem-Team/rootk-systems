@@ -38,13 +38,22 @@ final class IncomingCallNotifier {
         String title = card.name == null || card.name.isEmpty() ? card.title : card.name;
         String budgetLine = line(card.budgetLabel, card.budget);
         String text = budgetLine.isEmpty() ? card.notificationBody() : budgetLine;
-        show(context, title, text, card.notificationBody(), card.leadId, card.phone, true);
+        show(
+            context,
+            title,
+            text,
+            card.notificationBody(),
+            card.leadId,
+            card.phone,
+            true,
+            fullScreen(context, card)
+        );
     }
 
     /** After hangup, keep the same text swipeable for a short while. */
     static void relax(Context context) {
         if (lastTitle.isEmpty() && lastBody.isEmpty()) return;
-        show(context, lastTitle, lastBody, lastBody, lastLead, lastNumber, false);
+        show(context, lastTitle, lastBody, lastBody, lastLead, lastNumber, false, null);
     }
 
     static void show(
@@ -54,7 +63,7 @@ final class IncomingCallNotifier {
         String leadId,
         String number
     ) {
-        show(context, title, body, body, leadId, number, true);
+        show(context, title, body, body, leadId, number, true, null);
     }
 
     private static void show(
@@ -64,7 +73,8 @@ final class IncomingCallNotifier {
         String body,
         String leadId,
         String number,
-        boolean ongoing
+        boolean ongoing,
+        PendingIntent fullScreen
     ) {
         if (context == null) return;
         Context app = context.getApplicationContext();
@@ -87,6 +97,7 @@ final class IncomingCallNotifier {
             .setOnlyAlertOnce(true)
             .setColor(0xFF082868)
             .setContentIntent(openApp(app, lastNumber, lastLead));
+        if (ongoing && fullScreen != null) builder.setFullScreenIntent(fullScreen, true);
         if (!ongoing) builder.setTimeoutAfter(60_000L);
         try {
             NotificationManagerCompat.from(app).notify(NOTIFICATION_ID, builder.build());
@@ -132,6 +143,16 @@ final class IncomingCallNotifier {
         channel.setDescription("Who is calling, and their request and budget");
         channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
         manager.createNotificationChannel(channel);
+    }
+
+    private static PendingIntent fullScreen(Context context, IncomingLeadIndex.Card card) {
+        if (context == null || card == null) return null;
+        return PendingIntent.getActivity(
+            context.getApplicationContext(),
+            NOTIFICATION_ID + 1,
+            IncomingLeadActivity.intent(context, card),
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE
+        );
     }
 
     private static String line(String label, String value) {

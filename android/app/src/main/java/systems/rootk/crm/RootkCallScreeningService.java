@@ -13,23 +13,44 @@ public class RootkCallScreeningService extends CallScreeningService {
 
     @Override
     public void onScreenCall(Call.Details details) {
-        respondToCall(details, allowCall());
         if (details == null) return;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-            && details.getCallDirection() != Call.Details.DIRECTION_INCOMING) {
-            return;
-        }
-        IncomingCallBus.publishRinging(this, numberFrom(details));
+        // Read the number first. Some devices clear the handle after respondToCall.
+        String number = numberFrom(details);
+        boolean outgoing = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+            && details.getCallDirection() == Call.Details.DIRECTION_OUTGOING;
+        respondToCall(details, allowCall());
+        // DIRECTION_UNKNOWN is common while the call is still ringing. Only skip real outbound.
+        if (outgoing) return;
+        IncomingCallBus.publishRinging(this, number);
     }
 
     private static String numberFrom(Call.Details details) {
-        Uri handle = details.getHandle();
+        String direct = fromUri(details.getHandle());
+        if (digitCount(direct) >= 7) return direct;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && details.getGatewayInfo() != null) {
+            String gateway = fromUri(details.getGatewayInfo().getOriginalAddress());
+            if (digitCount(gateway) >= 7) return gateway;
+        }
+        return direct;
+    }
+
+    private static String fromUri(Uri handle) {
         if (handle == null) return "";
         String raw = handle.getSchemeSpecificPart();
         if (raw == null || raw.isEmpty()) raw = handle.toString();
         int at = raw.indexOf('@');
         if (at > 0) raw = raw.substring(0, at);
         return raw == null ? "" : raw.trim();
+    }
+
+    private static int digitCount(String raw) {
+        if (raw == null || raw.isEmpty()) return 0;
+        int count = 0;
+        for (int i = 0; i < raw.length(); i++) {
+            char c = raw.charAt(i);
+            if (c >= '0' && c <= '9') count++;
+        }
+        return count;
     }
 
     private static CallResponse allowCall() {

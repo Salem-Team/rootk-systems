@@ -40,22 +40,29 @@ function clip(value: string, max = 160) {
   return `${text.slice(0, max - 1)}…`;
 }
 
-async function loadCallableLeads(): Promise<CrmLead[]> {
+async function loadCallableLeads(): Promise<CrmLead[] | null> {
   const items: CrmLead[] = [];
+  let loaded = false;
   const recordTypes: CrmRecordType[] = ["lead", "cold_call"];
   const statuses: CrmLeadStatus[] = ["active", "inactive"];
   for (const recordType of recordTypes) {
     for (const status of statuses) {
       for (let page = 1; page <= 20; page += 1) {
-        const res = await getCrmLeads({
-          status,
-          recordType,
-          page,
-          pageSize: 100,
-          sort: "updatedAt",
-          order: "desc",
-        });
-        if (!res.success) throw new Error("crm leads unavailable");
+        let res;
+        try {
+          res = await getCrmLeads({
+            status,
+            recordType,
+            page,
+            pageSize: 100,
+            sort: "updatedAt",
+            order: "desc",
+          });
+        } catch {
+          return loaded ? items : null;
+        }
+        if (!res.success) return loaded ? items : null;
+        loaded = true;
         const batch = res.data?.items ?? [];
         items.push(...batch);
         const totalPages = res.data?.totalPages ?? page;
@@ -89,8 +96,9 @@ export function CrmIncomingCallHost() {
 
   const recentRef = useRef<{ tail: string; at: number }>({ tail: "", at: 0 });
   const tokenRef = useRef(0);
-  const dismissedEnableRef = useRef(false);
   const syncRef = useRef<() => Promise<void>>(async () => undefined);
+  const activatingRef = useRef(false);
+  const askedRef = useRef(false);
   const [lead, setLead] = useState<CrmLead | null>(null);
   const [open, setOpen] = useState(false);
   const [enableOpen, setEnableOpen] = useState(false);
@@ -107,16 +115,19 @@ export function CrmIncomingCallHost() {
   }, []);
 
   const onActivate = useCallback(async () => {
+    if (activatingRef.current) return;
+    activatingRef.current = true;
     setActivating(true);
     try {
       const next = await activateIncomingCaller();
       await syncRef.current();
       setReadiness(next);
+      setEnableOpen(!incomingCallerReady(next));
       if (incomingCallerReady(next)) {
-        setEnableOpen(false);
         toast.success(tRef.current("crm.call.incoming.enabled"));
       }
     } finally {
+      activatingRef.current = false;
       setActivating(false);
     }
   }, []);
@@ -130,13 +141,8 @@ export function CrmIncomingCallHost() {
 
     async function syncCache() {
       const translate = tRef.current;
-      let leads: CrmLead[] = [];
-      try {
-        leads = await loadCallableLeads();
-      } catch {
-        return;
-      }
-      if (cancelled) return;
+      const leads = await loadCallableLeads();
+      if (cancelled || !leads) return;
       await syncIncomingLeadCache(leads, {
         rtl: localeRef.current === "ar",
         title: translate("crm.call.incoming.title"),
@@ -189,8 +195,7 @@ export function CrmIncomingCallHost() {
       const next = await readIncomingCallReadiness();
       if (cancelled) return next;
       setReadiness(next);
-      if (incomingCallerReady(next)) setEnableOpen(false);
-      else if (!dismissedEnableRef.current) setEnableOpen(true);
+      setEnableOpen(!incomingCallerReady(next));
       return next;
     }
 
@@ -241,7 +246,24 @@ export function CrmIncomingCallHost() {
         return;
       }
       detachApp = appHandle;
-      await refreshReadiness();
+      const ready = await refreshReadiness();
+      if (cancelled || !ready || incomingCallerReady(ready) || askedRef.current) return;
+      askedRef.current = true;
+      activatingRef.current = true;
+      setActivating(true);
+      try {
+        const next = await activateIncomingCaller();
+        await syncCache();
+        if (cancelled) return;
+        setReadiness(next);
+        setEnableOpen(!incomingCallerReady(next));
+        if (incomingCallerReady(next)) {
+          toast.success(tRef.current("crm.call.incoming.enabled"));
+        }
+      } finally {
+        activatingRef.current = false;
+        setActivating(false);
+      }
     })();
 
     return () => {
@@ -259,10 +281,7 @@ export function CrmIncomingCallHost() {
         open={enableOpen}
         busy={activating}
         readiness={readiness}
-        onOpenChange={(next) => {
-          setEnableOpen(next);
-          if (!next) dismissedEnableRef.current = true;
-        }}
+        onOpenChange={setEnableOpen}
         onActivate={() => void onActivate()}
       />
       <CrmIncomingCallDialog
