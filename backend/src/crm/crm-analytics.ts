@@ -22,6 +22,22 @@ export function round1(fraction: number): number {
   return Math.round(fraction * 1000) / 10;
 }
 
+/** Lost-stage clients stay on the Lost card, but they are not part of "total clients". */
+export function countsTowardClientTotal(
+  category: CrmStageCategory | undefined
+): boolean {
+  return category !== CrmStageCategory.lost;
+}
+
+export function countClientsInTotal<T extends { stageId: string }>(
+  leads: T[],
+  stageById: Map<string, { category: CrmStageCategory }>
+): number {
+  return leads.filter((lead) =>
+    countsTowardClientTotal(stageById.get(lead.stageId)?.category)
+  ).length;
+}
+
 export function countBy<T>(
   items: T[],
   keyFn: (item: T) => string
@@ -187,7 +203,9 @@ export function buildSalesPerformance(
       return {
         employeeId,
         employeeName: nameById.get(employeeId) ?? employeeId,
-        leads: list.length,
+        leads: list.filter((lead) =>
+          countsTowardClientTotal(stageById.get(lead.stageId)?.category)
+        ).length,
         active,
         won,
         lost,

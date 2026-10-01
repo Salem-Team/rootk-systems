@@ -171,6 +171,8 @@ export async function fetchCrmLeads(
       tag: filters.tag || undefined,
       followUp: filters.followUp || undefined,
       recordType: filters.recordType || "lead",
+      excludeLost: filters.excludeLost ? "1" : undefined,
+      lossReason: filters.lossReason || undefined,
       dateFrom: filters.dateFrom,
       dateTo: filters.dateTo,
       range: filters.range,

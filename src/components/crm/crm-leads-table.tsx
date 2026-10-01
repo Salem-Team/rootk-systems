@@ -44,6 +44,7 @@ interface CrmLeadsTableProps {
   filters: CrmLeadFilters;
   stageMap: Map<string, CrmStage>;
   employeeMap: Map<string, string>;
+  lossReasonNames?: Map<string, string>;
   selected: Set<string>;
   allSelected: boolean;
   someSelected?: boolean;
@@ -63,6 +64,7 @@ export function CrmLeadsTable({
   page,
   stageMap,
   employeeMap,
+  lossReasonNames,
   selected,
   allSelected,
   someSelected = false,
@@ -77,6 +79,13 @@ export function CrmLeadsTable({
 }: CrmLeadsTableProps) {
   const { t } = useTranslation();
   const items = page.items;
+  const reasonById = lossReasonNames ?? new Map<string, string>();
+  function lossReasonLabel(lead: CrmLead): string | null {
+    const stage = stageMap.get(lead.stageId);
+    if (stage?.category !== "lost") return null;
+    if (!lead.lossReasonTypeId) return t("crm.filters.lossReasonUnknown");
+    return reasonById.get(lead.lossReasonTypeId) ?? t("crm.filters.lossReasonUnknown");
+  }
   const openHistory = onViewHistory ?? onRowClick;
 
   function productLabel(id: CrmRequestProduct) {
@@ -210,6 +219,11 @@ export function CrmLeadsTable({
                       {stage?.name ?? "—"}
                     </Badge>
                   </div>
+                  {lossReasonLabel(lead) ? (
+                    <p className="mt-1.5 truncate text-[11px] font-medium text-destructive">
+                      {lossReasonLabel(lead)}
+                    </p>
+                  ) : null}
 
                   <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
                     <span>{t(`crm.source.${lead.source}`)}</span>
@@ -410,6 +424,11 @@ export function CrmLeadsTable({
                     {subStage ? (
                       <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                         {subStage.name}
+                      </p>
+                    ) : null}
+                    {lossReasonLabel(lead) ? (
+                      <p className="mt-0.5 max-w-[140px] truncate text-[11px] font-medium text-destructive">
+                        {lossReasonLabel(lead)}
                       </p>
                     ) : null}
                   </div>

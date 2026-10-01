@@ -291,6 +291,10 @@ export interface CrmLeadFilters {
   followUp?: CrmFollowUpFilter | "";
   /** Defaults to `lead` so cold calls stay out of pipeline totals. */
   recordType?: CrmRecordType;
+  /** Drop lost-stage rows so the list matches "total clients". */
+  excludeLost?: boolean;
+  /** `any` = every lost client. Otherwise a loss-reason feedback type id. */
+  lossReason?: string;
   dateFrom?: string;
   dateTo?: string;
   range?: CrmDateRangePreset;

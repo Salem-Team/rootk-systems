@@ -3,6 +3,7 @@ import {
   CrmLeadSource,
   CrmLeadStatus,
   CrmRecordType,
+  CrmStageCategory,
   type Prisma,
 } from "@prisma/client";
 import { endOfDay } from "date-fns";
@@ -39,6 +40,17 @@ export function buildLeadWhere(
     where.OR = buildLeadSearchOr(query.search.trim());
   }
   if (query.stageId) where.stageId = query.stageId;
+  if (query.lossReason === "any") {
+    where.stage = { is: { category: CrmStageCategory.lost } };
+  } else if (query.lossReason) {
+    where.lossReasonTypeId = query.lossReason;
+    where.stage = { is: { category: CrmStageCategory.lost } };
+  } else if (
+    !query.stageId &&
+    (query.excludeLost === "1" || query.excludeLost === "true")
+  ) {
+    where.stage = { is: { category: { not: CrmStageCategory.lost } } };
+  }
   if (query.subStageId) where.subStageId = query.subStageId;
   if (
     query.status &&

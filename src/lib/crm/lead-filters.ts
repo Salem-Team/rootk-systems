@@ -19,6 +19,8 @@ export type CrmLeadScopeOpts = {
    * Everyone else never sees `deletedAt`.
    */
   includeDeletedMatches?: boolean;
+  /** Stage ids whose category is lost. Used when `excludeLost` is set. */
+  lostStageIds?: ReadonlySet<string>;
 };
 
 function matchesLeadDeletionFilter(
@@ -107,6 +109,21 @@ export function filterLeads(
       return false;
     }
     if (filters.stageId && lead.stageId !== filters.stageId) return false;
+    if (filters.lossReason) {
+      if (!opts?.lostStageIds?.has(lead.stageId)) return false;
+      if (
+        filters.lossReason !== "any" &&
+        lead.lossReasonTypeId !== filters.lossReason
+      ) {
+        return false;
+      }
+    } else if (
+      filters.excludeLost &&
+      !filters.stageId &&
+      opts?.lostStageIds?.has(lead.stageId)
+    ) {
+      return false;
+    }
     if (filters.subStageId && lead.subStageId !== filters.subStageId)
       return false;
     if (!matchesLeadDeletionFilter(lead, filters, opts)) return false;
@@ -174,6 +191,8 @@ export function sameLeadFilters(
     "tag",
     "followUp",
     "recordType",
+    "excludeLost",
+    "lossReason",
     "sort",
     "order",
     "range",

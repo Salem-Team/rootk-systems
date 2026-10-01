@@ -160,6 +160,8 @@ export function useCrmLeadsPanel({
       // Preserve locked Delay filters so clear doesn't fight the parent lock.
       if (exclude.has("status") && prev.status) next.status = prev.status;
       if (exclude.has("followUp") && prev.followUp) next.followUp = prev.followUp;
+      if (prev.recordType) next.recordType = prev.recordType;
+      if (prev.excludeLost) next.excludeLost = true;
       return next;
     });
   }
@@ -216,7 +218,8 @@ export function useCrmLeadsPanel({
       (!exclude.has("status") && filters.status) ||
       (!exclude.has("source") && filters.source) ||
       (!exclude.has("ownerEmployeeId") && filters.ownerEmployeeId) ||
-      (!exclude.has("followUp") && filters.followUp)
+      (!exclude.has("followUp") && filters.followUp) ||
+      Boolean(filters.lossReason)
   );
 
   return {

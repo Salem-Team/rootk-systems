@@ -12,7 +12,12 @@ import type {
   CrmStageCard,
 } from "@/types/crm";
 import { isFollowUpOverdue, parseMaybe } from "@/lib/crm/date-range";
-import { isLost, isWon, stageMap } from "@/lib/crm/stage-metrics";
+import {
+  countsTowardClientTotal,
+  isLost,
+  isWon,
+  stageMap,
+} from "@/lib/crm/stage-metrics";
 
 export function buildSalesPerformance(
   leads: CrmLead[],
@@ -71,7 +76,9 @@ export function buildSalesPerformance(
       return {
         employeeId: emp.id,
         employeeName: emp.name,
-        leads: mine.length,
+        leads: mine.filter((lead) =>
+          countsTowardClientTotal(map.get(lead.stageId))
+        ).length,
         active: mine.filter((l) => l.status === "active").length,
         won,
         lost,

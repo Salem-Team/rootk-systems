@@ -8,7 +8,13 @@ import type {
   CrmStage,
 } from "@/types/crm";
 import { isPipelineLead } from "@/lib/crm/lead-filters";
-import { buildStageCards, isLost, isWon, stageMap } from "@/lib/crm/stage-metrics";
+import {
+  buildStageCards,
+  countClientsInTotal,
+  isLost,
+  isWon,
+  stageMap,
+} from "@/lib/crm/stage-metrics";
 
 export function toSalesProfileLeads(
   leads: CrmLead[],
@@ -67,7 +73,9 @@ export function filterSalesProfileLeads(
   key: CrmSalesProfileCardKey,
   stageId?: string
 ): CrmSalesProfileLead[] {
-  if (key === "total") return leads;
+  if (key === "total") {
+    return leads.filter((lead) => lead.stageCategory !== "lost");
+  }
   if (key === "active") return leads.filter((l) => l.status === "active");
   if (key === "won") return leads.filter((l) => l.stageCategory === "won");
   if (key === "lost") return leads.filter((l) => l.stageCategory === "lost");
@@ -107,7 +115,7 @@ export function buildSalesProfile(
     employeeId,
     employeeName,
     overview: {
-      totalLeads: mine.length,
+      totalLeads: countClientsInTotal(mine, stages),
       activeLeads: filterSalesProfileLeads(profileLeads, "active").length,
       won,
       lost,

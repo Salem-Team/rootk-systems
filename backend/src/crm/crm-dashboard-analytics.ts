@@ -7,7 +7,11 @@ import {
   type CrmStage,
 } from "@prisma/client";
 import { subDays } from "date-fns";
-import { INACTIVE_DAYS_THRESHOLD, round1 } from "./crm-analytics";
+import {
+  countClientsInTotal,
+  INACTIVE_DAYS_THRESHOLD,
+  round1,
+} from "./crm-analytics";
 
 /** Build CRM dashboard KPI totals from period leads + full active pipeline. */
 export function buildDashboardKpis(
@@ -15,8 +19,8 @@ export function buildDashboardKpis(
   allActiveLeads: CrmLead[],
   stageById: Map<string, CrmStage>
 ) {
-  // TOTAL = current pipeline (not date-scoped). NEW = created inside the selected range.
-  const totalLeads = allActiveLeads.length;
+  // TOTAL = current pipeline excluding lost (not date-scoped). NEW = created inside the selected range.
+  const totalLeads = countClientsInTotal(allActiveLeads, stageById);
   const newLeads = rangeLeads.length;
   const activeLeads = allActiveLeads.filter(
     (l) =>

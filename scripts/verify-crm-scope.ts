@@ -375,6 +375,87 @@ function main() {
     feedback
   );
   assert(profile.overview.totalLeads === 2, "profile: total is assigned only");
+
+  const withLost = [
+    ...leads,
+    lead("l-lost", hagar, { stageId: "st-lost" }),
+  ];
+  const dashLost = buildCrmDashboard(
+    withLost,
+    stages,
+    feedbackTypes,
+    feedback,
+    employees,
+    { range: "all" },
+    { canViewOthers: true }
+  );
+  assert(
+    dashLost.kpis.totalLeads === 4,
+    "dashboard: lost clients are outside total clients"
+  );
+  assert(
+    dashLost.salesPerformance.find((row) => row.employeeId === hagar)?.leads === 2,
+    "dashboard: sales client count excludes lost"
+  );
+  const profileLost = buildSalesProfile(
+    hagar,
+    "Hagar",
+    withLost,
+    stages,
+    activities,
+    feedback
+  );
+  assert(
+    profileLost.overview.totalLeads === 2,
+    "profile: total excludes lost clients"
+  );
+  assert(profileLost.overview.lost === 1, "profile: lost count stays visible");
+  assert(
+    filterSalesProfileLeads(profileLost.leads, "total").length === 2 &&
+      filterSalesProfileLeads(profileLost.leads, "lost").length === 1,
+    "profile: total list hides lost, lost list keeps them"
+  );
+  const lostIds = new Set(["st-lost"]);
+  const visible = filterLeads(
+    withLost,
+    { excludeLost: true },
+    { canViewOthers: true, lostStageIds: lostIds }
+  );
+  assert(
+    visible.length === 4 && visible.every((row) => row.stageId !== "st-lost"),
+    "filterLeads: excludeLost drops lost-stage clients"
+  );
+  const lostStageOnly = filterLeads(
+    withLost,
+    { stageId: "st-lost", excludeLost: true },
+    { canViewOthers: true, lostStageIds: lostIds }
+  );
+  assert(
+    lostStageOnly.length === 1 && lostStageOnly[0]?.id === "l-lost",
+    "filterLeads: an explicit lost stage still opens"
+  );
+  const lostWithReason = lead("l-lost", hagar, {
+    stageId: "st-lost",
+    lossReasonTypeId: "price",
+  });
+  const byReason = filterLeads(
+    [lostWithReason, lead("l-other-lost", hagar, { stageId: "st-lost", lossReasonTypeId: "budget" }), lead("l-open", hagar)],
+    { lossReason: "price" },
+    { canViewOthers: true, lostStageIds: lostIds }
+  );
+  assert(
+    byReason.length === 1 && byReason[0]?.id === "l-lost",
+    "filterLeads: loss reason keeps only that lost client"
+  );
+  const anyLost = filterLeads(
+    [lostWithReason, lead("l-open", hagar)],
+    { lossReason: "any" },
+    { canViewOthers: true, lostStageIds: lostIds }
+  );
+  assert(
+    anyLost.length === 1 && anyLost[0]?.stageId === "st-lost",
+    "filterLeads: any lost includes every lost client"
+  );
   assert(profile.overview.won === 1, "profile: won is assigned only");
   assert(
     profile.leads.length === 2 &&

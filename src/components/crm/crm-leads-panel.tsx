@@ -80,6 +80,7 @@ function countBadgeFilters(
   if (!skip.has("source") && filters.source) n += 1;
   if (!skip.has("ownerEmployeeId") && filters.ownerEmployeeId) n += 1;
   if (!skip.has("followUp") && filters.followUp) n += 1;
+  if (!skip.has("lossReason") && filters.lossReason) n += 1;
   return n;
 }
 
@@ -350,6 +351,7 @@ export function CrmLeadsPanel({
         filters={filters}
         stages={panel.safeStages}
         employees={panel.safeEmployees}
+        feedbackTypes={feedbackTypes}
         canAssign={canAssign}
         canViewOthers={canViewOthers || canViewTeam}
         hasActiveFilters={panel.hasActiveFilters}
@@ -387,6 +389,11 @@ export function CrmLeadsPanel({
         filters={filters}
         stageMap={panel.stageMap}
         employeeMap={panel.employeeMap}
+        lossReasonNames={new Map(
+          feedbackTypes
+            .filter((type) => type.isLossReason)
+            .map((type) => [type.id, type.name])
+        )}
         selected={panel.selected}
         allSelected={panel.allSelected}
         someSelected={panel.someSelected}

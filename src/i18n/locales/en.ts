@@ -3688,6 +3688,10 @@ export const en = {
       followUpUpcoming: "Upcoming",
       followUpOverdue: "Overdue",
       followUpNone: "No follow-up",
+      lossReason: "Loss reason",
+      allLossReasons: "Any reason",
+      anyLost: "All lost",
+      lossReasonUnknown: "Reason not recorded",
     },
     status: {
       active: "Active",
@@ -3746,7 +3750,7 @@ export const en = {
     leads: {
       title: "Leads",
       overviewTitle: "Lead management path",
-      overviewStats: "{total} leads · {stages} active stages",
+      overviewStats: "{total} clients excluding lost · {stages} active stages",
       allLeads: "All Leads",
       openTable: "Open full table",
       backToStages: "Back to stages",

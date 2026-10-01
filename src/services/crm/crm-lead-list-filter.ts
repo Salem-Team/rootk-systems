@@ -23,14 +23,31 @@ export function leadListMode(
 export function includeDeletedLeadMatches(filters: CrmLeadFilters): boolean {
   return leadListMode(filters) === "withDeleted";
 }
+async function withLostStageIds(
+  filters: CrmLeadFilters,
+  scope: CrmLeadScopeOpts
+): Promise<CrmLeadScopeOpts> {
+  const needsLostStages =
+    Boolean(filters.lossReason) || (Boolean(filters.excludeLost) && !filters.stageId);
+  if (!needsLostStages) return scope;
+  const { stages } = await ensureCatalog();
+  return {
+    ...scope,
+    lostStageIds: new Set(
+      stages.filter((stage) => stage.category === "lost").map((stage) => stage.id)
+    ),
+  };
+}
+
 export async function filterStoredLeads(
   leads: CrmLead[],
   filters: CrmLeadFilters,
   scope: CrmLeadScopeOpts
 ): Promise<CrmLead[]> {
+  const scoped = await withLostStageIds(filters, scope);
   if (!filters.search?.trim()) {
     return filterLeads(leads, filters, {
-      ...scope,
+      ...scoped,
       includeDeletedMatches: includeDeletedLeadMatches(filters),
     });
   }
@@ -59,7 +76,7 @@ export async function filterStoredLeads(
   });
 
   return filterLeads(leads, filters, {
-    ...scope,
+    ...scoped,
     includeDeletedMatches: includeDeletedLeadMatches(filters),
     searchTextByLeadId,
   });

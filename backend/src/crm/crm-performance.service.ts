@@ -6,6 +6,7 @@ import {
   buildPipelineBreakdown,
   buildSalesPerformance,
   countBy,
+  countClientsInTotal,
   resolveDateBounds,
   round1,
 } from "./crm-analytics";
@@ -183,7 +184,7 @@ export class CrmPerformanceService {
       employeeId,
       employeeName: employee.name,
       overview: {
-        totalLeads: leads.length,
+        totalLeads: countClientsInTotal(leads, stageById),
         activeLeads,
         won,
         lost,

@@ -12,6 +12,21 @@ export function isLost(stage: CrmStage | undefined): boolean {
   return stage?.category === "lost";
 }
 
+/** Lost clients stay on the Lost stage. They are not part of "total clients". */
+export function countsTowardClientTotal(stage: CrmStage | undefined): boolean {
+  return !isLost(stage);
+}
+
+export function countClientsInTotal(
+  leads: CrmLead[],
+  stages: CrmStage[]
+): number {
+  const map = stageMap(stages);
+  return leads.filter((lead) =>
+    countsTowardClientTotal(map.get(lead.stageId))
+  ).length;
+}
+
 export function trendPercent(current: number, previous: number): number {
   if (previous === 0) return current > 0 ? 100 : 0;
   return Math.round(((current - previous) / previous) * 100);
@@ -51,7 +66,7 @@ export function buildKpis(
   const closed =
     converted + leads.filter((l) => isLost(map.get(l.stageId))).length;
   return {
-    totalLeads: leads.length,
+    totalLeads: countClientsInTotal(leads, stages),
     newLeads: rangeLeads.length,
     activeLeads: leads.filter((l) => l.status === "active").length,
     converted,

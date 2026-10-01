@@ -416,6 +416,7 @@ export function useCrmHub() {
       order: prev.order ?? "desc",
       ownerEmployeeId: overviewOwnerEmployeeId,
       recordType: "lead",
+      excludeLost: true,
     }));
     setLeadsView("table");
   }
@@ -454,6 +455,7 @@ export function useCrmHub() {
       order: prev.order ?? "desc",
       ownerEmployeeId: overviewOwnerEmployeeId,
       recordType: "cold_call",
+      excludeLost: true,
     }));
     setColdCallsView("table");
   }
@@ -552,10 +554,24 @@ export function useCrmHub() {
     return [...map.entries()].map(([stageId, count]) => ({ stageId, count }));
   }, [leadStageCounts, overviewLeads]);
 
+  const lostStageIds = useMemo(
+    () =>
+      new Set(
+        safeStages.filter((stage) => stage.category === "lost").map((stage) => stage.id)
+      ),
+    [safeStages]
+  );
+
   const overviewTotal = useMemo(() => {
-    if (leadStageCounts) return leadStageCounts.total;
-    return overviewLeads.length;
-  }, [leadStageCounts, overviewLeads]);
+    if (leadStageCounts) {
+      return Object.entries(leadStageCounts.byStage).reduce(
+        (sum, [stageId, count]) =>
+          lostStageIds.has(stageId) ? sum : sum + count,
+        0
+      );
+    }
+    return overviewLeads.filter((lead) => !lostStageIds.has(lead.stageId)).length;
+  }, [leadStageCounts, overviewLeads, lostStageIds]);
 
   return {
     canCreate,

@@ -3675,6 +3675,10 @@ export const ar: TranslationKeys = {
       followUpUpcoming: "قادمة",
       followUpOverdue: "متأخرة",
       followUpNone: "بدون متابعة",
+      lossReason: "سبب الخسارة",
+      allLossReasons: "أي سبب",
+      anyLost: "كل الخسائر",
+      lossReasonUnknown: "سبب مش متسجل",
     },
     status: {
       active: "نشط",
@@ -3732,7 +3736,7 @@ export const ar: TranslationKeys = {
     leads: {
       title: "العملاء المحتملون",
       overviewTitle: "مسار إدارة العملاء",
-      overviewStats: "{total} عميل · {stages} مراحل نشطة",
+      overviewStats: "{total} عميل بدون الخسائر · {stages} مراحل نشطة",
       allLeads: "كل العملاء",
       openTable: "افتح الجدول الكامل",
       backToStages: "رجوع للمراحل",

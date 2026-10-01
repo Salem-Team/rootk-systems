@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/stores/session-store";
 import type { Employee } from "@/types";
 import type {
+  CrmFeedbackType,
   CrmFollowUpFilter,
   CrmLeadFilters,
   CrmLeadListStatus,
@@ -52,6 +53,7 @@ interface CrmLeadsFiltersProps {
   filters: CrmLeadFilters;
   stages: CrmStage[];
   employees: Employee[];
+  feedbackTypes?: CrmFeedbackType[];
   canAssign: boolean;
   canViewOthers?: boolean;
   hasActiveFilters: boolean;
@@ -65,6 +67,7 @@ function FilterControls({
   filters,
   stages,
   employees,
+  feedbackTypes = [],
   showOwnerFilter,
   hasActiveFilters,
   showDeletedStatus = false,
@@ -76,6 +79,7 @@ function FilterControls({
   filters: CrmLeadFilters;
   stages: CrmStage[];
   employees: Employee[];
+  feedbackTypes?: CrmFeedbackType[];
   showOwnerFilter: boolean;
   hasActiveFilters: boolean;
   showDeletedStatus?: boolean;
@@ -86,6 +90,9 @@ function FilterControls({
 }) {
   const { t } = useTranslation();
   const locked = new Set(lockedKeys ?? []);
+  const lossReasons = feedbackTypes.filter(
+    (type) => type.active && type.isLossReason
+  );
   const triggerClass = stacked
     ? "filter-control h-11 w-full"
     : "filter-control h-11 touch-manipulation text-base sm:h-9 sm:w-[150px] sm:text-sm";
@@ -228,6 +235,32 @@ function FilterControls({
       ) : null}
 
       <Select
+        value={filters.lossReason || "all"}
+        onValueChange={(v) =>
+          onFiltersChange((prev) => ({
+            ...prev,
+            lossReason: v === "all" ? undefined : v,
+            excludeLost: v === "all" ? prev.excludeLost : undefined,
+            stageId: v === "all" ? prev.stageId : undefined,
+            page: 1,
+          }))
+        }
+      >
+        <SelectTrigger className={cn(triggerClass, !stacked && "sm:w-[160px]")}>
+          <SelectValue placeholder={t("crm.filters.lossReason")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{t("crm.filters.allLossReasons")}</SelectItem>
+          <SelectItem value="any">{t("crm.filters.anyLost")}</SelectItem>
+          {lossReasons.map((reason) => (
+            <SelectItem key={reason.id} value={reason.id}>
+              {reason.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
         value={filters.sort ?? "createdAt"}
         onValueChange={(v) =>
           onFiltersChange((prev) => ({
@@ -294,6 +327,7 @@ export function CrmLeadsFilters({
   filters,
   stages,
   employees,
+  feedbackTypes = [],
   canAssign,
   canViewOthers = false,
   hasActiveFilters,
@@ -311,6 +345,7 @@ export function CrmLeadsFilters({
       filters={filters}
       stages={stages}
       employees={employees}
+      feedbackTypes={feedbackTypes}
       showOwnerFilter={showOwnerFilter}
       hasActiveFilters={hasActiveFilters}
       showDeletedStatus={showDeletedStatus}
@@ -347,6 +382,7 @@ export function CrmLeadsFilters({
               filters={filters}
               stages={stages}
               employees={employees}
+              feedbackTypes={feedbackTypes}
               showOwnerFilter={showOwnerFilter}
               hasActiveFilters={hasActiveFilters}
               lockedKeys={lockedKeys}

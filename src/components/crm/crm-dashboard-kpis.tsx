@@ -33,7 +33,7 @@ export function CrmDashboardKpis({
       value: kpis.totalLeads,
       icon: Layers3,
       tone: "text-primary",
-      filter: {} as Partial<CrmLeadFilters>,
+      filter: { excludeLost: true } as Partial<CrmLeadFilters>,
     },
     {
       key: "new",
