@@ -62,6 +62,17 @@ function mapReply(row: RequestRow["replies"][number]) {
   };
 }
 
+function proposalMetadata(
+  metadata: unknown,
+  proposal: ReturnType<typeof sanitizeTechnicalProposal>
+): Prisma.InputJsonValue {
+  const base =
+    metadata && typeof metadata === "object" && !Array.isArray(metadata)
+      ? (metadata as Record<string, unknown>)
+      : {};
+  return { ...base, proposal } as Prisma.InputJsonValue;
+}
+
 function mapRequest(row: RequestRow) {
   return {
     id: row.id,
@@ -196,6 +207,11 @@ export class CrmClientRequestsService {
       await this.shared.assertCanEditLead(companyId, actor, lead);
     }
 
+    const proposal =
+      fromManagement && body.document != null
+        ? sanitizeTechnicalProposal(body.document)
+        : null;
+
     const replyRow = await this.prisma.crmClientRequestReply.create({
       data: {
         companyId,
@@ -214,6 +230,9 @@ export class CrmClientRequestsService {
         status: fromManagement
           ? CrmClientRequestStatus.answered
           : CrmClientRequestStatus.open,
+        ...(proposal
+          ? { metadata: proposalMetadata(current.metadata, proposal) }
+          : {}),
         updatedBy: actor.userId,
         version: { increment: 1 },
       },
@@ -247,22 +266,12 @@ export class CrmClientRequestsService {
       include: requestInclude,
     });
     if (!current) throw new NotFoundException("Request not found");
-    if (current.kind !== CrmClientRequestKind.technical_proposal) {
-      throw new BadRequestException("This request is not a technical proposal");
-    }
-
-    const metadata =
-      current.metadata &&
-      typeof current.metadata === "object" &&
-      !Array.isArray(current.metadata)
-        ? (current.metadata as Record<string, unknown>)
-        : {};
 
     const row = await this.prisma.crmClientRequest.update({
       where: { id: requestId },
       data: {
         status: CrmClientRequestStatus.answered,
-        metadata: { ...metadata, proposal } as Prisma.InputJsonValue,
+        metadata: proposalMetadata(current.metadata, proposal),
         updatedBy: actor.userId,
         version: { increment: 1 },
       },

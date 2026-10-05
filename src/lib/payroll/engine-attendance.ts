@@ -11,6 +11,7 @@ import {
   resolveMissingPunchCharge,
 } from "@/lib/payroll/charge";
 import { minutesDeductionFromPolicy } from "@/lib/payroll/engine-deductions";
+import { clockLateMinutes } from "@/lib/attendance-late-deduction";
 import {
   applyRuleAmount,
   enabledBuiltinFields,
@@ -50,8 +51,15 @@ export function computeAttendanceImpacts(params: {
 
   for (const row of input.attendance) {
     const onLeave = row.status === "on_leave";
-    // Attendance.lateMinutes is already net of check-in grace — do not subtract again.
+    // Rules still see stored late minutes (already net of punch grace).
     const lateMinutes = Math.max(0, row.lateMinutes);
+    const lateForTier = row.checkIn
+      ? clockLateMinutes(
+          row.checkIn,
+          row.date,
+          input.schedule?.fromTime || "09:00"
+        )
+      : lateMinutes;
     const earlyLeave = row.isEarlyLeave || row.status === "early_leave";
 
     if (row.status === "absent" && !onLeave && !absentRuleOverride) {
@@ -88,7 +96,7 @@ export function computeAttendanceImpacts(params: {
 
       if (!lateRuleOverride) {
         const lateHit = minutesDeductionFromPolicy(
-          lateMinutes,
+          lateForTier,
           policies,
           rate,
           hourly,

@@ -19,6 +19,11 @@ import {
 import { demoTodayKey } from "@/lib/mock-date";
 import { getWfhEligibility, getWorkSchedule } from "@/services/schedule.service";
 import { useTranslation } from "@/hooks/use-translation";
+import {
+  formatLateDeductionAmount,
+  lateChargeHours,
+  readLateDeduction,
+} from "@/lib/attendance-late-deduction";
 import { formatHmDuration } from "@/lib/duration-format";
 import { elapsedSeconds, formatLiveDuration } from "@/lib/utils";
 
@@ -132,6 +137,35 @@ export function useCheckInPanel() {
           ? t("attendance.checkInWfhSuccess")
           : t("attendance.checkInSuccess")
       );
+      const deduction = readLateDeduction(
+        useAttendanceStore.getState().todayRecord ?? {
+          date: "",
+          isLate: false,
+        }
+      );
+      if (deduction) {
+        const hours = lateChargeHours(deduction);
+        const fraction =
+          hours === 1
+            ? t("attendance.lateDeductionHourOne")
+            : hours === 2
+              ? t("attendance.lateDeductionHourTwo")
+              : hours <= 10
+                ? t("attendance.lateDeductionHours", { hours })
+                : t("attendance.lateDeductionHoursMany", { hours });
+        toast.warning(
+          deduction.amount != null
+            ? t("attendance.lateDeductionToast", {
+                amount: formatLateDeductionAmount(
+                  deduction.amount,
+                  locale,
+                  deduction.currency
+                ),
+                fraction,
+              })
+            : t("attendance.lateDeductionToastFraction", { fraction })
+        );
+      }
       setWfh(false);
     }
   }

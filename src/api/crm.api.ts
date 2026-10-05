@@ -443,7 +443,7 @@ export async function postCrmClientRequest(
 
 export async function postCrmClientRequestReply(
   requestId: string,
-  body: { body: string }
+  body: { body: string; document?: TechnicalProposalDocument }
 ): Promise<ApiResponse<CrmClientRequest | null>> {
   return emitIfOk(
     await api.post(API_ROUTES.crm.clientRequestReplies(requestId), body, null)

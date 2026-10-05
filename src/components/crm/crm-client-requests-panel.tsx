@@ -18,7 +18,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/hooks/use-translation";
+import { buildManagementTemplate } from "@/lib/crm/management-request-templates";
 import { isProtectedAdminAccount } from "@/lib/protected-accounts";
+import { templateDraftIssue } from "@/lib/crm/technical-proposal";
 import { cn } from "@/lib/utils";
 import {
   createCrmClientRequest,
@@ -31,6 +33,7 @@ import type {
   CrmClientRequest,
   CrmClientRequestKind,
   CrmClientRequestStatus,
+  TechnicalProposalDocument,
 } from "@/types/crm";
 
 const KINDS: {
@@ -80,8 +83,11 @@ export function CrmClientRequestsPanel({
   const [requestedPrice, setRequestedPrice] = useState("");
   const [sending, setSending] = useState(false);
   const [replyFor, setReplyFor] = useState<string | null>(null);
-  const [replyText, setReplyText] = useState("");
+  const [comments, setComments] = useState<Record<string, string>>({});
   const [replying, setReplying] = useState(false);
+  const [drafts, setDrafts] = useState<Record<string, TechnicalProposalDocument>>(
+    {}
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -131,20 +137,62 @@ export function CrmClientRequestsPanel({
     toast.success(t("crm.clientRequests.sent"));
   }
 
-  async function submitReply(requestId: string) {
-    const text = replyText.trim();
+  function ensureDraft(item: CrmClientRequest): TechnicalProposalDocument {
+    const existing = drafts[item.id];
+    if (existing) return existing;
+    const next = item.proposal ?? buildManagementTemplate(item);
+    setDrafts((prev) => (prev[item.id] ? prev : { ...prev, [item.id]: next }));
+    return next;
+  }
+
+  function commentValue(item: CrmClientRequest): string {
+    if (comments[item.id] != null) return comments[item.id];
+    const hasManagementReply = (item.replies ?? []).some(
+      (reply) => reply.fromManagement
+    );
+    return canReply && !hasManagementReply
+      ? t(`crm.clientRequests.defaultComments.${item.kind}`)
+      : "";
+  }
+
+  function activateReply(item: CrmClientRequest) {
+    ensureDraft(item);
+    setReplyFor(item.id);
+    setComments((prev) =>
+      prev[item.id] != null ? prev : { ...prev, [item.id]: commentValue(item) }
+    );
+  }
+
+  async function submitReply(item: CrmClientRequest) {
+    const text = commentValue(item).trim();
     if (text.length < 2) {
       toast.error(t("crm.clientRequests.replyValidation"));
       return;
     }
+    const document = canReply ? ensureDraft(item) : undefined;
+    if (document) {
+      const issue = templateDraftIssue(document);
+      if (issue) {
+        toast.error(
+          issue === "title"
+            ? t("crm.clientRequests.proposal.invalid.title")
+            : t("crm.clientRequests.proposal.invalid.section")
+        );
+        return;
+      }
+    }
+    setReplyFor(item.id);
     setReplying(true);
-    const res = await replyCrmClientRequest(requestId, text);
+    const res = await replyCrmClientRequest(item.id, text, document);
     setReplying(false);
     if (!res.success || !res.data) {
       toast.error(res.message || t("common.error"));
       return;
     }
-    setReplyText("");
+    if (res.data.proposal) {
+      setDrafts((prev) => ({ ...prev, [item.id]: res.data!.proposal! }));
+    }
+    setComments((prev) => ({ ...prev, [item.id]: "" }));
     setReplyFor(null);
     setItems((prev) =>
       prev.map((row) => (row.id === res.data!.id ? res.data! : row))
@@ -257,11 +305,9 @@ export function CrmClientRequestsPanel({
             placeholder={t(`crm.clientRequests.placeholders.${kind}`)}
             className="mt-3 min-h-24 resize-y text-[14px]"
           />
-          {kind === "technical_proposal" ? (
-            <p className="mt-2 text-[12px] leading-snug text-muted-foreground">
-              {t("crm.clientRequests.proposal.sendHint")}
-            </p>
-          ) : null}
+          <p className="mt-2 text-[12px] leading-snug text-muted-foreground">
+            {t("crm.clientRequests.proposal.sendHint")}
+          </p>
           <Button
             type="button"
             className="mt-3 h-11 w-full"
@@ -308,10 +354,11 @@ export function CrmClientRequestsPanel({
                   type="button"
                   className="flex w-full items-start gap-2 px-3 py-3 text-start"
                   onClick={() => {
-                    setReplyText("");
-                    setReplyFor((current) =>
-                      current === item.id ? null : item.id
-                    );
+                    if (replyFor === item.id && variant !== "lead") {
+                      setReplyFor(null);
+                      return;
+                    }
+                    activateReply(item);
                   }}
                 >
                   <div className="min-w-0 flex-1">
@@ -353,21 +400,22 @@ export function CrmClientRequestsPanel({
                     <p className="whitespace-pre-wrap text-[14px] leading-relaxed">
                       <BidiText text={item.message} />
                     </p>
-                    {item.kind === "technical_proposal" ? (
-                      <TechnicalProposalEditor
-                        requestId={item.id}
-                        leadName={item.leadName}
-                        initial={item.proposal ?? null}
-                        canEdit={canReply && !readOnly}
-                        onSaved={(saved) =>
-                          setItems((prev) =>
-                            prev.map((row) =>
-                              row.id === saved.id ? saved : row
-                            )
-                          )
-                        }
-                      />
-                    ) : null}
+                    <TechnicalProposalEditor
+                      kind={item.kind}
+                      leadName={item.leadName}
+                      doc={
+                        canReply
+                          ? (drafts[item.id] ??
+                            item.proposal ??
+                            buildManagementTemplate(item))
+                          : null
+                      }
+                      saved={item.proposal ?? null}
+                      canEdit={canReply && !readOnly}
+                      onChange={(next) =>
+                        setDrafts((prev) => ({ ...prev, [item.id]: next }))
+                      }
+                    />
                     {item.kind === "price_exception" &&
                     (item.listedPrice || item.requestedPrice) ? (
                       <dl className="grid grid-cols-2 gap-2">
@@ -429,11 +477,20 @@ export function CrmClientRequestsPanel({
 
                     {!readOnly ? (
                       <div className="space-y-2">
+                        {canReply ? (
+                          <p className="text-[12px] font-semibold">
+                            {t("crm.clientRequests.commentLabel")}
+                          </p>
+                        ) : null}
                         <Textarea
-                          value={replyFor === item.id ? replyText : ""}
+                          value={commentValue(item)}
+                          onFocus={() => activateReply(item)}
                           onChange={(event) => {
                             setReplyFor(item.id);
-                            setReplyText(event.target.value);
+                            setComments((prev) => ({
+                              ...prev,
+                              [item.id]: event.target.value,
+                            }));
                           }}
                           placeholder={
                             canReply
@@ -445,8 +502,8 @@ export function CrmClientRequestsPanel({
                         <Button
                           type="button"
                           className="h-11 w-full"
-                          disabled={replying || replyFor !== item.id}
-                          onClick={() => void submitReply(item.id)}
+                          disabled={replying}
+                          onClick={() => void submitReply(item)}
                         >
                           {replying && replyFor === item.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -454,7 +511,7 @@ export function CrmClientRequestsPanel({
                             <Send className="h-4 w-4" />
                           )}
                           {canReply
-                            ? t("crm.clientRequests.sendReply")
+                            ? t("crm.clientRequests.sendTemplate")
                             : t("crm.clientRequests.sendFollowUp")}
                         </Button>
                       </div>

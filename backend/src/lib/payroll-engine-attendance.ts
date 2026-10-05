@@ -65,6 +65,7 @@ export function computeAttendanceAndOvertime(
       rate,
       hourly,
       hoursPerDay,
+      fromTime: input.schedule?.fromTime,
       asOfDate: input.asOfDate,
       activeDayRules,
       overrides,

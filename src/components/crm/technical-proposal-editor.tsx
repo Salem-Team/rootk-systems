@@ -1,118 +1,47 @@
 "use client";
 
-import { useState } from "react";
-import { Download, Loader2, Plus, Trash2 } from "lucide-react";
+import { Download, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/hooks/use-translation";
-import {
-  emptyTechnicalProposal,
-  isTechnicalProposalReady,
-  newProposalSection,
-} from "@/lib/crm/technical-proposal";
-import {
-  beginTechnicalProposalPrint,
-  openTechnicalProposalPrint,
-  writeTechnicalProposalPrint,
-} from "@/lib/crm/technical-proposal-print";
-import { saveCrmTechnicalProposal } from "@/services/crm/crm-client-requests.service";
+import { newProposalSection } from "@/lib/crm/technical-proposal";
+import { openTechnicalProposalPrint } from "@/lib/crm/technical-proposal-print";
 import type {
-  CrmClientRequest,
+  CrmClientRequestKind,
   TechnicalProposalDocument,
 } from "@/types/crm";
 
-function draftIssue(doc: TechnicalProposalDocument): "title" | "section" | null {
-  if (doc.title.trim().length < 2) return "title";
-  const sections = doc.sections.filter(
-    (section) =>
-      section.title.trim() ||
-      section.intro.trim() ||
-      section.bullets.some((bullet) => bullet.trim())
-  );
-  if (
-    sections.length === 0 ||
-    sections.some((section) => section.title.trim().length < 2)
-  ) {
-    return "section";
-  }
-  return null;
-}
-
 export function TechnicalProposalEditor({
-  requestId,
+  kind,
   leadName,
-  initial,
+  doc,
+  saved,
   canEdit,
-  onSaved,
+  onChange,
 }: {
-  requestId: string;
+  kind: CrmClientRequestKind;
   leadName: string;
-  initial: TechnicalProposalDocument | null;
+  doc: TechnicalProposalDocument | null;
+  saved: TechnicalProposalDocument | null;
   canEdit: boolean;
-  onSaved: (request: CrmClientRequest) => void;
+  onChange?: (next: TechnicalProposalDocument) => void;
 }) {
   const { t } = useTranslation();
-  const [doc, setDoc] = useState<TechnicalProposalDocument>(
-    () => initial ?? emptyTechnicalProposal()
-  );
-  const [saving, setSaving] = useState(false);
-  const ready = isTechnicalProposalReady(initial);
 
   function patch(next: Partial<TechnicalProposalDocument>) {
-    setDoc((current) => ({ ...current, ...next }));
+    if (!doc || !onChange) return;
+    onChange({ ...doc, ...next });
   }
 
-  async function persist(): Promise<TechnicalProposalDocument | null> {
-    const issue = draftIssue(doc);
-    if (issue) {
-      toast.error(
-        issue === "title"
-          ? t("crm.clientRequests.proposal.invalid.title")
-          : t("crm.clientRequests.proposal.invalid.section")
-      );
-      return null;
-    }
-    setSaving(true);
-    const res = await saveCrmTechnicalProposal(requestId, doc);
-    setSaving(false);
-    if (!res.success || !res.data) {
-      toast.error(res.message || t("common.error"));
-      return null;
-    }
-    const saved = res.data.proposal ?? doc;
-    setDoc(saved);
-    onSaved(res.data);
-    return saved;
-  }
-
-  async function saveOnly() {
-    const saved = await persist();
-    if (saved) toast.success(t("crm.clientRequests.proposal.saved"));
-  }
-
-  async function download(source: TechnicalProposalDocument) {
+  function preview(source: TechnicalProposalDocument) {
     const popup = openTechnicalProposalPrint(source, leadName);
     if (!popup) toast.error(t("crm.clientRequests.proposal.popup"));
   }
 
-  async function saveAndDownload() {
-    const popup = beginTechnicalProposalPrint();
-    if (!popup) {
-      toast.error(t("crm.clientRequests.proposal.popup"));
-      return;
-    }
-    const saved = await persist();
-    if (!saved) {
-      popup.close();
-      return;
-    }
-    writeTechnicalProposalPrint(popup, saved, leadName);
-  }
-
   if (!canEdit) {
-    if (!ready || !initial) {
+    if (!saved) {
       return (
         <p className="rounded-xl bg-muted/40 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
           {t("crm.clientRequests.proposal.waiting")}
@@ -124,7 +53,7 @@ export function TechnicalProposalEditor({
         type="button"
         variant="outline"
         className="h-11 w-full"
-        onClick={() => void download(initial)}
+        onClick={() => preview(saved)}
       >
         <Download className="h-4 w-4" />
         {t("crm.clientRequests.proposal.download")}
@@ -132,11 +61,13 @@ export function TechnicalProposalEditor({
     );
   }
 
+  if (!doc) return null;
+
   return (
     <div className="space-y-2.5 rounded-xl border border-primary/20 bg-primary/[0.03] p-2.5">
       <div>
         <p className="text-[13px] font-semibold">
-          {t("crm.clientRequests.proposal.editTitle")}
+          {t(`crm.clientRequests.templateTitles.${kind}`)}
         </p>
         <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground">
           {t("crm.clientRequests.proposal.editHint")}
@@ -323,27 +254,15 @@ export function TechnicalProposalEditor({
         />
       </label>
 
-      <div className="grid gap-2 sm:grid-cols-2">
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11"
-          disabled={saving}
-          onClick={() => void saveOnly()}
-        >
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          {t("crm.clientRequests.proposal.save")}
-        </Button>
-        <Button
-          type="button"
-          className="h-11"
-          disabled={saving}
-          onClick={() => void saveAndDownload()}
-        >
-          <Download className="h-4 w-4" />
-          {t("crm.clientRequests.proposal.download")}
-        </Button>
-      </div>
+      <Button
+        type="button"
+        variant="outline"
+        className="h-11 w-full"
+        onClick={() => preview(doc)}
+      >
+        <Download className="h-4 w-4" />
+        {t("crm.clientRequests.proposal.preview")}
+      </Button>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ar as arLocale, enUS } from "date-fns/locale";
+import { LateDeductionSummary } from "@/components/attendance/late-deduction-summary";
 import { AttendanceTodaySummary } from "@/components/attendance/attendance-today-summary";
 import { AttendanceWeekStrip } from "@/components/attendance/attendance-week-strip";
 import { AttendanceTimeline } from "@/components/attendance/attendance-timeline";
@@ -51,6 +52,7 @@ export function AttendanceSideRail({
         dateLocale={dateLocale}
         isLive={isLive}
       />
+      <LateDeductionSummary records={history} today={todayRecord} />
       <AttendanceWeekStrip records={history} />
       <div className="min-h-0 flex-1">
         <AttendanceTimeline />

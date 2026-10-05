@@ -47,3 +47,22 @@ export function isTechnicalProposalReady(
     doc.sections.some((section) => section.title.trim().length >= 2)
   );
 }
+
+export function templateDraftIssue(
+  doc: TechnicalProposalDocument
+): "title" | "section" | null {
+  if (doc.title.trim().length < 2) return "title";
+  const sections = doc.sections.filter(
+    (section) =>
+      section.title.trim() ||
+      section.intro.trim() ||
+      section.bullets.some((bullet) => bullet.trim())
+  );
+  if (
+    sections.length === 0 ||
+    sections.some((section) => section.title.trim().length < 2)
+  ) {
+    return "section";
+  }
+  return null;
+}

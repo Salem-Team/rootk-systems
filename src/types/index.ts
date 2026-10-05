@@ -88,6 +88,13 @@ export interface AttendanceRecord extends BaseEntity {
   /** Minutes worked after scheduled end. */
   overtimeMinutes?: number;
   note?: string;
+  /** Quarter-day or half-day charge when check-in is late. */
+  lateDeduction?: {
+    dayFraction: number;
+    chargedMinutes?: number;
+    amount: number | null;
+    currency: string;
+  };
 }
 
 export interface LeaveRequest extends BaseEntity {

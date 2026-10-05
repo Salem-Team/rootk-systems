@@ -3,9 +3,11 @@ import type { PayrollPolicies } from "@/types/payroll";
 
 export const DEFAULT_DEDUCTION_POLICY: WorkDeductionPolicy = {
   lateTiers: [
-    { afterMinutes: 15, charge: { mode: "day_fraction", value: 0.25 } },
-    { afterMinutes: 60, charge: { mode: "day_fraction", value: 0.5 } },
-    { afterMinutes: 120, charge: { mode: "day_fraction", value: 1 } },
+    { afterMinutes: 30, charge: { mode: "day_fraction", value: 0.125 } },
+    { afterMinutes: 60, charge: { mode: "day_fraction", value: 0.25 } },
+    { afterMinutes: 120, charge: { mode: "day_fraction", value: 0.5 } },
+    { afterMinutes: 240, charge: { mode: "day_fraction", value: 1 } },
+    { afterMinutes: 480, charge: { mode: "day_fraction", value: 2 } },
   ],
   absence: { mode: "day_fraction", value: 1 },
   halfDay: { mode: "day_fraction", value: 0.5 },

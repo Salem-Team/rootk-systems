@@ -16,6 +16,7 @@ import {
   minutesDeductionFromPolicy,
 } from "./payroll-engine-helpers";
 import { impactKindForRuleField } from "./payroll-engine-deductions";
+import { clockLateMinutes } from "./late-day-fraction";
 
 export interface DayRuleOverrides {
   late: boolean;
@@ -31,6 +32,7 @@ export interface DayAttendanceParams {
   rate: number;
   hourly: number;
   hoursPerDay: number;
+  fromTime?: string;
   asOfDate?: string;
   activeDayRules: PayrollRule[];
   overrides: DayRuleOverrides;
@@ -51,7 +53,7 @@ export interface DayAttendanceResult {
 export function computeDayAttendanceImpacts(
   params: DayAttendanceParams
 ): DayAttendanceResult {
-  const { row, employeeId, policies, rate, hourly, hoursPerDay, asOfDate, activeDayRules, overrides } =
+  const { row, employeeId, policies, rate, hourly, hoursPerDay, fromTime, asOfDate, activeDayRules, overrides } =
     params;
 
   const impacts: AttendanceImpactLine[] = [];
@@ -60,8 +62,12 @@ export function computeDayAttendanceImpacts(
   let overtimePayAdd = 0;
 
   const onLeave = row.status === "on_leave";
-  // Attendance.lateMinutes is already net of check-in grace — do not subtract again.
+  // Rules still see stored late minutes (already net of punch grace).
   const lateMinutes = Math.max(0, row.lateMinutes);
+  // Tier match uses clock minutes so the 30-minute allowance is from shift start.
+  const lateForTier = row.checkIn
+    ? clockLateMinutes(row.checkIn, row.date, fromTime || "09:00")
+    : lateMinutes;
   const earlyLeave = row.isEarlyLeave || row.status === "early_leave";
 
   if (row.status === "absent" && !onLeave && !overrides.absent) {
@@ -98,7 +104,7 @@ export function computeDayAttendanceImpacts(
 
     if (!overrides.late) {
       const lateHit = minutesDeductionFromPolicy(
-        lateMinutes,
+        lateForTier,
         policies,
         rate,
         hourly,

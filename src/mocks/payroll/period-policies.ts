@@ -17,11 +17,13 @@ export const PAYROLL_PERIOD: PayrollPeriod = {
 export const payrollPoliciesSeed: SeedOf<PayrollPolicies> = {
   id: "pol-rootk-001",
   late: {
-    graceMinutes: 15,
+    graceMinutes: 30,
     tiers: [
-      { afterMinutes: 15, dayFraction: 0.25 },
-      { afterMinutes: 60, dayFraction: 0.5 },
-      { afterMinutes: 120, dayFraction: 1 },
+      { afterMinutes: 30, dayFraction: 0.125 },
+      { afterMinutes: 60, dayFraction: 0.25 },
+      { afterMinutes: 120, dayFraction: 0.5 },
+      { afterMinutes: 240, dayFraction: 1 },
+      { afterMinutes: 480, dayFraction: 2 },
     ],
   },
   absenceDayFraction: 1,
@@ -33,7 +35,7 @@ export const payrollPoliciesSeed: SeedOf<PayrollPolicies> = {
   weekendOvertimeRate: 2,
   nightShiftAllowance: 350,
   minimumWorkingMinutes: 480,
-  maxDeductionDayFraction: 1,
+  maxDeductionDayFraction: 2,
   monthlyDeductionCap: 25000,
   autoRounding: "nearest_1",
   currency: "EGP",

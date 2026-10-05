@@ -7,6 +7,8 @@ import { AttendanceSuccess } from "@/components/attendance/attendance-success";
 import { CheckInActions } from "@/components/attendance/check-in-actions";
 import { CheckInClock } from "@/components/attendance/check-in-clock";
 import { CheckInStatusList } from "@/components/attendance/check-in-status-list";
+import { LateDeductionChip } from "@/components/attendance/late-deduction-chip";
+import { readLateDeduction } from "@/lib/attendance-late-deduction";
 import {
   formatTime,
   useCheckInPanel,
@@ -39,6 +41,7 @@ export function CheckInPanel() {
     handleCheckOut,
   } = useCheckInPanel();
 
+  const todayDeduction = todayRecord ? readLateDeduction(todayRecord) : null;
   const checkedIn = Boolean(todayRecord?.checkIn);
   const checkedOut = Boolean(todayRecord?.checkOut);
   const breakMinutes =
@@ -114,6 +117,10 @@ export function CheckInPanel() {
               checkedOut={checkedOut}
             />
           </div>
+
+          {todayDeduction ? (
+            <LateDeductionChip deduction={todayDeduction} className="px-3 py-2 text-sm" />
+          ) : null}
 
           <CheckInActions
             canCheckIn={canCheckIn}

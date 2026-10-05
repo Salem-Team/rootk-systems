@@ -2,11 +2,15 @@ import type { Prisma } from "@prisma/client";
 
 export const DEFAULT_PAYROLL_POLICY = {
   late: {
-    graceMinutes: 15,
+    graceMinutes: 30,
+    // Clock minutes from shift start. 30m allowance, then the charge doubles:
+    // 30m → 1h, 60m → 2h, 120m → 4h, 240m → 8h, 480m → 16h (8h day).
     tiers: [
-      { afterMinutes: 15, dayFraction: 0.25 },
-      { afterMinutes: 60, dayFraction: 0.5 },
-      { afterMinutes: 120, dayFraction: 1 },
+      { afterMinutes: 30, dayFraction: 0.125 },
+      { afterMinutes: 60, dayFraction: 0.25 },
+      { afterMinutes: 120, dayFraction: 0.5 },
+      { afterMinutes: 240, dayFraction: 1 },
+      { afterMinutes: 480, dayFraction: 2 },
     ],
   },
   absenceDayFraction: 1,
@@ -18,7 +22,7 @@ export const DEFAULT_PAYROLL_POLICY = {
   weekendOvertimeRate: 2,
   nightShiftAllowance: 350,
   minimumWorkingMinutes: 480,
-  maxDeductionDayFraction: 1,
+  maxDeductionDayFraction: 2,
   monthlyDeductionCap: 25000,
   autoRounding: "nearest_1" as const,
   currency: "EGP",

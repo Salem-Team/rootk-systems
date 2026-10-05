@@ -14,7 +14,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SoftListRow } from "@/components/shared/meta-chip";
+import { LateDeductionChip } from "@/components/attendance/late-deduction-chip";
 import { AttendanceDurationBadge } from "@/components/shared/late-duration-badge";
+import { readLateDeduction } from "@/lib/attendance-late-deduction";
 import { SectionPanel } from "@/components/shared/section-panel";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -118,6 +120,7 @@ export function AttendanceHistory({
                     <DataTableHead>{t("attendance.checkOut")}</DataTableHead>
                     <DataTableHead>{t("common.hours")}</DataTableHead>
                     <DataTableHead>{t("common.status")}</DataTableHead>
+                    <DataTableHead>{t("payroll.deductions")}</DataTableHead>
                     <DataTableHead>{t("common.actions")}</DataTableHead>
                   </DataTableHeaderRow>
                 </DataTableHeader>
@@ -140,7 +143,12 @@ export function AttendanceHistory({
                         {formatTime(record.checkIn, dateLocale)}
                       </DataTableCell>
                       <DataTableCell className="font-mono text-muted-foreground tabular-nums">
-                        {formatTime(record.checkOut, dateLocale)}
+                        <span className="block">{formatTime(record.checkOut, dateLocale)}</span>
+                        {record.metadata?.autoCheckOut ? (
+                          <span className="mt-0.5 block font-sans text-[10px] font-medium text-muted-foreground">
+                            {t("attendance.autoCheckOut")}
+                          </span>
+                        ) : null}
                       </DataTableCell>
                       <DataTableCell className="tabular-nums">
                         {record.workingMinutes > 0
@@ -149,6 +157,13 @@ export function AttendanceHistory({
                       </DataTableCell>
                       <DataTableCell>
                         <StatusBadge status={record.status} />
+                      </DataTableCell>
+                      <DataTableCell>
+                        {readLateDeduction(record) ? (
+                          <LateDeductionChip deduction={readLateDeduction(record)!} />
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </DataTableCell>
                       <DataTableCell>
                         <div className="flex flex-wrap gap-1.5">
@@ -215,6 +230,9 @@ export function AttendanceHistory({
                         <p className="mt-1 font-mono text-xs text-muted-foreground tabular-nums">
                           {formatTime(record.checkIn, dateLocale)} →{" "}
                           {formatTime(record.checkOut, dateLocale)}
+                          {record.metadata?.autoCheckOut
+                            ? ` · ${t("attendance.autoCheckOut")}`
+                            : ""}
                         </p>
                       </div>
                       <StatusBadge status={record.status} />
@@ -225,6 +243,9 @@ export function AttendanceHistory({
                           ? formatHours(record.workingMinutes)
                           : "—"}
                       </span>
+                      {readLateDeduction(record) ? (
+                        <LateDeductionChip deduction={readLateDeduction(record)!} />
+                      ) : null}
                       {record.isLate ? (
                         <AttendanceDurationBadge
                           minutes={record.lateMinutes}

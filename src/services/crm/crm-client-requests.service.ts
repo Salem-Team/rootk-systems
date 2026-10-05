@@ -189,9 +189,15 @@ export async function createCrmClientRequest(
 
 export async function replyCrmClientRequest(
   requestId: string,
-  text: string
+  text: string,
+  document?: TechnicalProposalDocument
 ): Promise<ApiResponse<CrmClientRequest | null>> {
-  if (isApiMode()) return postCrmClientRequestReply(requestId, { body: text });
+  if (isApiMode()) {
+    return postCrmClientRequestReply(requestId, {
+      body: text,
+      ...(document ? { document } : {}),
+    });
+  }
   try {
     const current = await crmClientRequestRepository.findById(requestId);
     if (!current || current.deletedAt) {
@@ -219,6 +225,7 @@ export async function replyCrmClientRequest(
       replies: [...(current.replies ?? []), reply],
       leadName: lead.name,
       leadPhone: lead.phone,
+      ...(fromManagement && document ? { proposal: document } : {}),
     });
     await crmClientRequestRepository.update(requestId, next);
     if (fromManagement) {
@@ -262,9 +269,6 @@ export async function saveCrmTechnicalProposal(
     const current = await crmClientRequestRepository.findById(requestId);
     if (!current || current.deletedAt) {
       throw new NotFoundError("Request not found");
-    }
-    if (current.kind !== "technical_proposal") {
-      throw new ValidationError("This request is not a technical proposal");
     }
     const lead = await findReadableCrmLead(current.leadId);
     if (!lead) throw new NotFoundError("Lead not found");
