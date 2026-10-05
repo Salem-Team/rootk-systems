@@ -59,10 +59,10 @@ export function LateDeductionSummary({
                   locale,
                   todayHit.currency
                 ),
-                fraction: chargeLabel(todayHit, t),
+                fraction: chargeLabel(todayHit),
               })
             : t("attendance.lateDeductionTodayFraction", {
-                fraction: chargeLabel(todayHit, t),
+                fraction: chargeLabel(todayHit),
               })}
         </p>
       ) : null}
