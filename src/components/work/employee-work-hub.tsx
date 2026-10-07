@@ -4,6 +4,7 @@ import { PageSkeleton } from "@/components/shared/loading-state";
 import { MobileSegmentedTabs } from "@/components/shared/mobile-segmented-tabs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmployeeWorkHero } from "@/components/work/employee-work-hero";
+import { TeamTaskProgress } from "@/components/team/team-task-progress";
 import { EmployeeWorkTaskPanel } from "@/components/work/employee-work-task-panel";
 import { EmployeeWorkMeetingsPanel } from "@/components/work/employee-work-meetings-panel";
 import { EmployeeWorkDayPanel } from "@/components/work/employee-work-day-panel";
@@ -117,6 +118,14 @@ export function EmployeeWorkHub() {
             onEditTask={actions.openEditTask}
             onDeleteTask={(task) => void actions.handleDeletePersonal("task", task.id)}
           />
+          {data.teamTasks.length > 0 ? (
+            <TeamTaskProgress
+              tasks={data.teamTasks}
+              members={data.employees}
+              memberIds={data.teamTasks.flatMap((task) => task.assigneeIds)}
+              employees={data.employees}
+            />
+          ) : null}
         </TabsContent>
 
         <TabsContent value="meetings" className="mt-0 outline-none">

@@ -143,9 +143,15 @@ function assigneeIdsForActor(ids: string[], actor?: Actor): string[] {
   return [actor.employeeId];
 }
 
-export function mapTask(row: WorkTask, actor?: Actor) {
+export function mapTask(
+  row: WorkTask,
+  actor?: Actor,
+  options?: { revealAssignees?: boolean }
+) {
+  const revealAssignees = Boolean(options?.revealAssignees);
   const fullProgress = resolveTaskAssigneeProgress(row);
   const isEmployeeSelf =
+    !revealAssignees &&
     actor?.role === "employee" &&
     Boolean(actor.employeeId) &&
     row.assigneeIds.includes(actor.employeeId);
@@ -192,9 +198,12 @@ export function mapTask(row: WorkTask, actor?: Actor) {
     dueDate: row.dueDate ? iso(row.dueDate) : "",
     tag: row.tag,
     estimateMin: row.estimateMin,
-    assigneeIds: assigneeIdsForActor(row.assigneeIds, actor),
+    assigneeIds: revealAssignees
+      ? row.assigneeIds
+      : assigneeIdsForActor(row.assigneeIds, actor),
     assigneeProgress: progressForActor,
-    assigneeCompletion: actor?.role === "employee" ? undefined : summary,
+    assigneeCompletion:
+      revealAssignees || actor?.role !== "employee" ? summary : undefined,
     relatedMeetingId: row.relatedMeetingId ?? undefined,
     targetId: row.targetId ?? undefined,
     subItems: row.subItems ?? [],

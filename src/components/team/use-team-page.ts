@@ -53,6 +53,7 @@ export function useTeamPage() {
   const [targetOpen, setTargetOpen] = useState(false);
   const [targetAssignees, setTargetAssignees] = useState<string[]>([]);
   const [managerBusyId, setManagerBusyId] = useState<string | null>(null);
+  const [focusEmployeeId, setFocusEmployeeId] = useState<string | null>(null);
 
   const reports = useMemo(() => {
     if (canViewAllTeam) {
@@ -121,6 +122,18 @@ export function useTeamPage() {
     }
     return counts;
   }, [tasks]);
+
+  function showMemberTasks(employeeId: string) {
+    setFocusEmployeeId((current) =>
+      current === employeeId ? null : employeeId
+    );
+    requestAnimationFrame(() => {
+      document.getElementById("team-task-progress")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }
 
   function openAssignTask(employee: Employee) {
     setTaskForm({ ...emptyTaskForm(), assigneeIds: [employee.id] });
@@ -234,6 +247,7 @@ export function useTeamPage() {
     visible,
     reports,
     employees,
+    tasks,
     managerOptions,
     categories,
     types,
@@ -248,6 +262,9 @@ export function useTeamPage() {
     managerBusyId,
     openTaskCountByEmployee,
     targetCounts,
+    focusEmployeeId,
+    setFocusEmployeeId,
+    showMemberTasks,
     openAssignTask,
     openAssignTarget,
     saveTask,

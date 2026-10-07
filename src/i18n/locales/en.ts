@@ -158,6 +158,15 @@ export const en = {
     empty: "No team members yet",
     emptyDesc:
       "If you are an admin, assign managers from this page. Managers see their direct reports here.",
+    taskProgressTitle: "Task progress",
+    taskProgressDesc:
+      "Tasks handed to your team, and where each person is right now.",
+    taskProgressFocus: "{name}'s tasks — current progress",
+    taskProgressClear: "Whole team",
+    taskProgressEmpty: "No team tasks yet",
+    taskProgressEmptyDesc:
+      "When you assign a task to someone on your team, it shows up here as to do, in progress, or done.",
+    viewMemberTasks: "View {name}'s tasks",
   },
   dailyPlan: {
     eyebrow: "Today",

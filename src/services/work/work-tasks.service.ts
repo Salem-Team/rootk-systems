@@ -49,10 +49,13 @@ export async function getWorkTasks(filters: {
     : scope === "own" && role === AppRole.employee
       ? { ...filters, employeeId: selfId, team: undefined }
       : { ...filters, team: undefined };
+  const keepTeamProgress = teamView || managedView;
+  const present = (rows: WorkTask[]) =>
+    keepTeamProgress ? rows : presentWorkTasksForActor(rows);
   if (isApiMode()) {
     const res = await fetchWorkTasks(scoped);
     if (!res.success) return res;
-    return ok(presentWorkTasksForActor(res.data ?? []));
+    return ok(present(res.data ?? []));
   }
   try {
     let tasks = await workTaskRepository.filter({
@@ -62,7 +65,7 @@ export async function getWorkTasks(filters: {
     if (teamView || managedView) {
       tasks = await filterManagedWorkTasks(tasks, selfId, userId);
     }
-    return ok(presentWorkTasksForActor(tasks));
+    return ok(present(tasks));
   } catch (error) {
     return fromError(error, []);
   }

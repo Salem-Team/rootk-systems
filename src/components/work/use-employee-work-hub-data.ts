@@ -5,7 +5,11 @@ import {
   buildOpsGoals,
 } from "@/components/operations/operations-mock-data";
 import { getEmployees } from "@/services/employees.service";
-import { getMyWorkMeetings, getMyWorkTasks } from "@/services/work.service";
+import {
+  getMyWorkMeetings,
+  getMyWorkTasks,
+  getWorkTasks,
+} from "@/services/work.service";
 import { WORK_UPDATED_EVENT } from "@/lib/events";
 import { meetingWhen, sortTasksNewestFirst, taskDueBucket } from "@/lib/work-utils";
 import type { Employee } from "@/types";
@@ -17,6 +21,7 @@ export function useEmployeeWorkHubData(workEmployeeId: string) {
   const searchParams = useSearchParams();
 
   const [tasks, setTasks] = useState<WorkTask[]>([]);
+  const [teamTasks, setTeamTasks] = useState<WorkTask[]>([]);
   const [meetings, setMeetings] = useState<WorkMeeting[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [checklist, setChecklist] = useState(buildOpsChecklist);
@@ -48,14 +53,24 @@ export function useEmployeeWorkHubData(workEmployeeId: string) {
   );
 
   const reload = useCallback(async () => {
-    const [tasksRes, meetingsRes, employeesRes] = await Promise.all([
+    const [tasksRes, meetingsRes, employeesRes, teamRes] = await Promise.all([
       getMyWorkTasks(workEmployeeId),
       getMyWorkMeetings(workEmployeeId),
       getEmployees(),
+      getWorkTasks({ team: true }),
     ]);
     if (tasksRes.success) setTasks(tasksRes.data);
     if (meetingsRes.success) setMeetings(meetingsRes.data);
     if (employeesRes.success) setEmployees(employeesRes.data);
+    if (teamRes.success) {
+      setTeamTasks(
+        (teamRes.data ?? []).filter((task) =>
+          task.assigneeIds.some((id) => id && id !== workEmployeeId)
+        )
+      );
+    } else {
+      setTeamTasks([]);
+    }
   }, [workEmployeeId]);
 
   useEffect(() => {
@@ -168,6 +183,7 @@ export function useEmployeeWorkHubData(workEmployeeId: string) {
     setOriginFilter,
     tasks,
     setTasks,
+    teamTasks,
     meetings,
     employees,
     employeeMap,

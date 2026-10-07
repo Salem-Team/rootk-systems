@@ -59,7 +59,9 @@ export class WorkTasksQueryService {
       where,
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
-    return rows.map((row) => mapTask(row, actor));
+    return rows.map((row) =>
+      mapTask(row, actor, { revealAssignees: teamView })
+    );
   }
 
   async taskById(companyId: string, actor: Actor, id: string) {
@@ -67,28 +69,28 @@ export class WorkTasksQueryService {
       where: { id, companyId, deletedAt: null },
     });
     if (!row) return null;
-    if (actor.role === "employee") {
-      const scope = workTaskListScope(actor);
-      if (scope === "own" && !row.assigneeIds.includes(actor.employeeId)) {
-        return null;
-      }
-      if (scope === "managed") {
-        const reportIds = await listDirectReportIds(
-          this.prisma,
-          companyId,
-          actor.employeeId
-        );
-        const visible = new Set(
-          [actor.employeeId, ...reportIds].filter(Boolean)
-        );
-        const visibleCreated = [actor.userId, actor.employeeId];
-        const onTeam = row.assigneeIds.some((id) => visible.has(id));
-        const createdByMe = Boolean(
-          row.createdBy && visibleCreated.includes(row.createdBy)
-        );
-        if (!onTeam && !createdByMe) return null;
-      }
+    if (actor.role !== "employee") return mapTask(row, actor);
+    const scope = workTaskListScope(actor);
+    if (scope === "all") {
+      return mapTask(row, actor, { revealAssignees: true });
     }
-    return mapTask(row, actor);
+    const reportIds = actor.employeeId
+      ? await listDirectReportIds(this.prisma, companyId, actor.employeeId)
+      : [];
+    const visible = new Set(
+      [actor.employeeId, ...reportIds].filter(Boolean)
+    );
+    const visibleCreated = [actor.userId, actor.employeeId];
+    const onTeam = row.assigneeIds.some((id) => visible.has(id));
+    const createdByMe = Boolean(
+      row.createdBy && visibleCreated.includes(row.createdBy)
+    );
+    if (!onTeam && !createdByMe) return null;
+    const supervisingReport = row.assigneeIds.some((id) =>
+      reportIds.includes(id)
+    );
+    return mapTask(row, actor, {
+      revealAssignees: scope !== "own" || supervisingReport,
+    });
   }
 }

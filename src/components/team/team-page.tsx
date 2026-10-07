@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { PageSkeleton } from "@/components/shared/loading-state";
 import { Input } from "@/components/ui/input";
 import { TeamMembersTable } from "@/components/team/team-members-table";
+import { TeamTaskProgress } from "@/components/team/team-task-progress";
 import { useTeamPage } from "@/components/team/use-team-page";
 import { AdminWorkTaskDialog } from "@/components/work/admin-work-task-dialog";
 import { TargetAssignSheet } from "@/components/targets/target-assign-sheet";
@@ -52,12 +53,22 @@ export function TeamPage() {
         canReassignManagers={page.canReassignManagers}
         managerBusyId={page.managerBusyId}
         openTaskCountByEmployee={page.openTaskCountByEmployee}
+        focusEmployeeId={page.focusEmployeeId}
         targetCounts={page.targetCounts}
         onAssignManagers={(id, managerIds) =>
           void page.assignManagers(id, managerIds)
         }
         onAssignTask={page.openAssignTask}
         onAssignTarget={page.openAssignTarget}
+        onShowTasks={page.showMemberTasks}
+      />
+
+      <TeamTaskProgress
+        tasks={page.tasks}
+        members={page.focusEmployeeId ? page.reports : page.visible}
+        employees={page.employees}
+        focusEmployeeId={page.focusEmployeeId}
+        onClearFocus={() => page.setFocusEmployeeId(null)}
       />
 
       <AdminWorkTaskDialog

@@ -21,6 +21,7 @@ import { BidiBlocks, BidiText } from "@/components/shared/bidi-text";
 import { TaskEvidenceDisplay } from "@/components/work/task-evidence-display";
 import { TaskMediaGallery } from "@/components/work/task-media-gallery";
 import { TaskCommentsPanel } from "@/components/work/task-comments-panel";
+import { statusLabelKey } from "@/components/work/employee-work-hub-types";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import {
@@ -207,21 +208,28 @@ export function TaskViewSheet({
                       return (
                         <li
                           key={row.employeeId}
-                          className="flex items-center justify-between gap-2 rounded-lg border border-border/60 px-2.5 py-2 text-[13px]"
+                          className="rounded-lg border border-border/60 px-2.5 py-2 text-[13px]"
                         >
-                          <span className="min-w-0 truncate">{name}</span>
-                          <span
-                            className={cn(
-                              "shrink-0 text-[11px] font-medium",
-                              done
-                                ? "text-emerald-600 dark:text-emerald-400"
-                                : "text-muted-foreground"
-                            )}
-                          >
-                            {done
-                              ? t("workTable.assigneeDone")
-                              : t("workTable.assigneePending")}
-                          </span>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="min-w-0 truncate">{name}</span>
+                            <span
+                              className={cn(
+                                "shrink-0 text-[11px] font-medium",
+                                done
+                                  ? "text-emerald-600 dark:text-emerald-400"
+                                  : row.status === "in_progress"
+                                    ? "text-sky-700 dark:text-sky-300"
+                                    : "text-muted-foreground"
+                              )}
+                            >
+                              {t(statusLabelKey(row.status))}
+                            </span>
+                          </div>
+                          {row.evidenceNotes?.trim() ? (
+                            <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
+                              {row.evidenceNotes.trim()}
+                            </p>
+                          ) : null}
                         </li>
                       );
                     }

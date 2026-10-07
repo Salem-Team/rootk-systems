@@ -98,10 +98,12 @@ export class WorkTaskCommentsService {
     ) {
       return task;
     }
-    if (scope === "managed") {
-      const reports = actor.employeeId
-        ? await listDirectReportIds(this.prisma, companyId, actor.employeeId)
-        : [];
+    if (actor.employeeId) {
+      const reports = await listDirectReportIds(
+        this.prisma,
+        companyId,
+        actor.employeeId
+      );
       if (task.assigneeIds.some((id) => reports.includes(id))) return task;
     }
     throw new ForbiddenException("You cannot view this task");

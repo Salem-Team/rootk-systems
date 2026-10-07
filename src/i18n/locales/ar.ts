@@ -160,6 +160,15 @@ export const ar: TranslationKeys = {
     empty: "مفيش أعضاء في الفريق لسه",
     emptyDesc:
       "لو إنت أدمن، عيّن مديرين من الصفحة دي. المدير بيشوف موظفينه المباشرين هنا.",
+    taskProgressTitle: "تقدم المهام",
+    taskProgressDesc:
+      "المهام اللي اتسلّمت لفريقك، وحالة كل واحد فيها دلوقتي.",
+    taskProgressFocus: "مهام {name} — شوف وصلت لإيه",
+    taskProgressClear: "كل الفريق",
+    taskProgressEmpty: "لسه مفيش مهام للفريق",
+    taskProgressEmptyDesc:
+      "لما تعيّن مهمة لحد من فريقك، هتظهر هنا وحالتها: لسه، شغّال، أو خلصت.",
+    viewMemberTasks: "شوف مهام {name}",
   },
   dailyPlan: {
     eyebrow: "النهاردة",

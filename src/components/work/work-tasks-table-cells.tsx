@@ -299,36 +299,14 @@ export function TaskAssigneeCell({
                   >
                     <AssigneeRow name={name} department={emp?.department} />
                     {rowStatus ? (
-                      <span
-                        className={cn(
-                          "shrink-0 text-[11px] font-medium",
-                          done
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : "text-muted-foreground"
-                        )}
-                      >
-                        {done
-                          ? t("workTable.assigneeDone")
-                          : t("workTable.assigneePending")}
-                      </span>
+                      <AssigneeStatusLabel status={rowStatus} done={done} />
                     ) : null}
                   </button>
                 ) : (
                   <div className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[13px]">
                     <AssigneeRow name={name} department={emp?.department} />
                     {rowStatus ? (
-                      <span
-                        className={cn(
-                          "shrink-0 text-[11px] font-medium",
-                          done
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : "text-muted-foreground"
-                        )}
-                      >
-                        {done
-                          ? t("workTable.assigneeDone")
-                          : t("workTable.assigneePending")}
-                      </span>
+                      <AssigneeStatusLabel status={rowStatus} done={done} />
                     ) : null}
                   </div>
                 )}
@@ -338,6 +316,30 @@ export function TaskAssigneeCell({
         </ul>
       </PopoverContent>
     </Popover>
+  );
+}
+
+function AssigneeStatusLabel({
+  status,
+  done,
+}: {
+  status: TaskStatus;
+  done: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <span
+      className={cn(
+        "shrink-0 text-[11px] font-medium",
+        done
+          ? "text-emerald-600 dark:text-emerald-400"
+          : status === "in_progress"
+            ? "text-sky-700 dark:text-sky-300"
+            : "text-muted-foreground"
+      )}
+    >
+      {t(statusLabelKey(status))}
+    </span>
   );
 }
 

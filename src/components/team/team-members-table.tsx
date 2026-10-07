@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/data-table";
 import { TeamManagerPicker } from "@/components/team/team-manager-picker";
 import { useTranslation } from "@/hooks/use-translation";
+import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
 
 export function TeamMembersTable({
@@ -22,20 +23,24 @@ export function TeamMembersTable({
   canReassignManagers,
   managerBusyId,
   openTaskCountByEmployee,
+  focusEmployeeId,
   targetCounts,
   onAssignManagers,
   onAssignTask,
   onAssignTarget,
+  onShowTasks,
 }: {
   members: Employee[];
   managerOptions: Employee[];
   canReassignManagers: boolean;
   managerBusyId: string | null;
   openTaskCountByEmployee: Map<string, number>;
+  focusEmployeeId?: string | null;
   targetCounts: Map<string, number>;
   onAssignManagers: (employeeId: string, managerEmployeeIds: string[]) => void;
   onAssignTask: (employee: Employee) => void;
   onAssignTarget: (employee: Employee) => void;
+  onShowTasks?: (employeeId: string) => void;
 }) {
   const { t } = useTranslation();
 
@@ -80,7 +85,14 @@ export function TeamMembersTable({
                   {t("team.colOpenTasks")}
                 </dt>
                 <dd className="mt-0.5 font-mono text-sm font-semibold">
-                  {openTaskCountByEmployee.get(member.id) ?? 0}
+                  <MemberTaskCount
+                    count={openTaskCountByEmployee.get(member.id) ?? 0}
+                    name={member.name}
+                    pressed={focusEmployeeId === member.id}
+                    onShow={
+                      onShowTasks ? () => onShowTasks(member.id) : undefined
+                    }
+                  />
                 </dd>
               </div>
               <div className="rounded-lg bg-muted/55 px-2.5 py-2">
@@ -170,7 +182,14 @@ export function TeamMembersTable({
                   </DataTableCell>
                 ) : null}
                 <DataTableCell className="py-4 font-mono text-[13px]">
-                  {openTaskCountByEmployee.get(member.id) ?? 0}
+                  <MemberTaskCount
+                    count={openTaskCountByEmployee.get(member.id) ?? 0}
+                    name={member.name}
+                    pressed={focusEmployeeId === member.id}
+                    onShow={
+                      onShowTasks ? () => onShowTasks(member.id) : undefined
+                    }
+                  />
                 </DataTableCell>
                 <DataTableCell className="hidden py-4 font-mono text-[13px] sm:table-cell">
                   {targetCounts.get(member.id) ?? 0}
@@ -203,5 +222,34 @@ export function TeamMembersTable({
         </DataTable>
       </div>
     </section>
+  );
+}
+
+function MemberTaskCount({
+  count,
+  name,
+  pressed,
+  onShow,
+}: {
+  count: number;
+  name: string;
+  pressed: boolean;
+  onShow?: () => void;
+}) {
+  const { t } = useTranslation();
+  if (!onShow) return <>{count}</>;
+  return (
+    <button
+      type="button"
+      className={cn(
+        "font-mono underline-offset-2 hover:underline",
+        pressed && "text-primary"
+      )}
+      aria-pressed={pressed}
+      aria-label={t("team.viewMemberTasks", { name })}
+      onClick={onShow}
+    >
+      {count}
+    </button>
   );
 }
