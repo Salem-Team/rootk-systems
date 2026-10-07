@@ -37,7 +37,7 @@ export function CompanyProfilePanel({
       if (locs.success) setBranches(locs.data.filter((l) => l.active));
       if (schedule.success) {
         setHoursLabel(
-          `${schedule.data.fromTime || "09:00"} – ${schedule.data.toTime || "18:00"}`
+          `${schedule.data.fromTime || "09:00"} – ${schedule.data.toTime || "17:00"}`
         );
       }
       setLoadingMeta(false);

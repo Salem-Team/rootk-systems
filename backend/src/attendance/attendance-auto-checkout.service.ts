@@ -7,8 +7,8 @@ import {
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { dateOnly } from "../common/mappers";
+import { resolveAutoCheckOutAt } from "../lib/attendance-auto-checkout";
 import {
-  scheduleOnDay,
   settleWorkDay,
   type AttendanceStatus,
 } from "../lib/work-time";
@@ -18,8 +18,9 @@ import { AttendanceSharedService } from "./attendance-shared.service";
 const TICK_MS = 60_000;
 
 /**
- * Closes open attendance at the scheduled end (17:00 by default)
- * once that time has passed. Checkout is the shift end, not "now".
+ * Closes open attendance after the scheduled day end (company toTime,
+ * 17:00 for ROOTK). Checkout is the shift end when they forgot to leave;
+ * stale days with a late check-in close at check-in once the calendar day passes.
  */
 @Injectable()
 export class AttendanceAutoCheckoutService
@@ -81,13 +82,18 @@ export class AttendanceAutoCheckoutService
           scheduleCache.set(cacheKey, schedule);
         }
         const dateKey = dateOnly(row.date);
-        const end = scheduleOnDay(dateKey, schedule.toTime);
-        if (now < end || row.checkIn.getTime() >= end.getTime()) continue;
+        const checkOutAt = resolveAutoCheckOutAt({
+          dateKey,
+          checkIn: row.checkIn,
+          toTime: schedule.toTime || "17:00",
+          now,
+        });
+        if (!checkOutAt) continue;
 
         const settled = settleWorkDay({
           dateKey,
           checkIn: row.checkIn,
-          checkOut: end,
+          checkOut: checkOutAt,
           schedule,
           previousStatus: row.status as AttendanceStatus,
           wasLate: row.isLate,
@@ -99,7 +105,7 @@ export class AttendanceAutoCheckoutService
         await this.prisma.attendanceRecord.update({
           where: { id: row.id },
           data: {
-            checkOut: end,
+            checkOut: checkOutAt,
             workingMinutes: settled.workingMinutes,
             grossMinutes: settled.grossMinutes,
             breakAppliedMinutes: settled.breakAppliedMinutes,

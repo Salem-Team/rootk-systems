@@ -39,7 +39,7 @@ export function WorkPoliciesPanel() {
   const { t } = useTranslation();
   const [policy, setPolicy] = useState<PolicyState>(DEFAULT_POLICY);
   const [fromTime, setFromTime] = useState("09:00");
-  const [toTime, setToTime] = useState("18:00");
+  const [toTime, setToTime] = useState("17:00");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 

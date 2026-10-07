@@ -12,7 +12,7 @@ const DEFAULT_CONFIG = {
   weekendDays: ["friday", "saturday"],
   wfhDays: ["sunday", "wednesday"] as string[],
   fromTime: "09:00",
-  toTime: "18:00",
+  toTime: "17:00",
   gracePeriodMinutes: 15,
   breakMinutes: 60,
 };

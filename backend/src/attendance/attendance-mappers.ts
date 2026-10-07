@@ -11,7 +11,7 @@ export type PunchLocation = GeoPoint & { accuracy?: number };
 
 export const DEFAULT_SCHEDULE: ScheduleBundle = {
   fromTime: "09:00",
-  toTime: "18:00",
+  toTime: "17:00",
   gracePeriodMinutes: 15,
   breakMinutes: 60,
   halfDayHours: 4,

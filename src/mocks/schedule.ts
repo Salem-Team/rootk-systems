@@ -17,7 +17,7 @@ export const workScheduleSeed: WorkScheduleSeed = {
   weekendDays: ["friday", "saturday"],
   wfhDays: ["sunday", "wednesday"],
   fromTime: "09:00",
-  toTime: "18:00",
+  toTime: "17:00",
   gracePeriodMinutes: 15,
   breakMinutes: 60,
   holidays: [

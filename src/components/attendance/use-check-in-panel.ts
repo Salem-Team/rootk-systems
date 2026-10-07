@@ -79,7 +79,7 @@ export function useCheckInPanel() {
     void (async () => {
       const res = await getWorkSchedule();
       if (!mounted || !res.success) return;
-      setScheduleToTime(res.data.toTime || "18:00");
+      setScheduleToTime(res.data.toTime || "17:00");
       setScheduleBreak(res.data.breakMinutes || 60);
     })();
     return () => {
