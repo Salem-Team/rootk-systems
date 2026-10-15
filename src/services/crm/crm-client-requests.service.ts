@@ -9,13 +9,17 @@ import { isApiMode } from "@/lib/env";
 import { enrichWithAudit, touchEntity } from "@/lib/entity";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 import { createId } from "@/lib/id";
+import {
+  clientRequestInboxHref,
+  clientRequestLeadHref,
+} from "@/lib/notification-href";
 import { notifyQuietly } from "@/services/notification-core.service";
 import { resolveAccountFullName } from "@/lib/user-display-name";
 import {
   crmClientRequestRepository,
   crmLeadRepository,
 } from "@/repositories/crm.repository";
-import { userRepository } from "@/repositories";
+import { notificationRepository, userRepository } from "@/repositories";
 import { fromError, ok } from "@/services/api-result";
 import {
   actorEmployeeId,
@@ -54,6 +58,24 @@ function clip(value: unknown, max: number): string {
   return String(value ?? "").trim().slice(0, max);
 }
 
+async function hasUnreadNotice(
+  recipientIds: string[],
+  requestId: string,
+  titleKey: string
+) {
+  const rows = await notificationRepository.findAll();
+  return rows.some(
+    (item) =>
+      !item.deletedAt &&
+      item.entityType === "crm_client_request" &&
+      item.entityId === requestId &&
+      item.titleKey === titleKey &&
+      recipientIds.some(
+        (id) => item.recipientIds?.includes(id) && !item.readBy.includes(id)
+      )
+  );
+}
+
 async function notifyManager(
   leadName: string,
   kind: string,
@@ -77,10 +99,12 @@ async function notifyManager(
     )
     .map((user) => user.id);
   if (recipientIds.length === 0) return;
+  const titleKey = followUp
+    ? "notifications.crmClientRequestFollowUpTitle"
+    : "notifications.crmClientRequestTitle";
+  if (await hasUnreadNotice(recipientIds, requestId, titleKey)) return;
   await notifyQuietly({
-    titleKey: followUp
-      ? "notifications.crmClientRequestFollowUpTitle"
-      : "notifications.crmClientRequestTitle",
+    titleKey,
     bodyKey: followUp
       ? "notifications.crmClientRequestFollowUpBody"
       : "notifications.crmClientRequestBody",
@@ -89,7 +113,7 @@ async function notifyManager(
     priority: "high",
     audience: "admin",
     recipientIds,
-    href: "/client-requests",
+    href: clientRequestInboxHref(requestId),
     entityType: "crm_client_request",
     entityId: requestId,
     actorId,
@@ -234,15 +258,17 @@ export async function replyCrmClientRequest(
         (user) => user.employeeId === current.requestedByEmployeeId
       );
       if (requester && requester.id !== actorId) {
+        const titleKey = "notifications.crmClientRequestReplyTitle";
+        if (await hasUnreadNotice([requester.id], requestId, titleKey)) return ok(next);
         await notifyQuietly({
-          titleKey: "notifications.crmClientRequestReplyTitle",
+          titleKey,
           bodyKey: "notifications.crmClientRequestReplyBody",
           vars: { lead: lead.name, kind: current.kind },
           category: "work",
           priority: "high",
           audience: "employee",
           recipientIds: [requester.id],
-          href: `/crm?lead=${current.leadId}&sheet=requests`,
+          href: clientRequestLeadHref(current.leadId, requestId),
           entityType: "crm_client_request",
           entityId: requestId,
           actorId,
@@ -285,19 +311,22 @@ export async function saveCrmTechnicalProposal(
       (user) => user.employeeId === current.requestedByEmployeeId
     );
     if (requester && requester.id !== actorId) {
-      await notifyQuietly({
-        titleKey: "notifications.crmClientRequestProposalTitle",
-        bodyKey: "notifications.crmClientRequestProposalBody",
-        vars: { lead: lead.name, kind: current.kind },
-        category: "work",
-        priority: "high",
-        audience: "employee",
-        recipientIds: [requester.id],
-        href: `/crm?lead=${current.leadId}&sheet=requests`,
-        entityType: "crm_client_request",
-        entityId: requestId,
-        actorId,
-      });
+      const titleKey = "notifications.crmClientRequestProposalTitle";
+      if (!(await hasUnreadNotice([requester.id], requestId, titleKey))) {
+        await notifyQuietly({
+          titleKey,
+          bodyKey: "notifications.crmClientRequestProposalBody",
+          vars: { lead: lead.name, kind: current.kind },
+          category: "work",
+          priority: "high",
+          audience: "employee",
+          recipientIds: [requester.id],
+          href: clientRequestLeadHref(current.leadId, requestId),
+          entityType: "crm_client_request",
+          entityId: requestId,
+          actorId,
+        });
+      }
     }
     return ok(next);
   } catch (error) {

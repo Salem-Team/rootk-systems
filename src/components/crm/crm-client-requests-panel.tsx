@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
 import {
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/hooks/use-translation";
+import { CLIENT_REQUEST_OPEN_EVENT } from "@/lib/events";
 import { buildManagementTemplate } from "@/lib/crm/management-request-templates";
 import { isProtectedAdminAccount } from "@/lib/protected-accounts";
 import { templateDraftIssue } from "@/lib/crm/technical-proposal";
@@ -66,6 +67,8 @@ export function CrmClientRequestsPanel({
   hideIntro?: boolean;
 }) {
   const { t, locale } = useTranslation();
+  const [focusedId, setFocusedId] = useState("");
+  const capturedRequestUrl = useRef(false);
   const user = useSessionStore((s) => s.user);
   const canReply = isProtectedAdminAccount({
     userId: user.id,
@@ -105,6 +108,48 @@ export function CrmClientRequestsPanel({
   useEffect(() => {
     void load();
   }, [load]);
+
+  const revealRequest = useCallback(
+    (requestId: string) => {
+      if (!requestId) return;
+      const match = items.find((item) => item.id === requestId);
+      if (!match) {
+        if (variant === "inbox" && status !== "all") setStatus("all");
+        return;
+      }
+      setReplyFor(match.id);
+      window.setTimeout(() => {
+        document.getElementById(`client-request-${match.id}`)?.scrollIntoView({
+          block: "center",
+          behavior: "smooth",
+        });
+      }, 60);
+    },
+    [items, status, variant]
+  );
+
+  useEffect(() => {
+    if (loading || capturedRequestUrl.current) return;
+    capturedRequestUrl.current = true;
+    const id = new URLSearchParams(window.location.search).get("request")?.trim();
+    if (id) setFocusedId(id);
+  }, [loading]);
+
+  useEffect(() => {
+    if (!focusedId || loading) return;
+    revealRequest(focusedId);
+  }, [focusedId, loading, revealRequest]);
+
+  useEffect(() => {
+    function onOpen(event: Event) {
+      const id = (event as CustomEvent<string>).detail?.trim();
+      if (!id) return;
+      setFocusedId(id);
+      revealRequest(id);
+    }
+    window.addEventListener(CLIENT_REQUEST_OPEN_EVENT, onOpen);
+    return () => window.removeEventListener(CLIENT_REQUEST_OPEN_EVENT, onOpen);
+  }, [revealRequest]);
 
   const visible = useMemo(() => {
     if (variant === "lead" || status === "all") return items;
@@ -348,7 +393,11 @@ export function CrmClientRequestsPanel({
             return (
               <li
                 key={item.id}
-                className="overflow-hidden rounded-2xl border border-border/70 bg-card"
+                id={`client-request-${item.id}`}
+                className={cn(
+                  "overflow-hidden rounded-2xl border border-border/70 bg-card scroll-mt-24",
+                  focusedId === item.id && "border-primary/50 ring-2 ring-primary/25"
+                )}
               >
                 <button
                   type="button"

@@ -2,14 +2,14 @@
 
 import { format, parseISO } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
-import { FolderKanban, Plus, Search } from "lucide-react";
+import { FileText, FolderKanban, Plus, Search } from "lucide-react";
 import { EmployeeAvatarStack } from "@/components/work/employee-avatar-stack";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTranslation } from "@/hooks/use-translation";
 import type { TranslationPath } from "@/i18n";
-import { summarizePhases } from "@/lib/work-project";
+import { projectHasTechnicalAnnex, summarizePhases } from "@/lib/work-project";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
 import type { WorkTask } from "@/types/work";
@@ -181,9 +181,17 @@ export function AdminWorkProjectsPanel({
                 className="rounded-2xl border border-border/70 bg-card p-4 text-start shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-primary/25 hover:shadow-[var(--shadow-card)]"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <Badge variant={STATUS_VARIANT[project.status]}>
-                    {t(STATUS_KEY[project.status])}
-                  </Badge>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge variant={STATUS_VARIANT[project.status]}>
+                      {t(STATUS_KEY[project.status])}
+                    </Badge>
+                    {projectHasTechnicalAnnex(project) ? (
+                      <Badge variant="outline" className="gap-1">
+                        <FileText className="h-3 w-3" aria-hidden />
+                        {t("workAdmin.projects.annexBadge")}
+                      </Badge>
+                    ) : null}
+                  </div>
                   <span className="font-mono text-[11px] text-muted-foreground">
                     {summary.pct}%
                   </span>

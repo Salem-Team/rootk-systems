@@ -714,6 +714,10 @@ model WorkProject {
   companyId   String
   name        String
   description String            @default("")
+  /// Scope, requirements, and other technical notes in the project annex.
+  technicalDetails String       @default("") @db.Text
+  /// The full project write-up shown with the technical annex.
+  fullDescription  String       @default("") @db.Text
   status      WorkProjectStatus @default(planning)
   startDate   DateTime?         @db.Date
   endDate     DateTime?         @db.Date

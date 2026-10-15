@@ -249,6 +249,40 @@ export function AdminWorkProjectSheet({
             </SectionCard>
 
             <SectionCard
+              title={t("workAdmin.projects.sectionAnnex")}
+              hint={t("workAdmin.projects.annexHint")}
+            >
+              <Field
+                label={t("workAdmin.projects.fieldTechnicalDetails")}
+                htmlFor="project-technical-details"
+              >
+                <Textarea
+                  id="project-technical-details"
+                  value={form.technicalDetails}
+                  placeholder={t("workAdmin.projects.technicalDetailsPlaceholder")}
+                  onChange={(event) =>
+                    setForm({ ...form, technicalDetails: event.target.value })
+                  }
+                  className="min-h-[140px] rounded-xl"
+                />
+              </Field>
+              <Field
+                label={t("workAdmin.projects.fieldFullDescription")}
+                htmlFor="project-full-description"
+              >
+                <Textarea
+                  id="project-full-description"
+                  value={form.fullDescription}
+                  placeholder={t("workAdmin.projects.fullDescriptionPlaceholder")}
+                  onChange={(event) =>
+                    setForm({ ...form, fullDescription: event.target.value })
+                  }
+                  className="min-h-[180px] rounded-xl"
+                />
+              </Field>
+            </SectionCard>
+
+            <SectionCard
               title={t("workAdmin.projects.sectionTeam")}
               hint={t("workAdmin.projects.membersHint")}
             >

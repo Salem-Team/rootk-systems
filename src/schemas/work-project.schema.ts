@@ -32,6 +32,8 @@ export const workProjectBodySchema = z
   .object({
     name: z.string().trim().min(1).max(160),
     description: z.string().trim().max(4000).default(""),
+    technicalDetails: z.string().trim().max(12000).default(""),
+    fullDescription: z.string().trim().max(20000).default(""),
     status: z.enum(["planning", "active", "on_hold", "completed"]),
     startDate: dateField.default(""),
     endDate: dateField.default(""),

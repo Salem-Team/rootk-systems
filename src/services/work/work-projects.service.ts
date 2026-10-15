@@ -85,6 +85,8 @@ export async function createWorkProject(
         id: createId("prj"),
         name: data.name,
         description: data.description,
+        technicalDetails: data.technicalDetails,
+        fullDescription: data.fullDescription,
         status: data.status,
         startDate: data.startDate,
         endDate: data.endDate,
@@ -126,6 +128,8 @@ export async function updateWorkProject(
     const next = touchEntity(current, userId, {
       name: data.name,
       description: data.description,
+      technicalDetails: data.technicalDetails,
+      fullDescription: data.fullDescription,
       status: data.status,
       startDate: data.startDate,
       endDate: data.endDate,

@@ -281,6 +281,27 @@ export class CrmClientRequestsService {
     return mapRequest(row);
   }
 
+  private async hasUnreadNotice(
+    companyId: string,
+    recipientId: string,
+    requestId: string,
+    titleKey: string
+  ) {
+    const existing = await this.prisma.appNotification.findFirst({
+      where: {
+        companyId,
+        deletedAt: null,
+        entityType: "crm_client_request",
+        entityId: requestId,
+        titleKey,
+        recipientIds: { has: recipientId },
+        NOT: { readBy: { has: recipientId } },
+      },
+      select: { id: true },
+    });
+    return Boolean(existing);
+  }
+
   private async actorName(companyId: string, employeeId?: string | null) {
     const id = employeeId?.trim();
     if (!id) return "";
@@ -311,6 +332,12 @@ export class CrmClientRequestsService {
       select: { id: true },
     });
     if (!manager || manager.id === actor.userId) return;
+    const titleKey = followUp
+      ? "notifications.crmClientRequestFollowUpTitle"
+      : "notifications.crmClientRequestTitle";
+    if (await this.hasUnreadNotice(companyId, manager.id, row.id, titleKey)) {
+      return;
+    }
     const actorName = await this.actorName(companyId, actor.employeeId);
     await this.notifications.notifyDomain({
       companyId,
@@ -318,9 +345,7 @@ export class CrmClientRequestsService {
       category: "work",
       priority: "high",
       audience: NotificationAudience.admin,
-      titleKey: followUp
-        ? "notifications.crmClientRequestFollowUpTitle"
-        : "notifications.crmClientRequestTitle",
+      titleKey,
       bodyKey: followUp
         ? "notifications.crmClientRequestFollowUpBody"
         : "notifications.crmClientRequestBody",
@@ -329,7 +354,7 @@ export class CrmClientRequestsService {
         kind: row.kind,
         actor: actorName || "—",
       },
-      href: "/client-requests",
+      href: `/client-requests?request=${encodeURIComponent(row.id)}`,
       entityType: "crm_client_request",
       entityId: row.id,
       recipientIds: [manager.id],
@@ -349,20 +374,24 @@ export class CrmClientRequestsService {
       select: { id: true },
     });
     if (!user || user.id === actor.userId) return;
+    const titleKey = proposalReady
+      ? "notifications.crmClientRequestProposalTitle"
+      : "notifications.crmClientRequestReplyTitle";
+    if (await this.hasUnreadNotice(companyId, user.id, row.id, titleKey)) {
+      return;
+    }
     await this.notifications.notifyDomain({
       companyId,
       actorId: actor.userId,
       category: "work",
       priority: "high",
       audience: NotificationAudience.employee,
-      titleKey: proposalReady
-        ? "notifications.crmClientRequestProposalTitle"
-        : "notifications.crmClientRequestReplyTitle",
+      titleKey,
       bodyKey: proposalReady
         ? "notifications.crmClientRequestProposalBody"
         : "notifications.crmClientRequestReplyBody",
       vars: { lead: row.lead.name, kind: row.kind },
-      href: `/crm?lead=${row.leadId}&sheet=requests`,
+      href: `/crm?lead=${encodeURIComponent(row.leadId)}&sheet=requests&request=${encodeURIComponent(row.id)}`,
       entityType: "crm_client_request",
       entityId: row.id,
       recipientIds: [user.id],

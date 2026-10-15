@@ -5,6 +5,7 @@ export const TARGETS_UPDATED_EVENT = "rootk:targets-updated";
 export const ORGANIC_ADS_UPDATED_EVENT = "rootk:organic-ads-updated";
 export const CRM_UPDATED_EVENT = "rootk:crm-updated";
 export const CRM_OPEN_LEAD_EVENT = "rootk:crm-open-lead";
+export const CLIENT_REQUEST_OPEN_EVENT = "rootk:open-client-request";
 export const DAILY_PLAN_UPDATED_EVENT = "rootk:daily-plan-updated";
 
 export type NotificationUpdatedDetail = {
@@ -41,12 +42,23 @@ export function emitCrmUpdated() {
   window.dispatchEvent(new Event(CRM_UPDATED_EVENT));
 }
 
-export function emitCrmOpenLead(leadId: string) {
+export function emitCrmOpenLead(leadId: string, tab?: string) {
   if (typeof window === "undefined") return;
   const id = leadId.trim();
   if (!id) return;
   window.dispatchEvent(
-    new CustomEvent<string>(CRM_OPEN_LEAD_EVENT, { detail: id })
+    new CustomEvent<{ id: string; tab?: string } | string>(CRM_OPEN_LEAD_EVENT, {
+      detail: tab ? { id, tab } : id,
+    })
+  );
+}
+
+export function emitOpenClientRequest(requestId: string) {
+  if (typeof window === "undefined") return;
+  const id = requestId.trim();
+  if (!id) return;
+  window.dispatchEvent(
+    new CustomEvent<string>(CLIENT_REQUEST_OPEN_EVENT, { detail: id })
   );
 }
 

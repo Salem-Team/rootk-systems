@@ -1,24 +1,24 @@
 # Target User Agent — Test Report
 
-Generated: **2026-09-27T10:50:32.243Z**
+Generated: **2026-10-15T08:46:40.413Z**
 
 Result: **10/10 passed**
 
-Agent target id: `pt_91a5d0c28fb14f37`
+Agent target id: `pt_532793fb668d4842`
 
 ## Scenarios (real user flows)
 
 | # | Actor | Scenario | Result | Detail |
 |---|-------|----------|--------|--------|
 | 1 | admin | Open Target Catalog | ✅ PASS | 4 categories, 7 types |
-| 2 | admin | Create category + type (Operations / Site Visits) | ✅ PASS | category=tcat_468b9869c83c4ced type=ttype_ca00f6ff98e941e3 |
-| 3 | admin | Assign target + auto-create 5 tasks | ✅ PASS | target=pt_91a5d0c28fb14f37, linkedTasks=5, progress=0% |
+| 2 | admin | Create category + type (Operations / Site Visits) | ✅ PASS | category=tcat_50a14380fd294cef type=ttype_b80d021af0f8492b |
+| 3 | admin | Assign target + auto-create 5 tasks | ✅ PASS | target=pt_532793fb668d4842, linkedTasks=5, progress=0% |
 | 4 | employee | Complete 2 tasks → target progress auto-updates to 40% | ✅ PASS | completedQuantity=2, percentage=40% |
 | 5 | employee | Employee cannot edit target (permission gate) | ✅ PASS | correctly forbidden |
-| 6 | admin | Send performance warning | ✅ PASS | warning=tw_6e0abb8df04f436d |
-| 7 | employee | Employee acknowledges warning | ✅ PASS | acknowledgedAt=2026-09-27T10:50:26.441Z |
+| 6 | admin | Send performance warning | ✅ PASS | warning=tw_7d502cf5fb2243cc |
+| 7 | employee | Employee acknowledges warning | ✅ PASS | acknowledgedAt=2026-10-15T08:46:34.712Z |
 | 8 | admin | Dashboard + delayed center load with agent target visible | ✅ PASS | total=7, completed=1, delayedTargets=5, avgScore=27.7 |
-| 9 | employee | Employee performance page shows target + warning | ✅ PASS | score=34.5, targets=3, warnings=1 |
+| 9 | employee | Employee performance page shows target + warning | ✅ PASS | score=34.6, targets=3, warnings=1 |
 | 10 | employee | Complete remaining tasks → target reaches 100% / completed | ✅ PASS | status=completed, percentage=100% |
 
 ## How to view in the app
@@ -61,7 +61,7 @@ Agent target id: `pt_91a5d0c28fb14f37`
       "count": 3
     },
     {
-      "id": "tcat_468b9869c83c4ced",
+      "id": "tcat_50a14380fd294cef",
       "name": "Agent Demo — Operations",
       "color": "#0F766E",
       "count": 1
@@ -93,7 +93,7 @@ Agent target id: `pt_91a5d0c28fb14f37`
     {
       "department": "Design",
       "count": 3,
-      "avgScore": 55.1
+      "avgScore": 55.2
     },
     {
       "department": "Engineering",
@@ -115,7 +115,7 @@ Agent target id: `pt_91a5d0c28fb14f37`
     },
     {
       "employeeId": "emp-003",
-      "score": 34.5,
+      "score": 34.6,
       "completed": 0,
       "total": 3
     },
@@ -159,7 +159,7 @@ Agent target id: `pt_91a5d0c28fb14f37`
     },
     {
       "employeeId": "emp-003",
-      "score": 34.5,
+      "score": 34.6,
       "completed": 0,
       "total": 3
     },
@@ -172,72 +172,72 @@ Agent target id: `pt_91a5d0c28fb14f37`
   ],
   "completionTrend": [
     {
-      "date": "2026-09-14",
+      "date": "2026-10-02",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-09-15",
+      "date": "2026-10-03",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-09-16",
+      "date": "2026-10-04",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-09-17",
+      "date": "2026-10-05",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-09-18",
+      "date": "2026-10-06",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-09-19",
+      "date": "2026-10-07",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-09-20",
+      "date": "2026-10-08",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-09-21",
+      "date": "2026-10-09",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-09-22",
+      "date": "2026-10-10",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-09-23",
+      "date": "2026-10-11",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-09-24",
+      "date": "2026-10-12",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-09-25",
+      "date": "2026-10-13",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-09-26",
+      "date": "2026-10-14",
       "created": 0,
       "completed": 0
     },
     {
-      "date": "2026-09-27",
+      "date": "2026-10-15",
       "created": 7,
       "completed": 1
     }

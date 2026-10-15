@@ -118,7 +118,6 @@ export function useCrmHub() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const lead = params.get("lead");
     if (lead) {
@@ -132,8 +131,11 @@ export function useCrmHub() {
     }
 
     function onOpenLead(event: Event) {
-      const id = (event as CustomEvent<string>).detail?.trim();
-      if (id) openViewLead(id);
+      const detail = (event as CustomEvent<{ id?: string; tab?: string } | string>)
+        .detail;
+      const id = (typeof detail === "string" ? detail : detail?.id)?.trim();
+      const tab = typeof detail === "string" ? undefined : detail?.tab;
+      if (id) openViewLead(id, tab || "overview");
     }
     window.addEventListener(CRM_OPEN_LEAD_EVENT, onOpenLead);
     return () => window.removeEventListener(CRM_OPEN_LEAD_EVENT, onOpenLead);

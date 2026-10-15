@@ -317,6 +317,8 @@ export class WorkProjectsService {
     return {
       name,
       description: clip(body.description, 4000),
+      technicalDetails: clip(body.technicalDetails, 12000),
+      fullDescription: clip(body.fullDescription, 20000),
       status,
       startDate: projectCalendarDate(startDate),
       endDate: projectCalendarDate(endDate),
@@ -330,6 +332,8 @@ export class WorkProjectsService {
     id: string;
     name: string;
     description: string;
+    technicalDetails: string;
+    fullDescription: string;
     status: WorkProjectStatus;
     startDate: Date | null;
     endDate: Date | null;
@@ -350,6 +354,8 @@ export class WorkProjectsService {
       id: row.id,
       name: row.name,
       description: row.description,
+      technicalDetails: row.technicalDetails ?? "",
+      fullDescription: row.fullDescription ?? "",
       status: row.status,
       startDate: row.startDate ? dateOnly(row.startDate) : "",
       endDate: row.endDate ? dateOnly(row.endDate) : "",

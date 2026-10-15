@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
-import { FolderKanban } from "lucide-react";
+import { FileText, FolderKanban } from "lucide-react";
 import { LtrNum } from "@/components/shared/ltr-num";
 import { statusLabelKey } from "@/components/work/employee-work-hub-types";
 import { TaskViewSheet } from "@/components/work/task-view-sheet";
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { useTranslation } from "@/hooks/use-translation";
 import type { TranslationPath } from "@/i18n";
-import { summarizePhases } from "@/lib/work-project";
+import { projectHasTechnicalAnnex, summarizePhases } from "@/lib/work-project";
 import { getWorkProjects } from "@/services/work.service";
 import { WORK_UPDATED_EVENT } from "@/lib/events";
 import { cn } from "@/lib/utils";
@@ -161,9 +161,17 @@ export function EmployeeWorkProjectsPanel({
               className="rounded-2xl border border-border/70 bg-card p-4 text-start shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-primary/25"
             >
               <div className="flex items-center justify-between gap-3">
-                <Badge variant={project.status === "completed" ? "success" : "default"}>
-                  {t(PROJECT_STATUS[project.status])}
-                </Badge>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Badge variant={project.status === "completed" ? "success" : "default"}>
+                    {t(PROJECT_STATUS[project.status])}
+                  </Badge>
+                  {projectHasTechnicalAnnex(project) ? (
+                    <Badge variant="outline" className="gap-1">
+                      <FileText className="h-3 w-3" aria-hidden />
+                      {t("workAdmin.projects.annexBadge")}
+                    </Badge>
+                  ) : null}
+                </div>
                 {mine > 0 ? (
                   <span className="text-[12px] font-semibold text-primary">
                     {t("workHub.projectsMineCount", { count: mine })}
@@ -284,6 +292,35 @@ function ProjectReadView({
             </LtrNum>
           ) : null}
         </div>
+
+        {projectHasTechnicalAnnex(project) ? (
+          <section className="grid gap-3 rounded-2xl border border-border/70 bg-card p-4">
+            <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              <FileText className="h-3.5 w-3.5" aria-hidden />
+              {t("workAdmin.projects.sectionAnnex")}
+            </h3>
+            {project.technicalDetails?.trim() ? (
+              <div className="grid gap-1">
+                <p className="text-[12px] font-semibold">
+                  {t("workAdmin.projects.fieldTechnicalDetails")}
+                </p>
+                <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-muted-foreground">
+                  {project.technicalDetails}
+                </p>
+              </div>
+            ) : null}
+            {project.fullDescription?.trim() ? (
+              <div className="grid gap-1">
+                <p className="text-[12px] font-semibold">
+                  {t("workAdmin.projects.fieldFullDescription")}
+                </p>
+                <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-muted-foreground">
+                  {project.fullDescription}
+                </p>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
 
         <section className="grid gap-2 rounded-2xl border border-border/70 bg-card p-4">
           <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">

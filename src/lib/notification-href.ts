@@ -74,7 +74,7 @@ export function resolveNotificationHref(
       }
     }
     if (entity === "crm_client_request") {
-      return href || "/client-requests";
+      return refineClientRequestHref(href, entityId);
     }
     if (entity === "payroll" || entity === "payroll_run") {
       return href || "/payroll";
@@ -82,6 +82,34 @@ export function resolveNotificationHref(
   }
 
   return href || undefined;
+}
+
+export function clientRequestInboxHref(requestId: string): string {
+  return `/client-requests?request=${encodeURIComponent(requestId)}`;
+}
+
+export function clientRequestLeadHref(leadId: string, requestId: string): string {
+  const params = new URLSearchParams({
+    lead: leadId,
+    sheet: "requests",
+    request: requestId,
+  });
+  return `/crm?${params.toString()}`;
+}
+
+/** Point a client-request alert at the exact request, not the bare inbox. */
+function refineClientRequestHref(href: string, requestId: string): string {
+  if (href.includes("request=")) return href;
+  if (href.includes("/crm") || href.includes("lead=")) {
+    try {
+      const url = new URL(href || "/crm", "https://rootk.local");
+      const leadId = url.searchParams.get("lead")?.trim() || "";
+      if (leadId) return clientRequestLeadHref(leadId, requestId);
+    } catch {
+      /* keep the inbox fallback */
+    }
+  }
+  return clientRequestInboxHref(requestId);
 }
 
 function looksLikeBare(href: string, root: string): boolean {

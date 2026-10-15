@@ -39,7 +39,7 @@ async function ensurePermission(
 }
 
 export async function bindLocalNotificationOpen(
-  onOpen: (href: string) => void
+  onOpen: (detail: { href?: string; notificationId?: string }) => void
 ): Promise<() => void> {
   const plugin = await getPlugin();
   if (!plugin || actionListenerBound) return () => undefined;
@@ -47,9 +47,12 @@ export async function bindLocalNotificationOpen(
   const handle = await plugin.addListener(
     "localNotificationActionPerformed",
     (event) => {
-      const extra = event.notification.extra as { href?: string } | undefined;
+      const extra = event.notification.extra as
+        | { href?: string; notificationId?: string }
+        | undefined;
       const href = extra?.href?.trim();
-      if (href) onOpen(href);
+      const notificationId = extra?.notificationId?.trim();
+      if (href || notificationId) onOpen({ href, notificationId });
     }
   );
   return () => {
@@ -89,7 +92,7 @@ export async function presentLocalNotification(input: {
         body: input.body,
         schedule: { at: new Date(Date.now() + 400), allowWhileIdle: true },
         channelId: CHANNEL_ID,
-        extra: { href: input.href ?? "" },
+        extra: { href: input.href ?? "", notificationId: input.id },
       },
     ],
   });

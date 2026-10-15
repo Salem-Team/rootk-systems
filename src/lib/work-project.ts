@@ -11,6 +11,8 @@ import type {
 export interface ProjectFormState {
   name: string;
   description: string;
+  technicalDetails: string;
+  fullDescription: string;
   status: ProjectStatus;
   startDate: string;
   endDate: string;
@@ -32,6 +34,8 @@ export function emptyWorkProject(id = ""): WorkProject {
     id,
     name: "",
     description: "",
+    technicalDetails: "",
+    fullDescription: "",
     status: "planning",
     startDate: "",
     endDate: "",
@@ -79,6 +83,8 @@ export function emptyProjectForm(leadId = ""): ProjectFormState {
   return {
     name: "",
     description: "",
+    technicalDetails: "",
+    fullDescription: "",
     status: "planning",
     startDate: "",
     endDate: "",
@@ -92,6 +98,8 @@ export function projectToForm(project: WorkProject): ProjectFormState {
   return {
     name: project.name,
     description: project.description,
+    technicalDetails: project.technicalDetails ?? "",
+    fullDescription: project.fullDescription ?? "",
     status: project.status,
     startDate: project.startDate,
     endDate: project.endDate,
@@ -126,6 +134,13 @@ export function summarizePhases(phases: WorkProjectPhase[]) {
     phases: phases.filter((phase) => phase.name.trim()).length,
     pct: tasks ? Math.round((done / tasks) * 100) : 0,
   };
+}
+
+export function projectHasTechnicalAnnex(project: {
+  technicalDetails?: string;
+  fullDescription?: string;
+}): boolean {
+  return Boolean(project.technicalDetails?.trim() || project.fullDescription?.trim());
 }
 
 export function datesInOrder(start: string, end: string): boolean {
@@ -234,6 +249,8 @@ export function normalizeProjectForm(form: ProjectFormState): ProjectFormState |
   return {
     name,
     description: form.description.trim(),
+    technicalDetails: form.technicalDetails.trim(),
+    fullDescription: form.fullDescription.trim(),
     status: form.status,
     startDate: projectDates.start,
     endDate: projectDates.end,

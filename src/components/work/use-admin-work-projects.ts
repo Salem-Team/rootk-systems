@@ -68,6 +68,8 @@ export function useAdminWorkProjects(defaultLeadId: string) {
       const haystack = [
         project.name,
         project.description,
+        project.technicalDetails,
+        project.fullDescription,
         ...project.phases.flatMap((phase) => [
           phase.name,
           ...phase.tasks.map((task) => task.title),

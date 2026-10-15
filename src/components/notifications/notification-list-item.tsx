@@ -19,6 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { BidiText } from "@/components/shared/bidi-text";
 import { useTranslation } from "@/hooks/use-translation";
+import { emitCrmOpenLead, emitOpenClientRequest } from "@/lib/events";
 import { resolveNotificationHref } from "@/lib/notification-href";
 import {
   formatNotificationTime,
@@ -195,6 +196,17 @@ export function NotificationListItem({
   const handleActivate = () => {
     if (unread) void onRead(item.id);
     onNavigate?.();
+    if (!href) return;
+    const url = new URL(href, window.location.origin);
+    const requestId = url.searchParams.get("request")?.trim();
+    if (requestId) emitOpenClientRequest(requestId);
+    const leadId = url.searchParams.get("lead")?.trim();
+    if (url.pathname === "/crm" && leadId) {
+      emitCrmOpenLead(
+        leadId,
+        url.searchParams.get("sheet") === "requests" ? "requests" : "overview"
+      );
+    }
   };
 
   if (href) {

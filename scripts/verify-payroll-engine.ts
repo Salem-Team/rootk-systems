@@ -227,8 +227,9 @@ let passed = 0;
           status: "late",
           lateMinutes: 20, // already net of grace
           workingMinutes: 460,
-          checkIn: "2026-08-03T09:20:00.000Z",
-          checkOut: "2026-08-03T18:00:00.000Z",
+          // 09:20 Africa/Cairo — payroll tiers use clock minutes from shift start.
+          checkIn: "2026-08-03T09:20:00+03:00",
+          checkOut: "2026-08-03T18:00:00+03:00",
           isEarlyLeave: false,
         },
       ],

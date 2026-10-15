@@ -40,6 +40,8 @@ function baseForm() {
     ...emptyProjectForm("emp-1"),
     name: "  إطلاق الموقع  ",
     description: " تفاصيل ",
+    technicalDetails: "  نطاق التسليم  ",
+    fullDescription: "  وصف كامل للمشروع  ",
     startDate: "2026-09-23",
     endDate: "2026-10-01",
     memberIds: ["emp-1", "emp-2"],
@@ -68,6 +70,11 @@ function baseForm() {
 
 const normalized = normalizeProjectForm(baseForm());
 assert(normalized?.name === "إطلاق الموقع", "trims the project name");
+assert(
+  normalized?.technicalDetails === "نطاق التسليم" &&
+    normalized.fullDescription === "وصف كامل للمشروع",
+  "trims the technical annex"
+);
 assert(normalized?.memberIds.includes("emp-1"), "keeps the lead on the team");
 assert(normalized?.phases.length === 1, "drops a blank phase");
 assert(normalized?.phases[0]?.tasks.length === 1, "drops a blank task");
@@ -158,6 +165,8 @@ const service = new WorkProjectsService({
       data: {
         name: string;
         description?: string;
+        technicalDetails?: string;
+        fullDescription?: string;
         status?: string;
         startDate: Date | null;
         leadId: string;
@@ -171,6 +180,8 @@ const service = new WorkProjectsService({
         companyId: "co",
         name: data.name,
         description: data.description ?? "",
+        technicalDetails: data.technicalDetails ?? "",
+        fullDescription: data.fullDescription ?? "",
         status: data.status ?? "planning",
         startDate: data.startDate,
         endDate: null,
@@ -197,8 +208,15 @@ const created = await service.createProject("co", admin, {
   memberIds: ["emp-2"],
   startDate: "2026-09-23",
   endDate: "2026-10-01",
+  technicalDetails: "  API scope  ",
+  fullDescription: "  Full launch write-up  ",
   phases: cleaned,
 });
+assert(
+  created.technicalDetails === "API scope" &&
+    created.fullDescription === "Full launch write-up",
+  "service stores the technical annex"
+);
 assert(created.startDate === "2026-09-23", "saved project reads the same start date");
 assert(
   (storedStart as Date | null)?.toISOString() === "2026-09-23T00:00:00.000Z",

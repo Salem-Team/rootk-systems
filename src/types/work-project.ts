@@ -32,6 +32,10 @@ export interface WorkProject extends BaseEntity {
   id: string;
   name: string;
   description: string;
+  /** Technical annex: scope, requirements, and other project details. */
+  technicalDetails: string;
+  /** Technical annex: the full project write-up. */
+  fullDescription: string;
   status: ProjectStatus;
   startDate: string;
   endDate: string;
