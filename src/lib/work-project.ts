@@ -143,6 +143,47 @@ export function projectHasTechnicalAnnex(project: {
   return Boolean(project.technicalDetails?.trim() || project.fullDescription?.trim());
 }
 
+export type ProjectBriefingKey =
+  | "description"
+  | "technicalDetails"
+  | "fullDescription";
+
+/** Filled briefing blocks, in the order an engineer reads them. */
+export function projectBriefingBlocks(project: {
+  description?: string;
+  technicalDetails?: string;
+  fullDescription?: string;
+}): { key: ProjectBriefingKey; body: string }[] {
+  const rows: [ProjectBriefingKey, string | undefined][] = [
+    ["description", project.description],
+    ["technicalDetails", project.technicalDetails],
+    ["fullDescription", project.fullDescription],
+  ];
+  return rows.flatMap(([key, body]) => {
+    const text = String(body ?? "").replace(/\r\n/g, "\n").trim();
+    return text ? [{ key, body: text }] : [];
+  });
+}
+
+/** Plain text for the clipboard: title, then each filled block with its label. */
+export function projectBriefingPlainText(
+  project: {
+    name?: string;
+    description?: string;
+    technicalDetails?: string;
+    fullDescription?: string;
+  },
+  labels: Record<ProjectBriefingKey, string>
+): string {
+  const parts: string[] = [];
+  const name = project.name?.trim();
+  if (name) parts.push(name);
+  for (const block of projectBriefingBlocks(project)) {
+    parts.push(`${labels[block.key]}\n${block.body}`);
+  }
+  return parts.join("\n\n");
+}
+
 export function datesInOrder(start: string, end: string): boolean {
   if (!start || !end) return true;
   return end >= start;

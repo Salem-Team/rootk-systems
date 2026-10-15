@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
 import { FileText, FolderKanban } from "lucide-react";
+import { ProjectAnnexReadout } from "@/components/work/project-annex-readout";
 import { LtrNum } from "@/components/shared/ltr-num";
 import { statusLabelKey } from "@/components/work/employee-work-hub-types";
 import { TaskViewSheet } from "@/components/work/task-view-sheet";
@@ -277,7 +278,7 @@ function ProjectReadView({
           </span>
           {project.name}
         </DialogTitle>
-        <DialogDescription>
+        <DialogDescription className="line-clamp-2">
           {project.description || t("workHub.projectsOpen")}
         </DialogDescription>
       </DialogHeader>
@@ -293,34 +294,7 @@ function ProjectReadView({
           ) : null}
         </div>
 
-        {projectHasTechnicalAnnex(project) ? (
-          <section className="grid gap-3 rounded-2xl border border-border/70 bg-card p-4">
-            <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              <FileText className="h-3.5 w-3.5" aria-hidden />
-              {t("workAdmin.projects.sectionAnnex")}
-            </h3>
-            {project.technicalDetails?.trim() ? (
-              <div className="grid gap-1">
-                <p className="text-[12px] font-semibold">
-                  {t("workAdmin.projects.fieldTechnicalDetails")}
-                </p>
-                <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-muted-foreground">
-                  {project.technicalDetails}
-                </p>
-              </div>
-            ) : null}
-            {project.fullDescription?.trim() ? (
-              <div className="grid gap-1">
-                <p className="text-[12px] font-semibold">
-                  {t("workAdmin.projects.fieldFullDescription")}
-                </p>
-                <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-muted-foreground">
-                  {project.fullDescription}
-                </p>
-              </div>
-            ) : null}
-          </section>
-        ) : null}
+        <ProjectAnnexReadout project={project} />
 
         <section className="grid gap-2 rounded-2xl border border-border/70 bg-card p-4">
           <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">

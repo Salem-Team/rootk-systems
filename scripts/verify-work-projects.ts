@@ -11,6 +11,7 @@ import {
   emptyProjectPhase,
   emptyProjectTask,
   normalizeProjectForm,
+  projectBriefingPlainText,
   projectIncludesEmployee,
   summarizePhases,
 } from "../src/lib/work-project";
@@ -74,6 +75,22 @@ assert(
   normalized?.technicalDetails === "نطاق التسليم" &&
     normalized.fullDescription === "وصف كامل للمشروع",
   "trims the technical annex"
+);
+assert(
+  projectBriefingPlainText(
+    {
+      name: "إطلاق",
+      description: "ملخص",
+      technicalDetails: "سطر أول\nسطر تاني",
+      fullDescription: "  ",
+    },
+    {
+      description: "التفاصيل",
+      technicalDetails: "تفاصيل المشروع",
+      fullDescription: "الوصف الكامل",
+    }
+  ) === "إطلاق\n\nالتفاصيل\nملخص\n\nتفاصيل المشروع\nسطر أول\nسطر تاني",
+  "copy text keeps line breaks and skips an empty description"
 );
 assert(normalized?.memberIds.includes("emp-1"), "keeps the lead on the team");
 assert(normalized?.phases.length === 1, "drops a blank phase");
