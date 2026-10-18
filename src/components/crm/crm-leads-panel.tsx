@@ -355,6 +355,8 @@ export function CrmLeadsPanel({
         canAssign={canAssign}
         canViewOthers={canViewOthers || canViewTeam}
         hasActiveFilters={panel.hasActiveFilters}
+        facets={panel.facets}
+        resultCount={panel.resultCount}
         lockedKeys={lockedFilterKeys}
         onFiltersChange={onFiltersChange}
         onClearFilters={panel.clearFilters}

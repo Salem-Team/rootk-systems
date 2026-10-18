@@ -8,11 +8,20 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/use-translation";
+import {
+  computeLeadFilterFacets,
+  emptyLeadFilterFacets,
+} from "@/lib/crm/lead-filter-facets";
 import { ensureCrmList, ensurePaginatedLeads } from "@/lib/crm-normalize";
-import { emitCrmUpdated } from "@/lib/events";
-import { bulkUpdateCrmLeads } from "@/services/crm.service";
+import { emitCrmUpdated, CRM_UPDATED_EVENT } from "@/lib/events";
+import { bulkUpdateCrmLeads, getCrmLeads } from "@/services/crm.service";
 import type { Employee } from "@/types";
-import type { CrmLeadFilters, CrmStage, PaginatedLeads } from "@/types/crm";
+import type {
+  CrmLead,
+  CrmLeadFilters,
+  CrmStage,
+  PaginatedLeads,
+} from "@/types/crm";
 
 export type BulkAction =
   | "assign"
@@ -46,6 +55,7 @@ export function useCrmLeadsPanel({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
+  const [facetLeads, setFacetLeads] = useState<CrmLead[]>([]);
   /** True while the user is typing — ignore external filter.search sync. */
   const searchEditingRef = useRef(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -109,6 +119,31 @@ export function useCrmLeadsPanel({
       return next.size === prev.size ? prev : next;
     });
   }, [itemIdKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadFacets() {
+      const res = await getCrmLeads({
+        search: filters.search,
+        recordType: filters.recordType ?? "lead",
+        page: 1,
+        pageSize: 500,
+        sort: "updatedAt",
+        order: "desc",
+      });
+      if (cancelled) return;
+      if (res.success) setFacetLeads(res.data.items);
+    }
+    void loadFacets();
+    const onUpdate = () => {
+      void loadFacets();
+    };
+    window.addEventListener(CRM_UPDATED_EVENT, onUpdate);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(CRM_UPDATED_EVENT, onUpdate);
+    };
+  }, [filters.search, filters.recordType]);
 
   const exclude = useMemo(
     () => new Set(filterBadgeExclude),
@@ -222,6 +257,27 @@ export function useCrmLeadsPanel({
       Boolean(filters.lossReason)
   );
 
+  const lostStageIds = useMemo(
+    () =>
+      new Set(
+        safeStages
+          .filter((stage) => stage.category === "lost")
+          .map((stage) => stage.id)
+      ),
+    [safeStages]
+  );
+
+  const facets = useMemo(() => {
+    if (facetLeads.length === 0) return emptyLeadFilterFacets();
+    // Rows from getCrmLeads are already scoped; count every returned lead.
+    return computeLeadFilterFacets(facetLeads, filters, {
+      lostStageIds,
+      canViewOthers: true,
+    });
+  }, [facetLeads, filters, lostStageIds]);
+
+  const resultCount = page.total;
+
   return {
     t,
     searchLocal,
@@ -246,5 +302,7 @@ export function useCrmLeadsPanel({
     clearSelection,
     runBulk,
     hasActiveFilters,
+    facets,
+    resultCount,
   };
 }
