@@ -1127,7 +1127,7 @@ export const en = {
     personalInfo: "Personal information",
     whatsappAccounts: "WhatsApp accounts",
     whatsappAccountsDesc:
-      "Choose the WhatsApp numbers this employee sends from. Clicking WhatsApp asks them to pick one, and the send is logged on the lead.",
+      "Add this salesperson’s personal WhatsApp number. When they message a lead they pick this number, and WhatsApp on their device must be signed in with it — not the company line.",
     whatsappLabel: "Name",
     whatsappLabelPlaceholder: "Sales line",
     whatsappPhone: "Number",
@@ -3760,13 +3760,20 @@ export const en = {
       none: "None",
     },
     whatsappSend: {
-      title: "Choose a WhatsApp",
+      title: "Send from your number",
       description:
-        "Pick the account you are sending from. This is logged on the lead.",
-      empty: "No WhatsApp accounts are set on your profile.",
+        "Pick the WhatsApp number saved on your profile. The chat opens for the customer using that line when WhatsApp on this device is signed in with the same account.",
+      empty:
+        "No WhatsApp number on your profile. Ask admin to add your personal number on the employee file.",
       missingEmployee: "Your login is not linked to an employee profile.",
+      fromHint: "Send-from is your registered personal number — not the company line.",
+      selected: "Selected",
+      sendingFrom: "Sending from",
+      deviceHint:
+        "Before opening the chat, make sure WhatsApp on this device is signed in with this number. If the company account is active, the message will leave from the company number.",
+      openChat: "Open WhatsApp with my number",
       loggedTitle: "Sent WhatsApp via {account}",
-      loggedDetail: "Sent a WhatsApp to {name} from {account}.",
+      loggedDetail: "Sent a WhatsApp to {name} from {account} ({fromPhone}).",
       logged: "WhatsApp send logged",
       send: "Send",
     },
