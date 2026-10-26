@@ -53,7 +53,9 @@ export class CrmLeadUpdateService {
 
     if (body.name !== undefined) {
       const name = String(body.name ?? "").trim();
-      if (!name) throw new BadRequestException("name is required");
+      if (!name && current.recordType !== "cold_call") {
+        throw new BadRequestException("name is required");
+      }
       data.name = name;
     }
     if (

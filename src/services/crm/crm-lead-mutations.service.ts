@@ -279,6 +279,13 @@ export async function updateCrmLead(
     if (!existing) throw new NotFoundError("Lead not found");
     await assertLeadAccess(existing);
     const parsed = updateLeadSchema.parse(input);
+    if (
+      parsed.name !== undefined &&
+      !parsed.name.trim() &&
+      existing.recordType !== "cold_call"
+    ) {
+      throw new ValidationError("Name is required");
+    }
     const actorId = getSessionUserId() || "system";
     const empId = actorEmployeeId();
     const { stages, subStages } = await ensureCatalog();

@@ -53,8 +53,8 @@ const activityType = z.enum([
   "other",
 ]);
 
-export const createLeadSchema = z.object({
-  name: z.string().trim().min(1, "Name is required"),
+const leadWritableFields = z.object({
+  name: z.string().trim().default(""),
   phone: z.string().trim().min(1, "Contact is required"),
   contactKind: z
     .enum([
@@ -106,7 +106,18 @@ export const createLeadSchema = z.object({
   recordType: z.enum(["lead", "cold_call"]).optional().default("lead"),
 });
 
-export const updateLeadSchema = createLeadSchema.partial().extend({
+export const createLeadSchema = leadWritableFields.superRefine((data, ctx) => {
+  // Cold calls may be created/imported with phone only.
+  if (data.recordType !== "cold_call" && !data.name.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["name"],
+      message: "Name is required",
+    });
+  }
+});
+
+export const updateLeadSchema = leadWritableFields.partial().extend({
   lossReasonTypeId: z.string().nullable().optional(),
   convertedAt: z.string().nullable().optional(),
   lastActivityAt: z.string().nullable().optional(),

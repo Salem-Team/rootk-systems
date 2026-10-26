@@ -42,13 +42,18 @@ export function useCrmLeadsImport(
     setSummary(null);
   }, []);
 
+  const nameOptional = recordType === "cold_call";
+
   const mapped = useMemo(() => {
     if (!sheet) return { rows: [] as CrmLeadCsvRow[], errors: [] as string[] };
-    if (mapping.name === undefined || mapping.phone === undefined) {
+    if (
+      mapping.phone === undefined ||
+      (!nameOptional && mapping.name === undefined)
+    ) {
       return { rows: [] as CrmLeadCsvRow[], errors: [] as string[] };
     }
-    return applyLeadColumnMapping(sheet.dataRows, mapping);
-  }, [sheet, mapping]);
+    return applyLeadColumnMapping(sheet.dataRows, mapping, { nameOptional });
+  }, [sheet, mapping, nameOptional]);
 
   const samples = useMemo(() => {
     if (!sheet) return new Map<number, string[]>();
@@ -60,7 +65,9 @@ export function useCrmLeadsImport(
   }, [sheet]);
 
   const missingRequired = CRM_LEAD_CSV_HEADERS.filter(
-    (field) => isCrmLeadRequiredField(field) && mapping[field] === undefined
+    (field) =>
+      isCrmLeadRequiredField(field, { nameOptional }) &&
+      mapping[field] === undefined
   );
 
   async function onFile(file: File | null) {
@@ -96,7 +103,9 @@ export function useCrmLeadsImport(
   async function submit() {
     const rows = mapped.rows.slice(0, MAX_IMPORT_ROWS);
     if (missingRequired.length > 0) {
-      toast.error(t("crm.import.needNamePhone"));
+      toast.error(
+        t(nameOptional ? "crm.import.needPhone" : "crm.import.needNamePhone")
+      );
       return;
     }
     if (rows.length === 0) {
@@ -140,6 +149,7 @@ export function useCrmLeadsImport(
     mapped,
     samples,
     missingRequired,
+    nameOptional,
     busy,
     summary,
     truncated: mapped.rows.length > MAX_IMPORT_ROWS,

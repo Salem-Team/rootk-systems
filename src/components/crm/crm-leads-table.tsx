@@ -186,7 +186,7 @@ export function CrmLeadsTable({
                     type="checkbox"
                     checked={selected.has(lead.id)}
                     onChange={() => onToggleOne(lead.id)}
-                    aria-label={lead.name}
+                    aria-label={lead.name.trim() || lead.phone}
                     className="mt-0.5 h-5 w-5 accent-primary"
                   />
                 </div>
@@ -194,7 +194,7 @@ export function CrmLeadsTable({
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="truncate text-[14px] font-semibold leading-snug tracking-tight">
-                        <BidiText text={lead.name} />
+                        <BidiText text={lead.name.trim() || lead.phone} />
                       </p>
                       <div
                         className="mt-1"
@@ -349,14 +349,14 @@ export function CrmLeadsTable({
                     checked={selected.has(lead.id)}
                     onChange={() => onToggleOne(lead.id)}
                     onClick={(e) => e.stopPropagation()}
-                    aria-label={lead.name}
+                    aria-label={lead.name.trim() || lead.phone}
                     className="h-3.5 w-3.5 accent-primary"
                   />
                 </DataTableCell>
                 <DataTableCell>
                   <div className="min-w-0">
                     <p className="truncate text-[13px] font-semibold">
-                      <BidiText text={lead.name} />
+                      <BidiText text={lead.name.trim() || lead.phone} />
                     </p>
                     {lead.companyName ? (
                       <p className="truncate text-[11px] text-muted-foreground">

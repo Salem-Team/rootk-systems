@@ -39,8 +39,13 @@ export interface CrmLeadCsvRow {
   notes: string;
 }
 
-export function isCrmLeadRequiredField(field: CrmLeadCsvHeader): boolean {
-  return field === "name" || field === "phone";
+export function isCrmLeadRequiredField(
+  field: CrmLeadCsvHeader,
+  opts?: { nameOptional?: boolean }
+): boolean {
+  if (field === "phone") return true;
+  if (field === "name") return !opts?.nameOptional;
+  return false;
 }
 
 const HEADER_ALIASES: Record<string, CrmLeadCsvHeader> = {
@@ -167,13 +172,19 @@ export function suggestLeadColumnMapping(
 
 export function applyLeadColumnMapping(
   dataRows: string[][],
-  mapping: Partial<Record<CrmLeadCsvHeader, number>>
+  mapping: Partial<Record<CrmLeadCsvHeader, number>>,
+  opts?: { nameOptional?: boolean }
 ): { rows: CrmLeadCsvRow[]; errors: string[] } {
   const errors: string[] = [];
-  if (mapping.name === undefined || mapping.phone === undefined) {
+  const nameOptional = Boolean(opts?.nameOptional);
+  if (mapping.phone === undefined || (!nameOptional && mapping.name === undefined)) {
     return {
       rows: [],
-      errors: ["Spreadsheet must map name and phone columns"],
+      errors: [
+        nameOptional
+          ? "Spreadsheet must map a phone column"
+          : "Spreadsheet must map name and phone columns",
+      ],
     };
   }
 
@@ -188,7 +199,11 @@ export function applyLeadColumnMapping(
     const name = read("name");
     const phone = read("phone");
     if (!name && !phone) return;
-    if (!name || !phone) {
+    if (!phone) {
+      errors.push(`Row ${rowNum}: phone is required`);
+      return;
+    }
+    if (!nameOptional && !name) {
       errors.push(`Row ${rowNum}: name and phone are required`);
       return;
     }

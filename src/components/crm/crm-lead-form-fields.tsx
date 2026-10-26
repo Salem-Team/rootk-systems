@@ -78,6 +78,8 @@ interface CrmLeadFormFieldsProps {
   onBudgetChange: (v: string) => void;
   notes: string;
   onNotesChange: (v: string) => void;
+  /** Cold-call create/edit: name is optional; phone alone is enough. */
+  nameOptional?: boolean;
 }
 
 /** All input fields for the CRM lead create/edit form. */
@@ -124,18 +126,26 @@ export function CrmLeadFormFields({
   onBudgetChange,
   notes,
   onNotesChange,
+  nameOptional = false,
 }: CrmLeadFormFieldsProps) {
   const { t } = useTranslation();
 
   return (
     <>
       <div className="grid gap-1.5">
-        <Label htmlFor="crm-lead-name">{t("crm.leadForm.name")}</Label>
+        <Label htmlFor="crm-lead-name">
+          {t("crm.leadForm.name")}
+          {nameOptional ? (
+            <span className="ms-1 font-normal text-muted-foreground">
+              ({t("crm.leadForm.nameOptional")})
+            </span>
+          ) : null}
+        </Label>
         <Input
           id="crm-lead-name"
           value={name}
           onChange={(e) => onNameChange(e.target.value)}
-          autoFocus
+          autoFocus={!nameOptional}
           className="h-11 w-full min-w-0 text-base sm:h-9 sm:text-sm"
         />
       </div>

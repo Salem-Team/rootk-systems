@@ -44,6 +44,8 @@ interface CrmLeadsColumnMappingProps {
   onChange: (field: CrmLeadCsvHeader, columnIndex: number | undefined) => void;
   /** Put required fields first and highlight them (cold-call import). */
   emphasizeRequired?: boolean;
+  /** Cold-call import: name column is optional; phone alone is enough. */
+  nameOptional?: boolean;
   /** Keep the sample column visible on small screens. */
   alwaysShowSample?: boolean;
 }
@@ -55,13 +57,19 @@ export function CrmLeadsColumnMapping({
   samples,
   onChange,
   emphasizeRequired = false,
+  nameOptional = false,
   alwaysShowSample = false,
 }: CrmLeadsColumnMappingProps) {
   const { t } = useTranslation();
+  const requiredOpts = { nameOptional };
   const fields = emphasizeRequired
     ? [
-        ...CRM_LEAD_CSV_HEADERS.filter((f) => isCrmLeadRequiredField(f)),
-        ...CRM_LEAD_CSV_HEADERS.filter((f) => !isCrmLeadRequiredField(f)),
+        ...CRM_LEAD_CSV_HEADERS.filter((f) =>
+          isCrmLeadRequiredField(f, requiredOpts)
+        ),
+        ...CRM_LEAD_CSV_HEADERS.filter(
+          (f) => !isCrmLeadRequiredField(f, requiredOpts)
+        ),
       ]
     : [...CRM_LEAD_CSV_HEADERS];
 
@@ -69,7 +77,7 @@ export function CrmLeadsColumnMapping({
     <div className="max-h-[min(22rem,50vh)] overflow-auto overscroll-contain rounded-xl border border-border/60">
       <ul className="divide-y divide-border/45">
         {fields.map((field) => {
-          const required = isCrmLeadRequiredField(field);
+          const required = isCrmLeadRequiredField(field, requiredOpts);
           const selected = mapping[field];
           const sample =
             selected === undefined ? [] : (samples.get(selected) ?? []);

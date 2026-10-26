@@ -42,12 +42,15 @@ export class CrmLeadCreateService {
     assertCap(actor, "create");
     await this.shared.ensureDefaultStages(companyId);
 
-    const name = String(body.name ?? "").trim();
-    if (!name) throw new BadRequestException("name is required");
     const recordType =
       body.recordType === "cold_call"
         ? CrmRecordType.cold_call
         : CrmRecordType.lead;
+    const name = String(body.name ?? "").trim();
+    // Cold-call lists are often phone-only; name stays required for pipeline leads.
+    if (!name && recordType !== CrmRecordType.cold_call) {
+      throw new BadRequestException("name is required");
+    }
     const { primary, extras } = resolveIncomingContactList(body);
     const { phone, phoneNormalized } = primary;
     const ownerIds = await this.shared.resolveOwnerIds(companyId, actor);

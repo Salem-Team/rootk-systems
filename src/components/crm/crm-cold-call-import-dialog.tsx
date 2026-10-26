@@ -225,7 +225,7 @@ export function CrmColdCallImportDialog({
 
               {importer.missingRequired.length > 0 ? (
                 <p className="rounded-xl bg-amber-500/[0.12] px-3.5 py-2.5 text-[12px] leading-relaxed text-amber-950 dark:text-amber-100">
-                  {t("crm.import.needNamePhone")}
+                  {t("crm.import.needPhone")}
                 </p>
               ) : null}
 
@@ -239,6 +239,7 @@ export function CrmColdCallImportDialog({
                   samples={importer.samples}
                   onChange={importer.setFieldColumn}
                   emphasizeRequired
+                  nameOptional
                   alwaysShowSample
                 />
               </div>
@@ -282,7 +283,9 @@ export function CrmColdCallImportDialog({
                             key={`${row.phone}-${idx}`}
                             className="border-t border-border/50"
                           >
-                            <td className="px-3 py-2">{row.name}</td>
+                            <td className="px-3 py-2">
+                              {row.name.trim() || t("crm.contacts.unnamed")}
+                            </td>
                             <td className="px-3 py-2 font-mono tabular-nums">
                               <LtrNum>{row.phone}</LtrNum>
                             </td>

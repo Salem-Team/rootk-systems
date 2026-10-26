@@ -136,6 +136,7 @@ export function CrmLeadFormSheet({
                 onBudgetChange={form.setBudget}
                 notes={form.notes}
                 onNotesChange={form.setNotes}
+                nameOptional={isCold}
               />
             </div>
           </div>
