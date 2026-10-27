@@ -3,14 +3,24 @@ import { getWorkforceEmployees } from "@/services/employees.service";
 import { getWorkMeetings, getWorkTasks } from "@/services/work.service";
 import { WORK_UPDATED_EVENT } from "@/lib/events";
 import {
+  computeTaskListFacets,
+  filterWorkTasks,
+  hasActiveTaskListFilters,
+  type TaskListFilters,
+} from "@/lib/work/task-list-filters";
+import {
   meetingWhen,
   openTaskCount,
-  sortTasksNewestFirst,
   taskDueBucket,
 } from "@/lib/work-utils";
 import type { Employee } from "@/types";
 import type { WorkMeeting, WorkTask } from "@/types/work";
-import type { MeetingFilter, PanelTab, TaskFilter } from "@/components/work/admin-work-panel-types";
+import type {
+  MeetingFilter,
+  PanelTab,
+  TaskFilter,
+  TaskPriorityFilter,
+} from "@/components/work/admin-work-panel-types";
 
 /** Loads admin work data (tasks/meetings/employees) and derives filtered views. */
 export function useAdminWorkPanelData() {
@@ -22,6 +32,8 @@ export function useAdminWorkPanelData() {
 
   const [query, setQuery] = useState("");
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("all");
+  const [priorityFilter, setPriorityFilter] =
+    useState<TaskPriorityFilter>("all");
   const [assigneeFilter, setAssigneeFilter] = useState("");
   const [meetingFilter, setMeetingFilter] = useState<MeetingFilter>("all");
 
@@ -91,33 +103,37 @@ export function useAdminWorkPanelData() {
     };
   }, [tasks, meetings]);
 
-  const filteredTasks = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const filtered = tasks.filter((task) => {
-      if (assigneeFilter && !task.assigneeIds.includes(assigneeFilter)) {
-        return false;
-      }
-      if (taskFilter === "overdue") {
-        if (taskDueBucket(task.dueDate, task.status) !== "overdue") return false;
-      } else if (taskFilter === "open") {
-        if (task.status === "completed") return false;
-      } else if (taskFilter !== "all" && task.status !== taskFilter) {
-        return false;
-      }
-      if (!q) return true;
-      const names = task.assigneeIds
-        .map((id) => employeeMap.get(id)?.name ?? "")
-        .join(" ")
-        .toLowerCase();
-      return (
-        task.title.toLowerCase().includes(q) ||
-        task.description.toLowerCase().includes(q) ||
-        task.tag.toLowerCase().includes(q) ||
-        names.includes(q)
-      );
-    });
-    return sortTasksNewestFirst(filtered);
-  }, [tasks, taskFilter, assigneeFilter, query, employeeMap]);
+  const taskListFilters = useMemo<TaskListFilters>(
+    () => ({
+      query,
+      status: taskFilter,
+      priority: priorityFilter,
+      assigneeId: assigneeFilter,
+    }),
+    [query, taskFilter, priorityFilter, assigneeFilter]
+  );
+
+  const filteredTasks = useMemo(
+    () => filterWorkTasks(tasks, taskListFilters, employeeMap),
+    [tasks, taskListFilters, employeeMap]
+  );
+
+  const taskFacets = useMemo(
+    () => computeTaskListFacets(tasks, taskListFilters, employeeMap),
+    [tasks, taskListFilters, employeeMap]
+  );
+
+  const hasActiveTaskFilters = useMemo(
+    () => hasActiveTaskListFilters(taskListFilters),
+    [taskListFilters]
+  );
+
+  const clearTaskFilters = useCallback(() => {
+    setQuery("");
+    setTaskFilter("all");
+    setPriorityFilter("all");
+    setAssigneeFilter("");
+  }, []);
 
   const assigneeOptions = useMemo(() => {
     const counts = new Map<string, number>();
@@ -170,12 +186,17 @@ export function useAdminWorkPanelData() {
     setQuery,
     taskFilter,
     setTaskFilter,
+    priorityFilter,
+    setPriorityFilter,
     assigneeFilter,
     setAssigneeFilter,
     meetingFilter,
     setMeetingFilter,
     stats,
     filteredTasks,
+    taskFacets,
+    hasActiveTaskFilters,
+    clearTaskFilters,
     assigneeOptions,
     assigneeFilterName,
     filteredMeetings,

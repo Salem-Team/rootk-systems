@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +12,10 @@ import {
 } from "@/components/ui/dialog";
 import { LtrNum } from "@/components/shared/ltr-num";
 import { useTranslation } from "@/hooks/use-translation";
-import { openWhatsappChat } from "@/lib/crm/open-whatsapp";
+import {
+  buildWhatsappOpenUrl,
+  resolveWhatsappPlatform,
+} from "@/lib/crm/open-whatsapp";
 import {
   readLastWhatsappAccountId,
   writeLastWhatsappAccountId,
@@ -60,7 +62,6 @@ export function CrmWhatsappSendDialog({
   const [missingEmployee, setMissingEmployee] = useState(false);
   const [accounts, setAccounts] = useState<WhatsappAccount[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -97,47 +98,55 @@ export function CrmWhatsappSendDialog({
     [accounts, selectedId]
   );
 
-  function sendFromSelected() {
-    if (!selected) return;
+  const platform = useMemo(() => resolveWhatsappPlatform(), [open]);
+
+  const chatHref = useMemo(() => {
+    if (!selected) return "";
     const app = normalizeWhatsappClientApp(selected.app);
-    // Open first while still inside the user gesture — async logging must not
-    // run before navigation or mobile browsers / WebViews block the handoff.
-    const opened = openWhatsappChat(targetPhone, app, {
-      fallbackHref: targetHref,
-    });
-    if (!opened.ok) {
-      toast.error(
-        opened.reason === "invalid_phone"
-          ? t("crm.whatsappSend.invalidPhone")
-          : t("crm.whatsappSend.openFailed")
-      );
+    return (
+      buildWhatsappOpenUrl(targetPhone, app, { platform }) ||
+      targetHref.trim() ||
+      ""
+    );
+  }, [platform, selected, targetHref, targetPhone]);
+
+  const isDeepLink =
+    chatHref.startsWith("intent:") ||
+    chatHref.startsWith("whatsapp:") ||
+    chatHref.startsWith("whatsapp-business:");
+
+  function onOpenChat() {
+    if (!selected || !chatHref) {
+      toast.error(t("crm.whatsappSend.invalidPhone"));
       return;
     }
-
     writeLastWhatsappAccountId(selected.id);
-    onOpenChange(false);
 
-    if (!leadId) return;
-    setBusy(true);
-    const name = leadName?.trim() || displayWhatsappPhone(targetPhone);
-    const fromPhone = displayWhatsappPhone(selected.phone);
-    void addCrmLeadActivity(leadId, {
-      type: "whatsapp",
-      title: t("crm.whatsappSend.loggedTitle", { account: selected.label }),
-      description: t("crm.whatsappSend.loggedDetail", {
-        account: selected.label,
-        fromPhone,
-        name,
-      }),
-    })
-      .then((res) => {
+    // Log in the background — never await before the browser follows the <a href>.
+    if (leadId) {
+      const name = leadName?.trim() || displayWhatsappPhone(targetPhone);
+      const fromPhone = displayWhatsappPhone(selected.phone);
+      void addCrmLeadActivity(leadId, {
+        type: "whatsapp",
+        title: t("crm.whatsappSend.loggedTitle", { account: selected.label }),
+        description: t("crm.whatsappSend.loggedDetail", {
+          account: selected.label,
+          fromPhone,
+          name,
+        }),
+      }).then((res) => {
         if (!res.success) {
           toast.error(res.message ?? t("common.error"));
           return;
         }
         toast.success(t("crm.whatsappSend.logged"));
-      })
-      .finally(() => setBusy(false));
+      });
+    }
+
+    // Deep links leave this document; closing the dialog first can cancel them.
+    if (!isDeepLink) {
+      window.setTimeout(() => onOpenChange(false), 150);
+    }
   }
 
   return (
@@ -167,10 +176,9 @@ export function CrmWhatsappSendDialog({
                   <li key={account.id}>
                     <button
                       type="button"
-                      disabled={busy}
                       aria-pressed={active}
                       className={cn(
-                        "flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-start transition-colors disabled:opacity-60",
+                        "flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-start transition-colors",
                         active
                           ? "border-emerald-500/55 bg-emerald-500/10"
                           : "border-border/70 bg-card hover:bg-muted/40"
@@ -210,17 +218,40 @@ export function CrmWhatsappSendDialog({
               })}
             </ul>
 
-            <Button
-              type="button"
-              className="h-12 w-full rounded-xl bg-emerald-600 text-white hover:bg-emerald-600/90"
-              disabled={!selected || busy}
-              onClick={sendFromSelected}
+            {selected ? (
+              <div className="rounded-xl border border-border/60 bg-muted/20 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
+                {t("crm.whatsappSend.sendingAs", {
+                  label: selected.label,
+                  phone: displayWhatsappPhone(selected.phone),
+                  app: t(
+                    normalizeWhatsappClientApp(selected.app) === "business"
+                      ? "crm.whatsappSend.appBusiness"
+                      : "crm.whatsappSend.appPersonal"
+                  ),
+                })}
+              </div>
+            ) : null}
+
+            {/* Real <a href> so the browser treats this as a user navigation — not a blocked popup. */}
+            <a
+              href={chatHref || undefined}
+              aria-disabled={!chatHref}
+              className={cn(
+                "inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 text-sm font-semibold text-white transition-colors hover:bg-emerald-600/90",
+                !chatHref && "pointer-events-none opacity-50"
+              )}
+              {...(isDeepLink
+                ? {}
+                : { target: "_blank", rel: "noopener noreferrer" })}
+              onClick={onOpenChat}
             >
               <MessageCircle className="h-4 w-4" aria-hidden />
               {t("crm.whatsappSend.openChat")}
-            </Button>
+            </a>
             <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
-              {t("crm.whatsappSend.openHint")}
+              {platform === "web"
+                ? t("crm.whatsappSend.openHintDesktop")
+                : t("crm.whatsappSend.openHint")}
             </p>
           </div>
         )}

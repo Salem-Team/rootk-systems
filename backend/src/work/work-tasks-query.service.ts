@@ -4,6 +4,10 @@ import { PrismaService } from "../prisma/prisma.service";
 import { mapTask, type Actor } from "./work-mappers";
 import { listDirectReportIds } from "../lib/team";
 import { workTaskListScope } from "./work-access";
+import {
+  actorCanSeeWorkTask,
+  workTaskVisibilityOr,
+} from "./work-task-visibility";
 
 export type { Actor };
 
@@ -27,40 +31,43 @@ export class WorkTasksQueryService {
     if (filters.status) where.status = filters.status as TaskStatus;
     if (filters.priority) where.priority = filters.priority as TaskPriority;
     if (filters.origin) where.origin = filters.origin as WorkOrigin;
+
     const scope = workTaskListScope(actor);
-    const teamView =
-      actor.role === "employee" &&
-      (filters.team === "true" || (scope === "managed" && !filters.employeeId));
-    if (teamView) {
-      const reportIds = await listDirectReportIds(
-        this.prisma,
-        companyId,
-        actor.employeeId
-      );
-      const visibleIds = [actor.employeeId, ...reportIds].filter(Boolean);
-      const createdByIds = [actor.userId, actor.employeeId].filter(
-        (id, index, arr) => Boolean(id) && arr.indexOf(id) === index
-      );
-      where.OR = [
-        ...(visibleIds.length > 0
-          ? [{ assigneeIds: { hasSome: visibleIds } }]
-          : []),
-        ...createdByIds.map((id) => ({ createdBy: id })),
-      ];
-      if (!where.OR.length) return [];
-    } else {
-      const employeeId =
-        actor.role === "employee" && scope === "own"
-          ? actor.employeeId
-          : filters.employeeId;
-      if (employeeId) where.assigneeIds = { has: employeeId };
+    const visibilityOr = await workTaskVisibilityOr(
+      this.prisma,
+      companyId,
+      actor,
+      scope
+    );
+
+    // Optional narrow-to-one employee — still must stay inside visibility.
+    const requestedEmployeeId = filters.employeeId?.trim() || "";
+    if (requestedEmployeeId) {
+      if (visibilityOr === null) {
+        where.assigneeIds = { has: requestedEmployeeId };
+      } else {
+        where.AND = [
+          { OR: visibilityOr },
+          { assigneeIds: { has: requestedEmployeeId } },
+        ];
+      }
+    } else if (visibilityOr) {
+      if (visibilityOr.length === 0) return [];
+      where.OR = visibilityOr;
     }
+
     const rows = await this.prisma.workTask.findMany({
       where,
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
+
+    const revealAssignees =
+      scope !== "own" ||
+      Boolean(filters.team === "true") ||
+      visibilityOr === null;
+
     return rows.map((row) =>
-      mapTask(row, actor, { revealAssignees: teamView })
+      mapTask(row, actor, { revealAssignees })
     );
   }
 
@@ -69,23 +76,20 @@ export class WorkTasksQueryService {
       where: { id, companyId, deletedAt: null },
     });
     if (!row) return null;
-    if (actor.role !== "employee") return mapTask(row, actor);
+
+    const allowed = await actorCanSeeWorkTask(
+      this.prisma,
+      companyId,
+      actor,
+      row
+    );
+    if (!allowed) return null;
+
     const scope = workTaskListScope(actor);
-    if (scope === "all") {
-      return mapTask(row, actor, { revealAssignees: true });
-    }
-    const reportIds = actor.employeeId
-      ? await listDirectReportIds(this.prisma, companyId, actor.employeeId)
-      : [];
-    const visible = new Set(
-      [actor.employeeId, ...reportIds].filter(Boolean)
-    );
-    const visibleCreated = [actor.userId, actor.employeeId];
-    const onTeam = row.assigneeIds.some((id) => visible.has(id));
-    const createdByMe = Boolean(
-      row.createdBy && visibleCreated.includes(row.createdBy)
-    );
-    if (!onTeam && !createdByMe) return null;
+    const reportIds =
+      scope !== "all" && actor.employeeId
+        ? await listDirectReportIds(this.prisma, companyId, actor.employeeId)
+        : [];
     const supervisingReport = row.assigneeIds.some((id) =>
       reportIds.includes(id)
     );

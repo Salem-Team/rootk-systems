@@ -129,11 +129,14 @@ export function AdminWorkAssignPanel() {
             data.setTab("meetings");
             data.setMeetingFilter("today");
             data.setTaskFilter("all");
+            data.setPriorityFilter("all");
+            data.setAssigneeFilter("");
             data.setQuery("");
           } else {
             data.setTab("tasks");
             data.setTaskFilter(filter);
             data.setMeetingFilter("all");
+            data.setPriorityFilter("all");
             data.setQuery("");
           }
           window.requestAnimationFrame(() => {
@@ -179,12 +182,18 @@ export function AdminWorkAssignPanel() {
           setQuery={data.setQuery}
           taskFilter={data.taskFilter}
           setTaskFilter={data.setTaskFilter}
+          priorityFilter={data.priorityFilter}
+          setPriorityFilter={data.setPriorityFilter}
           meetingFilter={data.meetingFilter}
           setMeetingFilter={data.setMeetingFilter}
           assigneeFilter={data.assigneeFilter}
           setAssigneeFilter={data.setAssigneeFilter}
           assigneeOptions={data.assigneeOptions}
           assigneeFilterName={data.assigneeFilterName}
+          facets={data.taskFacets}
+          resultCount={data.filteredTasks.length}
+          hasActiveFilters={data.hasActiveTaskFilters}
+          onClearFilters={data.clearTaskFilters}
         />
         )}
 
@@ -201,6 +210,10 @@ export function AdminWorkAssignPanel() {
               forms.setDeleteTarget({ kind: "task", id: task.id, title: task.title })
             }
             onCreateTask={forms.openCreateTask}
+            filteredEmpty={
+              data.hasActiveTaskFilters && data.filteredTasks.length === 0
+            }
+            onClearFilters={data.clearTaskFilters}
           />
         </TabsContent>
 

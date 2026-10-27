@@ -16,6 +16,8 @@ export function AdminWorkTaskList({
   onEdit,
   onDeleteRequest,
   onCreateTask,
+  filteredEmpty = false,
+  onClearFilters,
 }: {
   tasks: WorkTask[];
   employeeMap: Map<string, Employee>;
@@ -26,6 +28,9 @@ export function AdminWorkTaskList({
   onEdit: (task: WorkTask) => void;
   onDeleteRequest: (task: WorkTask) => void;
   onCreateTask: () => void;
+  /** True when filters/search are active but no rows match. */
+  filteredEmpty?: boolean;
+  onClearFilters?: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -34,20 +39,40 @@ export function AdminWorkTaskList({
       <div className="rounded-2xl border border-dashed border-border/80 px-4 py-12 text-center sm:py-14">
         <ListTodo className="mx-auto h-8 w-8 text-muted-foreground/50" />
         <p className="mt-3 text-sm font-medium text-foreground">
-          {t("workAdmin.emptyTasks")}
+          {t(
+            filteredEmpty
+              ? "workAdmin.emptyFilteredTasks"
+              : "workAdmin.emptyTasks"
+          )}
         </p>
         <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-          {t("workAdmin.emptyTasksHint")}
+          {t(
+            filteredEmpty
+              ? "workAdmin.emptyFilteredTasksHint"
+              : "workAdmin.emptyTasksHint"
+          )}
         </p>
-        <Button
-          type="button"
-          className="mt-4 h-11 w-full max-w-xs touch-manipulation rounded-xl sm:h-9 sm:w-auto sm:rounded-lg"
-          size="sm"
-          onClick={onCreateTask}
-        >
-          <Plus className="h-4 w-4" />
-          {t("workAdmin.addTask")}
-        </Button>
+        {filteredEmpty && onClearFilters ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-4 h-11 w-full max-w-xs touch-manipulation rounded-xl sm:h-9 sm:w-auto sm:rounded-lg"
+            size="sm"
+            onClick={onClearFilters}
+          >
+            {t("workAdmin.clearFilters")}
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            className="mt-4 h-11 w-full max-w-xs touch-manipulation rounded-xl sm:h-9 sm:w-auto sm:rounded-lg"
+            size="sm"
+            onClick={onCreateTask}
+          >
+            <Plus className="h-4 w-4" />
+            {t("workAdmin.addTask")}
+          </Button>
+        )}
       </div>
     );
   }

@@ -4,8 +4,14 @@ import { mediaItemsToDrafts } from "@/lib/task-media";
 import { todayIsoDate } from "@/lib/work-utils";
 import type { TaskPriority, TaskStatus, WorkMeeting, WorkTask } from "@/types/work";
 
+import type {
+  TaskListPriorityFilter,
+  TaskListStatusFilter,
+} from "@/lib/work/task-list-filters";
+
 export type PanelTab = "tasks" | "meetings" | "projects";
-export type TaskFilter = "all" | "open" | TaskStatus | "overdue";
+export type TaskFilter = TaskListStatusFilter;
+export type TaskPriorityFilter = TaskListPriorityFilter;
 export type MeetingFilter = "all" | "today" | "upcoming" | "past";
 
 /** KPI chips on the admin work hero that drive list filters. */

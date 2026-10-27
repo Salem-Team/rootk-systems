@@ -112,16 +112,19 @@ function canSeeTeamWork(): boolean {
 
 export type WorkTaskListScope = "all" | "managed" | "own";
 
-/** Who the current actor may list besides tasks assigned to them. */
+/**
+ * Who the current actor may list besides tasks assigned to them.
+ * Company-wide requires `tasks.viewAll` (or admin). Team leads see reports + own + led projects.
+ */
 export function workTaskListScope(): WorkTaskListScope {
   const permissions = getSessionPermissions();
   const role = getSessionRole();
   if (role === AppRole.admin) return "all";
   if (hasPermissionId("tasks.viewAll", permissions, role)) return "all";
-  if (hasPermissionId("team.viewAll", permissions, role)) return "all";
   if (
     hasPermissionId("tasks.viewTeam", permissions, role) ||
-    hasPermissionId("tasks.assign", permissions, role)
+    hasPermissionId("tasks.assign", permissions, role) ||
+    hasPermissionId("tasks.editTeam", permissions, role)
   ) {
     return "managed";
   }

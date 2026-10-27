@@ -12,8 +12,6 @@ import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { auditFields } from "../common/mappers";
 import { AppRole } from "../common/roles";
-import { listDirectReportIds } from "../lib/team";
-import { workTaskListScope } from "./work-access";
 import type { Actor } from "./work-mappers";
 import {
   assertVoicePayload,
@@ -88,25 +86,15 @@ export class WorkTaskCommentsService {
       where: { id: taskId, companyId, deletedAt: null },
     });
     if (!task) throw new NotFoundException("Task not found");
-    if (actor.role === AppRole.admin) return task;
-    const scope = workTaskListScope(actor);
-    if (scope === "all") return task;
-    if (task.assigneeIds.includes(actor.employeeId)) return task;
-    if (
-      task.createdBy === actor.userId ||
-      task.createdBy === actor.employeeId
-    ) {
-      return task;
-    }
-    if (actor.employeeId) {
-      const reports = await listDirectReportIds(
-        this.prisma,
-        companyId,
-        actor.employeeId
-      );
-      if (task.assigneeIds.some((id) => reports.includes(id))) return task;
-    }
-    throw new ForbiddenException("You cannot view this task");
+    const { actorCanSeeWorkTask } = await import("./work-task-visibility");
+    const allowed = await actorCanSeeWorkTask(
+      this.prisma,
+      companyId,
+      actor,
+      task
+    );
+    if (!allowed) throw new ForbiddenException("You cannot view this task");
+    return task;
   }
 
   async listComments(companyId: string, actor: Actor, taskId: string) {
