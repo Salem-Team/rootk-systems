@@ -1134,7 +1134,7 @@ export const en = {
     personalInfo: "Personal information",
     whatsappAccounts: "WhatsApp accounts",
     whatsappAccountsDesc:
-      "Add the salesperson’s WhatsApp number and whether it lives in WhatsApp or WhatsApp Business. Messaging a lead opens the matching app on their device.",
+      "Add the salesperson’s personal WhatsApp number and mark whether it lives in WhatsApp or WhatsApp Business. Keep the company line on the other app so outbound chats open from the salesperson’s number.",
     whatsappLabel: "Name",
     whatsappLabelPlaceholder: "Sales line",
     whatsappPhone: "Number",
@@ -3772,7 +3772,7 @@ export const en = {
     whatsappSend: {
       title: "Send from your number",
       description:
-        "Pick your registered number. We open WhatsApp (or WhatsApp Business) on this device and jump straight into the customer chat.",
+        "Pick the number on your profile. We open the matching WhatsApp app and jump into the customer chat — not the company line.",
       empty:
         "No WhatsApp number on your profile. Ask admin to add it on the employee file and mark WhatsApp vs Business.",
       missingEmployee: "Your login is not linked to an employee profile.",
@@ -3782,10 +3782,14 @@ export const en = {
       openChat: "Open WhatsApp with my number",
       sendingAs: "Opens {app} as {label} ({phone}) into the customer chat.",
       openHint:
-        "If the company line is in WhatsApp Business and yours is in WhatsApp, set the profile number to the matching app.",
+        "To send from your number: keep your line in WhatsApp and the company line in WhatsApp Business (or the reverse), and set the matching app on your profile.",
+      openHintNative:
+        "On Android the app forces your WhatsApp/Business package — the OS will not quietly pick the company Business install.",
       openHintDesktop:
-        "On mobile we open WhatsApp or Business from your profile setting. On desktop, WhatsApp Web uses whichever account is signed in.",
+        "On mobile we open the app tied to your number. On desktop, WhatsApp Web uses whichever account is signed in on this device.",
       openFailed: "Couldn’t open WhatsApp. Try again or open WhatsApp manually.",
+      notInstalled:
+        "The required WhatsApp app isn’t installed. Install WhatsApp or WhatsApp Business to match your profile setting.",
       invalidPhone: "This customer number can’t open WhatsApp.",
       loggedTitle: "Sent WhatsApp via {account}",
       loggedDetail: "Sent a WhatsApp to {name} from {account} ({fromPhone}).",

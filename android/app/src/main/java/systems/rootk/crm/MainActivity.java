@@ -8,6 +8,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(RootkCallInsightPlugin.class);
+        registerPlugin(RootkWhatsappPlugin.class);
         super.onCreate(savedInstanceState);
         IncomingCallBus.noteLaunch(getIntent());
     }

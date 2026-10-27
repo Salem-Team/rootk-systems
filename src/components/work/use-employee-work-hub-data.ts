@@ -11,10 +11,20 @@ import {
   getWorkTasks,
 } from "@/services/work.service";
 import { WORK_UPDATED_EVENT } from "@/lib/events";
-import { meetingWhen, sortTasksNewestFirst, taskDueBucket } from "@/lib/work-utils";
+import {
+  computeTaskListFacets,
+  filterWorkTasks,
+  hasActiveTaskListFilters,
+  type TaskListFilters,
+} from "@/lib/work/task-list-filters";
+import { meetingWhen, taskDueBucket } from "@/lib/work-utils";
 import type { Employee } from "@/types";
-import type { TaskStatus, WorkMeeting, WorkTask } from "@/types/work";
+import type { WorkMeeting, WorkTask } from "@/types/work";
 import type { OriginFilter, WorkTab } from "@/components/work/employee-work-hub-types";
+import type {
+  TaskFilter,
+  TaskPriorityFilter,
+} from "@/components/work/admin-work-panel-types";
 
 /** Loads employee work data (tasks/meetings/employees/checklist) and derives tab/detail views. */
 export function useEmployeeWorkHubData(workEmployeeId: string) {
@@ -29,7 +39,11 @@ export function useEmployeeWorkHubData(workEmployeeId: string) {
   const [loading, setLoading] = useState(true);
 
   const [tab, setTab] = useState<WorkTab>("tasks");
-  const [filter, setFilter] = useState<TaskStatus | "all">("all");
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<TaskFilter>("all");
+  const [priorityFilter, setPriorityFilter] =
+    useState<TaskPriorityFilter>("all");
+  const [assigneeFilter, setAssigneeFilter] = useState("");
   const [originFilter, setOriginFilter] = useState<OriginFilter>("all");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
@@ -138,13 +152,63 @@ export function useEmployeeWorkHubData(workEmployeeId: string) {
     meetings[0] ??
     null;
 
-  const visibleTasks = useMemo(() => {
-    let list = filter === "all" ? tasks : tasks.filter((x) => x.status === filter);
-    if (originFilter !== "all") {
-      list = list.filter((x) => (x.origin ?? "assigned") === originFilter);
+  const originScopedTasks = useMemo(() => {
+    if (originFilter === "all") return tasks;
+    return tasks.filter((x) => (x.origin ?? "assigned") === originFilter);
+  }, [tasks, originFilter]);
+
+  const taskListFilters = useMemo<TaskListFilters>(
+    () => ({
+      query,
+      status: filter,
+      priority: priorityFilter,
+      assigneeId: assigneeFilter,
+    }),
+    [query, filter, priorityFilter, assigneeFilter]
+  );
+
+  const visibleTasks = useMemo(
+    () => filterWorkTasks(originScopedTasks, taskListFilters, employeeMap),
+    [originScopedTasks, taskListFilters, employeeMap]
+  );
+
+  const taskFacets = useMemo(
+    () =>
+      computeTaskListFacets(originScopedTasks, taskListFilters, employeeMap),
+    [originScopedTasks, taskListFilters, employeeMap]
+  );
+
+  const hasActiveTaskFilters = useMemo(
+    () => hasActiveTaskListFilters(taskListFilters),
+    [taskListFilters]
+  );
+
+  const clearTaskFilters = useCallback(() => {
+    setQuery("");
+    setFilter("all");
+    setPriorityFilter("all");
+    setAssigneeFilter("");
+  }, []);
+
+  const assigneeOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const task of originScopedTasks) {
+      for (const id of task.assigneeIds) {
+        counts.set(id, (counts.get(id) ?? 0) + 1);
+      }
     }
-    return sortTasksNewestFirst(list);
-  }, [tasks, filter, originFilter]);
+    return [...counts.entries()]
+      .map(([id, count]) => ({
+        id,
+        count,
+        name: employeeMap.get(id)?.name ?? id,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [originScopedTasks, employeeMap]);
+
+  const assigneeFilterName = assigneeFilter
+    ? employeeMap.get(assigneeFilter)?.name ?? assigneeFilter
+    : "";
 
   const filteredTodayMeetings = useMemo(() => {
     if (originFilter === "all") return todayMeetings;
@@ -177,8 +241,19 @@ export function useEmployeeWorkHubData(workEmployeeId: string) {
   return {
     tab,
     setTab,
+    query,
+    setQuery,
     filter,
     setFilter,
+    priorityFilter,
+    setPriorityFilter,
+    assigneeFilter,
+    setAssigneeFilter,
+    assigneeOptions,
+    assigneeFilterName,
+    taskFacets,
+    hasActiveTaskFilters,
+    clearTaskFilters,
     originFilter,
     setOriginFilter,
     tasks,

@@ -58,6 +58,10 @@ assert(
   personalAndroid.includes("S.browser_fallback_url="),
   "android intent needs browser fallback"
 );
+assert(
+  personalAndroid.includes("api.whatsapp.com"),
+  "android fallback must use api.whatsapp.com (not bare wa.me chooser)"
+);
 
 const businessAndroid = buildWhatsappOpenUrl(CUSTOMER, "business", {
   platform: "android",
@@ -102,6 +106,10 @@ assert(
   !businessAndroid.startsWith("https://wa.me/"),
   "android business must not be bare wa.me"
 );
+assert(
+  !personalAndroid.includes("wa.me/"),
+  "android personal fallback must not use wa.me"
+);
 
 console.log("verify-whatsapp-open: OK");
 console.log("  android personal →", personalAndroid.slice(0, 72) + "…");
@@ -109,3 +117,4 @@ console.log("  android business →", businessAndroid.slice(0, 72) + "…");
 console.log("  ios personal     →", personalIos);
 console.log("  ios business     →", businessIos);
 console.log("  desktop          →", desktop);
+console.log("  native plugin    → RootkWhatsapp (Android Intent.setPackage)");

@@ -1,12 +1,16 @@
 import { isNativeApp, nativePlatform } from "@/lib/native/platform";
+import {
+  canUseNativeWhatsappOpen,
+  openNativeWhatsappChat,
+} from "@/lib/native/whatsapp";
 import { normalizePhone } from "@/lib/phone-normalize";
 import type { WhatsappClientApp } from "@/lib/whatsapp-accounts";
 
 export type OpenWhatsappPlatform = "android" | "ios" | "web";
 
 export type OpenWhatsappResult =
-  | { ok: true; url: string }
-  | { ok: false; reason: "invalid_phone" | "blocked" };
+  | { ok: true; url: string; via: "native" | "deeplink" | "web" }
+  | { ok: false; reason: "invalid_phone" | "blocked" | "not_installed" };
 
 /** Digits-only international number for WhatsApp deep links (no +). */
 export function whatsappDigits(phone: string): string | null {
@@ -59,10 +63,12 @@ export function buildWhatsappOpenUrl(
     const pkg = androidPackage(app);
     const fallback = encodeURIComponent(
       text
-        ? `https://wa.me/${digits}?text=${encodeURIComponent(text)}`
-        : `https://wa.me/${digits}`
+        ? `https://api.whatsapp.com/send?phone=${digits}&text=${encodeURIComponent(text)}`
+        : `https://api.whatsapp.com/send?phone=${digits}`
     );
     // Forces the chosen package when both WhatsApp apps are installed.
+    // Prefer api.whatsapp.com in the fallback so Chrome still targets chat,
+    // never a bare chooser that prefers company Business.
     return `intent://send/?phone=${digits}${textQuery}#Intent;scheme=whatsapp;package=${pkg};S.browser_fallback_url=${fallback};end`;
   }
 
@@ -120,17 +126,57 @@ export function navigateExternal(url: string): boolean {
   }
 }
 
-/** Open WhatsApp chat with the customer using the salesperson’s chosen app. */
-export function openWhatsappChat(
+/**
+ * Open WhatsApp chat with the customer using the salesperson’s chosen app.
+ * On the Android Capacitor app this uses a native Intent.setPackage handoff so
+ * the OS cannot silently default to the company WhatsApp Business install.
+ */
+export async function openWhatsappChat(
   toPhone: string,
   app: WhatsappClientApp = "whatsapp",
   opts?: { text?: string; fallbackHref?: string }
-): OpenWhatsappResult {
+): Promise<OpenWhatsappResult> {
+  const digits = whatsappDigits(toPhone);
+  if (!digits && !opts?.fallbackHref?.trim()) {
+    return { ok: false, reason: "invalid_phone" };
+  }
+
+  if (digits && canUseNativeWhatsappOpen()) {
+    const native = await openNativeWhatsappChat({
+      phoneDigits: digits,
+      app,
+      text: opts?.text,
+    });
+    if (native.ok) {
+      return {
+        ok: true,
+        url: `native://${native.result.packageName ?? androidPackage(app)}/${digits}`,
+        via: "native",
+      };
+    }
+    if (native.reason === "not_installed") {
+      return { ok: false, reason: "not_installed" };
+    }
+    if (native.reason === "invalid_phone") {
+      return { ok: false, reason: "invalid_phone" };
+    }
+    // Fall through to deep link / web if the plugin is missing (older APK).
+  }
+
   const url =
-    buildWhatsappOpenUrl(toPhone, app, opts) ||
+    (digits ? buildWhatsappOpenUrl(toPhone, app, opts) : null) ||
     opts?.fallbackHref?.trim() ||
     null;
   if (!url) return { ok: false, reason: "invalid_phone" };
+
   const opened = navigateExternal(url);
-  return opened ? { ok: true, url } : { ok: false, reason: "blocked" };
+  if (!opened) return { ok: false, reason: "blocked" };
+
+  const via =
+    url.startsWith("intent:") ||
+    url.startsWith("whatsapp:") ||
+    url.startsWith("whatsapp-business:")
+      ? "deeplink"
+      : "web";
+  return { ok: true, url, via };
 }

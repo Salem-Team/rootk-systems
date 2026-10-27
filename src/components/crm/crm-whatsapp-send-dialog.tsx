@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, MessageCircle } from "lucide-react";
+import { Loader2, MessageCircle, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -10,16 +10,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { LtrNum } from "@/components/shared/ltr-num";
 import { useTranslation } from "@/hooks/use-translation";
 import {
   buildWhatsappOpenUrl,
+  openWhatsappChat,
   resolveWhatsappPlatform,
 } from "@/lib/crm/open-whatsapp";
 import {
   readLastWhatsappAccountId,
   writeLastWhatsappAccountId,
 } from "@/lib/crm/phone-links";
+import { canUseNativeWhatsappOpen } from "@/lib/native/whatsapp";
 import {
   accountsOnEmployee,
   displayWhatsappPhone,
@@ -59,6 +62,7 @@ export function CrmWhatsappSendDialog({
 }) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [opening, setOpening] = useState(false);
   const [missingEmployee, setMissingEmployee] = useState(false);
   const [accounts, setAccounts] = useState<WhatsappAccount[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -66,6 +70,7 @@ export function CrmWhatsappSendDialog({
   useEffect(() => {
     if (!open) {
       setSelectedId(null);
+      setOpening(false);
       return;
     }
     let cancelled = false;
@@ -99,30 +104,46 @@ export function CrmWhatsappSendDialog({
   );
 
   const platform = useMemo(() => resolveWhatsappPlatform(), [open]);
+  const usesNativeHandoff = canUseNativeWhatsappOpen();
+
+  const selectedApp = selected
+    ? normalizeWhatsappClientApp(selected.app)
+    : "whatsapp";
 
   const chatHref = useMemo(() => {
     if (!selected) return "";
-    const app = normalizeWhatsappClientApp(selected.app);
     return (
-      buildWhatsappOpenUrl(targetPhone, app, { platform }) ||
+      buildWhatsappOpenUrl(targetPhone, selectedApp, { platform }) ||
       targetHref.trim() ||
       ""
     );
-  }, [platform, selected, targetHref, targetPhone]);
+  }, [platform, selected, selectedApp, targetHref, targetPhone]);
 
-  const isDeepLink =
-    chatHref.startsWith("intent:") ||
-    chatHref.startsWith("whatsapp:") ||
-    chatHref.startsWith("whatsapp-business:");
-
-  function onOpenChat() {
-    if (!selected || !chatHref) {
+  async function onOpenChat() {
+    if (!selected) {
       toast.error(t("crm.whatsappSend.invalidPhone"));
       return;
     }
+    if (opening) return;
+    setOpening(true);
     writeLastWhatsappAccountId(selected.id);
 
-    // Log in the background — never await before the browser follows the <a href>.
+    const result = await openWhatsappChat(targetPhone, selectedApp, {
+      fallbackHref: targetHref,
+    });
+
+    if (!result.ok) {
+      setOpening(false);
+      toast.error(
+        result.reason === "not_installed"
+          ? t("crm.whatsappSend.notInstalled")
+          : result.reason === "invalid_phone"
+            ? t("crm.whatsappSend.invalidPhone")
+            : t("crm.whatsappSend.openFailed")
+      );
+      return;
+    }
+
     if (leadId) {
       const name = leadName?.trim() || displayWhatsappPhone(targetPhone);
       const fromPhone = displayWhatsappPhone(selected.phone);
@@ -143,10 +164,11 @@ export function CrmWhatsappSendDialog({
       });
     }
 
-    // Deep links leave this document; closing the dialog first can cancel them.
-    if (!isDeepLink) {
+    // Native / deep-link leaves the document; keep dialog until handoff finishes.
+    if (result.via === "web") {
       window.setTimeout(() => onOpenChange(false), 150);
     }
+    window.setTimeout(() => setOpening(false), 800);
   }
 
   return (
@@ -199,7 +221,7 @@ export function CrmWhatsappSendDialog({
                         <LtrNum className="font-mono text-[12px] text-muted-foreground">
                           {displayWhatsappPhone(account.phone)}
                         </LtrNum>
-                        <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                        <span className="mt-0.5 block text-[11px] font-medium text-muted-foreground">
                           {t(
                             app === "business"
                               ? "crm.whatsappSend.appBusiness"
@@ -219,40 +241,47 @@ export function CrmWhatsappSendDialog({
             </ul>
 
             {selected ? (
-              <div className="rounded-xl border border-border/60 bg-muted/20 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
-                {t("crm.whatsappSend.sendingAs", {
-                  label: selected.label,
-                  phone: displayWhatsappPhone(selected.phone),
-                  app: t(
-                    normalizeWhatsappClientApp(selected.app) === "business"
-                      ? "crm.whatsappSend.appBusiness"
-                      : "crm.whatsappSend.appPersonal"
-                  ),
-                })}
+              <div className="space-y-2 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06] px-3 py-2.5">
+                <div className="flex items-start gap-2 text-[12px] leading-relaxed text-foreground">
+                  <ShieldCheck
+                    className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
+                    aria-hidden
+                  />
+                  <span>
+                    {t("crm.whatsappSend.sendingAs", {
+                      label: selected.label,
+                      phone: displayWhatsappPhone(selected.phone),
+                      app: t(
+                        selectedApp === "business"
+                          ? "crm.whatsappSend.appBusiness"
+                          : "crm.whatsappSend.appPersonal"
+                      ),
+                    })}
+                  </span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  {usesNativeHandoff
+                    ? t("crm.whatsappSend.openHintNative")
+                    : platform === "web"
+                      ? t("crm.whatsappSend.openHintDesktop")
+                      : t("crm.whatsappSend.openHint")}
+                </p>
               </div>
             ) : null}
 
-            {/* Real <a href> so the browser treats this as a user navigation — not a blocked popup. */}
-            <a
-              href={chatHref || undefined}
-              aria-disabled={!chatHref}
-              className={cn(
-                "inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 text-sm font-semibold text-white transition-colors hover:bg-emerald-600/90",
-                !chatHref && "pointer-events-none opacity-50"
-              )}
-              {...(isDeepLink
-                ? {}
-                : { target: "_blank", rel: "noopener noreferrer" })}
-              onClick={onOpenChat}
+            <Button
+              type="button"
+              disabled={!selected || opening || (!chatHref && !usesNativeHandoff)}
+              className="h-12 w-full gap-2 rounded-xl bg-emerald-600 text-sm font-semibold text-white hover:bg-emerald-600/90"
+              onClick={() => void onOpenChat()}
             >
-              <MessageCircle className="h-4 w-4" aria-hidden />
+              {opening ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <MessageCircle className="h-4 w-4" aria-hidden />
+              )}
               {t("crm.whatsappSend.openChat")}
-            </a>
-            <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
-              {platform === "web"
-                ? t("crm.whatsappSend.openHintDesktop")
-                : t("crm.whatsappSend.openHint")}
-            </p>
+            </Button>
           </div>
         )}
       </DialogContent>

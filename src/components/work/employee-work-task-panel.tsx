@@ -3,14 +3,19 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AdminWorkFilterBar } from "@/components/work/admin-work-filter-bar";
 import { WorkTasksTable } from "@/components/work/work-tasks-table";
-import { statusLabelKey } from "@/components/work/employee-work-hub-types";
 import { useTranslation } from "@/hooks/use-translation";
 import { staggerDense } from "@/lib/animations";
 import { employeeOwnsPersonalTask } from "@/lib/work-utils";
 import { cn } from "@/lib/utils";
 import type { OriginFilter } from "@/components/work/employee-work-hub-types";
-import type { TaskStatus, WorkTask } from "@/types/work";
+import type {
+  TaskFilter,
+  TaskPriorityFilter,
+} from "@/components/work/admin-work-panel-types";
+import type { TaskListFacets } from "@/lib/work/task-list-filters";
+import type { WorkTask } from "@/types/work";
 
 function FilterChip({
   active,
@@ -43,8 +48,19 @@ export function EmployeeWorkTaskPanel({
   selectedTask,
   originFilter,
   setOriginFilter,
+  query,
+  setQuery,
   filter,
   setFilter,
+  priorityFilter,
+  setPriorityFilter,
+  assigneeFilter,
+  setAssigneeFilter,
+  assigneeOptions,
+  assigneeFilterName,
+  taskFacets,
+  hasActiveTaskFilters,
+  clearTaskFilters,
   workEmployeeId,
   userId,
   onSelectTask,
@@ -58,8 +74,19 @@ export function EmployeeWorkTaskPanel({
   selectedTask: WorkTask | null;
   originFilter: OriginFilter;
   setOriginFilter: (v: OriginFilter) => void;
-  filter: TaskStatus | "all";
-  setFilter: (v: TaskStatus | "all") => void;
+  query: string;
+  setQuery: (v: string) => void;
+  filter: TaskFilter;
+  setFilter: (v: TaskFilter) => void;
+  priorityFilter: TaskPriorityFilter;
+  setPriorityFilter: (v: TaskPriorityFilter) => void;
+  assigneeFilter: string;
+  setAssigneeFilter: (v: string) => void;
+  assigneeOptions: { id: string; count: number; name: string }[];
+  assigneeFilterName: string;
+  taskFacets: TaskListFacets;
+  hasActiveTaskFilters: boolean;
+  clearTaskFilters: () => void;
   workEmployeeId: string;
   userId: string;
   onSelectTask: (id: string) => void;
@@ -99,36 +126,55 @@ export function EmployeeWorkTaskPanel({
             </FilterChip>
           ))}
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {(["all", "todo", "in_progress", "completed"] as const).map((f) => (
-            <FilterChip
-              key={f}
-              active={filter === f}
-              onClick={() => setFilter(f)}
-            >
-              {f === "all" ? t("common.all") : t(statusLabelKey(f))}
-            </FilterChip>
-          ))}
-          <Button type="button" size="sm" onClick={onCreateTask}>
-            <Plus className="h-3.5 w-3.5" />
-            {t("workHub.addPersonalTask")}
-          </Button>
-        </div>
+        <Button type="button" size="sm" onClick={onCreateTask}>
+          <Plus className="h-3.5 w-3.5" />
+          {t("workHub.addPersonalTask")}
+        </Button>
       </motion.div>
 
-      <WorkTasksTable
-        tasks={visibleTasks}
-        selectedId={selectedTask?.id}
-        onSelect={(task) => onSelectTask(task.id)}
-        onDone={(task) => onMarkDone(task.id)}
-        onEdit={onEditTask}
-        onDelete={onDeleteTask}
-        canManage={(task) =>
-          employeeOwnsPersonalTask(task, workEmployeeId, userId)
-        }
-        emptyTitle={t("ops.noTasks")}
-        emptyDesc={t("workHub.emptyTasksDesc")}
+      <AdminWorkFilterBar
+        tab="tasks"
+        query={query}
+        setQuery={setQuery}
+        taskFilter={filter}
+        setTaskFilter={setFilter}
+        priorityFilter={priorityFilter}
+        setPriorityFilter={setPriorityFilter}
+        meetingFilter="all"
+        setMeetingFilter={() => undefined}
+        assigneeFilter={assigneeFilter}
+        setAssigneeFilter={setAssigneeFilter}
+        assigneeOptions={assigneeOptions}
+        assigneeFilterName={assigneeFilterName}
+        facets={taskFacets}
+        resultCount={visibleTasks.length}
+        hasActiveFilters={hasActiveTaskFilters}
+        onClearFilters={clearTaskFilters}
       />
+
+      <div className="mt-3">
+        <WorkTasksTable
+          tasks={visibleTasks}
+          selectedId={selectedTask?.id}
+          onSelect={(task) => onSelectTask(task.id)}
+          onDone={(task) => onMarkDone(task.id)}
+          onEdit={onEditTask}
+          onDelete={onDeleteTask}
+          canManage={(task) =>
+            employeeOwnsPersonalTask(task, workEmployeeId, userId)
+          }
+          emptyTitle={
+            hasActiveTaskFilters
+              ? t("workAdmin.emptyFilteredTasks")
+              : t("ops.noTasks")
+          }
+          emptyDesc={
+            hasActiveTaskFilters
+              ? t("workAdmin.emptyFilteredTasksHint")
+              : t("workHub.emptyTasksDesc")
+          }
+        />
+      </div>
     </>
   );
 }
