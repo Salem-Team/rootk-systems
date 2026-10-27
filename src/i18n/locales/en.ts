@@ -1127,10 +1127,13 @@ export const en = {
     personalInfo: "Personal information",
     whatsappAccounts: "WhatsApp accounts",
     whatsappAccountsDesc:
-      "Add this salesperson’s personal WhatsApp number. When they message a lead they pick this number, and WhatsApp on their device must be signed in with it — not the company line.",
+      "Add the salesperson’s WhatsApp number and whether it lives in WhatsApp or WhatsApp Business. Messaging a lead opens the matching app on their device.",
     whatsappLabel: "Name",
     whatsappLabelPlaceholder: "Sales line",
     whatsappPhone: "Number",
+    whatsappApp: "App",
+    whatsappAppPersonal: "WhatsApp",
+    whatsappAppBusiness: "WhatsApp Business",
     whatsappAdd: "Add WhatsApp",
     whatsappSave: "Save WhatsApp accounts",
     whatsappSaved: "WhatsApp accounts saved",
@@ -3762,16 +3765,18 @@ export const en = {
     whatsappSend: {
       title: "Send from your number",
       description:
-        "Pick the WhatsApp number saved on your profile. The chat opens for the customer using that line when WhatsApp on this device is signed in with the same account.",
+        "Pick your registered number. We open WhatsApp (or WhatsApp Business) on this device and jump straight into the customer chat.",
       empty:
-        "No WhatsApp number on your profile. Ask admin to add your personal number on the employee file.",
+        "No WhatsApp number on your profile. Ask admin to add it on the employee file and mark WhatsApp vs Business.",
       missingEmployee: "Your login is not linked to an employee profile.",
-      fromHint: "Send-from is your registered personal number — not the company line.",
       selected: "Selected",
-      sendingFrom: "Sending from",
-      deviceHint:
-        "Before opening the chat, make sure WhatsApp on this device is signed in with this number. If the company account is active, the message will leave from the company number.",
+      appPersonal: "WhatsApp",
+      appBusiness: "WhatsApp Business",
       openChat: "Open WhatsApp with my number",
+      openHint:
+        "If the company line is in WhatsApp Business and yours is in WhatsApp, pick the right profile number so the correct app opens.",
+      openFailed: "Couldn’t open WhatsApp. Try again or open WhatsApp manually.",
+      invalidPhone: "This customer number can’t open WhatsApp.",
       loggedTitle: "Sent WhatsApp via {account}",
       loggedDetail: "Sent a WhatsApp to {name} from {account} ({fromPhone}).",
       logged: "WhatsApp send logged",

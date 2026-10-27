@@ -1,10 +1,15 @@
 import { normalizePhone } from "./phone-normalize";
 
+/** Personal WhatsApp vs WhatsApp Business — used to open the right app on dual installs. */
+export type WhatsappClientApp = "whatsapp" | "business";
+
 /** WhatsApp lines an employee can send from. Stored on Employee.metadata. */
 export type WhatsappAccount = {
   id: string;
   label: string;
   phone: string;
+  /** Which installed app holds this number. Defaults to personal WhatsApp. */
+  app?: WhatsappClientApp;
 };
 
 export const WHATSAPP_ACCOUNTS_KEY = "whatsappAccounts";
@@ -22,6 +27,10 @@ function newAccountId(): string {
   return `wa_${uuid.slice(0, 16)}`;
 }
 
+export function normalizeWhatsappClientApp(value: unknown): WhatsappClientApp {
+  return value === "business" ? "business" : "whatsapp";
+}
+
 export function readWhatsappAccounts(metadata: unknown): WhatsappAccount[] {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
     return [];
@@ -36,7 +45,12 @@ export function readWhatsappAccounts(metadata: unknown): WhatsappAccount[] {
     const label = String(row.label ?? "").trim();
     const phone = String(row.phone ?? "").trim();
     if (!id || !label || !phone) continue;
-    accounts.push({ id, label, phone });
+    accounts.push({
+      id,
+      label,
+      phone,
+      app: normalizeWhatsappClientApp(row.app),
+    });
   }
   return accounts;
 }
@@ -45,7 +59,12 @@ export function accountsOnEmployee(employee: {
   whatsappAccounts?: WhatsappAccount[] | null;
   metadata?: unknown;
 }): WhatsappAccount[] {
-  if (Array.isArray(employee.whatsappAccounts)) return employee.whatsappAccounts;
+  if (Array.isArray(employee.whatsappAccounts)) {
+    return employee.whatsappAccounts.map((account) => ({
+      ...account,
+      app: normalizeWhatsappClientApp(account.app),
+    }));
+  }
   return readWhatsappAccounts(employee.metadata);
 }
 
@@ -86,7 +105,12 @@ export function parseWhatsappAccountsInput(input: unknown): WhatsappAccountsPars
     seen.add(parsed.e164);
     const idRaw = String(row.id ?? "").trim();
     const id = /^[A-Za-z0-9_-]{4,48}$/.test(idRaw) ? idRaw : newAccountId();
-    accounts.push({ id, label, phone: parsed.e164 });
+    accounts.push({
+      id,
+      label,
+      phone: parsed.e164,
+      app: normalizeWhatsappClientApp(row.app),
+    });
   }
   return { ok: true, accounts };
 }

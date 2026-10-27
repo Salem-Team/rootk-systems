@@ -2,6 +2,7 @@ export {
   MAX_WHATSAPP_ACCOUNTS,
   WHATSAPP_ACCOUNTS_KEY,
   accountsOnEmployee,
+  normalizeWhatsappClientApp,
   parseWhatsappAccountsInput,
   readWhatsappAccounts,
   withWhatsappAccounts,
@@ -9,6 +10,7 @@ export {
 export type {
   WhatsappAccount,
   WhatsappAccountsParse,
+  WhatsappClientApp,
 } from "../../shared/whatsapp-accounts";
 
 import {

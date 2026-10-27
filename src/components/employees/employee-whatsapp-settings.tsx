@@ -5,6 +5,13 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Section } from "@/components/employees/employee-profile-info-row";
 import { LtrNum } from "@/components/shared/ltr-num";
 import { hasPermissionId } from "@/constants/permissions";
@@ -14,8 +21,10 @@ import {
   MAX_WHATSAPP_ACCOUNTS,
   accountsOnEmployee,
   displayWhatsappPhone,
+  normalizeWhatsappClientApp,
   parseWhatsappAccountsInput,
   type WhatsappAccount,
+  type WhatsappClientApp,
 } from "@/lib/whatsapp-accounts";
 import { updateEmployeeWhatsappAccounts } from "@/services/employees.service";
 import {
@@ -28,6 +37,7 @@ function draftFrom(employee: Employee): WhatsappAccount[] {
   return accountsOnEmployee(employee).map((account) => ({
     ...account,
     phone: displayWhatsappPhone(account.phone),
+    app: normalizeWhatsappClientApp(account.app),
   }));
 }
 
@@ -90,9 +100,9 @@ export function EmployeeWhatsappSettings({
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("employees.whatsappEmpty")}</p>
         ) : (
-          <ul className="grid gap-2">
+          <ul className="grid gap-2.5">
             {rows.map((row) => (
-              <li key={row.id} className="flex items-start gap-2">
+              <li key={row.id} className="grid gap-2 sm:grid-cols-[1fr_9.5rem_8.5rem_auto] sm:items-center">
                 {canEdit ? (
                   <>
                     <Input
@@ -109,27 +119,56 @@ export function EmployeeWhatsappSettings({
                       value={row.phone}
                       placeholder="01xxxxxxxxx"
                       aria-label={t("employees.whatsappPhone")}
-                      className="max-w-[11rem] font-mono"
+                      className="font-mono"
                       onChange={(event) =>
                         updateRow(row.id, { phone: event.target.value })
                       }
                     />
+                    <Select
+                      value={normalizeWhatsappClientApp(row.app)}
+                      onValueChange={(value) =>
+                        updateRow(row.id, {
+                          app: value as WhatsappClientApp,
+                        })
+                      }
+                    >
+                      <SelectTrigger aria-label={t("employees.whatsappApp")}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="whatsapp">
+                          {t("employees.whatsappAppPersonal")}
+                        </SelectItem>
+                        <SelectItem value="business">
+                          {t("employees.whatsappAppBusiness")}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       aria-label={t("employees.whatsappRemove")}
                       onClick={() =>
-                        setRows((current) => current.filter((item) => item.id !== row.id))
+                        setRows((current) =>
+                          current.filter((item) => item.id !== row.id)
+                        )
                       }
                     >
                       <Trash2 aria-hidden />
                     </Button>
                   </>
                 ) : (
-                  <div className="flex min-w-0 flex-1 items-center justify-between gap-3 py-1">
+                  <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-3 py-1 sm:col-span-4">
                     <span className="truncate text-sm font-medium">{row.label}</span>
                     <LtrNum className="font-mono text-sm">{row.phone}</LtrNum>
+                    <span className="text-xs text-muted-foreground">
+                      {t(
+                        normalizeWhatsappClientApp(row.app) === "business"
+                          ? "employees.whatsappAppBusiness"
+                          : "employees.whatsappAppPersonal"
+                      )}
+                    </span>
                   </div>
                 )}
               </li>
@@ -147,7 +186,12 @@ export function EmployeeWhatsappSettings({
               onClick={() =>
                 setRows((current) => [
                   ...current,
-                  { id: createId("wa"), label: "", phone: "" },
+                  {
+                    id: createId("wa"),
+                    label: "",
+                    phone: "",
+                    app: "whatsapp",
+                  },
                 ])
               }
             >
