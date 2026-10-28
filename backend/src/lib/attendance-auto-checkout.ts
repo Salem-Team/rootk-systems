@@ -10,27 +10,39 @@ export function cairoDateKey(now = new Date()): string {
   }).format(now);
 }
 
+/** Next calendar day for a YYYY-MM-DD key (UTC date arithmetic). */
+export function nextDateKey(dateKey: string): string {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  const next = new Date(Date.UTC(y!, (m ?? 1) - 1, (d ?? 1) + 1));
+  return next.toISOString().slice(0, 10);
+}
+
+/**
+ * Midnight that ends the attendance Cairo day (= 00:00 of the next day).
+ * Forced auto check-out runs at this instant, not at the shift end (e.g. 17:00).
+ */
+export function attendanceDayMidnight(dateKey: string): Date {
+  return scheduleOnDay(nextDateKey(dateKey), "00:00");
+}
+
 /**
  * Decide auto check-out time for an open attendance day.
- * - After scheduled end (default 17:00) when check-in was before end → end time
- * - After the calendar day has fully passed (stale open day) → max(end, checkIn)
- * - Otherwise leave open (null)
+ * Closes at Cairo midnight after the day (12:00 AM) — employees stay open
+ * past shift end until then. Stale open days close once midnight has passed.
  */
 export function resolveAutoCheckOutAt(opts: {
   dateKey: string;
   checkIn: Date;
-  toTime: string;
+  /** Kept for callers; shift end no longer forces checkout. */
+  toTime?: string;
   now?: Date;
 }): Date | null {
   const now = opts.now ?? new Date();
-  const end = scheduleOnDay(opts.dateKey, opts.toTime);
-  if (now < end) return null;
+  const midnight = attendanceDayMidnight(opts.dateKey);
+  if (now < midnight) return null;
 
-  if (opts.checkIn.getTime() < end.getTime()) {
-    return end;
-  }
-
-  // Checked in after shift end: keep open until the Cairo day rolls over.
-  if (opts.dateKey >= cairoDateKey(now)) return null;
-  return opts.checkIn.getTime() > end.getTime() ? opts.checkIn : end;
+  // Record checkout at midnight; never before the actual check-in.
+  return opts.checkIn.getTime() > midnight.getTime()
+    ? opts.checkIn
+    : midnight;
 }

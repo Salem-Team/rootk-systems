@@ -18,9 +18,8 @@ import { AttendanceSharedService } from "./attendance-shared.service";
 const TICK_MS = 60_000;
 
 /**
- * Closes open attendance after the scheduled day end (company toTime,
- * 17:00 for ROOTK). Checkout is the shift end when they forgot to leave;
- * stale days with a late check-in close at check-in once the calendar day passes.
+ * Closes open attendance at Cairo midnight (00:00 next day) — not at shift
+ * end. Employees who forget to check out stay open past 17:00 until 12 AM.
  */
 @Injectable()
 export class AttendanceAutoCheckoutService
@@ -85,7 +84,6 @@ export class AttendanceAutoCheckoutService
         const checkOutAt = resolveAutoCheckOutAt({
           dateKey,
           checkIn: row.checkIn,
-          toTime: schedule.toTime || "17:00",
           now,
         });
         if (!checkOutAt) continue;

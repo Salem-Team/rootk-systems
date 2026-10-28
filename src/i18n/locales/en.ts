@@ -1490,7 +1490,7 @@ export const en = {
     nLeaveTitle: "Leave update",
     nLeaveBody: "Your WFH request for Aug 5 was approved.",
     nAttendTitle: "Attendance reminder",
-    nAttendBody: "Don’t forget to check out before 18:15.",
+    nAttendBody: "Don’t forget to check out before midnight.",
     nDocTitle: "New document",
     nDocBody: "July payslip is ready to download.",
     nEventTitle: "Upcoming event",

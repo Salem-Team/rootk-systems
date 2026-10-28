@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {
+  attendanceDayMidnight,
   cairoDateKey,
   resolveAutoCheckOutAt,
 } from "../backend/src/lib/attendance-auto-checkout";
@@ -9,55 +10,61 @@ function atCairo(dateKey: string, hhmmss: string): Date {
 }
 
 const day = "2026-10-07";
-const end = atCairo(day, "17:00:00");
+const midnight = attendanceDayMidnight(day);
+assert.equal(midnight.getTime(), atCairo("2026-10-08", "00:00:00").getTime());
 
-// Before 17:00 → still open
+// Still open at shift end (17:00) — no forced checkout
 assert.equal(
   resolveAutoCheckOutAt({
     dateKey: day,
     checkIn: atCairo(day, "09:10:00"),
-    toTime: "17:00",
-    now: atCairo(day, "16:59:00"),
-  }),
-  null,
-  "before shift end stays open"
-);
-
-// After 17:00 with morning check-in → checkout at 17:00
-assert.equal(
-  resolveAutoCheckOutAt({
-    dateKey: day,
-    checkIn: atCairo(day, "09:10:00"),
-    toTime: "17:00",
     now: atCairo(day, "17:01:00"),
-  })?.getTime(),
-  end.getTime(),
-  "forgot checkout closes at 17:00"
-);
-
-// Same-day late check-in after 17:00 → keep open until day rolls over
-assert.equal(
-  resolveAutoCheckOutAt({
-    dateKey: day,
-    checkIn: atCairo(day, "17:46:00"),
-    toTime: "17:00",
-    now: atCairo(day, "20:00:00"),
   }),
   null,
-  "same-day late check-in stays open"
+  "after shift end stays open until midnight"
 );
 
-// Next Cairo day → close stale late check-in at check-in time
-const lateIn = atCairo(day, "17:46:00");
+// Still open late evening
 assert.equal(
   resolveAutoCheckOutAt({
     dateKey: day,
-    checkIn: lateIn,
-    toTime: "17:00",
+    checkIn: atCairo(day, "09:10:00"),
+    now: atCairo(day, "23:59:00"),
+  }),
+  null,
+  "before midnight stays open"
+);
+
+// At/after midnight → checkout recorded at midnight
+assert.equal(
+  resolveAutoCheckOutAt({
+    dateKey: day,
+    checkIn: atCairo(day, "09:10:00"),
+    now: atCairo("2026-10-08", "00:00:00"),
+  })?.getTime(),
+  midnight.getTime(),
+  "forgot checkout closes at midnight"
+);
+
+assert.equal(
+  resolveAutoCheckOutAt({
+    dateKey: day,
+    checkIn: atCairo(day, "09:10:00"),
     now: atCairo("2026-10-08", "00:05:00"),
   })?.getTime(),
-  lateIn.getTime(),
-  "stale late check-in closes next day"
+  midnight.getTime(),
+  "after midnight still closes at midnight"
+);
+
+// Late evening check-in same day → still open until midnight
+assert.equal(
+  resolveAutoCheckOutAt({
+    dateKey: day,
+    checkIn: atCairo(day, "20:15:00"),
+    now: atCairo(day, "22:00:00"),
+  }),
+  null,
+  "same-day late check-in stays open until midnight"
 );
 
 assert.match(cairoDateKey(atCairo(day, "23:30:00")), /^\d{4}-\d{2}-\d{2}$/);

@@ -1480,7 +1480,7 @@ export const ar: TranslationKeys = {
     nLeaveTitle: "تحديث إجازة",
     nLeaveBody: "تمت الموافقة على طلب العمل عن بُعد ليوم 5 أغسطس.",
     nAttendTitle: "تذكير حضور",
-    nAttendBody: "لا تنسَ تسجيل الانصراف قبل 18:15.",
+    nAttendBody: "لا تنسَ تسجيل الانصراف قبل ١٢ بالليل.",
     nDocTitle: "مستند جديد",
     nDocBody: "كشف راتب يوليو جاهز للتنزيل.",
     nEventTitle: "مناسبة قادمة",
