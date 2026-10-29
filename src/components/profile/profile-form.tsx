@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, Save, UserRound } from "lucide-react";
+import { EmployeeWhatsappSettings } from "@/components/employees/employee-whatsapp-settings";
 import { FormSkeleton } from "@/components/shared/loading-state";
 import { SectionPanel } from "@/components/shared/section-panel";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -26,6 +27,8 @@ export function ProfileForm() {
     saving,
     department,
     position,
+    employee,
+    setEmployee,
     handleSave,
   } = useProfileForm();
 
@@ -112,6 +115,13 @@ export function ProfileForm() {
           </div>
         </div>
       </SectionPanel>
+
+      {employee ? (
+        <EmployeeWhatsappSettings
+          employee={employee}
+          onSaved={(next) => setEmployee(next)}
+        />
+      ) : null}
 
       <div className="flex justify-end">
         <Button

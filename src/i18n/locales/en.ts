@@ -3770,13 +3770,15 @@ export const en = {
       none: "None",
     },
     whatsappSend: {
-      title: "Send from your number",
+      title: "Send from which number?",
       description:
-        "Pick the number on your profile. We open the matching WhatsApp app and jump into the customer chat — not the company line.",
+        "Pick your number. Tapping it opens WhatsApp straight into the customer chat.",
       empty:
-        "No WhatsApp number on your profile. Ask admin to add it on the employee file and mark WhatsApp vs Business.",
+        "No WhatsApp number on your profile. Add your lines on the profile page and mark WhatsApp vs Business.",
+      addNumbers: "Add WhatsApp numbers on profile",
       missingEmployee: "Your login is not linked to an employee profile.",
       selected: "Selected",
+      tapToOpen: "Open chat",
       appPersonal: "WhatsApp",
       appBusiness: "WhatsApp Business",
       openChat: "Open WhatsApp with my number",
@@ -3791,9 +3793,10 @@ export const en = {
       notInstalled:
         "The required WhatsApp app isn’t installed. Install WhatsApp or WhatsApp Business to match your profile setting.",
       invalidPhone: "This customer number can’t open WhatsApp.",
-      loggedTitle: "Sent WhatsApp via {account}",
-      loggedDetail: "Sent a WhatsApp to {name} from {account} ({fromPhone}).",
-      logged: "WhatsApp send logged",
+      opened: "WhatsApp opened on the customer chat — send the message there",
+      loggedTitle: "Opened WhatsApp chat via {account}",
+      loggedDetail: "Opened WhatsApp chat with {name} from {account} ({fromPhone}).",
+      logged: "WhatsApp chat open logged",
       send: "Send",
     },
     tags: {

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, MessageCircle, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -119,16 +120,18 @@ export function CrmWhatsappSendDialog({
     );
   }, [platform, selected, selectedApp, targetHref, targetPhone]);
 
-  async function onOpenChat() {
-    if (!selected) {
-      toast.error(t("crm.whatsappSend.invalidPhone"));
-      return;
-    }
+  async function openWithAccount(account: WhatsappAccount) {
     if (opening) return;
     setOpening(true);
-    writeLastWhatsappAccountId(selected.id);
+    setSelectedId(account.id);
+    writeLastWhatsappAccountId(account.id);
 
-    const result = await openWhatsappChat(targetPhone, selectedApp, {
+    const app = normalizeWhatsappClientApp(account.app);
+
+    // Close first so the dialog focus trap cannot swallow the handoff.
+    onOpenChange(false);
+
+    const result = await openWhatsappChat(targetPhone, app, {
       fallbackHref: targetHref,
     });
 
@@ -144,30 +147,26 @@ export function CrmWhatsappSendDialog({
       return;
     }
 
+    toast.success(t("crm.whatsappSend.opened"));
+
     if (leadId) {
       const name = leadName?.trim() || displayWhatsappPhone(targetPhone);
-      const fromPhone = displayWhatsappPhone(selected.phone);
+      const fromPhone = displayWhatsappPhone(account.phone);
       void addCrmLeadActivity(leadId, {
         type: "whatsapp",
-        title: t("crm.whatsappSend.loggedTitle", { account: selected.label }),
+        title: t("crm.whatsappSend.loggedTitle", { account: account.label }),
         description: t("crm.whatsappSend.loggedDetail", {
-          account: selected.label,
+          account: account.label,
           fromPhone,
           name,
         }),
       }).then((res) => {
         if (!res.success) {
           toast.error(res.message ?? t("common.error"));
-          return;
         }
-        toast.success(t("crm.whatsappSend.logged"));
       });
     }
 
-    // Native / deep-link leaves the document; keep dialog until handoff finishes.
-    if (result.via === "web") {
-      window.setTimeout(() => onOpenChange(false), 150);
-    }
     window.setTimeout(() => setOpening(false), 800);
   }
 
@@ -187,25 +186,33 @@ export function CrmWhatsappSendDialog({
             {t("crm.whatsappSend.missingEmployee")}
           </p>
         ) : accounts.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("crm.whatsappSend.empty")}</p>
+          <div className="grid gap-3">
+            <p className="text-sm text-muted-foreground">{t("crm.whatsappSend.empty")}</p>
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/profile">{t("crm.whatsappSend.addNumbers")}</Link>
+            </Button>
+          </div>
         ) : (
           <div className="grid gap-3">
             <ul className="grid gap-2">
               {accounts.map((account) => {
                 const active = account.id === selected?.id;
                 const app = normalizeWhatsappClientApp(account.app);
+                const busy = opening;
                 return (
                   <li key={account.id}>
                     <button
                       type="button"
                       aria-pressed={active}
+                      disabled={busy}
                       className={cn(
                         "flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-start transition-colors",
                         active
                           ? "border-emerald-500/55 bg-emerald-500/10"
-                          : "border-border/70 bg-card hover:bg-muted/40"
+                          : "border-border/70 bg-card hover:bg-muted/40",
+                        busy && "opacity-60"
                       )}
-                      onClick={() => setSelectedId(account.id)}
+                      onClick={() => void openWithAccount(account)}
                     >
                       <MessageCircle
                         className={cn(
@@ -229,11 +236,13 @@ export function CrmWhatsappSendDialog({
                           )}
                         </span>
                       </span>
-                      {active ? (
-                        <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
-                          {t("crm.whatsappSend.selected")}
-                        </span>
-                      ) : null}
+                      <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                        {busy && active ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                        ) : (
+                          t("crm.whatsappSend.tapToOpen")
+                        )}
+                      </span>
                     </button>
                   </li>
                 );
@@ -269,19 +278,21 @@ export function CrmWhatsappSendDialog({
               </div>
             ) : null}
 
-            <Button
-              type="button"
-              disabled={!selected || opening || (!chatHref && !usesNativeHandoff)}
-              className="h-12 w-full gap-2 rounded-xl bg-emerald-600 text-sm font-semibold text-white hover:bg-emerald-600/90"
-              onClick={() => void onOpenChat()}
-            >
-              {opening ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              ) : (
-                <MessageCircle className="h-4 w-4" aria-hidden />
-              )}
-              {t("crm.whatsappSend.openChat")}
-            </Button>
+            {selected && chatHref ? (
+              <Button
+                type="button"
+                disabled={opening}
+                className="h-12 w-full gap-2 rounded-xl bg-emerald-600 text-sm font-semibold text-white hover:bg-emerald-600/90"
+                onClick={() => void openWithAccount(selected)}
+              >
+                {opening ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : (
+                  <MessageCircle className="h-4 w-4" aria-hidden />
+                )}
+                {t("crm.whatsappSend.openChat")}
+              </Button>
+            ) : null}
           </div>
         )}
       </DialogContent>

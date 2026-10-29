@@ -9,6 +9,7 @@ import {
   getWorkEmployeeIdFromUser,
   useSessionStore,
 } from "@/stores/session-store";
+import type { Employee } from "@/types";
 
 export function useProfileForm() {
   const { t } = useTranslation();
@@ -20,6 +21,7 @@ export function useProfileForm() {
   const [saving, setSaving] = useState(false);
   const [department, setDepartment] = useState("");
   const [position, setPosition] = useState("");
+  const [employee, setEmployee] = useState<Employee | null>(null);
 
   useEffect(() => {
     setFirstName(user.firstName || "");
@@ -30,6 +32,7 @@ export function useProfileForm() {
     let active = true;
     const employeeId = getWorkEmployeeIdFromUser(user);
     if (!employeeId) {
+      setEmployee(null);
       setLoading(false);
       return;
     }
@@ -37,9 +40,12 @@ export function useProfileForm() {
     void getEmployeeById(employeeId).then((res) => {
       if (!active) return;
       if (res.success && res.data) {
+        setEmployee(res.data);
         setPhone(res.data.phone ?? "");
         setDepartment(res.data.department ?? "");
         setPosition(res.data.position ?? "");
+      } else {
+        setEmployee(null);
       }
       setLoading(false);
     });
@@ -81,6 +87,8 @@ export function useProfileForm() {
     saving,
     department,
     position,
+    employee,
+    setEmployee,
     handleSave,
   };
 }

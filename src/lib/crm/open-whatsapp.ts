@@ -108,21 +108,25 @@ export function navigateExternal(url: string): boolean {
     }
   }
 
-  const popup = window.open(url, "_blank", "noopener,noreferrer");
-  if (popup) return true;
-
+  // Prefer a real <a> click. window.open(..., "noopener") often returns null
+  // even when the tab opens, which used to look like success without a handoff.
   try {
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.rel = "noopener noreferrer";
-    if (!isDeepLink) anchor.target = "_blank";
+    anchor.target = "_blank";
     anchor.style.display = "none";
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
     return true;
   } catch {
-    return false;
+    try {
+      window.open(url, "_blank", "noopener,noreferrer");
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 
