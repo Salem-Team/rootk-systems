@@ -20,6 +20,13 @@ export const notificationsSchema = z.object({
   retentionDays: z.number().int().min(0).max(3650),
 });
 
+const whatsappAccountSchema = z.object({
+  id: z.string().trim().min(4).max(48).optional(),
+  label: z.string().trim().min(1).max(80),
+  phone: z.string().trim().min(5).max(40),
+  app: z.enum(["whatsapp", "business"]).optional(),
+});
+
 export const updateSettingsSchema = z.object({
   name: z.string().trim().min(1).max(120).optional(),
   legalName: z.string().trim().min(1).max(200).optional(),
@@ -32,6 +39,7 @@ export const updateSettingsSchema = z.object({
   language: z.enum(["en", "ar"]).optional(),
   appearance: z.enum(["system", "light", "dark"]).optional(),
   notifications: notificationsSchema.partial().optional(),
+  whatsappAccounts: z.array(whatsappAccountSchema).max(12).optional(),
 });
 
 export type UpdateSettingsDto = z.infer<typeof updateSettingsSchema>;

@@ -9,6 +9,7 @@ import type { CompanySettings } from "@/types";
 import type { OfficeLocation } from "@/types/org";
 import { CompanyIdentitySection } from "./company-identity-section";
 import { CompanyBranchesSection } from "./company-branches-section";
+import { CompanyWhatsappSection } from "./company-whatsapp-section";
 
 export function CompanyProfilePanel({
   form,
@@ -50,6 +51,7 @@ export function CompanyProfilePanel({
   return (
     <motion.div variants={fadeInUp} className="space-y-5">
       <CompanyIdentitySection form={form} onChange={onChange} />
+      <CompanyWhatsappSection form={form} onChange={onChange} />
       <CompanyBranchesSection
         timezone={form.timezone}
         hoursLabel={hoursLabel}

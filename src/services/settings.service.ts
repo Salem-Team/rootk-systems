@@ -5,6 +5,11 @@ import {
   DEFAULT_COMPANY_NOTIFICATIONS,
   withNormalizedSettingsNotifications,
 } from "@/lib/notification-policy";
+import {
+  accountsOnCompany,
+  parseWhatsappAccountsInput,
+  withWhatsappAccounts,
+} from "@/lib/whatsapp-accounts";
 import { settingsRepository } from "@/repositories";
 import { updateSettingsSchema } from "@/schemas";
 import { fromError, ok } from "@/services/api-result";
@@ -34,12 +39,19 @@ const EMPTY_SETTINGS: CompanySettings = {
   metadata: {},
 };
 
+function withCompanyWhatsapp(settings: CompanySettings): CompanySettings {
+  return {
+    ...settings,
+    whatsappAccounts: accountsOnCompany(settings),
+  };
+}
+
 /** GET /settings */
 export async function getSettings(): Promise<ApiResponse<CompanySettings>> {
   if (isApiMode()) return fetchSettings();
   try {
     const raw = await settingsRepository.get();
-    return ok(withNormalizedSettingsNotifications(raw));
+    return ok(withCompanyWhatsapp(withNormalizedSettingsNotifications(raw)));
   } catch (error) {
     return fromError(error, EMPTY_SETTINGS);
   }
@@ -62,8 +74,23 @@ export async function updateSettings(
         parsed.error.flatten()
       );
     }
-    const updated = await settingsRepository.update(parsed.data);
-    const normalized = withNormalizedSettingsNotifications(updated);
+    const data = { ...parsed.data } as typeof parsed.data & {
+      whatsappAccounts?: CompanySettings["whatsappAccounts"];
+      metadata?: CompanySettings["metadata"];
+    };
+    if (data.whatsappAccounts !== undefined) {
+      const wa = parseWhatsappAccountsInput({ accounts: data.whatsappAccounts });
+      if (!wa.ok) {
+        throw new ValidationError("Invalid company WhatsApp accounts");
+      }
+      const current = await settingsRepository.get();
+      data.whatsappAccounts = wa.accounts;
+      data.metadata = withWhatsappAccounts(current.metadata, wa.accounts);
+    }
+    const updated = await settingsRepository.update(data);
+    const normalized = withCompanyWhatsapp(
+      withNormalizedSettingsNotifications(updated)
+    );
     // Propagate company currency into payroll policies (same source of truth).
     if (parsed.data.currency) {
       const { updatePayrollPolicies } = await import("@/services/payroll.service");
@@ -76,6 +103,7 @@ export async function updateSettings(
       await settingsRepository
         .get()
         .then(withNormalizedSettingsNotifications)
+        .then(withCompanyWhatsapp)
         .catch(() => EMPTY_SETTINGS)
     );
   }

@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { auditFields } from "../common/mappers";
@@ -6,6 +6,11 @@ import {
   DEFAULT_COMPANY_NOTIFICATIONS,
   normalizeCompanyNotifications,
 } from "../lib/notification-policy";
+import {
+  parseWhatsappAccountsInput,
+  readWhatsappAccounts,
+  withWhatsappAccounts,
+} from "../lib/whatsapp-accounts";
 
 @Injectable()
 export class SettingsService {
@@ -49,6 +54,7 @@ export class SettingsService {
       notifications: normalizeCompanyNotifications(
         row.notifications as never
       ),
+      whatsappAccounts: readWhatsappAccounts(row.metadata),
       ...auditFields(row),
     };
   }
@@ -99,6 +105,24 @@ export class SettingsService {
       (body.name as string | undefined) ??
       (body.companyName as string | undefined);
 
+    let nextMetadata: Prisma.InputJsonValue | undefined;
+    if (body.whatsappAccounts !== undefined) {
+      const parsed = parseWhatsappAccountsInput({
+        accounts: body.whatsappAccounts,
+      });
+      if (!parsed.ok) {
+        throw new BadRequestException({
+          success: false,
+          code: "INVALID_WHATSAPP_ACCOUNTS",
+          message: "Invalid company WhatsApp accounts",
+        });
+      }
+      nextMetadata = withWhatsappAccounts(
+        current.metadata,
+        parsed.accounts
+      ) as Prisma.InputJsonValue;
+    }
+
     const row = await this.prisma.companySettings.update({
       where: { companyId },
       data: {
@@ -113,6 +137,7 @@ export class SettingsService {
         language: body.language as string | undefined,
         appearance: body.appearance as string | undefined,
         notifications: nextNotifications as Prisma.InputJsonValue | undefined,
+        metadata: nextMetadata,
         updatedBy: actorId,
         version: { increment: 1 },
       },

@@ -157,6 +157,8 @@ export interface CompanySettings extends BaseEntity {
   language: "en" | "ar";
   appearance: "system" | "light" | "dark";
   notifications: import("@/lib/notification-policy").CompanyNotificationSettings;
+  /** Company WhatsApp lines CRM can send from (usually Business). */
+  whatsappAccounts?: import("../../shared/whatsapp-accounts").WhatsappAccount[];
 }
 
 export type * from "@/types/org";

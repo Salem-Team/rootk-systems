@@ -1134,7 +1134,7 @@ export const en = {
     personalInfo: "Personal information",
     whatsappAccounts: "WhatsApp accounts",
     whatsappAccountsDesc:
-      "Add the salesperson’s personal WhatsApp number and mark whether it lives in WhatsApp or WhatsApp Business. Keep the company line on the other app so outbound chats open from the salesperson’s number.",
+      "Add the salesperson’s WhatsApp number here and mark WhatsApp vs Business. The company number is configured in company settings on the other app, and CRM lets you choose sales or company when sending.",
     whatsappLabel: "Name",
     whatsappLabelPlaceholder: "Sales line",
     whatsappPhone: "Number",
@@ -1906,6 +1906,15 @@ export const en = {
     groupPersonal: "Personal",
     companyProfile: "Company profile",
     companyProfileDesc: "Identity, business details, and brand for ROOTK Systems.",
+    companyWhatsapp: "Company WhatsApp",
+    companyWhatsappDesc:
+      "Company WhatsApp lines sales can choose when messaging from CRM. Mark WhatsApp vs Business to match the app where that number is signed in.",
+    companyWhatsappEmpty: "No company WhatsApp number yet",
+    companyWhatsappAdd: "Add company number",
+    companyWhatsappSave: "Save company WhatsApp",
+    companyWhatsappSaved: "Company WhatsApp saved",
+    companyWhatsappDefaultLabel: "Company line",
+    companyWhatsappLabelPlaceholder: "Company line",
     brandPreview: "Brand color",
     defaultLanguage: "Default language",
     companyDefaultsHint:
@@ -3772,26 +3781,31 @@ export const en = {
     whatsappSend: {
       title: "Send from which number?",
       description:
-        "Pick your number. Tapping it opens WhatsApp straight into the customer chat.",
+        "Pick the sales line or the company line. Tapping it opens the matching WhatsApp app into the customer chat.",
       empty:
-        "No WhatsApp number on your profile. Add your lines on the profile page and mark WhatsApp vs Business.",
-      addNumbers: "Add WhatsApp numbers on profile",
+        "No WhatsApp lines ready. Add a sales number on profile, and the company number in company settings.",
+      addNumbers: "Add sales number on profile",
+      emptySales: "No sales number yet. Add it on your profile.",
+      emptyCompany:
+        "No company number yet. Ask admin to add it in company settings and mark WhatsApp vs Business.",
+      sourceSales: "Sales number",
+      sourceCompany: "Company number",
       missingEmployee: "Your login is not linked to an employee profile.",
       selected: "Selected",
       tapToOpen: "Open chat",
       appPersonal: "WhatsApp",
       appBusiness: "WhatsApp Business",
-      openChat: "Open WhatsApp with my number",
+      openChat: "Open WhatsApp with selected number",
       sendingAs: "Opens {app} as {label} ({phone}) into the customer chat.",
       openHint:
-        "To send from your number: keep your line in WhatsApp and the company line in WhatsApp Business (or the reverse), and set the matching app on your profile.",
+        "To send from the right line: keep the sales number in WhatsApp and the company number in WhatsApp Business (or the reverse), and set the matching app for each.",
       openHintNative:
-        "On Android the app forces your WhatsApp/Business package — the OS will not quietly pick the company Business install.",
+        "On Android the app forces the WhatsApp/Business package tied to the selected line.",
       openHintDesktop:
-        "On mobile we open the app tied to your number. On desktop, WhatsApp Web uses whichever account is signed in on this device.",
+        "On mobile we open the app tied to the selected line. On desktop, WhatsApp Web uses whichever account is signed in on this device.",
       openFailed: "Couldn’t open WhatsApp. Try again or open WhatsApp manually.",
       notInstalled:
-        "The required WhatsApp app isn’t installed. Install WhatsApp or WhatsApp Business to match your profile setting.",
+        "The required WhatsApp app isn’t installed. Install WhatsApp or WhatsApp Business to match the line setting.",
       invalidPhone: "This customer number can’t open WhatsApp.",
       opened: "WhatsApp opened on the customer chat — send the message there",
       loggedTitle: "Opened WhatsApp chat via {account}",

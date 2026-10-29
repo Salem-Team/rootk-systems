@@ -68,6 +68,20 @@ export function accountsOnEmployee(employee: {
   return readWhatsappAccounts(employee.metadata);
 }
 
+/** Company WhatsApp lines (usually Business). Same storage shape as employees. */
+export function accountsOnCompany(settings: {
+  whatsappAccounts?: WhatsappAccount[] | null;
+  metadata?: unknown;
+}): WhatsappAccount[] {
+  if (Array.isArray(settings.whatsappAccounts)) {
+    return settings.whatsappAccounts.map((account) => ({
+      ...account,
+      app: normalizeWhatsappClientApp(account.app),
+    }));
+  }
+  return readWhatsappAccounts(settings.metadata);
+}
+
 export function withWhatsappAccounts(
   metadata: unknown,
   accounts: WhatsappAccount[]

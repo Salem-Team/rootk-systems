@@ -1,6 +1,7 @@
 export {
   MAX_WHATSAPP_ACCOUNTS,
   WHATSAPP_ACCOUNTS_KEY,
+  accountsOnCompany,
   accountsOnEmployee,
   normalizeWhatsappClientApp,
   parseWhatsappAccountsInput,
