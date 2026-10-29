@@ -100,7 +100,9 @@ export function CompanyPolicySection() {
               className="rounded-xl border border-border/70 bg-muted/20 px-3.5 py-3"
             >
               <p className="section-label">{row.label}</p>
-              <p className="mt-1 text-sm font-semibold">{row.value}</p>
+              <p className="mt-1 break-words text-sm font-semibold leading-snug">
+                {row.value}
+              </p>
             </div>
           ))}
         </div>

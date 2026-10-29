@@ -51,8 +51,10 @@ export function SettingsForm({
     return <FormSkeleton />;
   }
 
+  const showSave = section !== "company" && section !== "security";
+
   return (
-    <div className="grid gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
+    <div className="grid gap-3 sm:gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
       <aside className="lg:sticky lg:top-20 lg:self-start">
         <SettingsNav
           navItems={navItems}
@@ -64,7 +66,7 @@ export function SettingsForm({
         />
       </aside>
 
-      <div className="min-w-0 space-y-4">
+      <div className={`min-w-0 space-y-3 sm:space-y-4 ${showSave ? "pb-20 sm:pb-0" : ""}`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={section}
@@ -91,7 +93,7 @@ export function SettingsForm({
             {section === "company" ? <CompanyPolicySection /> : null}
 
             {section === "security" ? (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <SettingsBiometricSection />
                 <SettingsSecuritySection
                   currentPassword={currentPassword}
@@ -112,10 +114,11 @@ export function SettingsForm({
           </motion.div>
         </AnimatePresence>
 
-        {section === "company" || section === "security" ? null : (
-          <div className="flex justify-end">
+        {showSave ? (
+          <div className="pointer-events-none fixed inset-x-0 bottom-[var(--mobile-action-bottom)] z-30 px-3 sm:static sm:inset-auto sm:z-auto sm:flex sm:justify-end sm:px-0">
             <Button
               size="lg"
+              className="pointer-events-auto w-full min-h-12 touch-manipulation shadow-[var(--shadow-float)] sm:w-auto sm:min-h-10 sm:shadow-none"
               onClick={() => void handleSave()}
               disabled={saving}
             >
@@ -123,7 +126,7 @@ export function SettingsForm({
               {t("common.save")}
             </Button>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

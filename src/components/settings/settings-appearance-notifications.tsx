@@ -59,7 +59,7 @@ export function SettingsAppearanceSection({
               setTheme(appearance);
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger className="min-h-11 touch-manipulation sm:min-h-10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -91,7 +91,7 @@ export function SettingsAppearanceSection({
               setLocale(language as Locale);
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger className="min-h-11 touch-manipulation sm:min-h-10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -149,10 +149,11 @@ export function SettingsNotificationsSection({
           <motion.div
             key={key}
             variants={fadeInUp}
-            className="list-row flex items-center justify-between gap-4 px-3.5 py-3"
+            className="list-row flex min-h-12 items-center justify-between gap-3 px-3 py-3 sm:gap-4 sm:px-3.5"
           >
-            <p className="text-sm font-medium">{title}</p>
+            <p className="min-w-0 flex-1 text-sm font-medium leading-snug">{title}</p>
             <Switch
+              className="shrink-0 touch-manipulation"
               checked={prefs.notifications[key] ?? DEFAULT_NOTIFS[key]}
               onCheckedChange={(v) =>
                 setPrefs((p) =>

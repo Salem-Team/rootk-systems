@@ -101,22 +101,23 @@ export function SettingsBiometricSection() {
           {t("settings.biometricDesc", { method })}
         </p>
       </div>
-      <div className="panel-body flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-sm font-medium">
+      <div className="panel-body flex items-center justify-between gap-3 sm:gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium leading-snug">
             {t("settings.biometricToggle", { method })}
           </p>
-          <p className="mt-0.5 text-[12px] text-muted-foreground">
+          <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
             {available
               ? t("settings.biometricHint")
               : t("auth.biometric.unavailable")}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {busy ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           ) : null}
           <Switch
+            className="touch-manipulation"
             checked={enabled}
             disabled={busy || (!available && !enabled)}
             onCheckedChange={(value) => void onToggle(value)}
@@ -169,6 +170,7 @@ export function SettingsSecuritySection({
             id="settings-current-password"
             type="password"
             autoComplete="current-password"
+            className="min-h-11 touch-manipulation sm:min-h-10"
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
           />
@@ -181,6 +183,7 @@ export function SettingsSecuritySection({
             id="settings-new-password"
             type="password"
             autoComplete="new-password"
+            className="min-h-11 touch-manipulation sm:min-h-10"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
           />
@@ -193,6 +196,7 @@ export function SettingsSecuritySection({
             id="settings-confirm-password"
             type="password"
             autoComplete="new-password"
+            className="min-h-11 touch-manipulation sm:min-h-10"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
@@ -200,6 +204,7 @@ export function SettingsSecuritySection({
         <div className="sm:col-span-2">
           <Button
             type="button"
+            className="min-h-11 w-full touch-manipulation sm:min-h-10 sm:w-auto"
             onClick={() => void handleChangePassword()}
             disabled={
               passwordSaving ||
@@ -239,7 +244,7 @@ export function SettingsProfileSection({ user }: { user: SessionUser }) {
       <div className="panel-body grid gap-3 sm:grid-cols-2">
         <div className="rounded-xl border border-border/70 bg-muted/20 px-3.5 py-3">
           <p className="section-label">{t("common.email")}</p>
-          <p className="mt-1 text-sm font-semibold">{user.email}</p>
+          <p className="mt-1 break-all text-sm font-semibold">{user.email}</p>
         </div>
         <div className="rounded-xl border border-border/70 bg-muted/20 px-3.5 py-3">
           <p className="section-label">{t("common.status")}</p>
@@ -249,32 +254,33 @@ export function SettingsProfileSection({ user }: { user: SessionUser }) {
           <p className="section-label text-primary/80">
             {t("settings.workspaceHint")}
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
             {t("settings.workspaceHintDesc")}
           </p>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className="mt-3"
+            className="mt-3 min-h-11 w-full touch-manipulation sm:min-h-9 sm:w-auto"
             onClick={() => router.push("/profile")}
           >
             <UserRound className="h-3.5 w-3.5" />
             {t("common.profile")}
           </Button>
         </div>
-        <div className="rounded-xl border border-rose-200/80 bg-rose-50/60 px-3.5 py-3 sm:col-span-2">
-          <p className="section-label text-rose-800/80">
+        <div className="rounded-xl border border-rose-200/80 bg-rose-50/60 px-3.5 py-3 dark:border-rose-500/25 dark:bg-rose-500/10 sm:col-span-2">
+          <p className="section-label text-rose-800/80 dark:text-rose-200/90">
             {t("settings.deleteAccount")}
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
             {t("settings.deleteAccountDesc")}
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
             <Button
               type="button"
               variant="outline"
               size="sm"
+              className="min-h-11 w-full touch-manipulation sm:min-h-9 sm:w-auto"
               onClick={() => router.push("/account-deletion")}
             >
               {t("settings.deleteAccount")}
@@ -283,6 +289,7 @@ export function SettingsProfileSection({ user }: { user: SessionUser }) {
               type="button"
               variant="ghost"
               size="sm"
+              className="min-h-11 w-full touch-manipulation sm:min-h-9 sm:w-auto"
               onClick={() => router.push("/privacy")}
             >
               {t("settings.privacyPolicy")}
@@ -291,6 +298,7 @@ export function SettingsProfileSection({ user }: { user: SessionUser }) {
               type="button"
               variant="ghost"
               size="sm"
+              className="min-h-11 w-full touch-manipulation sm:min-h-9 sm:w-auto"
               onClick={() => router.push("/terms")}
             >
               {t("settings.termsOfUse")}
