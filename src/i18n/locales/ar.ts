@@ -793,6 +793,10 @@ export const ar: TranslationKeys = {
       "المتصفح رافض صلاحية الموقع — من إعدادات الموقع للمتصفح فعّل السماح لـ system.rootk-eg.com",
     locationUnavailable:
       "مقدرناش نقرأ موقعك دلوقتي — تأكد إن GPS شغال وحاول تاني",
+    locationTimeout:
+      "قراءة الموقع أخدت وقت طويل — جرّب تاني أو الصق لينك Google Maps",
+    locationRequiresHttps:
+      "قراءة الموقع محتاجة فتح الموقع من رابط آمن (https)",
     outsideOffice:
       "إنت برّه نطاق مكتب الشركة — لازم تكون جوّه المكتب (أو قريب منه)",
     officeLocationNotConfigured:
@@ -1892,12 +1896,16 @@ export const ar: TranslationKeys = {
     capacity: "السعة",
     latitude: "خط العرض",
     longitude: "خط الطول",
+    latitudePlaceholder: "هيتعبّى تلقائيًا",
+    longitudePlaceholder: "هيتعبّى تلقائيًا",
+    locationNameRequired: "اكتب اسم المكتب الأول",
+    locationCityRequired: "اكتب المدينة الأول",
     radiusMeters: "نطاق الحضور (متر)",
     mapsUrl: "لينك Google Maps",
     mapsUrlApply: "استخراج الموقع",
     useMyLocation: "موقعي الحالي",
     mapsUrlHint:
-      "افتح المكان على Google Maps → شارك → انسخ اللينك والصقه هنا — أو قف في المكتب واضغط «موقعي الحالي». هيتعبّى خط العرض والطول لوحده.",
+      "افتح المكان على Google Maps → شارك → انسخ اللينك والصقه هنا — أو قف في المكتب واضغط «موقعي الحالي». هيتعبّى خط العرض والطول لوحده. وبعدين اكتب الاسم والمدينة واضغط أضف.",
     mapsUrlRequired: "الصق لينك Google Maps الأول",
     mapsUrlInvalid:
       "مقدرناش نقرأ الإحداثيات من اللينك. افتح اللينك وانسخ الرابط الكامل من شريط العنوان.",

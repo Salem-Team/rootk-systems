@@ -198,20 +198,9 @@ export function parseGoogleMapsUrl(input: string): GeoPoint | null {
   return null;
 }
 
-/**
- * Read the device GPS. Rejects with a stable message string for UI mapping.
- */
-export function getBrowserLocation(
-  options: PositionOptions = {
-    enableHighAccuracy: true,
-    timeout: 20_000,
-    maximumAge: 15_000,
-  }
+function readPositionOnce(
+  options: PositionOptions
 ): Promise<BrowserGeoCoords> {
-  if (typeof navigator === "undefined" || !navigator.geolocation) {
-    return Promise.reject(new Error("Location unavailable"));
-  }
-
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -229,9 +218,64 @@ export function getBrowserLocation(
           reject(new Error("Location permission denied"));
           return;
         }
+        if (err.code === err.TIMEOUT) {
+          reject(new Error("Location timeout"));
+          return;
+        }
         reject(new Error("Location unavailable"));
       },
       options
     );
   });
+}
+
+/**
+ * Read the device GPS. Rejects with a stable message string for UI mapping.
+ * Tries high-accuracy first, then a looser network/wifi fallback.
+ */
+export async function getBrowserLocation(
+  options: PositionOptions = {
+    enableHighAccuracy: true,
+    timeout: 20_000,
+    maximumAge: 15_000,
+  }
+): Promise<BrowserGeoCoords> {
+  if (typeof window === "undefined") {
+    throw new Error("Location unavailable");
+  }
+  if (!window.isSecureContext) {
+    throw new Error("Location requires HTTPS");
+  }
+  if (!navigator.geolocation) {
+    throw new Error("Location unavailable");
+  }
+
+  // Warm up the permission prompt when the Permissions API is available.
+  try {
+    const status = await navigator.permissions?.query?.({
+      name: "geolocation",
+    });
+    if (status?.state === "denied") {
+      throw new Error("Location permission denied");
+    }
+  } catch (err) {
+    if (err instanceof Error && /permission denied/i.test(err.message)) {
+      throw err;
+    }
+    // Safari / older browsers may not support geolocation permission queries.
+  }
+
+  try {
+    return await readPositionOnce(options);
+  } catch (err) {
+    if (err instanceof Error && /permission denied/i.test(err.message)) {
+      throw err;
+    }
+    // Retry once with lower accuracy — desktop / Wi-Fi often fails high-accuracy.
+    return readPositionOnce({
+      enableHighAccuracy: false,
+      timeout: Math.max(options.timeout ?? 20_000, 20_000),
+      maximumAge: options.maximumAge ?? 60_000,
+    });
+  }
 }

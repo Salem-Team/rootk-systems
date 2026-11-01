@@ -156,7 +156,12 @@ export function LocationForm({
             step="any"
             inputMode="decimal"
             dir="ltr"
-            placeholder="30.0075"
+            placeholder={t("admin.latitudePlaceholder")}
+            className={
+              draft.latitude.trim()
+                ? "border-emerald-500/40 bg-emerald-500/[0.04]"
+                : undefined
+            }
             value={draft.latitude}
             onChange={(e) =>
               setDraft((d) => ({ ...d, latitude: e.target.value }))
@@ -171,7 +176,12 @@ export function LocationForm({
             step="any"
             inputMode="decimal"
             dir="ltr"
-            placeholder="31.4913"
+            placeholder={t("admin.longitudePlaceholder")}
+            className={
+              draft.longitude.trim()
+                ? "border-emerald-500/40 bg-emerald-500/[0.04]"
+                : undefined
+            }
             value={draft.longitude}
             onChange={(e) =>
               setDraft((d) => ({ ...d, longitude: e.target.value }))

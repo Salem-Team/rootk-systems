@@ -75,14 +75,18 @@ export function LocationsAdminPanel() {
       });
       setDraft((d) => ({
         ...d,
-        latitude: String(coords.latitude),
-        longitude: String(coords.longitude),
+        latitude: String(Number(coords.latitude.toFixed(6))),
+        longitude: String(Number(coords.longitude.toFixed(6))),
       }));
       toast.success(t("admin.useMyLocationApplied"));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       if (/permission denied/i.test(msg)) {
         toast.error(t("errors.locationPermissionDenied"));
+      } else if (/HTTPS/i.test(msg)) {
+        toast.error(t("errors.locationRequiresHttps"));
+      } else if (/timeout/i.test(msg)) {
+        toast.error(t("errors.locationTimeout"));
       } else {
         toast.error(t("errors.locationUnavailable"));
       }
@@ -92,8 +96,12 @@ export function LocationsAdminPanel() {
   }
 
   async function onSave() {
-    if (!draft.name.trim() || !draft.city.trim()) {
-      toast.error(t("common.error"));
+    if (!draft.name.trim()) {
+      toast.error(t("admin.locationNameRequired"));
+      return;
+    }
+    if (!draft.city.trim()) {
+      toast.error(t("admin.locationCityRequired"));
       return;
     }
     let lat = Number(draft.latitude);

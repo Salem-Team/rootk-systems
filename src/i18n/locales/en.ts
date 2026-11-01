@@ -802,6 +802,10 @@ export const en = {
       "Location permission denied — allow location for this site in browser settings",
     locationUnavailable:
       "Could not read your location — enable GPS and try again",
+    locationTimeout:
+      "Reading your location timed out — try again or paste a Google Maps link",
+    locationRequiresHttps:
+      "Location requires opening the site over HTTPS",
     outsideOffice:
       "You are outside the company office area — move closer and try again",
     officeLocationNotConfigured:
@@ -2046,12 +2050,16 @@ export const en = {
     capacity: "Capacity",
     latitude: "Latitude",
     longitude: "Longitude",
+    latitudePlaceholder: "Fills automatically",
+    longitudePlaceholder: "Fills automatically",
+    locationNameRequired: "Enter the office name first",
+    locationCityRequired: "Enter the city first",
     radiusMeters: "Check-in radius (m)",
     mapsUrl: "Google Maps link",
     mapsUrlApply: "Extract location",
     useMyLocation: "Use my location",
     mapsUrlHint:
-      "Open the place in Google Maps → Share → copy the link and paste it here — or stand at the office and tap Use my location. Latitude and longitude fill in automatically.",
+      "Open the place in Google Maps → Share → copy the link and paste it here — or stand at the office and tap Use my location. Latitude and longitude fill in automatically. Then enter name and city and tap Add.",
     mapsUrlRequired: "Paste a Google Maps link first",
     mapsUrlInvalid:
       "Could not read coordinates from that link. Open it and copy the full URL from the address bar.",
