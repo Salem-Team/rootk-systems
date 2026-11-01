@@ -3789,7 +3789,10 @@ export const en = {
     whatsappSend: {
       title: "Send from which number?",
       description:
-        "Pick the sales line or the company line. Tapping it opens the matching WhatsApp app into the customer chat.",
+        "First choose sales or company, then we open WhatsApp on the customer chat.",
+      pickNumber: "Choose which number to send from.",
+      backToSource: "Back to sales or company",
+      linesCount: "{count} number(s) available",
       empty:
         "No WhatsApp lines ready. Add a sales number on profile, and the company number in company settings.",
       addNumbers: "Add sales number on profile",
@@ -3847,6 +3850,7 @@ export const en = {
       colLead: "Lead",
       colPhone: "Contact",
       phoneActions: "Call or open profile",
+      phoneCall: "Phone call",
       openProfile: "Open profile",
       colRequest: "Request",
       colBudget: "Budget",

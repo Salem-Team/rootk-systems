@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Building2, Loader2, MessageCircle, ShieldCheck, UserRound } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  Loader2,
+  MessageCircle,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -30,6 +37,7 @@ import {
   displayWhatsappPhone,
   normalizeWhatsappClientApp,
   type WhatsappAccount,
+  type WhatsappClientApp,
 } from "@/lib/whatsapp-accounts";
 import { addCrmLeadActivity } from "@/services/crm/crm-activities.service";
 import { getEmployeeById } from "@/services/employees.service";
@@ -46,6 +54,18 @@ function sortLines(lines: SendLine[], preferredId: string | null): SendLine[] {
   const preferred = lines.find((row) => row.id === preferredId);
   if (!preferred) return lines;
   return [preferred, ...lines.filter((row) => row.id !== preferredId)];
+}
+
+function fallbackLine(
+  id: string,
+  label: string,
+  phone: string | null | undefined,
+  app: WhatsappClientApp,
+  source: SendSource
+): SendLine | null {
+  const trimmed = phone?.trim() ?? "";
+  if (!trimmed) return null;
+  return { id, label, phone: trimmed, app, source };
 }
 
 export function CrmWhatsappSendDialog({
@@ -69,10 +89,12 @@ export function CrmWhatsappSendDialog({
   const [opening, setOpening] = useState(false);
   const [missingEmployee, setMissingEmployee] = useState(false);
   const [lines, setLines] = useState<SendLine[]>([]);
+  const [source, setSource] = useState<SendSource | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) {
+      setSource(null);
       setSelectedId(null);
       setOpening(false);
       return;
@@ -81,6 +103,7 @@ export function CrmWhatsappSendDialog({
     const employeeId = getWorkEmployeeId();
     setMissingEmployee(!employeeId);
     setLoading(true);
+    setSource(null);
 
     void Promise.all([
       employeeId ? getEmployeeById(employeeId) : Promise.resolve(null),
@@ -89,36 +112,57 @@ export function CrmWhatsappSendDialog({
       if (cancelled) return;
       setLoading(false);
 
-      const sales: SendLine[] =
+      const employee =
         employeeRes && employeeRes.success && employeeRes.data
-          ? accountsOnEmployee(employeeRes.data).map((account) => ({
-              ...account,
-              source: "sales" as const,
-            }))
-          : [];
+          ? employeeRes.data
+          : null;
+      const settings =
+        settingsRes.success && settingsRes.data ? settingsRes.data : null;
 
-      const company: SendLine[] =
-        settingsRes.success && settingsRes.data
-          ? accountsOnCompany(settingsRes.data).map((account) => ({
-              ...account,
-              source: "company" as const,
-            }))
-          : [];
+      let sales: SendLine[] = employee
+        ? accountsOnEmployee(employee).map((account) => ({
+            ...account,
+            source: "sales" as const,
+          }))
+        : [];
+      if (sales.length === 0 && employee) {
+        const fromPhone = fallbackLine(
+          "sales_phone_fallback",
+          t("crm.whatsappSend.sourceSales"),
+          employee.phone,
+          "whatsapp",
+          "sales"
+        );
+        if (fromPhone) sales = [fromPhone];
+      }
 
-      const ordered = sortLines([...sales, ...company], readLastWhatsappAccountId());
-      setLines(ordered);
-      setSelectedId(ordered[0]?.id ?? null);
+      let company: SendLine[] = settings
+        ? accountsOnCompany(settings).map((account) => ({
+            ...account,
+            source: "company" as const,
+          }))
+        : [];
+      if (company.length === 0 && settings) {
+        const fromPhone = fallbackLine(
+          "company_phone_fallback",
+          t("crm.whatsappSend.sourceCompany"),
+          settings.phone,
+          "business",
+          "company"
+        );
+        if (fromPhone) company = [fromPhone];
+      }
+
+      // Always land on sales vs company first — never skip or auto-open.
+      setLines(sortLines([...sales, ...company], readLastWhatsappAccountId()));
+      setSource(null);
+      setSelectedId(null);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [open]);
-
-  const selected = useMemo(
-    () => lines.find((row) => row.id === selectedId) ?? null,
-    [lines, selectedId]
-  );
+  }, [open, t]);
 
   const salesLines = useMemo(
     () => lines.filter((row) => row.source === "sales"),
@@ -127,6 +171,16 @@ export function CrmWhatsappSendDialog({
   const companyLines = useMemo(
     () => lines.filter((row) => row.source === "company"),
     [lines]
+  );
+  const activeLines = useMemo(() => {
+    if (source === "sales") return salesLines;
+    if (source === "company") return companyLines;
+    return [];
+  }, [companyLines, salesLines, source]);
+
+  const selected = useMemo(
+    () => activeLines.find((row) => row.id === selectedId) ?? null,
+    [activeLines, selectedId]
   );
 
   const platform = useMemo(() => resolveWhatsappPlatform(), [open]);
@@ -199,88 +253,97 @@ export function CrmWhatsappSendDialog({
     window.setTimeout(() => setOpening(false), 800);
   }
 
-  function renderGroup(
-    title: string,
-    icon: ReactNode,
-    group: SendLine[],
-    emptyHint: ReactNode
-  ) {
-    return (
-      <div className="grid gap-2">
-        <div className="flex items-center gap-2 px-0.5 text-[12px] font-semibold text-muted-foreground">
-          {icon}
-          <span>{title}</span>
+  function pickSource(next: SendSource) {
+    const group = next === "sales" ? salesLines : companyLines;
+    if (group.length === 0) return;
+    // Explicit sales vs company choice — if only one line, open that WhatsApp next.
+    if (group.length === 1) {
+      void openWithLine(group[0]);
+      return;
+    }
+    setSource(next);
+    setSelectedId(group[0]?.id ?? null);
+  }
+
+  function renderLineList(group: SendLine[], emptyHint: ReactNode) {
+    if (group.length === 0) {
+      return (
+        <div className="rounded-xl border border-dashed border-border/80 px-3 py-2.5 text-sm text-muted-foreground">
+          {emptyHint}
         </div>
-        {group.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border/80 px-3 py-2.5 text-sm text-muted-foreground">
-            {emptyHint}
-          </div>
-        ) : (
-          <ul className="grid gap-2">
-            {group.map((line) => {
-              const active = line.id === selected?.id;
-              const app = normalizeWhatsappClientApp(line.app);
-              const busy = opening;
-              return (
-                <li key={`${line.source}-${line.id}`}>
-                  <button
-                    type="button"
-                    aria-pressed={active}
-                    disabled={busy}
-                    className={cn(
-                      "flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-start transition-colors",
-                      active
-                        ? "border-emerald-500/55 bg-emerald-500/10"
-                        : "border-border/70 bg-card hover:bg-muted/40",
-                      busy && "opacity-60"
+      );
+    }
+    return (
+      <ul className="grid gap-2">
+        {group.map((line) => {
+          const active = line.id === selected?.id;
+          const app = normalizeWhatsappClientApp(line.app);
+          const busy = opening;
+          return (
+            <li key={`${line.source}-${line.id}`}>
+              <button
+                type="button"
+                aria-pressed={active}
+                disabled={busy}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-start transition-colors",
+                  active
+                    ? "border-emerald-500/55 bg-emerald-500/10"
+                    : "border-border/70 bg-card hover:bg-muted/40",
+                  busy && "opacity-60"
+                )}
+                onClick={() => void openWithLine(line)}
+              >
+                <MessageCircle
+                  className={cn(
+                    "h-4 w-4 shrink-0",
+                    active ? "text-emerald-600" : "text-muted-foreground"
+                  )}
+                  aria-hidden
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold">
+                    {line.label}
+                  </span>
+                  <LtrNum className="font-mono text-[12px] text-muted-foreground">
+                    {displayWhatsappPhone(line.phone)}
+                  </LtrNum>
+                  <span className="mt-0.5 block text-[11px] font-medium text-muted-foreground">
+                    {t(
+                      app === "business"
+                        ? "crm.whatsappSend.appBusiness"
+                        : "crm.whatsappSend.appPersonal"
                     )}
-                    onClick={() => void openWithLine(line)}
-                  >
-                    <MessageCircle
-                      className={cn(
-                        "h-4 w-4 shrink-0",
-                        active ? "text-emerald-600" : "text-muted-foreground"
-                      )}
-                      aria-hidden
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold">
-                        {line.label}
-                      </span>
-                      <LtrNum className="font-mono text-[12px] text-muted-foreground">
-                        {displayWhatsappPhone(line.phone)}
-                      </LtrNum>
-                      <span className="mt-0.5 block text-[11px] font-medium text-muted-foreground">
-                        {t(
-                          app === "business"
-                            ? "crm.whatsappSend.appBusiness"
-                            : "crm.whatsappSend.appPersonal"
-                        )}
-                      </span>
-                    </span>
-                    <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
-                      {busy && active ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                      ) : (
-                        t("crm.whatsappSend.tapToOpen")
-                      )}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+                  </span>
+                </span>
+                <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                  {busy && active ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                  ) : (
+                    t("crm.whatsappSend.tapToOpen")
+                  )}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     );
   }
+
+  const showSourceStep = !loading && lines.length > 0 && source === null;
+  const showLinesStep = !loading && lines.length > 0 && source !== null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm gap-4" onClick={(e) => e.stopPropagation()}>
         <DialogHeader className="space-y-1.5">
           <DialogTitle>{t("crm.whatsappSend.title")}</DialogTitle>
-          <DialogDescription>{t("crm.whatsappSend.description")}</DialogDescription>
+          <DialogDescription>
+            {showLinesStep
+              ? t("crm.whatsappSend.pickNumber")
+              : t("crm.whatsappSend.description")}
+          </DialogDescription>
         </DialogHeader>
         {loading ? (
           <div className="flex justify-center py-6">
@@ -297,25 +360,110 @@ export function CrmWhatsappSendDialog({
               <Link href="/profile">{t("crm.whatsappSend.addNumbers")}</Link>
             </Button>
           </div>
-        ) : (
-          <div className="grid gap-4">
-            {renderGroup(
-              t("crm.whatsappSend.sourceSales"),
-              <UserRound className="h-3.5 w-3.5" aria-hidden />,
-              salesLines,
-              <span className="flex flex-wrap items-center gap-x-1 gap-y-1">
-                <span>{t("crm.whatsappSend.emptySales")}</span>
-                <Link href="/profile" className="font-medium text-primary underline-offset-2 hover:underline">
-                  {t("crm.whatsappSend.addNumbers")}
-                </Link>
+        ) : showSourceStep ? (
+          <div className="grid gap-3">
+            <button
+              type="button"
+              disabled={opening || salesLines.length === 0}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-2xl border border-border/80 bg-card px-4 py-3.5 text-start transition-colors hover:bg-muted/40",
+                salesLines.length === 0 && "opacity-50"
+              )}
+              onClick={() => pickSource("sales")}
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-700 dark:text-sky-300">
+                <UserRound className="h-5 w-5" aria-hidden />
               </span>
-            )}
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold">
+                  {t("crm.whatsappSend.sourceSales")}
+                </span>
+                <span className="mt-0.5 block text-[12px] text-muted-foreground">
+                  {salesLines.length === 0
+                    ? t("crm.whatsappSend.emptySales")
+                    : t("crm.whatsappSend.linesCount", {
+                        count: salesLines.length,
+                      })}
+                </span>
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground rtl:rotate-180" aria-hidden />
+            </button>
 
-            {renderGroup(
-              t("crm.whatsappSend.sourceCompany"),
-              <Building2 className="h-3.5 w-3.5" aria-hidden />,
-              companyLines,
-              <span>{t("crm.whatsappSend.emptyCompany")}</span>
+            <button
+              type="button"
+              disabled={opening || companyLines.length === 0}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-2xl border border-border/80 bg-card px-4 py-3.5 text-start transition-colors hover:bg-muted/40",
+                companyLines.length === 0 && "opacity-50"
+              )}
+              onClick={() => pickSource("company")}
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+                <Building2 className="h-5 w-5" aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold">
+                  {t("crm.whatsappSend.sourceCompany")}
+                </span>
+                <span className="mt-0.5 block text-[12px] text-muted-foreground">
+                  {companyLines.length === 0
+                    ? t("crm.whatsappSend.emptyCompany")
+                    : t("crm.whatsappSend.linesCount", {
+                        count: companyLines.length,
+                      })}
+                </span>
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground rtl:rotate-180" aria-hidden />
+            </button>
+
+            {salesLines.length === 0 ? (
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/profile">{t("crm.whatsappSend.addNumbers")}</Link>
+              </Button>
+            ) : null}
+          </div>
+        ) : showLinesStep ? (
+          <div className="grid gap-4">
+            <button
+              type="button"
+              className="inline-flex w-fit items-center gap-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                setSource(null);
+                setSelectedId(null);
+              }}
+            >
+              <ArrowRight className="h-3.5 w-3.5 rotate-180 rtl:rotate-0" aria-hidden />
+              {t("crm.whatsappSend.backToSource")}
+            </button>
+
+            <div className="flex items-center gap-2 px-0.5 text-[12px] font-semibold text-muted-foreground">
+              {source === "company" ? (
+                <Building2 className="h-3.5 w-3.5" aria-hidden />
+              ) : (
+                <UserRound className="h-3.5 w-3.5" aria-hidden />
+              )}
+              <span>
+                {source === "company"
+                  ? t("crm.whatsappSend.sourceCompany")
+                  : t("crm.whatsappSend.sourceSales")}
+              </span>
+            </div>
+
+            {renderLineList(
+              activeLines,
+              source === "company" ? (
+                <span>{t("crm.whatsappSend.emptyCompany")}</span>
+              ) : (
+                <span className="flex flex-wrap items-center gap-x-1 gap-y-1">
+                  <span>{t("crm.whatsappSend.emptySales")}</span>
+                  <Link
+                    href="/profile"
+                    className="font-medium text-primary underline-offset-2 hover:underline"
+                  >
+                    {t("crm.whatsappSend.addNumbers")}
+                  </Link>
+                </span>
+              )
             )}
 
             {selected ? (
@@ -347,7 +495,7 @@ export function CrmWhatsappSendDialog({
               </div>
             ) : null}
 
-            {selected && chatHref ? (
+            {selected && chatHref && activeLines.length > 1 ? (
               <Button
                 type="button"
                 disabled={opening}
@@ -363,7 +511,7 @@ export function CrmWhatsappSendDialog({
               </Button>
             ) : null}
           </div>
-        )}
+        ) : null}
       </DialogContent>
     </Dialog>
   );

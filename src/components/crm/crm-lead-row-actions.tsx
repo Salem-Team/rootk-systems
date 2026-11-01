@@ -4,6 +4,12 @@ import { useState, type ReactElement } from "react";
 import { History, MessageCircle, Phone } from "lucide-react";
 import { CrmWhatsappSendDialog } from "@/components/crm/crm-whatsapp-send-dialog";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -90,15 +96,44 @@ export function CrmLeadRowActions({
         onPointerDown={(e) => e.stopPropagation()}
       >
         <ActionTip label={t("crm.nextAction.call")}>
-          {callUrl ? (
-            <a
-              href={callUrl}
-              aria-label={t("crm.nextAction.call")}
-              className={cn(actionBtnClass, "hover:bg-muted hover:text-foreground")}
-              onClick={onDial}
-            >
-              <Phone className="h-4 w-4 md:h-3.5 md:w-3.5" aria-hidden />
-            </a>
+          {callUrl || waUrl ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t("crm.nextAction.call")}
+                  className={cn(actionBtnClass, "hover:bg-muted hover:text-foreground")}
+                >
+                  <Phone className="h-4 w-4 md:h-3.5 md:w-3.5" aria-hidden />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="min-w-[12rem]"
+                onClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                {callUrl ? (
+                  <DropdownMenuItem asChild>
+                    <a href={callUrl} className="cursor-pointer" onClick={onDial}>
+                      <Phone aria-hidden />
+                      {t("crm.leads.phoneCall")}
+                    </a>
+                  </DropdownMenuItem>
+                ) : null}
+                {waUrl ? (
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onSelect={() => {
+                      window.setTimeout(() => setWhatsappOpen(true), 0);
+                    }}
+                  >
+                    <MessageCircle aria-hidden />
+                    {t("crm.nextAction.whatsapp")}
+                  </DropdownMenuItem>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <button
               type="button"

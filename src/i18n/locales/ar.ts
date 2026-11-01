@@ -3775,8 +3775,10 @@ export const ar: TranslationKeys = {
     },
     whatsappSend: {
       title: "ابعت من أي رقم؟",
-      description:
-        "اختار رقم السيلز أو رقم الشركة. دوس على الرقم ويفتح واتساب المناسب مباشرة على شات العميل.",
+      description: "اختار الأول: رقم السيلز ولا رقم الشركة، وبعدين نفتح واتساب على شات العميل.",
+      pickNumber: "اختار الرقم اللي هتبعت منه.",
+      backToSource: "رجوع لاختيار السيلز أو الشركة",
+      linesCount: "{count} رقم متاح",
       empty:
         "مفيش أرقام واتساب جاهزة. ضيف رقم السيلز من البروفايل، ورقم الشركة من إعدادات الشركة.",
       addNumbers: "إضافة رقم السيلز من البروفايل",
@@ -3835,6 +3837,7 @@ export const ar: TranslationKeys = {
       colLead: "العميل",
       colPhone: "التواصل",
       phoneActions: "اتصال أو فتح الحساب",
+      phoneCall: "اتصال هاتفي",
       openProfile: "افتح الحساب",
       colRequest: "الطلب",
       colBudget: "البادجيت",
