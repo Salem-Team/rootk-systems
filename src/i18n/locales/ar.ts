@@ -2829,6 +2829,8 @@ export const ar: TranslationKeys = {
     departmentPayroll: "رواتب الإدارات",
     headcount: "العدد",
     monthlyComparison: "مقارنة شهرية",
+    yearlyComparison: "مقارنة سنوية",
+    reportsEmpty: "مفيش بيانات كافية لرسم التقارير — احسب الرواتب للشهر أولًا.",
     reportSalaryCost: "تكلفة الرواتب",
     reportOvertimeCost: "تكلفة الإضافي",
     reportAttendanceCost: "تكلفة الحضور",

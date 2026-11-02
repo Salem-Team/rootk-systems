@@ -73,7 +73,7 @@ export const payrollRulesSeed: SeedOf<PayrollRule>[] = [
     enabled: true,
     priority: 50,
     when: { field: "weekend_overtime", operator: "gt", value: 0 },
-    then: { action: "pay_overtime_rate", amount: 2 },
+    then: { action: "pay_overtime_rate", amount: 1.5 },
     description: "IF Weekend Overtime THEN Pay 200%",
   },
   {
@@ -82,7 +82,7 @@ export const payrollRulesSeed: SeedOf<PayrollRule>[] = [
     enabled: true,
     priority: 55,
     when: { field: "holiday_overtime", operator: "gt", value: 0 },
-    then: { action: "pay_overtime_rate", amount: 2.5 },
+    then: { action: "pay_overtime_rate", amount: 1.5 },
     description: "IF Holiday Overtime THEN Pay 250%",
   },
 ];

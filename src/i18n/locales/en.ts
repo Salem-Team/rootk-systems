@@ -2838,6 +2838,8 @@ export const en = {
     departmentPayroll: "Department payroll",
     headcount: "Headcount",
     monthlyComparison: "Monthly comparison",
+    yearlyComparison: "Yearly comparison",
+    reportsEmpty: "Not enough data to chart yet — calculate payroll for the month first.",
     reportSalaryCost: "Salary cost",
     reportOvertimeCost: "Overtime cost",
     reportAttendanceCost: "Attendance cost",

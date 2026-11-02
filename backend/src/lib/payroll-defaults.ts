@@ -18,8 +18,8 @@ export const DEFAULT_PAYROLL_POLICY = {
   earlyLeaveDayFraction: 0.25,
   missingPunchDayFraction: 0.25,
   overtimeRate: 1.5,
-  holidayOvertimeRate: 2.5,
-  weekendOvertimeRate: 2,
+  holidayOvertimeRate: 1.5,
+  weekendOvertimeRate: 1.5,
   nightShiftAllowance: 350,
   minimumWorkingMinutes: 480,
   maxDeductionDayFraction: 2,
@@ -141,12 +141,12 @@ export const DEFAULT_PAYROLL_RULES: BuiltinPayrollRuleSeed[] = [
   },
   {
     code: "weekend_ot",
-    name: "Weekend OT → 200%",
+    name: "Weekend OT → 150%",
     enabled: true,
     priority: 50,
     when: { field: "weekend_overtime", operator: "gt", value: 0 },
-    then: { action: "pay_overtime_rate", amount: 2 },
-    description: "IF Weekend overtime THEN Pay 200%",
+    then: { action: "pay_overtime_rate", amount: 1.5 },
+    description: "IF Weekend overtime THEN Pay 150%",
   },
 ];
 

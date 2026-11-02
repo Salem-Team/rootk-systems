@@ -12,7 +12,7 @@ export interface DepartmentPayrollRow {
 
 export interface PayrollReportBundle {
   departmentRows: DepartmentPayrollRow[];
-  deductionAnalysis: { label: string; amount: number }[];
+  deductionAnalysis: { label?: string; kind?: string; amount: number }[];
   overtimeCost: number;
   attendanceCost: number;
   leaveCost: number;
