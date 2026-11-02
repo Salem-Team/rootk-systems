@@ -113,12 +113,12 @@ export function AnalyticsChartsStudio({
       animate="visible"
       className="space-y-4"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h3 className="text-[0.95rem] font-semibold tracking-tight">
             {t("analytics.chartsStudio")}
           </h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[12px] text-muted-foreground sm:text-sm">
             {t("analytics.chartsStudioDesc")}
           </p>
         </div>
@@ -127,16 +127,23 @@ export function AnalyticsChartsStudio({
           onValueChange={(v) =>
             setPeriod(v as "weekly" | "monthly" | "quarterly")
           }
+          className="w-full min-w-0 sm:w-auto"
         >
-          <TabsList>
-            <TabsTrigger value="weekly">{t("analytics.weekly")}</TabsTrigger>
-            <TabsTrigger value="monthly">{t("analytics.monthly")}</TabsTrigger>
-            <TabsTrigger value="quarterly">{t("analytics.quarterly")}</TabsTrigger>
+          <TabsList className="grid h-11 w-full grid-cols-3 sm:inline-flex sm:h-9 sm:w-auto">
+            <TabsTrigger value="weekly" className="touch-manipulation">
+              {t("analytics.weekly")}
+            </TabsTrigger>
+            <TabsTrigger value="monthly" className="touch-manipulation">
+              {t("analytics.monthly")}
+            </TabsTrigger>
+            <TabsTrigger value="quarterly" className="touch-manipulation">
+              {t("analytics.quarterly")}
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid min-w-0 gap-4 lg:grid-cols-2">
         {(focus === "attendance" || focus === "all") && (
           <AttendanceTrendChart trend={trend} title={t("analytics.attendanceTrend")} />
         )}

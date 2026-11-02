@@ -132,7 +132,7 @@ export function ReportsSectionContent({
         initial={reduceMotion ? false : "hidden"}
         animate="visible"
         exit={reduceMotion ? undefined : "hidden"}
-        className="space-y-6"
+        className="min-w-0 max-w-full space-y-4 sm:space-y-6"
       >
         {section === "overview" && (
           <>

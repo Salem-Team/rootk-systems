@@ -18,7 +18,7 @@ export function ChartPanel({
         ) : null}
       </div>
       <div
-        className="panel-body h-[260px] sm:h-[280px]"
+        className="panel-body chart-frame h-[220px] min-w-0 sm:h-[280px]"
         role="img"
         aria-label={title}
       >

@@ -45,7 +45,7 @@ export function ReportSelectFilters({
             onChange({ ...value, department: v as Department | "all" })
           }
         >
-          <SelectTrigger>
+          <SelectTrigger className="min-h-11 touch-manipulation sm:min-h-10">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -65,7 +65,7 @@ export function ReportSelectFilters({
           value={value.employee}
           onValueChange={(v) => onChange({ ...value, employee: v })}
         >
-          <SelectTrigger>
+          <SelectTrigger className="min-h-11 touch-manipulation sm:min-h-10">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -87,7 +87,7 @@ export function ReportSelectFilters({
             onChange({ ...value, status: v as AttendanceStatus | "all" })
           }
         >
-          <SelectTrigger>
+          <SelectTrigger className="min-h-11 touch-manipulation sm:min-h-10">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -106,7 +106,7 @@ export function ReportSelectFilters({
           value={value.location}
           onValueChange={(v) => onChange({ ...value, location: v })}
         >
-          <SelectTrigger>
+          <SelectTrigger className="min-h-11 touch-manipulation sm:min-h-10">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -125,7 +125,7 @@ export function ReportSelectFilters({
           value={value.shift}
           onValueChange={(v) => onChange({ ...value, shift: v })}
         >
-          <SelectTrigger>
+          <SelectTrigger className="min-h-11 touch-manipulation sm:min-h-10">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -143,7 +143,7 @@ export function ReportSelectFilters({
           value={value.workMode}
           onValueChange={(v) => onChange({ ...value, workMode: v })}
         >
-          <SelectTrigger>
+          <SelectTrigger className="min-h-11 touch-manipulation sm:min-h-10">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -161,7 +161,7 @@ export function ReportSelectFilters({
           value={value.leaveType}
           onValueChange={(v) => onChange({ ...value, leaveType: v })}
         >
-          <SelectTrigger>
+          <SelectTrigger className="min-h-11 touch-manipulation sm:min-h-10">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

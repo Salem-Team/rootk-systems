@@ -27,7 +27,7 @@ export function LateReportChart({ weeklyData, monthlyData, t }: SecondaryChartPr
   return (
     <ChartCard title={t("reports.lateTab")} description={t("reports.description")}>
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="h-[280px]">
+        <div className="chart-frame h-[220px] min-w-0 sm:h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={weeklyData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
@@ -38,7 +38,7 @@ export function LateReportChart({ weeklyData, monthlyData, t }: SecondaryChartPr
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div className="h-[280px]">
+        <div className="chart-frame h-[220px] min-w-0 sm:h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={monthlyData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
@@ -65,7 +65,7 @@ export function AbsenceReportChart({ weeklyData, monthlyData, t }: SecondaryChar
   return (
     <ChartCard title={t("reports.absenceTab")} description={t("reports.description")}>
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="h-[280px]">
+        <div className="chart-frame h-[220px] min-w-0 sm:h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={weeklyData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
@@ -76,7 +76,7 @@ export function AbsenceReportChart({ weeklyData, monthlyData, t }: SecondaryChar
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div className="h-[280px]">
+        <div className="chart-frame h-[220px] min-w-0 sm:h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={monthlyData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <defs>

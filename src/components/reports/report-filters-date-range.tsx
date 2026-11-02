@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import type { enUS } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
@@ -20,42 +23,58 @@ export function ReportDateRangeFilter({
   dateLocale: typeof enUS;
 }) {
   const { t } = useTranslation();
+  const [months, setMonths] = useState(1);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 640px)");
+    const sync = () => setMonths(mq.matches ? 2 : 1);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   return (
-    <div className="space-y-2">
+    <div className="min-w-0 space-y-2 sm:col-span-2 lg:col-span-1">
       <Label>{t("reports.dateRange")}</Label>
       <Popover>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             className={cn(
-              "h-10 w-full justify-start font-normal",
+              "h-11 w-full min-w-0 touch-manipulation justify-start font-normal sm:h-10",
               !range?.from && "text-muted-foreground"
             )}
           >
-            <CalendarDays />
-            {range?.from ? (
-              range.to ? (
-                <>
-                  {format(range.from, "LLL d", { locale: dateLocale })} –{" "}
-                  {format(range.to, "LLL d, y", { locale: dateLocale })}
-                </>
+            <CalendarDays className="shrink-0" />
+            <span className="truncate">
+              {range?.from ? (
+                range.to ? (
+                  <>
+                    {format(range.from, "LLL d", { locale: dateLocale })} –{" "}
+                    {format(range.to, "LLL d, y", { locale: dateLocale })}
+                  </>
+                ) : (
+                  format(range.from, "LLL d, y", { locale: dateLocale })
+                )
               ) : (
-                format(range.from, "LLL d, y", { locale: dateLocale })
-              )
-            ) : (
-              t("reports.pickDates")
-            )}
+                t("reports.pickDates")
+              )}
+            </span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent
+          className="w-[min(100vw-1.5rem,22rem)] max-w-[calc(100vw-1.5rem)] p-0 sm:w-auto sm:max-w-none"
+          align="start"
+          sideOffset={8}
+        >
           <Calendar
             mode="range"
-            numberOfMonths={2}
+            numberOfMonths={months}
             selected={range}
             onSelect={onChange}
             defaultMonth={range?.from ?? demoNow()}
             locale={dateLocale}
+            className="mx-auto"
           />
         </PopoverContent>
       </Popover>
