@@ -2780,6 +2780,10 @@ export const en = {
       "This employee has no saved salary profile. Create one before running payroll.",
     createSalaryProfile: "Create salary profile",
     editSalaryProfile: "Edit salary profile",
+    editSalaryShort: "Edit salary",
+    salaryDirectoryTitle: "Employee salary profiles",
+    salaryDirectoryDesc:
+      "Edit basic pay, allowances, and contractual deductions for each employee here.",
     editSalaryProfileDesc:
       "Update contract pay components. Next payroll advance recalculates from attendance.",
     editSalaryProfileDescNamed:

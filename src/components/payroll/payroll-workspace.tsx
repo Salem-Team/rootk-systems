@@ -55,7 +55,7 @@ export function PayrollWorkspace() {
   const [reports, setReports] = useState<PayrollReportBundle | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
-  const [tab, setTab] = useState("ledger");
+  const [tab, setTab] = useState("salary");
   const [periodId, setPeriodId] = useState(() => {
     const now = new Date();
     return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;

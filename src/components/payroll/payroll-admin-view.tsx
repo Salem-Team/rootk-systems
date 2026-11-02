@@ -311,6 +311,7 @@ export function PayrollAdminView({
             selectedEmployee={selectedEmployee}
             periodLabel={summary.period.label}
             onEditProfile={() => onEditProfileOpenChange(true)}
+            profileReloadNonce={periodReloadNonce}
           />
         </TabsContent>
 

@@ -280,33 +280,64 @@ export function PayrollMonthBoard({
                   open && "border-primary/35 shadow-[var(--shadow-card)]"
                 )}
               >
-                <button
-                  type="button"
-                  className="flex w-full flex-col gap-2 px-3 py-3 text-start sm:flex-row sm:items-center sm:justify-between"
-                  onClick={() => {
-                    const next = open ? "" : slip.employeeId;
-                    setExpandedId(next);
-                    onSelectedEmployeeIdChange(slip.employeeId);
-                  }}
-                >
-                  <div className="min-w-0">
+                <div className="flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 text-start"
+                    onClick={() => {
+                      const next = open ? "" : slip.employeeId;
+                      setExpandedId(next);
+                      onSelectedEmployeeIdChange(slip.employeeId);
+                    }}
+                  >
                     <p className="truncate text-[14px] font-semibold">{name}</p>
                     <p className="truncate text-[11px] text-muted-foreground">
                       {[code, dept].filter(Boolean).join(" · ")}
                     </p>
-                  </div>
+                  </button>
                   <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                    <span className="rounded-lg bg-muted/60 px-2 py-1 text-[12px] tabular-nums">
+                    <button
+                      type="button"
+                      className="rounded-lg bg-muted/60 px-2 py-1 text-[12px] tabular-nums"
+                      onClick={() => {
+                        const next = open ? "" : slip.employeeId;
+                        setExpandedId(next);
+                        onSelectedEmployeeIdChange(slip.employeeId);
+                      }}
+                    >
                       {t("payroll.netSalary")}:{" "}
                       <strong>{formatEgp(slip.net, loc)}</strong>
-                    </span>
-                    <span className="rounded-lg bg-rose-500/10 px-2 py-1 text-[12px] tabular-nums text-rose-800 dark:text-rose-200">
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-lg bg-rose-500/10 px-2 py-1 text-[12px] tabular-nums text-rose-800 dark:text-rose-200"
+                      onClick={() => {
+                        const next = open ? "" : slip.employeeId;
+                        setExpandedId(next);
+                        onSelectedEmployeeIdChange(slip.employeeId);
+                      }}
+                    >
                       {t("payroll.deductions")}:{" "}
                       <strong>{formatEgp(slip.deductionsTotal, loc)}</strong>
                       {hitCount > 0 ? ` · ${hitCount}` : ""}
-                    </span>
+                    </button>
+                    {canEditSalary ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5"
+                        onClick={() => {
+                          onSelectedEmployeeIdChange(slip.employeeId);
+                          onEditSalary(slip.employeeId);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        {t("payroll.editSalaryShort")}
+                      </Button>
+                    ) : null}
                   </div>
-                </button>
+                </div>
 
                 {open ? (
                   <div className="space-y-3 border-t border-border/60 px-3 py-3">

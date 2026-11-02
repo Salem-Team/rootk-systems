@@ -2771,6 +2771,10 @@ export const ar: TranslationKeys = {
       "الموظف ده مالهوش ملف راتب محفوظ. أنشئ ملف قبل ما تشغّل الجرد الشهري.",
     createSalaryProfile: "إنشاء ملف راتب",
     editSalaryProfile: "تعديل ملف الراتب",
+    editSalaryShort: "تعديل المرتب",
+    salaryDirectoryTitle: "ملفات رواتب الموظفين",
+    salaryDirectoryDesc:
+      "عدّل الأساسي والبدلات والخصومات التعاقدية لكل موظف من هنا.",
     editSalaryProfileDesc:
       "حدّث مكوّنات الراتب التعاقدية. التقدّم التالي للجرد هيعيد الحساب من الحضور.",
     editSalaryProfileDescNamed:
