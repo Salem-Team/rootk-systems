@@ -46,13 +46,9 @@ export function PayrollRulesEngine({
       aria-labelledby="rules-engine-heading"
     >
       <div className="panel-header">
-        <h3 id="rules-engine-heading" className="text-[0.95rem] font-semibold">
+        <h3 id="rules-engine-heading" className="text-[0.95rem] font-semibold tracking-tight">
           {t("payroll.rulesTitle")}
         </h3>
-        <p className="text-sm text-muted-foreground">{t("payroll.rulesDesc")}</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {t("payroll.rulesOverrideHint")}
-        </p>
       </div>
       <ul className="divide-y divide-border/60">
         {rules

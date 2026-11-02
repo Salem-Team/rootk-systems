@@ -7,6 +7,7 @@ import { getMyPermissions } from "@/services/permissions.service";
 import { isNativeApp } from "@/lib/native/platform";
 import { BiometricLockGate } from "@/components/auth/biometric-lock-gate";
 import { BiometricOptInHost } from "@/components/auth/biometric-opt-in-host";
+import { BrandLoader } from "@/components/shared/brand-loader";
 import { hasActiveSession, useSessionStore } from "@/stores/session-store";
 
 const PERMISSIONS_REFRESH_MIN_MS = 60_000;
@@ -81,12 +82,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }, [active, hasHydrated, userId]);
 
   if (!hasHydrated || !active) {
-    return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-background pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-        <div className="h-9 w-9 animate-pulse rounded-lg border border-border bg-card shadow-[var(--shadow-card)]" />
-        <p className="text-xs text-muted-foreground">ROOTK</p>
-      </div>
-    );
+    return <BrandLoader variant="app" />;
   }
 
   return (

@@ -97,13 +97,10 @@ export function SalaryBreakdown({ payslip }: { payslip: EmployeePayslip }) {
         <div className="panel-header">
           <h3
             id="payslip-lines-heading"
-            className="text-[0.95rem] font-semibold"
+            className="text-[0.95rem] font-semibold tracking-tight"
           >
             {t("payroll.breakdownTitle")}
           </h3>
-          <p className="text-sm text-muted-foreground">
-            {t("payroll.breakdownDesc")}
-          </p>
         </div>
         <ul className="divide-y divide-border/60">
           {payslip.lines.map((line, i) => (

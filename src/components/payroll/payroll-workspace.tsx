@@ -14,7 +14,6 @@ import {
   getPayrollRules,
   getPayslipHistory,
   getSalaryProfile,
-  personaForRole,
 } from "@/services/payroll.service";
 import { getWorkforceEmployees } from "@/services/employees.service";
 import {
@@ -27,7 +26,6 @@ import type {
   EmployeePayslip,
   EmployeeSalaryProfile,
   PayrollDashboardSummary,
-  PayrollPersona,
   PayrollPolicies,
   PayrollReportBundle,
   PayrollRule,
@@ -40,9 +38,6 @@ export function PayrollWorkspace() {
   const sessionUser = useSessionStore((s) => s.user);
   const workEmployeeId = useSessionStore((s) =>
     getWorkEmployeeIdFromUser(s.user)
-  );
-  const [persona, setPersona] = useState<PayrollPersona>(() =>
-    personaForRole(role)
   );
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<PayrollDashboardSummary | null>(null);
@@ -64,10 +59,6 @@ export function PayrollWorkspace() {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [selectedProfileState, setSelectedProfileState] =
     useState<EmployeeSalaryProfile | null>(null);
-
-  useEffect(() => {
-    setPersona(personaForRole(role));
-  }, [role]);
 
   useEffect(() => {
     let mounted = true;
@@ -207,8 +198,7 @@ export function PayrollWorkspace() {
 
   return (
     <PayrollAdminView
-      persona={persona}
-      onPersonaChange={setPersona}
+      persona="admin"
       summary={summary}
       onSummaryChange={setSummary}
       policies={policies}

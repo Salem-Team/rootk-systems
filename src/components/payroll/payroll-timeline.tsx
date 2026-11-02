@@ -31,9 +31,6 @@ export function PayrollTimeline({
         >
           {t("payroll.timelineTitle")}
         </h3>
-        <p className="text-sm text-muted-foreground">
-          {t("payroll.timelineDesc")}
-        </p>
       </div>
       <div className="panel-body">
         <motion.ol

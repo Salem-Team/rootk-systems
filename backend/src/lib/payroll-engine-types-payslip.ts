@@ -108,6 +108,11 @@ export interface PayslipHistoryItem {
   net: number;
   gross: number;
   status: PayrollRunStatus;
+  deductionsTotal?: number;
+  overtimePay?: number;
+  allowancesTotal?: number;
+  bonusesTotal?: number;
+  currency?: string;
 }
 
 export interface PayrollRun extends BaseEntity {

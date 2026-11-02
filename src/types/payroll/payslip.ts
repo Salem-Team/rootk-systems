@@ -94,4 +94,9 @@ export interface PayslipHistoryItem {
   net: number;
   gross: number;
   status: PayrollRunStatus;
+  deductionsTotal?: number;
+  overtimePay?: number;
+  allowancesTotal?: number;
+  bonusesTotal?: number;
+  currency?: string;
 }

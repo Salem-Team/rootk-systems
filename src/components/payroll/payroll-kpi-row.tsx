@@ -4,13 +4,10 @@ import { motion, useReducedMotion } from "framer-motion";
 import {
   CalendarClock,
   CircleDollarSign,
-  Clock3,
-  Users,
-  Wallet,
   MinusCircle,
   Timer,
-  ChartColumn,
-  UserCheck,
+  Users,
+  Wallet,
 } from "lucide-react";
 import { AnimatedCounter } from "@/components/shared/animated-counter";
 import { Badge } from "@/components/ui/badge";
@@ -42,8 +39,10 @@ const CAL_KIND: Record<string, string> = {
 
 export function PayrollKpiRow({
   summary,
+  compact = false,
 }: {
   summary: PayrollDashboardSummary;
+  compact?: boolean;
 }) {
   const { t, locale } = useTranslation();
   const reduceMotion = useReducedMotion();
@@ -65,32 +64,10 @@ export function PayrollKpiRow({
       numeric: true,
     },
     {
-      key: "processed",
-      label: t("payroll.employeesProcessed"),
-      value: summary.employeesProcessed,
-      icon: UserCheck,
-      numeric: true,
-    },
-    {
-      key: "pending",
-      label: t("payroll.pendingPayroll"),
-      value: summary.pendingPayroll,
-      icon: Clock3,
-      numeric: true,
-    },
-    {
       key: "cost",
       label: t("payroll.estimatedCost"),
       value: summary.estimatedCost,
       icon: CircleDollarSign,
-      numeric: true,
-      money: true,
-    },
-    {
-      key: "avg",
-      label: t("payroll.averageSalary"),
-      value: summary.averageSalary,
-      icon: ChartColumn,
       numeric: true,
       money: true,
     },
@@ -120,6 +97,8 @@ export function PayrollKpiRow({
     },
   ] as const;
 
+  const visible = compact ? cards.filter((c) => c.key !== "cost" && c.key !== "ot") : cards;
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -137,15 +116,23 @@ export function PayrollKpiRow({
         variants={staggerContainer}
         initial={reduceMotion ? false : "hidden"}
         animate="visible"
-        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5"
+        className={cn(
+          "grid gap-2.5",
+          compact
+            ? "grid-cols-2 sm:grid-cols-4"
+            : "sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6"
+        )}
       >
-        {cards.map((card) => {
+        {visible.map((card) => {
           const Icon = card.icon;
           return (
             <motion.article
               key={card.key}
               variants={fadeInUp}
-              className="surface-panel surface-panel-interactive surface-shine p-4"
+              className={cn(
+                "surface-panel surface-panel-interactive p-3 sm:p-3.5",
+                compact && "shadow-none"
+              )}
             >
               <div className="flex items-start justify-between gap-2">
                 <p className="section-label">{card.label}</p>
@@ -153,7 +140,7 @@ export function PayrollKpiRow({
                   <Icon className="h-3.5 w-3.5" aria-hidden />
                 </span>
               </div>
-              <p className="stat-value mt-3 text-[1.25rem] md:text-[1.4rem]">
+              <p className="stat-value mt-2 text-[1.1rem] md:text-[1.25rem]">
                 {"money" in card && card.money ? (
                   formatEgp(card.value as number, loc)
                 ) : card.numeric ? (
@@ -167,15 +154,12 @@ export function PayrollKpiRow({
         })}
       </motion.div>
 
-      {summary.calendar.length > 0 ? (
+      {!compact && summary.calendar.length > 0 ? (
         <section className="surface-panel overflow-hidden">
           <div className="panel-header">
             <h3 className="text-[0.95rem] font-semibold">
               {t("payroll.payrollCalendar")}
             </h3>
-            <p className="text-sm text-muted-foreground">
-              {t("payroll.payrollCalendarDesc")}
-            </p>
           </div>
           <div className="panel-body grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             {summary.calendar.map((day) => (

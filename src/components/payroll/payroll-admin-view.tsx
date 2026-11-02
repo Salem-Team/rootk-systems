@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { PageHeader } from "@/components/shared/page-header";
-import { MobileSegmentedTabs } from "@/components/shared/mobile-segmented-tabs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PayrollKpiRow } from "@/components/payroll/payroll-kpi-row";
@@ -98,9 +97,18 @@ const SalaryProfileEditorSheet = dynamic(
   { ssr: false }
 );
 
+const TAB_ITEMS = [
+  { value: "salary", labelKey: "payroll.tabSalary" as const },
+  { value: "ledger", labelKey: "payroll.tabMonthBoard" as const },
+  { value: "overview", labelKey: "payroll.tabOverview" as const },
+  { value: "reports", labelKey: "payroll.tabReports" as const },
+  { value: "policies", labelKey: "payroll.tabPolicies" as const },
+  { value: "rules", labelKey: "payroll.tabRules" as const },
+  { value: "workflow", labelKey: "payroll.tabWorkflow" as const },
+];
+
 export function PayrollAdminView({
-  persona,
-  onPersonaChange,
+  persona = "admin",
   summary,
   onSummaryChange,
   policies,
@@ -128,10 +136,11 @@ export function PayrollAdminView({
   onPeriodReload,
   locale,
 }: {
-  persona: PayrollPersona;
-  onPersonaChange: (persona: PayrollPersona) => void;
+  persona?: PayrollPersona;
   summary: PayrollDashboardSummary;
-  onSummaryChange: (updater: (s: PayrollDashboardSummary | null) => PayrollDashboardSummary | null) => void;
+  onSummaryChange: (
+    updater: (s: PayrollDashboardSummary | null) => PayrollDashboardSummary | null
+  ) => void;
   policies: PayrollPolicies;
   onPoliciesChange: (policies: PayrollPolicies) => void;
   rules: PayrollRule[];
@@ -169,7 +178,6 @@ export function PayrollAdminView({
     });
   }
 
-  /** After salary edits: recalc the open month so net/deductions refresh. */
   async function refreshAfterSalarySave() {
     const calc = await calculatePayrollPeriod(periodId);
     if (calc.success && calc.data) {
@@ -181,7 +189,6 @@ export function PayrollAdminView({
       toast.success(t("payroll.salaryRecalcDone"));
       return;
     }
-    // Locked / no permission — still pull live preview if available.
     const preview = await getPayrollPeriodPreview(periodId);
     if (preview.success && preview.data) {
       onPayslipsChange(preview.data.payslips);
@@ -196,69 +203,86 @@ export function PayrollAdminView({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-4">
       <PageHeader
-        eyebrow={t("payroll.eyebrow")}
         title={t("payroll.title")}
-        description={t("payroll.description")}
-        actions={
-          <div
-            className="flex flex-wrap gap-1.5 rounded-xl border border-border/70 bg-muted/40 p-1"
-            role="group"
-            aria-label={t("payroll.personaLabel")}
-          >
-            {(["admin", "hr", "finance", "manager"] as PayrollPersona[]).map(
-              (p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => onPersonaChange(p)}
-                  className={cn(
-                    "focus-ring h-8 rounded-lg px-2.5 text-[12px] font-semibold transition-colors",
-                    persona === p
-                      ? "bg-card text-foreground shadow-[var(--shadow-card)]"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {t(`payroll.persona.${p}`)}
-                </button>
-              )
-            )}
-          </div>
-        }
+        showBreadcrumbs={false}
+        className="!mb-2 sm:!mb-3"
       />
 
-      <PayrollKpiRow summary={summary} />
-
-      <Tabs value={tab} onValueChange={onTabChange}>
-        <MobileSegmentedTabs className="lg:contents">
-          <TabsList className="scroll-x flex h-auto w-full flex-nowrap justify-start gap-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible">
-            <TabsTrigger value="overview" className="min-h-11 shrink-0 touch-manipulation">
-              {t("payroll.tabOverview")}
-            </TabsTrigger>
-            <TabsTrigger value="ledger" className="min-h-11 shrink-0 touch-manipulation">
-              {t("payroll.tabMonthBoard")}
-            </TabsTrigger>
-            <TabsTrigger value="salary" className="min-h-11 shrink-0 touch-manipulation">
-              {t("payroll.tabSalary")}
-            </TabsTrigger>
-            <TabsTrigger value="policies" className="min-h-11 shrink-0 touch-manipulation">
-              {t("payroll.tabPolicies")}
-            </TabsTrigger>
-            <TabsTrigger value="rules" className="min-h-11 shrink-0 touch-manipulation">
-              {t("payroll.tabRules")}
-            </TabsTrigger>
-            <TabsTrigger value="workflow" className="min-h-11 shrink-0 touch-manipulation">
-              {t("payroll.tabWorkflow")}
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="min-h-11 shrink-0 touch-manipulation">
-              {t("payroll.tabReports")}
-            </TabsTrigger>
+      <Tabs value={tab} onValueChange={onTabChange} className="space-y-3">
+        <div className="payroll-sticky-tabs sticky top-[var(--chrome-sticky-top)] z-20 -mx-3 border-b border-border/60 bg-background/95 px-3 py-2 backdrop-blur-xl sm:-mx-4 sm:px-4">
+          <TabsList
+            className={cn(
+              "flex h-auto w-full max-w-full flex-nowrap items-stretch justify-start gap-1 overflow-x-auto overscroll-x-contain rounded-xl border border-border/70 bg-muted/50 p-1",
+              "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+              "sm:flex-wrap sm:overflow-visible"
+            )}
+          >
+            {TAB_ITEMS.map((item) => (
+              <TabsTrigger
+                key={item.value}
+                value={item.value}
+                className="min-h-10 shrink-0 touch-manipulation px-3 text-[12px] sm:min-h-9 sm:text-[13px]"
+              >
+                {t(item.labelKey)}
+              </TabsTrigger>
+            ))}
           </TabsList>
-        </MobileSegmentedTabs>
+        </div>
 
-        <TabsContent value="overview" className="mt-4 space-y-4">
-          <div className="grid gap-4 xl:grid-cols-5">
+        <TabsContent value="salary" className="mt-0 space-y-3 focus-visible:ring-0">
+          <PayrollSalaryTab
+            persona={persona}
+            employees={employees}
+            payslips={payslips}
+            selectedEmployeeId={selectedEmployeeId}
+            onSelectedEmployeeIdChange={onSelectedEmployeeIdChange}
+            selectedProfileState={selectedProfileState}
+            selectedPayslip={selectedPayslip}
+            selectedEmployee={selectedEmployee}
+            periodLabel={summary.period.label}
+            onEditProfile={() => onEditProfileOpenChange(true)}
+            profileReloadNonce={periodReloadNonce}
+          />
+        </TabsContent>
+
+        <TabsContent value="ledger" className="mt-0 space-y-3 focus-visible:ring-0">
+          <PayrollLedgerPanel
+            summary={summary}
+            payslips={payslips}
+            employees={employees}
+            periodId={periodId}
+            onPeriodIdChange={onPeriodIdChange}
+            periodReloadNonce={periodReloadNonce}
+            selectedEmployeeId={selectedEmployeeId}
+            onSelectedEmployeeIdChange={onSelectedEmployeeIdChange}
+            onPayslipsChange={onPayslipsChange}
+            onEditSalary={(employeeId) => {
+              onSelectedEmployeeIdChange(employeeId);
+              onEditProfileOpenChange(true);
+            }}
+            canAdvance={
+              canApproveFinance(persona) ||
+              persona === "hr" ||
+              persona === "admin"
+            }
+            canCalculate={
+              persona === "admin" || persona === "hr" || persona === "finance"
+            }
+            canEditSalary={
+              persona === "admin" || persona === "hr" || persona === "finance"
+            }
+            onRunUpdated={(run) =>
+              onSummaryChange((s) => (s ? { ...s, run } : s))
+            }
+            onRefreshPayslips={refreshPayslipsAndSummary}
+          />
+        </TabsContent>
+
+        <TabsContent value="overview" className="mt-0 space-y-3 focus-visible:ring-0">
+          <PayrollKpiRow summary={summary} compact />
+          <div className="grid gap-3 xl:grid-cols-5">
             <div className="xl:col-span-3">
               <PayrollApprovalWorkflow
                 run={summary.run}
@@ -295,56 +319,11 @@ export function PayrollAdminView({
           ) : null}
         </TabsContent>
 
-        <TabsContent value="ledger" className="mt-4 space-y-4">
-          <PayrollLedgerPanel
-            summary={summary}
-            payslips={payslips}
-            employees={employees}
-            periodId={periodId}
-            onPeriodIdChange={onPeriodIdChange}
-            periodReloadNonce={periodReloadNonce}
-            selectedEmployeeId={selectedEmployeeId}
-            onSelectedEmployeeIdChange={onSelectedEmployeeIdChange}
-            onPayslipsChange={onPayslipsChange}
-            onEditSalary={(employeeId) => {
-              onSelectedEmployeeIdChange(employeeId);
-              onEditProfileOpenChange(true);
-            }}
-            canAdvance={
-              canApproveFinance(persona) ||
-              persona === "hr" ||
-              persona === "admin"
-            }
-            canCalculate={
-              persona === "admin" || persona === "hr" || persona === "finance"
-            }
-            canEditSalary={
-              persona === "admin" || persona === "hr" || persona === "finance"
-            }
-            onRunUpdated={(run) =>
-              onSummaryChange((s) => (s ? { ...s, run } : s))
-            }
-            onRefreshPayslips={refreshPayslipsAndSummary}
-          />
+        <TabsContent value="reports" className="mt-0 focus-visible:ring-0">
+          <PayrollReportsPanel reports={reports} />
         </TabsContent>
 
-        <TabsContent value="salary" className="mt-4 space-y-4">
-          <PayrollSalaryTab
-            persona={persona}
-            employees={employees}
-            payslips={payslips}
-            selectedEmployeeId={selectedEmployeeId}
-            onSelectedEmployeeIdChange={onSelectedEmployeeIdChange}
-            selectedProfileState={selectedProfileState}
-            selectedPayslip={selectedPayslip}
-            selectedEmployee={selectedEmployee}
-            periodLabel={summary.period.label}
-            onEditProfile={() => onEditProfileOpenChange(true)}
-            profileReloadNonce={periodReloadNonce}
-          />
-        </TabsContent>
-
-        <TabsContent value="policies" className="mt-4">
+        <TabsContent value="policies" className="mt-0 focus-visible:ring-0">
           <PayrollPoliciesPanel
             policies={policies}
             editable={canEditPolicies(persona)}
@@ -355,7 +334,7 @@ export function PayrollAdminView({
           />
         </TabsContent>
 
-        <TabsContent value="rules" className="mt-4">
+        <TabsContent value="rules" className="mt-0 focus-visible:ring-0">
           <PayrollRulesEngine
             rules={rules}
             editable={canEditPolicies(persona)}
@@ -366,7 +345,7 @@ export function PayrollAdminView({
           />
         </TabsContent>
 
-        <TabsContent value="workflow" className="mt-4 space-y-4">
+        <TabsContent value="workflow" className="mt-0 space-y-3 focus-visible:ring-0">
           <PayrollApprovalWorkflow
             run={summary.run}
             canAdvance={
@@ -374,13 +353,11 @@ export function PayrollAdminView({
               persona === "hr" ||
               persona === "admin"
             }
-            onAdvanced={(run) => onSummaryChange((s) => (s ? { ...s, run } : s))}
+            onAdvanced={(run) =>
+              onSummaryChange((s) => (s ? { ...s, run } : s))
+            }
           />
           <PayrollTimeline events={summary.timeline} />
-        </TabsContent>
-
-        <TabsContent value="reports" className="mt-4">
-          <PayrollReportsPanel reports={reports} />
         </TabsContent>
       </Tabs>
 

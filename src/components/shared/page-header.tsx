@@ -59,10 +59,12 @@ export function PageHeader({
       {mobileSlot ? (
         <div className={cn("ui-enter-up", mobileRowClass)}>{mobileSlot}</div>
       ) : null}
-      <div
-        className="ui-enter-scale soft-divider mt-3.5 hidden sm:mt-5 sm:block"
-        aria-hidden
-      />
+      {description || eyebrow || showBreadcrumbs ? (
+        <div
+          className="ui-enter-scale soft-divider mt-3.5 hidden sm:mt-5 sm:block"
+          aria-hidden
+        />
+      ) : null}
     </header>
   );
 }

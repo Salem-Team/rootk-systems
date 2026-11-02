@@ -92,20 +92,15 @@ export function EmployeeContractHero({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-start justify-between gap-2 rounded-2xl border border-amber-500/25 bg-amber-500/[0.06] px-4 py-3">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold tracking-tight text-foreground">
-            {t("payroll.profileReadyTitle")}
-          </p>
-          <p className="mt-0.5 text-[13px] leading-snug text-muted-foreground">
-            {t("payroll.profileReadyDesc", { period: periodLabel })}
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.06] px-3 py-2.5">
+        <p className="text-sm font-semibold tracking-tight text-foreground">
+          {t("payroll.profileReadyTitle")}
+        </p>
         <Badge
           variant="secondary"
           className="shrink-0 border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-200"
         >
-          {t("payroll.awaitingPayslipBadge")}
+          {t("payroll.awaitingPayslipBadge")} · {periodLabel}
         </Badge>
       </div>
       <ul className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
@@ -209,12 +204,9 @@ export function ImpactLists({ payslip }: { payslip: EmployeePayslip }) {
     <div className="grid gap-4 lg:grid-cols-2">
       <section className="surface-panel overflow-hidden">
         <div className="panel-header">
-          <h3 className="text-[0.95rem] font-semibold">
+          <h3 className="text-[0.95rem] font-semibold tracking-tight">
             {t("payroll.attendanceImpact")}
           </h3>
-          <p className="text-sm text-muted-foreground">
-            {t("payroll.attendanceImpactDesc")}
-          </p>
         </div>
         <ul className="max-h-72 divide-y divide-border/60 overflow-auto">
           {payslip.attendanceImpacts?.length ? (

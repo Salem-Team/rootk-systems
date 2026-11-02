@@ -878,6 +878,13 @@
     }
   }
 
+  .payroll-sticky-tabs {
+    position: sticky;
+    top: var(--chrome-sticky-top);
+    z-index: 20;
+    isolation: isolate;
+  }
+
   /* Shared mobile hub rail (CRM / Targets / Organic) — sticky under navbar on phones */
   .hub-mobile-nav {
     position: sticky;
@@ -1134,6 +1141,135 @@
 @keyframes shimmer {
   100% {
     transform: translateX(100%);
+  }
+}
+
+@keyframes brand-loader-glow {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+  50% {
+    opacity: 0.85;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+}
+
+@keyframes brand-loader-ring {
+  0% {
+    transform: scale(0.88);
+    opacity: 0.55;
+    border-color: color-mix(in oklab, var(--primary) 55%, transparent);
+  }
+  70% {
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.28);
+    opacity: 0;
+    border-color: transparent;
+  }
+}
+
+@keyframes brand-loader-mark {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes brand-loader-sheen {
+  0% {
+    transform: translateX(-120%) skewX(-18deg);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.55;
+  }
+  55%,
+  100% {
+    transform: translateX(140%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
+@keyframes brand-loader-wordmark {
+  0%,
+  100% {
+    opacity: 0.55;
+    letter-spacing: 0.28em;
+  }
+  50% {
+    opacity: 1;
+    letter-spacing: 0.34em;
+  }
+}
+
+@keyframes brand-loader-bar {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+.brand-loader-glow {
+  animation: brand-loader-glow 2.8s ease-in-out infinite;
+}
+
+.brand-loader-ring {
+  border-width: 1.5px;
+  animation: brand-loader-ring 2.2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.brand-loader-ring-delay {
+  animation-delay: 0.7s;
+}
+
+.brand-loader-mark {
+  animation: brand-loader-mark 2.6s ease-in-out infinite;
+}
+
+.brand-loader-sheen {
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.65) 48%,
+    transparent 66%
+  );
+  animation: brand-loader-sheen 2.4s ease-in-out infinite;
+}
+
+.brand-loader-wordmark {
+  animation: brand-loader-wordmark 2.4s ease-in-out infinite;
+}
+
+.brand-loader-bar-fill {
+  animation: brand-loader-bar 1.35s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-loader-glow,
+  .brand-loader-ring,
+  .brand-loader-ring-delay,
+  .brand-loader-mark,
+  .brand-loader-sheen,
+  .brand-loader-wordmark,
+  .brand-loader-bar-fill {
+    animation: none !important;
+  }
+
+  .brand-loader-glow {
+    opacity: 0.5;
+  }
+
+  .brand-loader-wordmark {
+    opacity: 0.9;
   }
 }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,6 +21,48 @@ import {
   ImpactLists,
 } from "./payroll-workspace-shared";
 
+function mergeCurrentPayslipIntoHistory(
+  history: PayslipHistoryItem[],
+  payslip: EmployeePayslip | null,
+  periodLabel: string
+): PayslipHistoryItem[] {
+  if (!payslip) return history;
+  const exists = history.some((item) => item.periodId === payslip.periodId);
+  if (exists) {
+    return history.map((item) =>
+      item.periodId === payslip.periodId
+        ? {
+            ...item,
+            net: payslip.net,
+            gross: payslip.gross,
+            deductionsTotal: payslip.deductionsTotal,
+            overtimePay: payslip.overtimePay,
+            allowancesTotal: payslip.allowancesTotal,
+            bonusesTotal: payslip.bonusesTotal,
+            currency: payslip.currency,
+          }
+        : item
+    );
+  }
+  return [
+    ...history,
+    {
+      id: payslip.id,
+      periodId: payslip.periodId,
+      periodLabel,
+      payDate: periodLabel,
+      net: payslip.net,
+      gross: payslip.gross,
+      status: "hr_review",
+      deductionsTotal: payslip.deductionsTotal,
+      overtimePay: payslip.overtimePay,
+      allowancesTotal: payslip.allowancesTotal,
+      bonusesTotal: payslip.bonusesTotal,
+      currency: payslip.currency,
+    },
+  ];
+}
+
 export function PayrollEmployeeView({
   summary,
   myProfile,
@@ -34,33 +77,38 @@ export function PayrollEmployeeView({
   myEmployee: Pick<Employee, "name" | "employeeId" | "department" | "email">;
 }) {
   const { t } = useTranslation();
+  const hasPayslip = Boolean(myPayslip);
+  const historyItems = useMemo(
+    () =>
+      mergeCurrentPayslipIntoHistory(
+        myHistory,
+        myPayslip,
+        summary.period.label
+      ),
+    [myHistory, myPayslip, summary.period.label]
+  );
+  const historyPanel = <PayslipHistoryPanel items={historyItems} />;
 
   if (!myProfile) {
     return (
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-3 sm:space-y-4">
         <PageHeader
-          className="mb-4 sm:mb-7"
-          eyebrow={t("payroll.eyebrow")}
+          className="!mb-2 sm:!mb-3"
           title={t("payroll.myTitle")}
-          description={t("payroll.myDesc")}
+          showBreadcrumbs={false}
         />
-        <EmptyState
-          title={t("payroll.noSalaryConfigured")}
-          description={t("payroll.noSalaryConfiguredDesc")}
-        />
+        <EmptyState title={t("payroll.noSalaryConfigured")} />
+        {historyPanel}
       </div>
     );
   }
 
-  const hasPayslip = Boolean(myPayslip);
-
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-3 sm:space-y-4">
       <PageHeader
-        className="mb-4 sm:mb-7"
-        eyebrow={t("payroll.eyebrow")}
+        className="!mb-2 sm:!mb-3"
         title={t("payroll.myTitle")}
-        description={t("payroll.myDesc")}
+        showBreadcrumbs={false}
       />
 
       {hasPayslip && myPayslip ? (
@@ -77,34 +125,35 @@ export function PayrollEmployeeView({
 
       <div className="lg:hidden">
         <Tabs
-          defaultValue={hasPayslip ? "slip" : "profile"}
-          className="space-y-4"
+          defaultValue={hasPayslip ? "slip" : "history"}
+          className="space-y-3"
         >
-          <div className="sticky top-[var(--chrome-sticky-top)] z-20 -mx-3 bg-background/90 px-3 py-2 backdrop-blur-xl sm:-mx-4 sm:px-4">
-            <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-xl border border-border/60 bg-card p-1 shadow-sm sm:rounded-2xl">
+          <div className="sticky top-[var(--chrome-sticky-top)] z-20 -mx-3 border-b border-border/60 bg-background/95 px-3 py-2 backdrop-blur-xl sm:-mx-4 sm:px-4">
+            <TabsList className="grid h-auto w-full grid-cols-3 gap-1 rounded-xl border border-border/60 bg-muted/50 p-1">
               <TabsTrigger
                 value="slip"
-                className="min-h-10 truncate rounded-lg px-1 text-[11px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md sm:min-h-11 sm:rounded-xl sm:text-[12px]"
+                className="min-h-10 truncate rounded-lg px-1 text-[11px] font-semibold sm:min-h-11 sm:text-[12px]"
               >
                 {t("payroll.mobileTabSlip")}
               </TabsTrigger>
               <TabsTrigger
+                value="history"
+                className="min-h-10 truncate rounded-lg px-1 text-[11px] font-semibold sm:min-h-11 sm:text-[12px]"
+              >
+                {t("payroll.mobileTabHistory")}
+              </TabsTrigger>
+              <TabsTrigger
                 value="profile"
-                className="min-h-10 truncate rounded-lg px-1 text-[11px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md sm:min-h-11 sm:rounded-xl sm:text-[12px]"
+                className="min-h-10 truncate rounded-lg px-1 text-[11px] font-semibold sm:min-h-11 sm:text-[12px]"
               >
                 {hasPayslip
                   ? t("payroll.mobileTabProfile")
                   : t("payroll.mobileTabContract")}
               </TabsTrigger>
-              <TabsTrigger
-                value="history"
-                className="min-h-10 truncate rounded-lg px-1 text-[11px] font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md sm:min-h-11 sm:rounded-xl sm:text-[12px]"
-              >
-                {t("payroll.mobileTabHistory")}
-              </TabsTrigger>
             </TabsList>
           </div>
-          <TabsContent value="slip" className="mt-0 space-y-4">
+
+          <TabsContent value="slip" className="mt-0 space-y-3">
             {hasPayslip && myPayslip ? (
               <>
                 <PayslipStatementView
@@ -114,26 +163,27 @@ export function PayrollEmployeeView({
                   periodLabel={summary.period.label}
                 />
                 <ImpactLists payslip={myPayslip} />
+                {historyPanel}
               </>
             ) : (
-              <EmptyState
-                title={t("payroll.noPayslipYet")}
-                description={t("payroll.profileReadyDesc", {
-                  period: summary.period.label,
-                })}
-              />
+              <>
+                <EmptyState title={t("payroll.noPayslipYet")} />
+                {historyPanel}
+              </>
             )}
           </TabsContent>
-          <TabsContent value="profile" className="mt-0 space-y-4">
-            <SalaryProfilePanel profile={myProfile} payslip={myPayslip} />
+
+          <TabsContent value="history" className="mt-0">
+            {historyPanel}
           </TabsContent>
-          <TabsContent value="history" className="mt-0 space-y-4">
-            <PayslipHistoryPanel items={myHistory} />
+
+          <TabsContent value="profile" className="mt-0 space-y-3">
+            <SalaryProfilePanel profile={myProfile} payslip={myPayslip} />
           </TabsContent>
         </Tabs>
       </div>
 
-      <div className="hidden space-y-6 lg:block">
+      <div className="hidden space-y-4 lg:block">
         {hasPayslip && myPayslip ? (
           <>
             <PayslipStatementView
@@ -142,16 +192,11 @@ export function PayrollEmployeeView({
               employee={myEmployee}
               periodLabel={summary.period.label}
             />
-            <SalaryProfilePanel profile={myProfile} payslip={myPayslip} />
-            <PayslipHistoryPanel items={myHistory} />
             <ImpactLists payslip={myPayslip} />
           </>
-        ) : (
-          <>
-            <SalaryProfilePanel profile={myProfile} payslip={null} />
-            <PayslipHistoryPanel items={myHistory} />
-          </>
-        )}
+        ) : null}
+        {historyPanel}
+        <SalaryProfilePanel profile={myProfile} payslip={myPayslip} />
       </div>
     </div>
   );

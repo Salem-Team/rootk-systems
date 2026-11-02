@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BrandLoader } from "@/components/shared/brand-loader";
 import { isLocalMode } from "@/lib/env";
 import { ensureStorageBootstrapped } from "@/storage/bootstrap";
 
@@ -31,11 +32,7 @@ export function StorageBootstrapProvider({
   }, []);
 
   if (!ready) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
-        Loading workspace…
-      </div>
-    );
+    return <BrandLoader variant="app" />;
   }
 
   return <>{children}</>;

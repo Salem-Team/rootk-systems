@@ -87,15 +87,10 @@ export function PayrollPoliciesPanel({
 
   return (
     <section className="surface-panel overflow-hidden">
-      <div className="panel-header flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h3 className="text-[0.95rem] font-semibold">
-            {t("payroll.policiesTitle")}
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            {t("payroll.policiesDesc")}
-          </p>
-        </div>
+      <div className="panel-header flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-[0.95rem] font-semibold tracking-tight">
+          {t("payroll.policiesTitle")}
+        </h3>
         {editable ? (
           <Button size="sm" disabled={saving} onClick={() => void save()}>
             {saving ? t("common.loading") : t("common.save")}
@@ -132,9 +127,6 @@ export function PayrollPoliciesPanel({
               }))
             }
           />
-          <p className="text-xs text-muted-foreground">
-            {t("payroll.policyGraceHint")}
-          </p>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="currency">{t("payroll.policyCurrency")}</Label>
@@ -200,9 +192,6 @@ export function PayrollPoliciesPanel({
         <div className="sm:col-span-2 lg:col-span-3">
           <p className="mb-2 text-sm font-semibold">
             {t("payroll.deductionPriority")}
-          </p>
-          <p className="mb-2 text-xs text-muted-foreground">
-            {t("payroll.deductionPriorityDesc")}
           </p>
           <ol className="flex flex-wrap gap-2">
             {draft.deductionPriority.map((item, idx) => (

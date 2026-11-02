@@ -236,17 +236,12 @@ export function PayrollMonthBoard({
         </div>
       </section>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={t("payroll.searchEmployees")}
-          className="h-10 sm:max-w-sm"
-        />
-        <p className="text-[12px] text-muted-foreground">
-          {t("payroll.monthBoardHint")}
-        </p>
-      </div>
+      <Input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={t("payroll.searchEmployees")}
+        className="h-10 sm:max-w-sm"
+      />
 
       {loading ? (
         <div className="space-y-2">

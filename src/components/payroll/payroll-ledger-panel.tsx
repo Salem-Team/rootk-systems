@@ -112,7 +112,7 @@ export function PayrollLedgerPanel({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {isCurrentPeriod ? (
         <PayrollLedgerSummary
           summary={summary}

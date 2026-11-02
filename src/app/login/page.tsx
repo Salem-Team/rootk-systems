@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { BrandLoader } from "@/components/shared/brand-loader";
 import { LOGO_SRC } from "@/constants";
 import { useSessionStore, hasActiveSession } from "@/stores/session-store";
 import { useTranslation } from "@/hooks/use-translation";
@@ -117,12 +118,7 @@ export default function LoginPage() {
   }, [active, hasHydrated, router]);
 
   if (!hasHydrated || active || recovering) {
-    return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-[#020814] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-white">
-        <div className="h-10 w-10 animate-pulse rounded-xl border border-white/20 bg-white/10" />
-        <p className="text-xs text-[#8aa0c0]">{t("app.short")}</p>
-      </div>
-    );
+    return <BrandLoader variant="dark" />;
   }
 
   return (

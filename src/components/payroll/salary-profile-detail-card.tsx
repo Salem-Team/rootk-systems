@@ -56,14 +56,9 @@ export function SalaryProfileDetailCard({
   return (
     <section className="surface-panel overflow-hidden">
       <div className="panel-header flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h3 className="text-[0.95rem] font-semibold">
-            {t("payroll.salaryProfile")}
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            {t("payroll.salaryProfileDesc")}
-          </p>
-        </div>
+        <h3 className="text-[0.95rem] font-semibold tracking-tight">
+          {t("payroll.salaryProfile")}
+        </h3>
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge variant="info">{profile.salaryGrade}</Badge>
           <Badge variant="outline">

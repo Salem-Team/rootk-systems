@@ -21,9 +21,6 @@ export function PayslipStatementFooter({
           <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-primary sm:text-3xl">
             {formatEgp(payslip.net, loc, payslip.currency)}
           </p>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            {t("payroll.statementNetHint")}
-          </p>
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm sm:text-end">
           <div>

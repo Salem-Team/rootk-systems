@@ -6,16 +6,22 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SalaryProfilePanel } from "@/components/payroll/salary-profile-panel";
+import { PayslipHistoryPanel } from "@/components/payroll/payslip-history-panel";
 import { PayslipStatementView } from "@/components/payroll/payslip-statement";
 import { ImpactLists } from "./payroll-workspace-shared";
-import { listSalaryProfiles } from "@/services/payroll.service";
+import {
+  getPayslipHistory,
+  listSalaryProfiles,
+} from "@/services/payroll.service";
 import { formatEgp } from "@/lib/payroll";
 import { useTranslation } from "@/hooks/use-translation";
 import type { Employee } from "@/types";
 import type {
   EmployeePayslip,
   EmployeeSalaryProfile,
+  PayslipHistoryItem,
   PayrollPersona,
 } from "@/types/payroll";
 
@@ -58,6 +64,8 @@ export function PayrollSalaryTab({
     persona === "admin" || persona === "hr" || persona === "finance";
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [query, setQuery] = useState("");
+  const [history, setHistory] = useState<PayslipHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -70,6 +78,23 @@ export function PayrollSalaryTab({
       mounted = false;
     };
   }, [profileReloadNonce]);
+
+  useEffect(() => {
+    if (!selectedEmployeeId) {
+      setHistory([]);
+      return;
+    }
+    let mounted = true;
+    setHistoryLoading(true);
+    void getPayslipHistory(selectedEmployeeId).then((res) => {
+      if (!mounted) return;
+      setHistory(res.success ? res.data : []);
+      setHistoryLoading(false);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [selectedEmployeeId, profileReloadNonce]);
 
   const rows = useMemo(() => {
     const byId = new Map(profiles.map((p) => [p.employeeId, p]));
@@ -97,17 +122,12 @@ export function PayrollSalaryTab({
   }, [employees, profiles, payslips, query]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <section className="surface-panel overflow-hidden">
-        <div className="panel-header flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h3 className="text-[0.95rem] font-semibold">
-              {t("payroll.salaryDirectoryTitle")}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {t("payroll.salaryDirectoryDesc")}
-            </p>
-          </div>
+        <div className="flex flex-col gap-2.5 border-b border-border/60 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+          <h3 className="text-[0.95rem] font-semibold tracking-tight">
+            {t("payroll.salaryDirectoryTitle")}
+          </h3>
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -196,27 +216,21 @@ export function PayrollSalaryTab({
         )}
       </section>
 
-      {!selectedEmployeeId ? (
-        <EmptyState
-          title={t("payroll.selectEmployee")}
-          description={t("payroll.selectEmployeeToViewSalary")}
-        />
-      ) : selectedProfileState ? (
+      {selectedEmployeeId && selectedProfileState ? (
         <SalaryProfilePanel
           profile={selectedProfileState}
           payslip={selectedPayslip}
           onEdit={canEditSalary ? onEditProfile : undefined}
         />
-      ) : (
+      ) : selectedEmployeeId && !selectedProfileState ? (
         <EmptyState
           title={t("payroll.noSalaryProfile")}
-          description={t("payroll.noSalaryProfileDesc")}
           actionLabel={
             canEditSalary ? t("payroll.createSalaryProfile") : undefined
           }
           onAction={canEditSalary ? onEditProfile : undefined}
         />
-      )}
+      ) : null}
 
       {selectedPayslip ? (
         <>
@@ -228,6 +242,14 @@ export function PayrollSalaryTab({
           />
           <ImpactLists payslip={selectedPayslip} />
         </>
+      ) : null}
+
+      {selectedEmployeeId ? (
+        historyLoading ? (
+          <Skeleton className="h-56 w-full rounded-xl" />
+        ) : (
+          <PayslipHistoryPanel items={history} />
+        )
       ) : null}
     </div>
   );

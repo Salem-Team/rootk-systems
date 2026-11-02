@@ -24,12 +24,9 @@ export function PayrollLedgerTable({
   return (
     <section className="surface-panel overflow-hidden">
       <div className="panel-header">
-        <h3 className="text-[0.95rem] font-semibold">
+        <h3 className="text-[0.95rem] font-semibold tracking-tight">
           {t("payroll.ledgerPayslips")}
         </h3>
-        <p className="text-sm text-muted-foreground">
-          {t("payroll.ledgerPayslipsDesc")}
-        </p>
       </div>
       <ul className="grid gap-2 p-3 md:hidden">
         {rows.length === 0 ? (

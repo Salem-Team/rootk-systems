@@ -64,15 +64,10 @@ export function PayrollApprovalWorkflow({
       animate="visible"
       className="surface-panel overflow-hidden"
     >
-      <div className="panel-header flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h3 className="text-[0.95rem] font-semibold">
-            {t("payroll.workflowTitle")}
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            {t("payroll.workflowDesc")}
-          </p>
-        </div>
+      <div className="panel-header flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-[0.95rem] font-semibold tracking-tight">
+          {t("payroll.workflowTitle")}
+        </h3>
         <div className="flex flex-wrap gap-2">
           {canAdvance && run.status !== "paid" ? (
             <Button size="sm" onClick={() => void advance()}>

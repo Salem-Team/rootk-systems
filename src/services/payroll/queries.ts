@@ -182,11 +182,17 @@ export async function getPayslipHistory(
     const runStatus = getRunStatus();
     const history = mockPayslipHistory(scopedId).map((item) => {
       if (item.periodId === PAYROLL_PERIOD.id && current[0]) {
+        const slip = current[0];
         return {
           ...item,
-          net: current[0].net,
-          gross: current[0].gross,
+          net: slip.net,
+          gross: slip.gross,
           status: runStatus,
+          deductionsTotal: slip.deductionsTotal,
+          overtimePay: slip.overtimePay,
+          allowancesTotal: slip.allowancesTotal,
+          bonusesTotal: slip.bonusesTotal,
+          currency: slip.currency,
         };
       }
       return item;

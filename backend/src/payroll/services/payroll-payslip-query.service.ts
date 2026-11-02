@@ -1,6 +1,23 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
-import { slipDeductionsTotal, periodBounds } from "../payroll.helpers";
+import {
+  slipDeductionsTotal,
+  periodBounds,
+  periodBoundsFor,
+} from "../payroll.helpers";
+
+function formatPeriodLabel(periodId: string): string {
+  try {
+    const bounds = periodBoundsFor(periodId);
+    return new Intl.DateTimeFormat("en-GB", {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    }).format(new Date(Date.UTC(bounds.year, bounds.month - 1, 1)));
+  } catch {
+    return periodId;
+  }
+}
 
 /** Reads persisted payslips and shapes them for the frontend. */
 @Injectable()
@@ -91,14 +108,27 @@ export class PayrollPayslipQueryService {
       periodId: row.periodId,
       payload: row.payload,
     });
+    let payDate = row.periodId;
+    try {
+      payDate = periodBoundsFor(row.periodId).payDate;
+    } catch {
+      if (/^\d{4}-\d{2}$/.test(row.periodId)) {
+        payDate = `${row.periodId}-28`;
+      }
+    }
     return {
       id: row.id,
       periodId: row.periodId,
-      periodLabel: row.periodId,
-      payDate: `${row.periodId}-28`,
+      periodLabel: formatPeriodLabel(row.periodId),
+      payDate,
       net: slip.net,
       gross: slip.gross,
       status: "calculated" as const,
+      deductionsTotal: slip.deductionsTotal,
+      overtimePay: slip.overtimePay,
+      allowancesTotal: slip.allowancesTotal,
+      bonusesTotal: slip.bonusesTotal,
+      currency: slip.currency,
     };
   }
 
@@ -137,8 +167,14 @@ export class PayrollPayslipQueryService {
   async history(companyId: string, employeeId: string) {
     const rows = await this.prisma.employeePayslip.findMany({
       where: { companyId, employeeId },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ periodId: "desc" }, { createdAt: "desc" }],
     });
-    return rows.map((r) => this.toHistoryItem(r));
+    const seen = new Set<string>();
+    const unique = rows.filter((row) => {
+      if (seen.has(row.periodId)) return false;
+      seen.add(row.periodId);
+      return true;
+    });
+    return unique.map((r) => this.toHistoryItem(r));
   }
 }
