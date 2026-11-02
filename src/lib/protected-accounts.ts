@@ -3,10 +3,15 @@ export const SYSTEM_ADMIN_EMPLOYEE_ID = "emp_admin_001";
 export const SYSTEM_ADMIN_USER_ID = "usr_admin_001";
 export const SYSTEM_ADMIN_EMAIL = "admin@rootk.systems";
 
-/** Prod historically stored the admin without the `.` in the domain. */
+/**
+ * All emails that sign in as the canonical system admin (Mohamed Salem).
+ * Prod historically used admin@rootksystems.com (no dot); local seed uses
+ * admin@rootk.systems; salem@rootk.systems is the local mock admin email.
+ */
 export const SYSTEM_ADMIN_EMAIL_ALIASES = [
   SYSTEM_ADMIN_EMAIL,
   "admin@rootksystems.com",
+  "salem@rootk.systems",
 ] as const;
 
 export function normalizeEmail(email: string | null | undefined): string {
