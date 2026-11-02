@@ -190,6 +190,13 @@ export function computeDayAttendanceImpacts(
   if (!onLeave) {
     for (const rule of activeDayRules) {
       if (!matchRule(rule, ctx)) continue;
+      // Night-shift allowance is disabled company-wide.
+      if (
+        rule.when.field === "night_shift" ||
+        rule.then.action === "add_shift_allowance"
+      ) {
+        continue;
+      }
       const applied = applyRuleAmount(
         rule,
         rate,
@@ -205,19 +212,12 @@ export function computeDayAttendanceImpacts(
               )
             : undefined,
         hoursPerDay,
-        // Prefer rule amount when set; fall back to policy night allowance.
-        rule.then.action === "add_shift_allowance"
-          ? rule.then.amount || policies.nightShiftAllowance
-          : policies.nightShiftAllowance
+        0
       );
       if (applied.amount === 0 && applied.dayFraction === 0) continue;
 
       if (applied.kind === "earn") {
-        if (rule.then.action === "add_shift_allowance") {
-          shiftAllowanceAdd += applied.amount;
-        } else {
-          overtimePayAdd += applied.amount;
-        }
+        overtimePayAdd += applied.amount;
         continue;
       }
 

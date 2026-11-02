@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Pencil, RefreshCw } from "lucide-react";
+import { Pencil, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PayrollDeductionWhy } from "@/components/payroll/payroll-deduction-why";
+import { PayrollMonthSwitcher } from "@/components/payroll/payroll-month-switcher";
 import {
   calculatePayrollPeriod,
   getPayrollPeriodPreview,
@@ -21,25 +22,6 @@ import type {
   PayrollPeriodPreview,
 } from "@/types/payroll";
 
-function shiftPeriod(periodId: string, delta: number): string {
-  const [y, m] = periodId.split("-").map(Number);
-  const d = new Date(Date.UTC(y, m - 1 + delta, 1));
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
-}
-
-function periodLabel(periodId: string, locale: string) {
-  const [y, m] = periodId.split("-").map(Number);
-  try {
-    return new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", {
-      month: "long",
-      year: "numeric",
-      timeZone: "UTC",
-    }).format(new Date(Date.UTC(y, m - 1, 1)));
-  } catch {
-    return periodId;
-  }
-}
-
 export function PayrollMonthBoard({
   periodId,
   onPeriodIdChange,
@@ -51,6 +33,7 @@ export function PayrollMonthBoard({
   onEditSalary,
   canCalculate,
   canEditSalary,
+  hideMonthSwitcher = false,
 }: {
   periodId: string;
   onPeriodIdChange: (periodId: string) => void;
@@ -62,6 +45,7 @@ export function PayrollMonthBoard({
   onEditSalary: (employeeId: string) => void;
   canCalculate: boolean;
   canEditSalary: boolean;
+  hideMonthSwitcher?: boolean;
 }) {
   const { t, locale } = useTranslation();
   const loc = locale === "ar" ? "ar" : "en";
@@ -134,36 +118,22 @@ export function PayrollMonthBoard({
     <div className="space-y-4">
       <section className="surface-panel overflow-hidden">
         <div className="flex flex-col gap-3 border-b border-border/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-1.5">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-9 w-9"
-              aria-label={t("payroll.prevMonth")}
-              onClick={() => onPeriodIdChange(shiftPeriod(periodId, -1))}
-              disabled={busy}
-            >
-              <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
-            </Button>
-            <div className="min-w-[9.5rem] text-center">
-              <p className="text-[15px] font-semibold tracking-tight">
-                {periodLabel(periodId, locale)}
+          {hideMonthSwitcher ? (
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold tracking-tight">
+                {t("payroll.tabMonthBoard")}
               </p>
-              <p className="text-[11px] text-muted-foreground">{periodId}</p>
+              <p className="text-[11px] tabular-nums text-muted-foreground">
+                {periodId}
+              </p>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-9 w-9"
-              aria-label={t("payroll.nextMonth")}
-              onClick={() => onPeriodIdChange(shiftPeriod(periodId, 1))}
+          ) : (
+            <PayrollMonthSwitcher
+              periodId={periodId}
+              onPeriodIdChange={onPeriodIdChange}
               disabled={busy}
-            >
-              <ChevronRight className="h-4 w-4 rtl:rotate-180" />
-            </Button>
-          </div>
+            />
+          )}
 
           <div className="flex flex-wrap items-center gap-2">
             {preview ? (

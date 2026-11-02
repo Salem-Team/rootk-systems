@@ -35,6 +35,7 @@ export function PayrollLedgerPanel({
   canEditSalary,
   onRunUpdated,
   onRefreshPayslips,
+  hideMonthSwitcher = false,
 }: {
   summary: PayrollDashboardSummary;
   payslips: EmployeePayslip[];
@@ -51,6 +52,7 @@ export function PayrollLedgerPanel({
   canEditSalary: boolean;
   onRunUpdated: (run: PayrollRun) => void;
   onRefreshPayslips: () => void;
+  hideMonthSwitcher?: boolean;
 }) {
   const { t, locale } = useTranslation();
   const dateLocale = locale === "ar" ? arLocale : enUS;
@@ -136,6 +138,7 @@ export function PayrollLedgerPanel({
         onEditSalary={onEditSalary}
         canCalculate={canCalculate}
         canEditSalary={canEditSalary}
+        hideMonthSwitcher={hideMonthSwitcher}
       />
 
       <PayrollRunsHistory runs={runs} dateLocale={dateLocale} loc={loc} />

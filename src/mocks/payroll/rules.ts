@@ -52,11 +52,11 @@ export const payrollRulesSeed: SeedOf<PayrollRule>[] = [
   {
     id: "rule-night",
     name: "Night shift → shift allowance",
-    enabled: true,
+    enabled: false,
     priority: 35,
     when: { field: "night_shift", operator: "eq", value: 1 },
-    then: { action: "add_shift_allowance", amount: 350 },
-    description: "IF Night Shift THEN Add Shift Allowance",
+    then: { action: "add_shift_allowance", amount: 0 },
+    description: "Disabled — night shift allowance is not used.",
   },
   {
     id: "rule-ot-2",

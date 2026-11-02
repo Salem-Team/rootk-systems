@@ -227,6 +227,7 @@ export class PayrollPayslipCalcService {
       weekendOvertimeHours: ot.weekend,
       holidayOvertimeHours: ot.holiday,
       asOfDate: asOf,
+      holidayDates: [...holidayDates],
     });
 
     return {

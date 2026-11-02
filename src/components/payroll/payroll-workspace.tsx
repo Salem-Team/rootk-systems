@@ -13,6 +13,7 @@ import {
   getPayrollReports,
   getPayrollRules,
   getPayslipHistory,
+  getPayrollPeriodPreview,
   getSalaryProfile,
 } from "@/services/payroll.service";
 import { getWorkforceEmployees } from "@/services/employees.service";
@@ -112,6 +113,21 @@ export function PayrollWorkspace() {
       mounted = false;
     };
   }, [role, workEmployeeId]);
+
+  // Keep payslips aligned with the selected month across all admin tabs.
+  useEffect(() => {
+    if (role === "employee") return;
+    let mounted = true;
+    void getPayrollPeriodPreview(periodId).then((res) => {
+      if (!mounted) return;
+      if (res.success && res.data) {
+        setPayslips(res.data.payslips);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [role, periodId, periodReloadNonce]);
 
   async function refreshPayrollCalculations() {
     const [dash, slips, rep, ruleRes] = await Promise.all([

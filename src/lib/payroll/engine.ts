@@ -3,7 +3,13 @@ import type {
   PayrollCalculationInput,
   DeductionPriorityItem,
 } from "@/types/payroll";
-import { allowancesTotal, resolveRates, roundAmount } from "@/lib/payroll/engine-rates";
+import {
+  allowancesTotal,
+  isOvertimeExemptBasic,
+  resolveJoinMonthFactor,
+  resolveRates,
+  roundAmount,
+} from "@/lib/payroll/engine-rates";
 import { computeAttendanceImpacts } from "@/lib/payroll/engine-attendance";
 import { computePeriodOvertime } from "@/lib/payroll/engine-period";
 import { computeLeaveImpacts } from "@/lib/payroll/engine-leave";
@@ -22,6 +28,7 @@ export function calculateEmployeePayslip(
 ): EmployeePayslip {
   const { daily: rate, hourly, hoursPerDay } = resolveRates(input);
   const policies = input.policies;
+  const { factor: joinFactor } = resolveJoinMonthFactor(input);
   const rules = [...input.rules].sort((a, b) => a.priority - b.priority);
 
   const overtimeHours = input.overtimeHours ?? 0;
@@ -35,7 +42,6 @@ export function calculateEmployeePayslip(
     attendanceDeduction: attendanceDeductionRaw,
     attendanceImpacts,
     overtimePay: overtimePayFromDayRules,
-    shiftAllowance,
   } = computeAttendanceImpacts({
     input,
     rate,
@@ -45,7 +51,7 @@ export function calculateEmployeePayslip(
     dayRules,
   });
 
-  const overtimePay = computePeriodOvertime({
+  let overtimePay = computePeriodOvertime({
     periodRules,
     policies,
     rate,
@@ -56,6 +62,12 @@ export function calculateEmployeePayslip(
     holidayOt,
     overtimePaySoFar: overtimePayFromDayRules,
   });
+  // Flat 5000 basic contracts are not eligible for overtime pay.
+  if (isOvertimeExemptBasic(input.profile.basicSalary)) {
+    overtimePay = 0;
+  }
+  // Night shift allowance is retired — keep only explicit profile shift amount.
+  const payableShiftAllowance = input.profile.allowances.shift;
 
   const maxAtt =
     policies.maxDeductionDayFraction * input.period.workingDays * rate;
@@ -67,14 +79,17 @@ export function calculateEmployeePayslip(
     rate
   );
 
-  const allowTotal =
-    allowancesTotal(input) - input.profile.allowances.shift + shiftAllowance;
-  const bonusesTotal = input.profile.bonuses + input.profile.commission;
-  const incentives = input.profile.incentives;
+  const fixedAllowances =
+    (allowancesTotal(input) - input.profile.allowances.shift) * joinFactor;
+  const allowTotal = fixedAllowances + payableShiftAllowance;
+  const bonusesTotal =
+    (input.profile.bonuses + input.profile.commission) * joinFactor;
+  const incentives = input.profile.incentives * joinFactor;
   const manualAdjustments = input.profile.manualAdjustments;
+  const basicPayable = input.profile.basicSalary * joinFactor;
 
   const gross =
-    input.profile.basicSalary +
+    basicPayable +
     allowTotal +
     bonusesTotal +
     incentives +
@@ -108,10 +123,12 @@ export function calculateEmployeePayslip(
 
   const lines = buildPayslipLines({
     input,
-    shiftAllowance,
+    basicPayable,
+    shiftAllowance: payableShiftAllowance,
     overtimePay,
     applied,
     policies,
+    joinFactor,
   });
 
   return {
@@ -125,7 +142,7 @@ export function calculateEmployeePayslip(
     incentives,
     manualAdjustments,
     overtimePay: roundAmount(overtimePay, policies.autoRounding),
-    shiftAllowance: roundAmount(shiftAllowance, policies.autoRounding),
+    shiftAllowance: roundAmount(payableShiftAllowance, policies.autoRounding),
     deductionsTotal: employeeCost,
     insurance: applied.insurance,
     tax: applied.tax,

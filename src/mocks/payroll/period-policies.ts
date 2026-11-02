@@ -33,7 +33,7 @@ export const payrollPoliciesSeed: SeedOf<PayrollPolicies> = {
   overtimeRate: 1.5,
   holidayOvertimeRate: 1.5,
   weekendOvertimeRate: 1.5,
-  nightShiftAllowance: 350,
+  nightShiftAllowance: 0,
   minimumWorkingMinutes: 480,
   maxDeductionDayFraction: 2,
   monthlyDeductionCap: 25000,

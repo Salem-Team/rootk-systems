@@ -20,7 +20,7 @@ export const DEFAULT_PAYROLL_POLICY = {
   overtimeRate: 1.5,
   holidayOvertimeRate: 1.5,
   weekendOvertimeRate: 1.5,
-  nightShiftAllowance: 350,
+  nightShiftAllowance: 0,
   minimumWorkingMinutes: 480,
   maxDeductionDayFraction: 2,
   monthlyDeductionCap: 25000,
@@ -124,11 +124,11 @@ export const DEFAULT_PAYROLL_RULES: BuiltinPayrollRuleSeed[] = [
   {
     code: "night_shift",
     name: "Night shift → shift allowance",
-    enabled: true,
+    enabled: false,
     priority: 35,
     when: { field: "night_shift", operator: "eq", value: 1 },
-    then: { action: "add_shift_allowance", amount: 350 },
-    description: "IF Night Shift THEN Add Shift Allowance",
+    then: { action: "add_shift_allowance", amount: 0 },
+    description: "Disabled — night shift allowance is not used.",
   },
   {
     code: "ot_2h",

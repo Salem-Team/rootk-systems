@@ -9,59 +9,74 @@ import { roundAmount } from "./payroll-engine-helpers";
 /** Builds the itemized payslip line list — pure formatting over already-computed totals. */
 export function buildPayslipLines(params: {
   profile: PayrollCalculationInput["profile"];
+  basicPayable?: number;
   shiftAllowance: number;
   overtimePay: number;
   incentives: number;
   manualAdjustments: number;
   applied: Record<DeductionPriorityItem, number>;
   autoRounding: PayrollPolicies["autoRounding"];
+  joinFactor?: number;
 }): PayslipLine[] {
-  const { profile, shiftAllowance, overtimePay, incentives, manualAdjustments, applied, autoRounding } =
-    params;
+  const {
+    profile,
+    shiftAllowance,
+    overtimePay,
+    incentives,
+    manualAdjustments,
+    applied,
+    autoRounding,
+    joinFactor = 1,
+  } = params;
+  const basicAmount = params.basicPayable ?? profile.basicSalary * joinFactor;
+  const scaleFixed = (value: number) => value * joinFactor;
 
   return (
     [
       {
         id: "basic",
         code: "BASIC",
-        label: "Basic salary",
+        label:
+          joinFactor < 1
+            ? `Basic salary (join prorated ${Math.round(joinFactor * 100)}%)`
+            : "Basic salary",
         category: "earning",
-        amount: profile.basicSalary,
+        amount: basicAmount,
       },
       {
         id: "housing",
         code: "HOUSING",
         label: "Housing allowance",
         category: "allowance",
-        amount: profile.allowances.housing,
+        amount: scaleFixed(profile.allowances.housing),
       },
       {
         id: "transport",
         code: "TRANS",
         label: "Transportation",
         category: "allowance",
-        amount: profile.allowances.transportation,
+        amount: scaleFixed(profile.allowances.transportation),
       },
       {
         id: "meal",
         code: "MEAL",
         label: "Meal allowance",
         category: "allowance",
-        amount: profile.allowances.meal,
+        amount: scaleFixed(profile.allowances.meal),
       },
       {
         id: "phone",
         code: "PHONE",
         label: "Phone allowance",
         category: "allowance",
-        amount: profile.allowances.phone,
+        amount: scaleFixed(profile.allowances.phone),
       },
       {
         id: "other-allow",
         code: "OTHER",
         label: "Other allowances",
         category: "allowance",
-        amount: profile.allowances.other,
+        amount: scaleFixed(profile.allowances.other),
       },
       {
         id: "shift",
@@ -75,14 +90,14 @@ export function buildPayslipLines(params: {
         code: "BONUS",
         label: "Bonuses",
         category: "bonus",
-        amount: profile.bonuses,
+        amount: scaleFixed(profile.bonuses),
       },
       {
         id: "commission",
         code: "COMM",
         label: "Commission",
         category: "bonus",
-        amount: profile.commission,
+        amount: scaleFixed(profile.commission),
       },
       {
         id: "incentive",

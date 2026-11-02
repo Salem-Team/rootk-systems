@@ -217,4 +217,6 @@ export interface PayrollCalculationInput {
   holidayOvertimeHours?: number;
   /** Open attendance day (YYYY-MM-DD) — missing checkout is not deducted yet. */
   asOfDate?: string;
+  /** YYYY-MM-DD holiday keys used for join-month working-day proration. */
+  holidayDates?: string[];
 }

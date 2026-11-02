@@ -3,7 +3,11 @@ import type {
   PayrollCalculationInput,
   PayrollPolicies,
 } from "./payroll-engine-types";
-import { applyRuleAmount, matchRule } from "./payroll-engine-helpers";
+import {
+  applyRuleAmount,
+  isOvertimeExemptBasic,
+  matchRule,
+} from "./payroll-engine-helpers";
 import { enabledBuiltinFields } from "./payroll-engine-deductions";
 import { computeDayAttendanceImpacts } from "./payroll-engine-attendance-day";
 
@@ -143,6 +147,14 @@ export function computeAttendanceAndOvertime(
       overtimePay += holidayOt * hourly * policies.holidayOvertimeRate;
     }
   }
+
+  // Flat 5000 basic contracts are not eligible for overtime pay.
+  if (isOvertimeExemptBasic(input.profile.basicSalary)) {
+    overtimePay = 0;
+  }
+
+  // Night shift allowance is retired — keep only explicit profile shift amount.
+  shiftAllowance = input.profile.allowances.shift;
 
   return { attendanceImpacts, attendanceDeduction, overtimePay, shiftAllowance };
 }

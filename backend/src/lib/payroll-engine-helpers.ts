@@ -1,4 +1,5 @@
 import type {
+  DayOfWeek,
   PayrollCalculationInput,
   PayrollPolicies,
   PayrollRule,
@@ -6,6 +7,81 @@ import type {
 import { earlyLeaveFallbackMinutes, resolveEarlyLeaveCap, resolveLateTierCharge } from "./payroll-charge";
 
 /** Pure helpers for the payroll engine — extracted for readability, no behavior change. */
+
+/** Employees on this contracted basic salary do not receive overtime pay. */
+export const OVERTIME_EXEMPT_BASIC_SALARY = 5000;
+
+export function isOvertimeExemptBasic(basicSalary: number): boolean {
+  return Math.round(basicSalary) === OVERTIME_EXEMPT_BASIC_SALARY;
+}
+
+const WEEK_DAYS: DayOfWeek[] = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+];
+
+function dayOfWeekFromDateKey(dateKey: string): DayOfWeek {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  return WEEK_DAYS[new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1)).getUTCDay()];
+}
+
+function countWorkingDaysInRange(
+  start: string,
+  end: string,
+  workingDays: DayOfWeek[],
+  holidayDates: Set<string>
+): number {
+  let count = 0;
+  const cursor = new Date(`${start}T00:00:00.000Z`);
+  const last = new Date(`${end}T00:00:00.000Z`);
+  while (cursor <= last) {
+    const key = cursor.toISOString().slice(0, 10);
+    const dow = dayOfWeekFromDateKey(key);
+    if (workingDays.includes(dow) && !holidayDates.has(key)) count += 1;
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return count;
+}
+
+/**
+ * Mid-month join / exit factor for monthly salary.
+ * Daily/hourly rates stay on full contract salary; only payable basic+fixed allowances scale.
+ */
+export function resolveJoinMonthFactor(input: PayrollCalculationInput): {
+  factor: number;
+  eligibleDays: number;
+  monthDays: number;
+} {
+  const monthDays = Math.max(input.period.workingDays, 1);
+  const join = String(input.profile.joiningDate ?? "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(join)) {
+    return { factor: 1, eligibleDays: monthDays, monthDays };
+  }
+  if (join <= input.period.startDate) {
+    return { factor: 1, eligibleDays: monthDays, monthDays };
+  }
+  if (join > input.period.endDate) {
+    return { factor: 0, eligibleDays: 0, monthDays };
+  }
+
+  const workingDays =
+    input.schedule?.workingDays ??
+    (["sunday", "monday", "tuesday", "wednesday", "thursday"] as DayOfWeek[]);
+  const holidays = new Set(input.holidayDates ?? []);
+  const eligibleDays = countWorkingDaysInRange(
+    join,
+    input.period.endDate,
+    workingDays,
+    holidays
+  );
+  const factor = Math.min(1, Math.max(0, eligibleDays / monthDays));
+  return { factor, eligibleDays, monthDays };
+}
 
 export function roundAmount(
   value: number,

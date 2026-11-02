@@ -7,6 +7,7 @@ import { computeAttendanceAndOvertime } from "./payroll-engine-attendance";
 import { computeLeaveImpacts } from "./payroll-engine-leave";
 import {
   allowancesTotal,
+  resolveJoinMonthFactor,
   resolveRates,
   roundAmount,
 } from "./payroll-engine-helpers";
@@ -19,6 +20,7 @@ export function calculateEmployeePayslip(
 ): EmployeePayslip {
   const { daily: rate, hourly, hoursPerDay } = resolveRates(input);
   const policies = input.policies;
+  const { factor: joinFactor } = resolveJoinMonthFactor(input);
 
   const {
     attendanceImpacts,
@@ -37,14 +39,17 @@ export function calculateEmployeePayslip(
     rate
   );
 
-  const allowTotal =
-    allowancesTotal(input) - input.profile.allowances.shift + shiftAllowance;
-  const bonusesTotal = input.profile.bonuses + input.profile.commission;
-  const incentives = input.profile.incentives;
+  const fixedAllowances =
+    (allowancesTotal(input) - input.profile.allowances.shift) * joinFactor;
+  const allowTotal = fixedAllowances + shiftAllowance;
+  const bonusesTotal =
+    (input.profile.bonuses + input.profile.commission) * joinFactor;
+  const incentives = input.profile.incentives * joinFactor;
   const manualAdjustments = input.profile.manualAdjustments;
+  const basicPayable = input.profile.basicSalary * joinFactor;
 
   const gross =
-    input.profile.basicSalary +
+    basicPayable +
     allowTotal +
     bonusesTotal +
     incentives +
@@ -78,12 +83,14 @@ export function calculateEmployeePayslip(
 
   const lines = buildPayslipLines({
     profile: input.profile,
+    basicPayable,
     shiftAllowance,
     overtimePay,
     incentives,
     manualAdjustments,
     applied,
     autoRounding: policies.autoRounding,
+    joinFactor,
   });
 
   return {

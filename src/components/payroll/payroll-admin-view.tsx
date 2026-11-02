@@ -29,6 +29,10 @@ import type {
   PayrollRule,
   PayrollRun,
 } from "@/types/payroll";
+import {
+  formatPayrollPeriodLabel,
+  PayrollMonthSwitcher,
+} from "@/components/payroll/payroll-month-switcher";
 import { EmployeePicker, ImpactLists } from "./payroll-workspace-shared";
 
 const panelLoading = () => <Skeleton className="h-56 w-full rounded-xl" />;
@@ -211,7 +215,14 @@ export function PayrollAdminView({
       />
 
       <Tabs value={tab} onValueChange={onTabChange} className="space-y-3">
-        <div className="payroll-sticky-tabs sticky top-[var(--chrome-sticky-top)] z-20 -mx-3 border-b border-border/60 bg-background/95 px-3 py-2 backdrop-blur-xl sm:-mx-4 sm:px-4">
+        <div className="payroll-sticky-tabs sticky top-[var(--chrome-sticky-top)] z-20 -mx-3 space-y-2 border-b border-border/60 bg-background/95 px-3 py-2 backdrop-blur-xl sm:-mx-4 sm:px-4">
+          <div className="flex items-center justify-between gap-2">
+            <PayrollMonthSwitcher
+              periodId={periodId}
+              onPeriodIdChange={onPeriodIdChange}
+              className="w-full max-w-sm sm:w-auto"
+            />
+          </div>
           <TabsList
             className={cn(
               "flex h-auto w-full max-w-full flex-nowrap items-stretch justify-start gap-1 overflow-x-auto overscroll-x-contain rounded-xl border border-border/70 bg-muted/50 p-1",
@@ -241,7 +252,7 @@ export function PayrollAdminView({
             selectedProfileState={selectedProfileState}
             selectedPayslip={selectedPayslip}
             selectedEmployee={selectedEmployee}
-            periodLabel={summary.period.label}
+            periodLabel={formatPayrollPeriodLabel(periodId, locale)}
             onEditProfile={() => onEditProfileOpenChange(true)}
             profileReloadNonce={periodReloadNonce}
           />
@@ -255,6 +266,8 @@ export function PayrollAdminView({
             periodId={periodId}
             onPeriodIdChange={onPeriodIdChange}
             periodReloadNonce={periodReloadNonce}
+            hideMonthSwitcher
+
             selectedEmployeeId={selectedEmployeeId}
             onSelectedEmployeeIdChange={onSelectedEmployeeIdChange}
             onPayslipsChange={onPayslipsChange}
@@ -312,7 +325,7 @@ export function PayrollAdminView({
                 payslip={selectedPayslip}
                 profile={selectedProfileState}
                 employee={selectedEmployee}
-                periodLabel={summary.period.label}
+                periodLabel={formatPayrollPeriodLabel(periodId, locale)}
               />
               <ImpactLists payslip={selectedPayslip} />
             </div>
