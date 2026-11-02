@@ -219,13 +219,15 @@ export function UserPermissionsPanel() {
     >
       <div
         className={cn(
-          "surface-panel overflow-hidden max-lg:-mx-3 max-lg:rounded-none max-lg:border-x-0 max-lg:border-t-0 max-lg:shadow-none sm:max-lg:-mx-4",
+          // overflow-x-clip (not overflow-hidden): sticky+hidden was clipping the
+          // user list under the header on mobile so rows never appeared.
+          "surface-panel min-w-0 max-w-full overflow-x-clip max-lg:-mx-3 max-lg:rounded-none max-lg:border-x-0 max-lg:border-t-0 max-lg:shadow-none sm:max-lg:-mx-4",
           mobileDetailOpen && "hidden lg:block"
         )}
       >
-        <div className="sticky top-[var(--chrome-sticky-top)] z-10 border-b border-border/60 bg-card/95 px-3 py-3 backdrop-blur-xl supports-[backdrop-filter]:bg-card/90 sm:px-4 lg:static lg:bg-transparent lg:backdrop-blur-none">
-          <h3 className="flex items-center gap-2 text-[0.95rem] font-semibold lg:text-[0.95rem]">
-            <Shield className="h-4 w-4 text-primary" aria-hidden />
+        <div className="border-b border-border/60 bg-card px-3 py-3 sm:px-4">
+          <h3 className="flex items-center gap-2 text-[0.95rem] font-semibold">
+            <Shield className="h-4 w-4 shrink-0 text-primary" aria-hidden />
             {t("permissions.title")}
           </h3>
           <p className="mt-1 hidden text-[12px] leading-relaxed text-muted-foreground sm:block">
@@ -237,13 +239,13 @@ export function UserPermissionsPanel() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("permissions.searchUsers")}
-              className="h-12 rounded-xl ps-10 text-base sm:h-9 sm:rounded-lg sm:ps-8 sm:text-sm"
+              className="h-12 rounded-xl ps-10 text-base touch-manipulation sm:h-9 sm:rounded-lg sm:ps-8 sm:text-sm"
               inputMode="search"
               enterKeyHint="search"
             />
           </div>
         </div>
-        <ul className="max-h-none space-y-0 p-1.5 sm:p-2 lg:max-h-[70vh] lg:overflow-y-auto">
+        <ul className="relative z-0 max-h-none space-y-0 p-1.5 sm:p-2 lg:max-h-[70vh] lg:overflow-y-auto">
           {filteredUsers.length === 0 ? (
             <li>
               <EmptyState
@@ -322,10 +324,10 @@ export function UserPermissionsPanel() {
 
       <div
         className={cn(
-          "surface-panel min-w-0 overflow-hidden",
+          "surface-panel min-w-0 max-w-full overflow-x-clip",
           !mobileDetailOpen && "hidden lg:block",
           mobileDetailOpen &&
-            "max-lg:fixed max-lg:inset-x-0 max-lg:top-[var(--chrome-h)] max-lg:bottom-0 max-lg:z-30 max-lg:flex max-lg:flex-col max-lg:rounded-none max-lg:border-0 max-lg:bg-background max-lg:shadow-none"
+            "max-lg:fixed max-lg:inset-x-0 max-lg:top-[var(--chrome-h)] max-lg:bottom-0 max-lg:z-30 max-lg:flex max-lg:flex-col max-lg:overflow-hidden max-lg:rounded-none max-lg:border-0 max-lg:bg-background max-lg:shadow-none"
         )}
       >
         {!detail ? (
@@ -334,7 +336,7 @@ export function UserPermissionsPanel() {
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col">
-            <div className="sticky top-0 z-20 border-b border-border/60 bg-card/95 px-2 py-2.5 backdrop-blur-xl supports-[backdrop-filter]:bg-card/90 sm:px-5 sm:py-4 lg:top-[var(--chrome-sticky-top)]">
+            <div className="z-20 shrink-0 border-b border-border/60 bg-card px-2 py-2.5 sm:px-5 sm:py-4">
               <div className="flex items-center gap-1.5 sm:items-start sm:gap-2.5">
                 <Button
                   type="button"
