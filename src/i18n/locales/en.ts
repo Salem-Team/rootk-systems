@@ -2789,6 +2789,9 @@ export const en = {
     editSalaryProfileDescNamed:
       "Update pay components for {name}. Attendance deductions apply on the next run.",
     salaryProfileSaved: "Salary profile saved",
+    salaryRecalcDone: "Net pay updated after recalculating the month",
+    salarySavedPreviewOnly:
+      "Salary saved — if the month is locked, period net will not change until the run is unlocked",
     adminSalaryUpdateNote: "Admin salary profile update",
     earningsExtras: "Bonuses & adjustments",
     contractMeta: "Contract & payment",

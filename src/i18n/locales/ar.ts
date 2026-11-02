@@ -2780,6 +2780,9 @@ export const ar: TranslationKeys = {
     editSalaryProfileDescNamed:
       "حدّث مكوّنات راتب {name}. خصومات الحضور تتطبق في الجرد التالي.",
     salaryProfileSaved: "تم حفظ ملف الراتب",
+    salaryRecalcDone: "تم تحديث الصافي بعد إعادة حساب الشهر",
+    salarySavedPreviewOnly:
+      "اتحفظ المرتب — لو الشهر مقفول الصافي القديم مش هيتعدل غير بعد فتح الجرد",
     adminSalaryUpdateNote: "تحديث ملف راتب من الأدمن",
     earningsExtras: "بونص وتسويات",
     contractMeta: "التعاقد والدفع",

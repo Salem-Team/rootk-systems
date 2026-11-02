@@ -8,12 +8,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PayrollKpiRow } from "@/components/payroll/payroll-kpi-row";
 import { formatEgp } from "@/lib/payroll";
 import {
+  calculatePayrollPeriod,
   canApproveFinance,
   canEditPolicies,
   canViewAllPayroll,
   getAllPayslips,
   getPayrollDashboard,
+  getPayrollPeriodPreview,
 } from "@/services/payroll.service";
+import { toast } from "sonner";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
@@ -164,6 +167,32 @@ export function PayrollAdminView({
     void getPayrollDashboard().then((res) => {
       if (res.success) onSummaryChange(() => res.data);
     });
+  }
+
+  /** After salary edits: recalc the open month so net/deductions refresh. */
+  async function refreshAfterSalarySave() {
+    const calc = await calculatePayrollPeriod(periodId);
+    if (calc.success && calc.data) {
+      onPayslipsChange(calc.data.payslips);
+      onPeriodReload();
+      void getPayrollDashboard().then((res) => {
+        if (res.success) onSummaryChange(() => res.data);
+      });
+      toast.success(t("payroll.salaryRecalcDone"));
+      return;
+    }
+    // Locked / no permission — still pull live preview if available.
+    const preview = await getPayrollPeriodPreview(periodId);
+    if (preview.success && preview.data) {
+      onPayslipsChange(preview.data.payslips);
+      onPeriodReload();
+    } else {
+      refreshPayslipsAndSummary();
+      onPeriodReload();
+    }
+    if (!calc.success) {
+      toast.message(calc.message ?? t("payroll.salarySavedPreviewOnly"));
+    }
   }
 
   return (
@@ -366,8 +395,7 @@ export function PayrollAdminView({
           }
           onSaved={(profile) => {
             onSelectedProfileStateChange(profile);
-            refreshPayslipsAndSummary();
-            onPeriodReload();
+            void refreshAfterSalarySave();
           }}
         />
       ) : null}
