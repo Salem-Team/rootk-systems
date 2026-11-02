@@ -1,5 +1,5 @@
+import type { DayOfWeek } from "@/types";
 import type {
-  DayOfWeek,
   PayrollCalculationInput,
   PayrollPolicies,
 } from "@/types/payroll";
