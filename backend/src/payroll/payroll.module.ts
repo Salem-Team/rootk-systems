@@ -8,6 +8,7 @@ import { PayrollPayslipCalcService } from "./services/payroll-payslip-calc.servi
 import { PayrollPayslipQueryService } from "./services/payroll-payslip-query.service";
 import { PayrollRunsService } from "./services/payroll-runs.service";
 import { PayrollDashboardService } from "./services/payroll-dashboard.service";
+import { PayrollPeriodService } from "./services/payroll-period.service";
 import { RolesGuard } from "../common/roles.guard";
 import { NotificationsModule } from "../notifications/notifications.module";
 
@@ -23,6 +24,7 @@ import { NotificationsModule } from "../notifications/notifications.module";
     PayrollPayslipQueryService,
     PayrollRunsService,
     PayrollDashboardService,
+    PayrollPeriodService,
     RolesGuard,
   ],
   exports: [PayrollService],

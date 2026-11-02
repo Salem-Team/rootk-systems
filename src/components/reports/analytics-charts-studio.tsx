@@ -3,14 +3,11 @@
 import { useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  buildLeaveAnalytics,
-  buildModePie,
-  buildMonthlyTrends,
-  buildQuarterlyTrends,
-  buildRadarScores,
-  buildWeeklyTrends,
+import type {
+  LeaveAnalyticsPoint,
+  TrendPoint,
 } from "@/components/reports/analytics-mock-data";
+import { EmptyState } from "@/components/shared/empty-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp } from "@/lib/animations";
 import type { TranslationPath } from "@/i18n";
@@ -34,18 +31,21 @@ const DAY_KEYS: Record<string, TranslationPath> = {
 };
 
 const MONTH_KEYS: Record<string, TranslationPath> = {
+  Jan: "months.Jan",
+  Feb: "months.Feb",
   Mar: "months.Mar",
   Apr: "months.Apr",
   May: "months.May",
   Jun: "months.Jun",
   Jul: "months.Jul",
   Aug: "months.Aug",
+  Sep: "months.Sep",
+  Oct: "months.Oct",
+  Nov: "months.Nov",
+  Dec: "months.Dec",
 };
 
-function localizeTrend(
-  rows: ReturnType<typeof buildWeeklyTrends>,
-  t: (k: TranslationPath) => string
-) {
+function localizeTrend(rows: TrendPoint[], t: (k: TranslationPath) => string) {
   return rows.map((row) => ({
     ...row,
     label: DAY_KEYS[row.label]
@@ -58,8 +58,20 @@ function localizeTrend(
 
 export function AnalyticsChartsStudio({
   focus = "attendance",
+  weeklyTrends = [],
+  monthlyTrends = [],
+  quarterlyTrends = [],
+  leaveSeries = [],
+  modePie = [],
+  radar = [],
 }: {
   focus?: "attendance" | "hours" | "late" | "wfh" | "leave" | "all";
+  weeklyTrends?: TrendPoint[];
+  monthlyTrends?: TrendPoint[];
+  quarterlyTrends?: TrendPoint[];
+  leaveSeries?: LeaveAnalyticsPoint[];
+  modePie?: Array<{ nameKey: string; value: number; fill: string }>;
+  radar?: Array<{ subjectKey: string; score: number }>;
 }) {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
@@ -69,42 +81,45 @@ export function AnalyticsChartsStudio({
 
   const trendRaw =
     period === "weekly"
-      ? buildWeeklyTrends()
+      ? weeklyTrends
       : period === "monthly"
-        ? buildMonthlyTrends()
-        : buildQuarterlyTrends();
+        ? monthlyTrends
+        : quarterlyTrends;
 
-  const trend = useMemo(
-    () => localizeTrend(trendRaw, t),
-    [trendRaw, t]
-  );
+  const trend = useMemo(() => localizeTrend(trendRaw, t), [trendRaw, t]);
 
   const leave = useMemo(
     () =>
-      buildLeaveAnalytics().map((r) => ({
+      leaveSeries.map((r) => ({
         ...r,
         label: MONTH_KEYS[r.label] ? t(MONTH_KEYS[r.label]) : r.label,
       })),
-    [t]
+    [leaveSeries, t]
   );
 
   const pie = useMemo(
     () =>
-      buildModePie().map((p) => ({
+      modePie.map((p) => ({
         ...p,
         name: t(p.nameKey as TranslationPath),
       })),
-    [t]
+    [modePie, t]
   );
 
-  const radar = useMemo(
+  const radarRows = useMemo(
     () =>
-      buildRadarScores().map((r) => ({
+      radar.map((r) => ({
         subject: t(r.subjectKey as TranslationPath),
         score: r.score,
       })),
-    [t]
+    [radar, t]
   );
+
+  const hasCharts =
+    trend.some((r) => r.attendance > 0 || r.hours > 0 || r.late > 0) ||
+    leave.some((r) => r.utilized > 0 || r.approved > 0) ||
+    pie.length > 0 ||
+    radarRows.length > 0;
 
   return (
     <motion.div
@@ -143,59 +158,70 @@ export function AnalyticsChartsStudio({
         </Tabs>
       </div>
 
-      <div className="grid min-w-0 gap-4 lg:grid-cols-2">
-        {(focus === "attendance" || focus === "all") && (
-          <AttendanceTrendChart trend={trend} title={t("analytics.attendanceTrend")} />
-        )}
+      {!hasCharts ? (
+        <EmptyState
+          compact
+          title={t("reports.emptyTitle")}
+          description={t("reports.emptyDesc")}
+        />
+      ) : (
+        <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+          {(focus === "attendance" || focus === "all") && (
+            <AttendanceTrendChart
+              trend={trend}
+              title={t("analytics.attendanceTrend")}
+            />
+          )}
 
-        {(focus === "hours" || focus === "all") && (
-          <HoursTrendChart
-            trend={trend}
-            title={t("analytics.hoursTrend")}
-            hoursLabel={t("common.hours")}
-            overtimeLabel={t("analytics.overtime")}
-          />
-        )}
+          {(focus === "hours" || focus === "all") && (
+            <HoursTrendChart
+              trend={trend}
+              title={t("analytics.hoursTrend")}
+              hoursLabel={t("common.hours")}
+              overtimeLabel={t("analytics.overtime")}
+            />
+          )}
 
-        {(focus === "late" || focus === "all") && (
-          <LateTrendChart
-            trend={trend}
-            title={t("analytics.lateTrend")}
-            lateLabel={t("charts.late")}
-          />
-        )}
+          {(focus === "late" || focus === "all") && (
+            <LateTrendChart
+              trend={trend}
+              title={t("analytics.lateTrend")}
+              lateLabel={t("charts.late")}
+            />
+          )}
 
-        {(focus === "wfh" || focus === "all") && (
-          <WfhCompareCharts
-            trend={trend}
-            pie={pie}
-            compareTitle={t("analytics.wfhCompare")}
-            mixTitle={t("analytics.workModeMix")}
-            officeLabel={t("analytics.modeOffice")}
-            hybridLabel={t("analytics.modeHybrid")}
-            remoteLabel={t("analytics.modeRemote")}
-          />
-        )}
+          {(focus === "wfh" || focus === "all") && (
+            <WfhCompareCharts
+              trend={trend}
+              pie={pie}
+              compareTitle={t("analytics.wfhCompare")}
+              mixTitle={t("analytics.workModeMix")}
+              officeLabel={t("analytics.modeOffice")}
+              hybridLabel={t("analytics.modeHybrid")}
+              remoteLabel={t("analytics.modeRemote")}
+            />
+          )}
 
-        {(focus === "leave" || focus === "all") && (
-          <LeaveUtilChart
-            leave={leave}
-            title={t("analytics.leaveUtilChart")}
-            approvedLabel={t("common.approved")}
-            pendingLabel={t("common.pending")}
-            remainingLabel={t("employees.leaveRemaining")}
-          />
-        )}
+          {(focus === "leave" || focus === "all") && (
+            <LeaveUtilChart
+              leave={leave}
+              title={t("analytics.leaveUtilChart")}
+              approvedLabel={t("common.approved")}
+              pendingLabel={t("common.pending")}
+              remainingLabel={t("employees.leaveRemaining")}
+            />
+          )}
 
-        {focus === "all" && (
-          <CompanyRadarChart
-            radar={radar}
-            title={t("analytics.radarTitle")}
-            hint={t("analytics.radarHint")}
-            scoreLabel={t("analytics.companyScore")}
-          />
-        )}
-      </div>
+          {focus === "all" && (
+            <CompanyRadarChart
+              radar={radarRows}
+              title={t("analytics.radarTitle")}
+              hint={t("analytics.radarLiveHint")}
+              scoreLabel={t("analytics.companyScore")}
+            />
+          )}
+        </div>
+      )}
     </motion.div>
   );
 }

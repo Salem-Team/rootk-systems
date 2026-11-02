@@ -1003,6 +1003,18 @@
     overflow: hidden;
   }
 
+  /* Recharts v3 nests a 0×0 overflow:visible measurement wrapper. */
+  .chart-frame .recharts-responsive-container {
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0;
+  }
+
+  .chart-frame .recharts-responsive-container > div[style*="overflow"] {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
   .panel-body:has(.recharts-responsive-container),
   [role="img"]:has(.recharts-responsive-container) {
     min-width: 0;

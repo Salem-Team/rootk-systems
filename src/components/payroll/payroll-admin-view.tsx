@@ -119,6 +119,10 @@ export function PayrollAdminView({
   editProfileOpen,
   onEditProfileOpenChange,
   onRefreshPayrollCalculations,
+  periodId,
+  onPeriodIdChange,
+  periodReloadNonce,
+  onPeriodReload,
   locale,
 }: {
   persona: PayrollPersona;
@@ -144,6 +148,10 @@ export function PayrollAdminView({
   editProfileOpen: boolean;
   onEditProfileOpenChange: (open: boolean) => void;
   onRefreshPayrollCalculations: () => void | Promise<void>;
+  periodId: string;
+  onPeriodIdChange: (periodId: string) => void;
+  periodReloadNonce: number;
+  onPeriodReload: () => void;
   locale: string;
 }) {
   const { t } = useTranslation();
@@ -200,7 +208,7 @@ export function PayrollAdminView({
               {t("payroll.tabOverview")}
             </TabsTrigger>
             <TabsTrigger value="ledger" className="min-h-11 shrink-0 touch-manipulation">
-              {t("payroll.tabLedger")}
+              {t("payroll.tabMonthBoard")}
             </TabsTrigger>
             <TabsTrigger value="salary" className="min-h-11 shrink-0 touch-manipulation">
               {t("payroll.tabSalary")}
@@ -263,10 +271,26 @@ export function PayrollAdminView({
             summary={summary}
             payslips={payslips}
             employees={employees}
+            periodId={periodId}
+            onPeriodIdChange={onPeriodIdChange}
+            periodReloadNonce={periodReloadNonce}
+            selectedEmployeeId={selectedEmployeeId}
+            onSelectedEmployeeIdChange={onSelectedEmployeeIdChange}
+            onPayslipsChange={onPayslipsChange}
+            onEditSalary={(employeeId) => {
+              onSelectedEmployeeIdChange(employeeId);
+              onEditProfileOpenChange(true);
+            }}
             canAdvance={
               canApproveFinance(persona) ||
               persona === "hr" ||
               persona === "admin"
+            }
+            canCalculate={
+              persona === "admin" || persona === "hr" || persona === "finance"
+            }
+            canEditSalary={
+              persona === "admin" || persona === "hr" || persona === "finance"
             }
             onRunUpdated={(run) =>
               onSummaryChange((s) => (s ? { ...s, run } : s))
@@ -342,6 +366,7 @@ export function PayrollAdminView({
           onSaved={(profile) => {
             onSelectedProfileStateChange(profile);
             refreshPayslipsAndSummary();
+            onPeriodReload();
           }}
         />
       ) : null}

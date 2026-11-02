@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 import {
-  DEFAULT_FILTERS,
+  createDefaultReportFilters,
   type ReportFilterValues,
 } from "@/components/reports/report-filters";
 import type { AnalyticsSection } from "@/components/reports/analytics-mock-data";
+import {
+  buildAnalyticsBundle,
+  type AnalyticsBundle,
+} from "@/lib/reports/compute-analytics";
 import { getAttendance } from "@/services/attendance.service";
 import {
   getDashboardStats,
@@ -13,12 +17,14 @@ import {
 } from "@/services/dashboard.service";
 import { getEmployeeActivityReport } from "@/services/daily-report.service";
 import { getEmployees } from "@/services/employees.service";
+import { getLeaveRequests } from "@/services/leave.service";
 import { todayKey } from "@/lib/mock-date";
 import type {
   AttendanceRecord,
   DailyReportRow,
   DashboardStats,
   Employee,
+  LeaveRequest,
   MonthlyStat,
   WeeklyStat,
 } from "@/types";
@@ -31,26 +37,39 @@ export function useReportsData() {
   const [monthly, setMonthly] = useState<MonthlyStat[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [filters, setFilters] = useState<ReportFilterValues>(DEFAULT_FILTERS);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [filters, setFilters] = useState<ReportFilterValues>(() =>
+    createDefaultReportFilters()
+  );
   const [activityRows, setActivityRows] = useState<DailyReportRow[]>([]);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const [statsRes, weeklyRes, monthlyRes, attendanceRes, employeesRes] =
-        await Promise.all([
-          getDashboardStats(),
-          getWeeklyStats(),
-          getMonthlyStats(),
-          getAttendance(),
-          getEmployees(),
-        ]);
+      const from = format(subDays(new Date(), 89), "yyyy-MM-dd");
+      const to = todayKey();
+      const [
+        statsRes,
+        weeklyRes,
+        monthlyRes,
+        attendanceRes,
+        employeesRes,
+        leaveRes,
+      ] = await Promise.all([
+        getDashboardStats(),
+        getWeeklyStats(),
+        getMonthlyStats(),
+        getAttendance({ from, to }),
+        getEmployees(),
+        getLeaveRequests(),
+      ]);
       if (!mounted) return;
       if (statsRes.success) setStats(statsRes.data);
       if (weeklyRes.success) setWeekly(weeklyRes.data);
       if (monthlyRes.success) setMonthly(monthlyRes.data);
       if (attendanceRes.success) setAttendance(attendanceRes.data);
       if (employeesRes.success) setEmployees(employeesRes.data);
+      if (leaveRes.success) setLeaveRequests(leaveRes.data);
       setLoading(false);
     })();
     return () => {
@@ -60,10 +79,10 @@ export function useReportsData() {
 
   const activityFrom = filters.range?.from
     ? format(filters.range.from, "yyyy-MM-dd")
-    : todayKey();
+    : format(subDays(new Date(), 29), "yyyy-MM-dd");
   const activityTo = filters.range?.to
     ? format(filters.range.to, "yyyy-MM-dd")
-    : activityFrom;
+    : todayKey();
 
   useEffect(() => {
     let mounted = true;
@@ -154,6 +173,47 @@ export function useReportsData() {
     });
   }, [activityRows, filters.department, filters.employee]);
 
+  const filteredLeave = useMemo(() => {
+    return leaveRequests.filter((req) => {
+      if (filters.employee !== "all" && req.employeeId !== filters.employee) {
+        return false;
+      }
+      if (filters.leaveType !== "all" && req.type !== filters.leaveType) {
+        return false;
+      }
+      const emp = employeeMap.get(req.employeeId);
+      if (
+        filters.department !== "all" &&
+        emp &&
+        emp.department !== filters.department
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [leaveRequests, filters, employeeMap]);
+
+  const analytics: AnalyticsBundle | null = useMemo(() => {
+    if (!stats) return null;
+    return buildAnalyticsBundle({
+      stats,
+      attendance: filteredAttendance,
+      employees,
+      weekly,
+      monthly,
+      activity: filteredActivity,
+      leaveRequests: filteredLeave,
+    });
+  }, [
+    stats,
+    filteredAttendance,
+    employees,
+    weekly,
+    monthly,
+    filteredActivity,
+    filteredLeave,
+  ]);
+
   return {
     loading,
     section,
@@ -167,5 +227,6 @@ export function useReportsData() {
     employeeMap,
     filteredAttendance,
     filteredActivity,
+    analytics,
   };
 }

@@ -8,5 +8,6 @@ export * from "./salary-profile";
 export * from "./policies";
 export * from "./payslip";
 export * from "./run";
+export * from "./period";
 export * from "./reports";
 export * from "./calculation-input";

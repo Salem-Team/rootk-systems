@@ -17,20 +17,38 @@ import type {
 } from "@/types/payroll";
 import { PayrollCancelRunDialog, PayrollRunsHistory } from "./payroll-ledger-history";
 import { PayrollLedgerSummary } from "./payroll-ledger-summary";
-import { PayrollLedgerTable } from "./payroll-ledger-table";
+import { PayrollMonthBoard } from "./payroll-month-board";
 
 export function PayrollLedgerPanel({
   summary,
   payslips,
   employees,
+  periodId,
+  onPeriodIdChange,
+  periodReloadNonce,
+  selectedEmployeeId,
+  onSelectedEmployeeIdChange,
+  onPayslipsChange,
+  onEditSalary,
   canAdvance,
+  canCalculate,
+  canEditSalary,
   onRunUpdated,
   onRefreshPayslips,
 }: {
   summary: PayrollDashboardSummary;
   payslips: EmployeePayslip[];
   employees: Employee[];
+  periodId: string;
+  onPeriodIdChange: (periodId: string) => void;
+  periodReloadNonce: number;
+  selectedEmployeeId: string;
+  onSelectedEmployeeIdChange: (id: string) => void;
+  onPayslipsChange: (payslips: EmployeePayslip[]) => void;
+  onEditSalary: (employeeId: string) => void;
   canAdvance: boolean;
+  canCalculate: boolean;
+  canEditSalary: boolean;
   onRunUpdated: (run: PayrollRun) => void;
   onRefreshPayslips: () => void;
 }) {
@@ -50,10 +68,12 @@ export function PayrollLedgerPanel({
     return () => {
       mounted = false;
     };
-  }, [summary.run.status, summary.run.updatedAt]);
+  }, [summary.run.status, summary.run.updatedAt, periodId]);
 
+  const isCurrentPeriod = periodId === summary.period.id;
   const canCancel =
     canAdvance &&
+    isCurrentPeriod &&
     (summary.run.status !== "draft" || payslips.length > 0);
 
   async function advance() {
@@ -93,17 +113,30 @@ export function PayrollLedgerPanel({
 
   return (
     <div className="space-y-4">
-      <PayrollLedgerSummary
-        summary={summary}
-        loc={loc}
-        canAdvance={canAdvance}
-        canCancel={canCancel}
-        busy={busy}
-        onAdvance={() => void advance()}
-        onRequestCancel={() => setConfirmCancelOpen(true)}
-      />
+      {isCurrentPeriod ? (
+        <PayrollLedgerSummary
+          summary={summary}
+          loc={loc}
+          canAdvance={canAdvance}
+          canCancel={canCancel}
+          busy={busy}
+          onAdvance={() => void advance()}
+          onRequestCancel={() => setConfirmCancelOpen(true)}
+        />
+      ) : null}
 
-      <PayrollLedgerTable payslips={payslips} employees={employees} loc={loc} />
+      <PayrollMonthBoard
+        periodId={periodId}
+        onPeriodIdChange={onPeriodIdChange}
+        reloadNonce={periodReloadNonce}
+        employees={employees}
+        selectedEmployeeId={selectedEmployeeId}
+        onSelectedEmployeeIdChange={onSelectedEmployeeIdChange}
+        onPayslipsChange={onPayslipsChange}
+        onEditSalary={onEditSalary}
+        canCalculate={canCalculate}
+        canEditSalary={canEditSalary}
+      />
 
       <PayrollRunsHistory runs={runs} dateLocale={dateLocale} loc={loc} />
 

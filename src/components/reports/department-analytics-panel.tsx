@@ -3,17 +3,31 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 import { DepartmentBadge } from "@/components/employees/department-badge";
-import { buildDeptAnalytics } from "@/components/reports/analytics-mock-data";
+import type { DeptAnalyticsRow } from "@/components/reports/analytics-mock-data";
+import { EmptyState } from "@/components/shared/empty-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { departmentLabel } from "@/lib/department-label";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
-export function DepartmentAnalyticsPanel() {
+export function DepartmentAnalyticsPanel({
+  rows,
+}: {
+  rows: DeptAnalyticsRow[];
+}) {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
-  const rows = buildDeptAnalytics();
   const top = rows.slice(0, 3);
   const low = [...rows].sort((a, b) => a.attendance - b.attendance).slice(0, 3);
+
+  if (rows.length === 0) {
+    return (
+      <EmptyState
+        compact
+        title={t("reports.emptyTitle")}
+        description={t("analytics.sectionDepartmentsDesc")}
+      />
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -81,26 +95,26 @@ function RankList({
   items: { name: string; value: string }[];
 }) {
   return (
-    <section className="surface-panel overflow-hidden">
+    <div className="surface-panel overflow-hidden">
       <div className="panel-header">
         <h3 className="text-[0.95rem] font-semibold">{title}</h3>
       </div>
-      <ol className="panel-body space-y-2">
-        {items.map((item, i) => (
+      <ul className="panel-body space-y-2">
+        {items.map((item, index) => (
           <li
-            key={item.name}
-            className="flex items-center justify-between rounded-xl border border-border/60 px-3 py-2.5"
+            key={`${item.name}-${index}`}
+            className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5"
           >
-            <span className="flex items-center gap-2 text-sm font-medium">
-              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-muted text-[11px] font-semibold tabular-nums">
-                {i + 1}
-              </span>
+            <span className="min-w-0 truncate text-sm font-medium">
+              <span className="me-2 text-muted-foreground">{index + 1}.</span>
               {item.name}
             </span>
-            <span className="font-semibold tabular-nums">{item.value}</span>
+            <span className="shrink-0 font-mono text-sm font-semibold tabular-nums">
+              {item.value}
+            </span>
           </li>
         ))}
-      </ol>
-    </section>
+      </ul>
+    </div>
   );
 }

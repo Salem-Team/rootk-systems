@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Production deploy for system.rootk-eg.com
-# Stops Next.js before rebuilding .next so clients do not hit ENOENT / broken chunks.
+# Builds into `.next-new` while the live process keeps serving `.next`,
+# then swaps and restarts — avoids long nginx 502 windows.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -17,6 +18,8 @@ rsync -az --delete \
   -e "$RSYNC_SSH" \
   --exclude '.git/' \
   --exclude '.next/' \
+  --exclude '.next-new/' \
+  --exclude '.next-prev/' \
   --exclude 'node_modules/' \
   --exclude 'backend/node_modules/' \
   --exclude 'backend/dist/' \
@@ -40,9 +43,6 @@ echo "== remote install / build / restart =="
 cd $REMOTE_DIR
 echo VERSION=\$(node -p 'require(\"./package.json\").version')
 
-# Stop web BEFORE rewriting .next — prevents ENOENT on every page mid-build.
-pm2 stop rootk-systems-web || true
-
 echo '== frontend npm install =='
 npm install 2>&1 | tail -12
 
@@ -58,12 +58,13 @@ echo '== backend build =='
 npm run build 2>&1 | tail -15
 
 cd $REMOTE_DIR
-echo '== frontend build =='
+echo '== frontend build (.next-new) =='
+rm -rf .next-new
 # Prefer IPv4 when Next downloads Google Fonts (avoids flaky IPv6 / module-not-found).
-NODE_OPTIONS=--dns-result-order=ipv4first npm run build 2>&1 | tail -25
+NODE_OPTIONS=--dns-result-order=ipv4first NEXT_DIST_DIR=.next-new npm run build 2>&1 | tail -30
 
-test -f .next/required-server-files.json
-echo 'required-server-files.json OK'
+test -f .next-new/required-server-files.json
+echo 'required-server-files.json OK (.next-new)'
 
 echo '== persistent uploads =='
 mkdir -p /var/lib/rootk-systems/uploads
@@ -71,16 +72,29 @@ chmod 755 /var/lib/rootk-systems/uploads
 touch backend/.env
 grep -q '^ROOTK_UPLOADS_DIR=' backend/.env || echo 'ROOTK_UPLOADS_DIR=/var/lib/rootk-systems/uploads' >> backend/.env
 
-echo '== pm2 restart =='
+echo '== atomic swap .next + restart =='
+pm2 stop rootk-systems-web || true
+rm -rf .next-prev
+if [ -d .next ]; then mv .next .next-prev; fi
+mv .next-new .next
 pm2 restart rootk-systems-api --update-env
 pm2 start rootk-systems-web --update-env || pm2 restart rootk-systems-web --update-env
 pm2 save
 sleep 2
+# Keep one previous build for emergency rollback; drop older.
+rm -rf .next-prev
 pm2 list | grep rootk-systems || true
 
 echo '== smoke =='
+for i in 1 2 3 4 5; do
+  code=\$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:3030/reports || echo 000)
+  echo \"smoke_try_\$i:\$code\"
+  if [ \"\$code\" = \"200\" ]; then break; fi
+  sleep 1
+done
 curl -sS -o /dev/null -w 'web:%{http_code}\n' http://127.0.0.1:3030/tasks
 curl -sS http://127.0.0.1:3030/app-release.json | head -c 180
 echo
+test \"\$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:3030/reports)\" = \"200\"
 echo DEPLOY_OK
 "

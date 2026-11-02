@@ -11,10 +11,17 @@ import { cn } from "@/lib/utils";
 import { ReportDateRangeFilter } from "./report-filters-date-range";
 import { ReportFiltersActions } from "./report-filters-actions";
 import { ReportSelectFilters } from "./report-filters-selects";
-import { DEFAULT_FILTERS, type ReportFilterValues } from "./report-filters-types";
+import {
+  createDefaultReportFilters,
+  DEFAULT_FILTERS,
+  type ReportFilterValues,
+} from "./report-filters-types";
 
 export type { ReportFilterValues } from "./report-filters-types";
-export { DEFAULT_FILTERS } from "./report-filters-types";
+export {
+  createDefaultReportFilters,
+  DEFAULT_FILTERS,
+} from "./report-filters-types";
 
 interface ReportFiltersProps {
   value: ReportFilterValues;
@@ -87,9 +94,7 @@ export function ReportFilters({
               variant="outline"
               size="sm"
               className="h-11 shrink-0 touch-manipulation px-3"
-              onClick={() =>
-                onChange({ ...DEFAULT_FILTERS, range: undefined })
-              }
+              onClick={() => onChange(createDefaultReportFilters())}
             >
               {t("analytics.resetFilters")}
             </Button>
@@ -116,7 +121,7 @@ export function ReportFilters({
           </div>
 
           <ReportFiltersActions
-            onReset={() => onChange({ ...DEFAULT_FILTERS, range: undefined })}
+            onReset={() => onChange(createDefaultReportFilters())}
           />
         </div>
       </div>

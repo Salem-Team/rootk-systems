@@ -13,6 +13,8 @@ export {
   getAllPayslips,
   getPayrollPolicies,
   getPayrollRules,
+  listPayrollPeriods,
+  getPayrollPeriodPreview,
 } from "@/services/payroll/queries";
 export { getPayrollReports } from "@/services/payroll/reports";
 export {
@@ -21,6 +23,7 @@ export {
   togglePayrollRule,
   advancePayrollStatus,
   cancelPayrollRun,
+  calculatePayrollPeriod,
 } from "@/services/payroll/mutations";
 export {
   personaForRole,

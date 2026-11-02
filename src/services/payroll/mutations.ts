@@ -5,6 +5,7 @@ import {
   patchPayrollPolicies,
   patchPayrollRuleToggle,
   patchSalaryProfileRemote,
+  postPayrollPeriodCalculate,
   postPayrollRunAdvance,
   postPayrollRunCancel,
 } from "@/api/payroll.api";
@@ -18,12 +19,14 @@ import { getSessionRole, getSessionUserId } from "@/stores/session-store";
 import type { ApiResponse } from "@/types";
 import type {
   EmployeeSalaryProfile,
+  PayrollPeriodPreview,
   PayrollPolicies,
   PayrollRule,
   PayrollRun,
   PayrollRunStatus,
 } from "@/types/payroll";
 import { aggregateRun, buildPayslips } from "./calculation";
+import { getPayrollPeriodPreview } from "./queries";
 import {
   ensurePayrollStateLoaded,
   getPoliciesState,
@@ -279,5 +282,23 @@ export async function cancelPayrollRun(): Promise<ApiResponse<PayrollRun>> {
     );
   } catch (error) {
     return fromError(error, aggregateRun([]));
+  }
+}
+
+/** POST /payroll/periods/:periodId/calculate — recalc + persist without advancing. */
+export async function calculatePayrollPeriod(
+  periodId: string
+): Promise<ApiResponse<PayrollPeriodPreview | null>> {
+  if (isApiMode()) return postPayrollPeriodCalculate(periodId);
+  try {
+    if (getSessionRole() !== AppRole.admin) {
+      throw new ForbiddenError("Only admins can calculate payroll periods");
+    }
+    await simulateDelay();
+    setRunStatus("hr_review");
+    await persistPayrollState();
+    return getPayrollPeriodPreview(periodId);
+  } catch (error) {
+    return fromError(error, null);
   }
 }

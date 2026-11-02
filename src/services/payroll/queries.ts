@@ -4,6 +4,8 @@ import {
   fetchAllPayslips,
   fetchEmployeePayslip,
   fetchPayrollDashboard,
+  fetchPayrollPeriodPreview,
+  fetchPayrollPeriods,
   fetchPayrollPolicies,
   fetchPayrollRules,
   fetchPayrollRuns,
@@ -22,6 +24,8 @@ import type {
   EmployeePayslip,
   EmployeeSalaryProfile,
   PayrollDashboardSummary,
+  PayrollPeriodListItem,
+  PayrollPeriodPreview,
   PayrollPolicies,
   PayrollRule,
   PayrollRun,
@@ -37,6 +41,10 @@ import {
   hydratePolicies,
   syncCurrencyFromSettings,
 } from "./state";
+
+function currentPeriodId(now = new Date()) {
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+}
 
 /** GET /payroll/dashboard */
 export async function getPayrollDashboard(): Promise<
@@ -225,5 +233,80 @@ export async function getPayrollRules(): Promise<ApiResponse<PayrollRule[]>> {
     return ok(getRulesState());
   } catch (error) {
     return fromError(error, []);
+  }
+}
+
+/** GET /payroll/periods */
+export async function listPayrollPeriods(): Promise<
+  ApiResponse<PayrollPeriodListItem[]>
+> {
+  if (isApiMode()) return fetchPayrollPeriods();
+  try {
+    if (getSessionRole() !== AppRole.admin) {
+      throw new ForbiddenError("Only admins can list payroll periods");
+    }
+    await simulateDelay();
+    const id = currentPeriodId();
+    const [y, m] = id.split("-").map(Number);
+    return ok([
+      {
+        periodId: id,
+        status: getRunStatus(),
+        year: y,
+        month: m,
+        startDate: `${id}-01`,
+        endDate: `${id}-28`,
+        payDate: `${id}-28`,
+        workingDays: 22,
+        label: id,
+      },
+    ]);
+  } catch (error) {
+    return fromError(error, []);
+  }
+}
+
+/** GET /payroll/periods/:periodId — live month preview */
+export async function getPayrollPeriodPreview(
+  periodId: string
+): Promise<ApiResponse<PayrollPeriodPreview | null>> {
+  if (isApiMode()) return fetchPayrollPeriodPreview(periodId);
+  try {
+    if (getSessionRole() !== AppRole.admin) {
+      throw new ForbiddenError("Only admins can preview payroll periods");
+    }
+    await simulateDelay();
+    const payslips = await buildPayslips();
+    const run = aggregateRun(payslips);
+    const [y, m] = periodId.split("-").map(Number);
+    return ok({
+      period: {
+        id: periodId,
+        label: periodId,
+        year: y,
+        month: m,
+        startDate: `${periodId}-01`,
+        endDate: `${periodId}-28`,
+        payDate: `${periodId}-28`,
+        workingDays: 22,
+        cycle: "monthly",
+        paymentDay: 28,
+      },
+      runStatus: getRunStatus(),
+      source: "live",
+      locked: false,
+      totals: {
+        employeeCount: payslips.length,
+        grossTotal: payslips.reduce((s, p) => s + p.gross, 0),
+        netPayroll: run.netPayroll,
+        totalDeductions: run.totalDeductions,
+        totalOvertime: run.totalOvertime,
+        estimatedCost: run.estimatedCost,
+        averageSalary: run.averageSalary,
+      },
+      payslips,
+    });
+  } catch (error) {
+    return fromError(error, null);
   }
 }

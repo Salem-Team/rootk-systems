@@ -1,12 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import {
-  buildDeptHeatmap,
-  buildWeekHeatmap,
-  type HeatCell,
-} from "@/components/reports/analytics-mock-data";
+import type { HeatCell } from "@/components/reports/analytics-mock-data";
+import { EmptyState } from "@/components/shared/empty-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { departmentLabel } from "@/lib/department-label";
 import { fadeInUp } from "@/lib/animations";
@@ -21,11 +17,32 @@ const LEVEL: Record<HeatCell["level"], string> = {
   4: "bg-primary",
 };
 
-export function AnalyticsHeatmaps() {
+const WEEK_ROW_KEYS: Record<string, TranslationPath> = {
+  present: "status.present",
+  late: "status.late",
+  absent: "status.absent",
+  wfh: "status.wfh",
+};
+
+export function AnalyticsHeatmaps({
+  deptHeat = [],
+  weekHeat = [],
+}: {
+  deptHeat?: HeatCell[];
+  weekHeat?: HeatCell[];
+}) {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
-  const deptHeat = useMemo(() => buildDeptHeatmap(), []);
-  const weekHeat = useMemo(() => buildWeekHeatmap(), []);
+
+  if (deptHeat.length === 0 && weekHeat.length === 0) {
+    return (
+      <EmptyState
+        compact
+        title={t("reports.emptyTitle")}
+        description={t("analytics.heatmapDeptDesc")}
+      />
+    );
+  }
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
@@ -41,7 +58,9 @@ export function AnalyticsHeatmaps() {
         description={t("analytics.heatmapWeekDesc")}
         cells={weekHeat}
         reduceMotion={!!reduceMotion}
-        translateRow={(row) => t(`analytics.${row}` as TranslationPath)}
+        translateRow={(row) =>
+          WEEK_ROW_KEYS[row] ? t(WEEK_ROW_KEYS[row]) : row
+        }
       />
     </div>
   );
@@ -65,12 +84,26 @@ function HeatmapCard({
   const cols = Array.from(new Set(cells.map((c) => c.col)));
   const map = new Map(cells.map((c) => [`${c.row}-${c.col}`, c.level]));
 
+  if (cells.length === 0) {
+    return (
+      <section className="surface-panel overflow-hidden">
+        <div className="panel-header">
+          <h3 className="text-[0.95rem] font-semibold">{title}</h3>
+          <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+        </div>
+        <div className="panel-body">
+          <EmptyState compact title={t("reports.emptyTitle")} />
+        </div>
+      </section>
+    );
+  }
+
   return (
     <motion.section
       variants={fadeInUp}
       initial={reduceMotion ? false : "hidden"}
       animate="visible"
-      className="surface-panel overflow-hidden"
+      className="surface-panel min-w-0 overflow-hidden"
     >
       <div className="panel-header">
         <h3 className="text-[0.95rem] font-semibold">{title}</h3>

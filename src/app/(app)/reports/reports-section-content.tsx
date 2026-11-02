@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ReportStats } from "@/components/reports/report-stats";
 import type { AnalyticsSection } from "@/components/reports/analytics-mock-data";
+import type { AnalyticsBundle } from "@/lib/reports/compute-analytics";
 import {
   Card,
   CardContent,
@@ -28,14 +29,7 @@ import {
   AttendanceTable,
   SectionIntro,
 } from "@/app/(app)/reports/reports-attendance-table";
-import type {
-  AttendanceRecord,
-  DashboardStats,
-  Employee,
-  DailyReportRow,
-  MonthlyStat,
-  WeeklyStat,
-} from "@/types";
+import type { AttendanceRecord, Employee, DailyReportRow } from "@/types";
 
 const sectionLoading = () => <Skeleton className="h-64 w-full rounded-xl" />;
 
@@ -104,22 +98,53 @@ const PerformanceOverviewPanel = dynamic(
   { loading: sectionLoading }
 );
 
+const MONTH_KEYS: Record<string, TranslationPath> = {
+  Jan: "months.Jan",
+  Feb: "months.Feb",
+  Mar: "months.Mar",
+  Apr: "months.Apr",
+  May: "months.May",
+  Jun: "months.Jun",
+  Jul: "months.Jul",
+  Aug: "months.Aug",
+  Sep: "months.Sep",
+  Oct: "months.Oct",
+  Nov: "months.Nov",
+  Dec: "months.Dec",
+};
+
+function ChartsFromAnalytics({
+  analytics,
+  focus,
+}: {
+  analytics: AnalyticsBundle;
+  focus: "attendance" | "hours" | "late" | "wfh" | "leave" | "all";
+}) {
+  return (
+    <AnalyticsChartsStudio
+      focus={focus}
+      weeklyTrends={analytics.weeklyTrends}
+      monthlyTrends={analytics.monthlyTrends}
+      quarterlyTrends={analytics.quarterlyTrends}
+      leaveSeries={analytics.leaveSeries}
+      modePie={analytics.modePie}
+      radar={analytics.radar}
+    />
+  );
+}
+
 export function ReportsSectionContent({
   section,
-  stats,
-  weekly,
-  monthly,
   filteredAttendance,
   employeeMap,
   filteredActivity,
+  analytics,
 }: {
   section: AnalyticsSection;
-  stats: DashboardStats;
-  weekly: WeeklyStat[];
-  monthly: MonthlyStat[];
   filteredAttendance: AttendanceRecord[];
   employeeMap: Map<string, Employee>;
   filteredActivity: DailyReportRow[];
+  analytics: AnalyticsBundle;
 }) {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
@@ -136,16 +161,23 @@ export function ReportsSectionContent({
       >
         {section === "overview" && (
           <>
-            <ReportStats stats={stats} weekly={weekly} monthly={monthly} />
+            <ReportStats summary={analytics.summary} />
             <SectionIntro
               title={t("analytics.performanceTitle")}
               description={t("analytics.performanceDesc")}
             />
             <EmployeeActivityTable rows={filteredActivity} compact />
-            <AnalyticsChartsStudio focus="all" />
-            <ExecutiveInsightsPanel />
-            <AnalyticsHeatmaps />
-            <ExportCenterPanel />
+            <ChartsFromAnalytics analytics={analytics} focus="all" />
+            <ExecutiveInsightsPanel insights={analytics.insights} />
+            <AnalyticsHeatmaps
+              deptHeat={analytics.deptHeatmap}
+              weekHeat={analytics.weekHeatmap}
+            />
+            <ExportCenterPanel
+              attendance={filteredAttendance}
+              activity={filteredActivity}
+              employees={employeeMap}
+            />
           </>
         )}
 
@@ -155,12 +187,7 @@ export function ReportsSectionContent({
               title={t("analytics.navAttendance")}
               description={t("analytics.sectionAttendanceDesc")}
             />
-            <AnalyticsChartsStudio focus="attendance" />
-            <ReportCharts
-              weekly={weekly}
-              monthly={monthly}
-              variant="attendance"
-            />
+            <ChartsFromAnalytics analytics={analytics} focus="attendance" />
             <AttendanceTable
               records={filteredAttendance}
               employees={employeeMap}
@@ -174,8 +201,11 @@ export function ReportsSectionContent({
               title={t("analytics.navDepartments")}
               description={t("analytics.sectionDepartmentsDesc")}
             />
-            <DepartmentAnalyticsPanel />
-            <AnalyticsHeatmaps />
+            <DepartmentAnalyticsPanel rows={analytics.departments} />
+            <AnalyticsHeatmaps
+              deptHeat={analytics.deptHeatmap}
+              weekHeat={analytics.weekHeatmap}
+            />
           </>
         )}
 
@@ -183,7 +213,7 @@ export function ReportsSectionContent({
           <PerformanceOverviewPanel rows={filteredActivity} />
         )}
 
-        {section === "leave" && <LeaveAnalyticsPanel />}
+        {section === "leave" && <LeaveAnalyticsPanel analytics={analytics} />}
 
         {section === "hours" && (
           <>
@@ -191,8 +221,7 @@ export function ReportsSectionContent({
               title={t("analytics.navHours")}
               description={t("analytics.sectionHoursDesc")}
             />
-            <AnalyticsChartsStudio focus="hours" />
-            <ReportCharts weekly={weekly} monthly={monthly} variant="hours" />
+            <ChartsFromAnalytics analytics={analytics} focus="hours" />
             <AttendanceTable
               records={filteredAttendance.filter((r) => r.workingMinutes > 0)}
               employees={employeeMap}
@@ -209,8 +238,7 @@ export function ReportsSectionContent({
               title={t("analytics.navLate")}
               description={t("analytics.sectionLateDesc")}
             />
-            <AnalyticsChartsStudio focus="late" />
-            <ReportCharts weekly={weekly} monthly={monthly} variant="late" />
+            <ChartsFromAnalytics analytics={analytics} focus="late" />
             <AttendanceTable
               records={filteredAttendance.filter(
                 (r) => r.isLate || r.status === "late"
@@ -228,8 +256,7 @@ export function ReportsSectionContent({
               title={t("analytics.navAbsence")}
               description={t("analytics.sectionAbsenceDesc")}
             />
-            <AnalyticsChartsStudio focus="attendance" />
-            <ReportCharts weekly={weekly} monthly={monthly} variant="absence" />
+            <ChartsFromAnalytics analytics={analytics} focus="attendance" />
             <AttendanceTable
               records={filteredAttendance.filter((r) => r.status === "absent")}
               employees={employeeMap}
@@ -245,7 +272,7 @@ export function ReportsSectionContent({
               title={t("analytics.navWfh")}
               description={t("analytics.sectionWfhDesc")}
             />
-            <AnalyticsChartsStudio focus="wfh" />
+            <ChartsFromAnalytics analytics={analytics} focus="wfh" />
             <AttendanceTable
               records={filteredAttendance.filter((r) => r.status === "wfh")}
               employees={employeeMap}
@@ -261,8 +288,8 @@ export function ReportsSectionContent({
               title={t("analytics.navTrends")}
               description={t("analytics.sectionTrendsDesc")}
             />
-            <AnalyticsChartsStudio focus="all" />
-            <ReportCharts weekly={weekly} monthly={monthly} variant="monthly" />
+            <ChartsFromAnalytics analytics={analytics} focus="all" />
+            <ReportCharts monthlyTrends={analytics.monthlyTrends} />
             <Card className="surface-panel overflow-hidden border-0 shadow-none">
               <CardHeader>
                 <CardTitle>{t("reports.monthlyTab")}</CardTitle>
@@ -275,30 +302,33 @@ export function ReportsSectionContent({
                       <DataTableHead>{t("reports.monthlyTab")}</DataTableHead>
                       <DataTableHead>{t("reports.statsRate")}</DataTableHead>
                       <DataTableHead>{t("reports.statsLate")}</DataTableHead>
-                      <DataTableHead>{t("reports.statsAbsent")}</DataTableHead>
+                      <DataTableHead>{t("charts.wfh")}</DataTableHead>
                       <DataTableHead>{t("reports.statsHours")}</DataTableHead>
                     </DataTableHeaderRow>
                   </DataTableHeader>
                   <DataTableBody>
-                    {monthly.map((row) => (
-                      <DataTableRow key={row.month}>
+                    {analytics.monthlyTrends.map((row) => (
+                      <DataTableRow key={row.label}>
                         <DataTableCell className="font-medium">
-                          {t(`months.${row.month}` as TranslationPath)}
+                          {MONTH_KEYS[row.label]
+                            ? t(MONTH_KEYS[row.label])
+                            : row.label}
                         </DataTableCell>
-                        <DataTableCell>{row.attendanceRate}%</DataTableCell>
-                        <DataTableCell>{row.lateCount}</DataTableCell>
-                        <DataTableCell>{row.absentCount}</DataTableCell>
-                        <DataTableCell>
-                          {row.avgHours.toFixed(1)}h
-                        </DataTableCell>
+                        <DataTableCell>{row.attendance}%</DataTableCell>
+                        <DataTableCell>{row.late}</DataTableCell>
+                        <DataTableCell>{row.wfh}</DataTableCell>
+                        <DataTableCell>{row.hours.toFixed(1)}h</DataTableCell>
                       </DataTableRow>
                     ))}
                   </DataTableBody>
                 </DataTable>
               </CardContent>
             </Card>
-            <AnalyticsHeatmaps />
-            <ExecutiveInsightsPanel />
+            <AnalyticsHeatmaps
+              deptHeat={analytics.deptHeatmap}
+              weekHeat={analytics.weekHeatmap}
+            />
+            <ExecutiveInsightsPanel insights={analytics.insights} />
           </>
         )}
       </motion.div>

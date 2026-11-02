@@ -55,7 +55,12 @@ export function PayrollWorkspace() {
   const [reports, setReports] = useState<PayrollReportBundle | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useState("ledger");
+  const [periodId, setPeriodId] = useState(() => {
+    const now = new Date();
+    return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+  });
+  const [periodReloadNonce, setPeriodReloadNonce] = useState(0);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [selectedProfileState, setSelectedProfileState] =
     useState<EmployeeSalaryProfile | null>(null);
@@ -225,6 +230,10 @@ export function PayrollWorkspace() {
       editProfileOpen={editProfileOpen}
       onEditProfileOpenChange={setEditProfileOpen}
       onRefreshPayrollCalculations={refreshPayrollCalculations}
+      periodId={periodId}
+      onPeriodIdChange={setPeriodId}
+      periodReloadNonce={periodReloadNonce}
+      onPeriodReload={() => setPeriodReloadNonce((n) => n + 1)}
       locale={locale}
     />
   );

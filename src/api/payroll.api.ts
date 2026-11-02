@@ -5,6 +5,8 @@ import type {
   EmployeePayslip,
   EmployeeSalaryProfile,
   PayrollDashboardSummary,
+  PayrollPeriodListItem,
+  PayrollPeriodPreview,
   PayrollPolicies,
   PayrollReportBundle,
   PayrollRule,
@@ -91,6 +93,34 @@ export function fetchPayslipHistory(
 /** GET /payroll/payslips */
 export function fetchAllPayslips(): Promise<ApiResponse<EmployeePayslip[]>> {
   return api.getList(API_ROUTES.payroll.payslips);
+}
+
+/** GET /payroll/periods */
+export function fetchPayrollPeriods(): Promise<
+  ApiResponse<PayrollPeriodListItem[]>
+> {
+  return api.getList(API_ROUTES.payroll.periods);
+}
+
+/** GET /payroll/periods/:periodId */
+export function fetchPayrollPeriodPreview(
+  periodId: string
+): Promise<ApiResponse<PayrollPeriodPreview>> {
+  return api.get(
+    API_ROUTES.payroll.periodById(periodId),
+    {} as PayrollPeriodPreview
+  );
+}
+
+/** POST /payroll/periods/:periodId/calculate */
+export function postPayrollPeriodCalculate(
+  periodId: string
+): Promise<ApiResponse<PayrollPeriodPreview>> {
+  return api.post(
+    API_ROUTES.payroll.periodCalculate(periodId),
+    {},
+    {} as PayrollPeriodPreview
+  );
 }
 
 /** GET /payroll/policies */

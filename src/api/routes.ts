@@ -111,6 +111,10 @@ export const API_ROUTES = {
     runAdvance: "/payroll/runs/advance",
     runCancel: "/payroll/runs/cancel",
     reports: "/payroll/reports",
+    periods: "/payroll/periods",
+    periodById: (periodId: string) => `/payroll/periods/${periodId}`,
+    periodCalculate: (periodId: string) =>
+      `/payroll/periods/${periodId}/calculate`,
     payslips: "/payroll/payslips",
     payslipByEmployee: (employeeId: string) =>
       `/payroll/payslips/${employeeId}`,

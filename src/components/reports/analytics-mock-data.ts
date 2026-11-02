@@ -56,8 +56,14 @@ export interface LeaveAnalyticsPoint {
 export interface InsightItem {
   id: string;
   tone: "good" | "warn" | "info";
-  titleKey: string;
-  bodyKey: string;
+  /** Dynamic computed copy (preferred). */
+  title?: string;
+  body?: string;
+  /** Legacy i18n keys — kept for compatibility. */
+  titleKey?: string;
+  bodyKey?: string;
+  titleVars?: Record<string, string | number>;
+  bodyVars?: Record<string, string | number>;
 }
 
 export interface HeatCell {

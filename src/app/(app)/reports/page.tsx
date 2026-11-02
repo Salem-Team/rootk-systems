@@ -3,9 +3,7 @@
 import { PageHeader } from "@/components/shared/page-header";
 import { PageTransition } from "@/components/shared/page-transition";
 import { PageSkeleton } from "@/components/shared/loading-state";
-import {
-  ReportFilters,
-} from "@/components/reports/report-filters";
+import { ReportFilters } from "@/components/reports/report-filters";
 import { ExecutiveKpiRow } from "@/components/reports/executive-kpi-row";
 import { AnalyticsSectionNav } from "@/components/reports/analytics-section-nav";
 import { PermissionGate } from "@/components/shared/permission-gate";
@@ -19,18 +17,16 @@ export default function ReportsPage() {
     loading,
     section,
     setSection,
-    stats,
-    weekly,
-    monthly,
     employees,
     filters,
     setFilters,
     employeeMap,
     filteredAttendance,
     filteredActivity,
+    analytics,
   } = useReportsData();
 
-  if (loading || !stats) {
+  if (loading || !analytics) {
     return (
       <PermissionGate anyOf={["reports.viewWeekly", "reports.viewMonthly"]}>
         <PageSkeleton />
@@ -55,7 +51,7 @@ export default function ReportsPage() {
             employees={employees.map((e) => ({ id: e.id, name: e.name }))}
           />
 
-          <ExecutiveKpiRow />
+          <ExecutiveKpiRow kpis={analytics.executiveKpis} />
 
           <div className="grid min-w-0 max-w-full gap-4 sm:gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
             <aside className="min-w-0 w-full max-w-full lg:sticky lg:top-20 lg:self-start">
@@ -69,12 +65,10 @@ export default function ReportsPage() {
             <div className="min-w-0 max-w-full space-y-4 sm:space-y-6">
               <ReportsSectionContent
                 section={section}
-                stats={stats}
-                weekly={weekly}
-                monthly={monthly}
                 filteredAttendance={filteredAttendance}
                 employeeMap={employeeMap}
                 filteredActivity={filteredActivity}
+                analytics={analytics}
               />
             </div>
           </div>

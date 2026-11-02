@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, useReducedMotion, useSpring, useTransform } from "framer-motion";
+import {
+  motion,
+  useMotionValueEvent,
+  useReducedMotion,
+  useSpring,
+} from "framer-motion";
 
 interface AnimatedCounterProps {
   value: number;
@@ -18,25 +23,29 @@ export function AnimatedCounter({
   className,
 }: AnimatedCounterProps) {
   const reduceMotion = useReducedMotion();
-  const [display, setDisplay] = useState(reduceMotion ? value : 0);
-  const spring = useSpring(0, {
+  const spring = useSpring(value, {
     stiffness: 120,
     damping: 24,
     mass: 0.65,
   });
-  const rounded = useTransform(spring, (latest) =>
-    Number(latest.toFixed(decimals))
-  );
+  const [display, setDisplay] = useState(value);
+
+  useMotionValueEvent(spring, "change", (latest) => {
+    setDisplay(Number(latest.toFixed(decimals)));
+  });
 
   useEffect(() => {
     if (reduceMotion) {
       setDisplay(value);
+      spring.jump(value);
       return;
     }
     spring.set(value);
-    const unsubscribe = rounded.on("change", (v) => setDisplay(v));
-    return unsubscribe;
-  }, [value, spring, rounded, reduceMotion]);
+  }, [value, spring, reduceMotion]);
+
+  useEffect(() => {
+    setDisplay(Number(value.toFixed(decimals)));
+  }, [decimals, value]);
 
   return (
     <motion.span className={className}>

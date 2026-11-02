@@ -5,6 +5,7 @@ import { PayrollSalaryUpdateService } from "./services/payroll-salary-update.ser
 import { PayrollPayslipQueryService } from "./services/payroll-payslip-query.service";
 import { PayrollRunsService } from "./services/payroll-runs.service";
 import { PayrollDashboardService } from "./services/payroll-dashboard.service";
+import { PayrollPeriodService } from "./services/payroll-period.service";
 
 /**
  * Public payroll API facade — delegates to focused domain services.
@@ -18,7 +19,8 @@ export class PayrollService {
     private readonly salaryUpdateService: PayrollSalaryUpdateService,
     private readonly payslipQueryService: PayrollPayslipQueryService,
     private readonly runsService: PayrollRunsService,
-    private readonly dashboardService: PayrollDashboardService
+    private readonly dashboardService: PayrollDashboardService,
+    private readonly periodService: PayrollPeriodService
   ) {}
 
   policies(companyId: string) {
@@ -67,6 +69,18 @@ export class PayrollService {
 
   history(companyId: string, employeeId: string) {
     return this.payslipQueryService.history(companyId, employeeId);
+  }
+
+  listPeriods(companyId: string) {
+    return this.periodService.listPeriods(companyId);
+  }
+
+  previewPeriod(companyId: string, periodId: string) {
+    return this.periodService.preview(companyId, periodId);
+  }
+
+  calculatePeriod(companyId: string, periodId: string, actorId = "system") {
+    return this.periodService.calculate(companyId, periodId, actorId);
   }
 
   listSalaryProfiles(companyId: string) {

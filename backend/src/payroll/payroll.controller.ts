@@ -105,6 +105,34 @@ export class PayrollController {
     return this.service.reports(companyId);
   }
 
+  @Get("periods")
+  @Roles(AppRole.admin)
+  @RequirePermission("payroll.viewAllPayslips")
+  listPeriods(@CompanyId() companyId: string) {
+    return this.service.listPeriods(companyId);
+  }
+
+  @Get("periods/:periodId")
+  @Roles(AppRole.admin)
+  @RequirePermission("payroll.viewAllPayslips")
+  previewPeriod(
+    @CompanyId() companyId: string,
+    @Param("periodId") periodId: string
+  ) {
+    return this.service.previewPeriod(companyId, periodId);
+  }
+
+  @Post("periods/:periodId/calculate")
+  @Roles(AppRole.admin)
+  @RequirePermission("payroll.runPayroll")
+  calculatePeriod(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @Param("periodId") periodId: string
+  ) {
+    return this.service.calculatePeriod(companyId, periodId, actorId);
+  }
+
   @Get("payslips")
   @Roles(AppRole.admin)
   @RequirePermission("payroll.viewAllPayslips")

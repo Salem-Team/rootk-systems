@@ -12,7 +12,8 @@ import {
   UserX,
 } from "lucide-react";
 import { KpiCard } from "@/components/dashboard/kpi-card";
-import { buildExecutiveKpis } from "@/components/reports/analytics-mock-data";
+import type { ExecutiveKpi } from "@/components/reports/analytics-mock-data";
+import { EmptyState } from "@/components/shared/empty-state";
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 import type { TranslationPath } from "@/i18n";
@@ -28,10 +29,19 @@ const ICONS = {
   wfh: Home,
 } as const;
 
-export function ExecutiveKpiRow() {
+export function ExecutiveKpiRow({ kpis }: { kpis: ExecutiveKpi[] }) {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
-  const kpis = buildExecutiveKpis();
+
+  if (kpis.length === 0) {
+    return (
+      <EmptyState
+        compact
+        title={t("reports.emptyTitle")}
+        description={t("reports.emptyDesc")}
+      />
+    );
+  }
 
   return (
     <section aria-label={t("analytics.executiveOverview")}>

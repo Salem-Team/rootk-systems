@@ -10,29 +10,13 @@ import {
   Users,
 } from "lucide-react";
 import { KpiCard } from "@/components/dashboard/kpi-card";
+import type { ReportSummaryStats } from "@/lib/reports/compute-analytics";
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 import type { TranslationPath } from "@/i18n";
-import type { DashboardStats, MonthlyStat, WeeklyStat } from "@/types";
 
-interface ReportStatsProps {
-  stats: DashboardStats;
-  weekly: WeeklyStat[];
-  monthly: MonthlyStat[];
-}
-
-export function ReportStats({ stats, weekly, monthly }: ReportStatsProps) {
+export function ReportStats({ summary }: { summary: ReportSummaryStats }) {
   const { t } = useTranslation();
-  const weeklyLate = weekly.reduce((sum, d) => sum + d.late, 0);
-  const weeklyAbsent = weekly.reduce((sum, d) => sum + d.absent, 0);
-  const avgHours =
-    monthly.length > 0
-      ? monthly.reduce((sum, m) => sum + m.avgHours, 0) / monthly.length
-      : 0;
-  const avgRate =
-    monthly.length > 0
-      ? monthly.reduce((sum, m) => sum + m.attendanceRate, 0) / monthly.length
-      : stats.attendanceRate;
 
   const items: {
     labelKey: TranslationPath;
@@ -44,25 +28,25 @@ export function ReportStats({ stats, weekly, monthly }: ReportStatsProps) {
   }[] = [
     {
       labelKey: "reports.statsPresent",
-      value: stats.present,
+      value: summary.present,
       icon: UserCheck,
       tone: "text-emerald-700 dark:text-emerald-400",
     },
     {
       labelKey: "reports.statsLate",
-      value: weeklyLate,
+      value: summary.late,
       icon: Clock,
       tone: "text-amber-700 dark:text-amber-400",
     },
     {
       labelKey: "reports.statsAbsent",
-      value: weeklyAbsent,
+      value: summary.absent,
       icon: UserX,
       tone: "text-rose-700 dark:text-rose-400",
     },
     {
       labelKey: "reports.statsRate",
-      value: avgRate,
+      value: summary.attendanceRate,
       icon: TrendingUp,
       tone: "text-primary",
       suffix: "%",
@@ -70,7 +54,7 @@ export function ReportStats({ stats, weekly, monthly }: ReportStatsProps) {
     },
     {
       labelKey: "reports.statsHours",
-      value: avgHours,
+      value: summary.avgHours,
       icon: Timer,
       tone: "text-teal-800 dark:text-teal-300",
       suffix: "h",
@@ -78,7 +62,7 @@ export function ReportStats({ stats, weekly, monthly }: ReportStatsProps) {
     },
     {
       labelKey: "dashboard.totalEmployees",
-      value: stats.totalEmployees,
+      value: summary.totalEmployees,
       icon: Users,
       tone: "text-sky-700 dark:text-sky-300",
     },

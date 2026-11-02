@@ -57,21 +57,44 @@ export function slipDeductionsTotal(
 export function periodBounds(now = new Date()) {
   const year = now.getUTCFullYear();
   const month = now.getUTCMonth() + 1;
-  const periodId = `${year}-${String(month).padStart(2, "0")}`;
-  const startDate = `${periodId}-01`;
+  return periodBoundsFor(
+    `${year}-${String(month).padStart(2, "0")}`
+  );
+}
+
+/** Build period bounds from `YYYY-MM`. Throws if the id is invalid. */
+export function periodBoundsFor(periodId: string) {
+  const match = /^(\d{4})-(\d{2})$/.exec(periodId.trim());
+  if (!match) {
+    throw new Error(`Invalid payroll periodId: ${periodId}`);
+  }
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  if (!Number.isFinite(year) || month < 1 || month > 12) {
+    throw new Error(`Invalid payroll periodId: ${periodId}`);
+  }
+  const normalized = `${year}-${String(month).padStart(2, "0")}`;
+  const startDate = `${normalized}-01`;
   const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const endDate = `${periodId}-${String(lastDay).padStart(2, "0")}`;
-  const payDate = `${periodId}-${String(Math.min(28, lastDay)).padStart(2, "0")}`;
+  const endDate = `${normalized}-${String(lastDay).padStart(2, "0")}`;
+  const payDate = `${normalized}-${String(Math.min(28, lastDay)).padStart(2, "0")}`;
   return {
-    periodId,
+    periodId: normalized,
     year,
     month,
     startDate,
     endDate,
     payDate,
     workingDays: 22,
-    label: periodId,
+    label: normalized,
   };
 }
 
-export type PeriodBounds = ReturnType<typeof periodBounds>;
+/** Shift a period id by N months (negative = past). */
+export function shiftPeriodId(periodId: string, deltaMonths: number): string {
+  const period = periodBoundsFor(periodId);
+  const d = new Date(Date.UTC(period.year, period.month - 1 + deltaMonths, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+export type PeriodBounds = ReturnType<typeof periodBoundsFor>;

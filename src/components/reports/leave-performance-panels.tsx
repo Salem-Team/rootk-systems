@@ -3,37 +3,43 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { AnalyticsChartsStudio } from "@/components/reports/analytics-charts-studio";
 import { EmployeeActivityTable } from "@/components/reports/employee-activity-table";
+import type { AnalyticsBundle } from "@/lib/reports/compute-analytics";
 import { useTranslation } from "@/hooks/use-translation";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 import type { DailyReportRow } from "@/types";
 
-export function LeaveAnalyticsPanel() {
+export function LeaveAnalyticsPanel({
+  analytics,
+}: {
+  analytics: AnalyticsBundle | null;
+}) {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
+  const cards = analytics?.leaveCards;
 
-  const cards = [
+  const rows = [
     {
       id: "balance",
       label: t("analytics.leaveBalance"),
-      value: "—",
+      value: cards ? String(Math.max(0, 20 - cards.onLeaveDays)) : "—",
       hint: t("analytics.leaveBalanceHint"),
     },
     {
       id: "util",
       label: t("analytics.leaveUtilization"),
-      value: "—",
+      value: cards ? `${cards.leaveSharePct}%` : "—",
       hint: t("analytics.leaveUtilHint"),
     },
     {
       id: "upcoming",
       label: t("analytics.upcomingLeave"),
-      value: "—",
+      value: cards ? String(cards.onLeaveDays) : "—",
       hint: t("analytics.upcomingLeaveHint"),
     },
     {
       id: "pending",
       label: t("analytics.leaveApproval"),
-      value: "—",
+      value: cards ? String(cards.pendingCount) : "—",
       hint: t("analytics.leaveApprovalHint"),
     },
   ];
@@ -46,7 +52,7 @@ export function LeaveAnalyticsPanel() {
         animate="visible"
         className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
       >
-        {cards.map((card) => (
+        {rows.map((card) => (
           <motion.li
             key={card.id}
             variants={fadeInUp}
@@ -58,7 +64,15 @@ export function LeaveAnalyticsPanel() {
           </motion.li>
         ))}
       </motion.ul>
-      <AnalyticsChartsStudio focus="leave" />
+      <AnalyticsChartsStudio
+        focus="leave"
+        weeklyTrends={analytics?.weeklyTrends}
+        monthlyTrends={analytics?.monthlyTrends}
+        quarterlyTrends={analytics?.quarterlyTrends}
+        leaveSeries={analytics?.leaveSeries}
+        modePie={analytics?.modePie}
+        radar={analytics?.radar}
+      />
     </div>
   );
 }

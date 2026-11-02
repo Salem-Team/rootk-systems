@@ -79,7 +79,7 @@ export class PayrollPayslipCalcService {
     policy: PolicyPayload,
     profile: SalaryPayload
   ) {
-    const [{ schedule, holidayDates }, rules, attendance, leaves] =
+    const [{ schedule, holidayDates }, rules, attendance, leaves, employee] =
       await Promise.all([
         this.loadScheduleContext(companyId, employeeId),
         this.policiesService.loadEngineRules(companyId),
@@ -104,10 +104,18 @@ export class PayrollPayslipCalcService {
             endDate: { gte: parseDate(period.startDate) },
           },
         }),
+        this.prisma.employee.findUnique({
+          where: { id: employeeId },
+          select: { joinDate: true },
+        }),
       ]);
 
     const asOf = dateOnly(new Date());
     const through = asOf < period.endDate ? asOf : period.endDate;
+    const joinDate = employee?.joinDate ? dateOnly(employee.joinDate) : null;
+    // Never synthesize absence before the employee joined.
+    const absenceFrom =
+      joinDate && joinDate > period.startDate ? joinDate : period.startDate;
     const empLeaves = leaves.map((r) => ({
       id: r.id,
       type: r.type as "annual" | "sick" | "personal" | "unpaid" | "maternity" | "emergency",
@@ -158,7 +166,7 @@ export class PayrollPayslipCalcService {
       empLeaves.some((l) => l.startDate <= date && l.endDate >= date);
 
     const synthesizedAbsent = listWorkingDates(
-      period.startDate,
+      absenceFrom,
       through,
       schedule.workingDays,
       holidayDates
