@@ -16,7 +16,7 @@ export default function SettingsPage() {
       {showWorkspace ? (
         <>
           <PageHeader
-            className="mb-4 sm:mb-7"
+            className="mb-3 sm:mb-7"
             eyebrow={t("admin.eyebrow")}
             title={t("admin.title")}
             description={t("admin.description")}
@@ -26,6 +26,7 @@ export default function SettingsPage() {
       ) : (
         <>
           <PageHeader
+            className="mb-3 sm:mb-7"
             eyebrow={t("settings.prefEyebrow")}
             title={t("settings.myTitle")}
             description={t("settings.myDesc")}

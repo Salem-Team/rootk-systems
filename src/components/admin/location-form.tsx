@@ -46,7 +46,7 @@ export function LocationForm({
   const geoBusy = resolvingMaps || locatingDevice || busy;
 
   return (
-    <div className="surface-panel p-4">
+    <div className="surface-panel min-w-0 max-w-full overflow-hidden p-3 sm:p-4">
       <div className="space-y-1.5">
         <Label htmlFor="loc-maps-url">{t("admin.mapsUrl")}</Label>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -54,7 +54,7 @@ export function LocationForm({
             <Link2 className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id="loc-maps-url"
-              className="ps-9"
+              className="min-h-11 touch-manipulation ps-9 sm:min-h-9"
               dir="ltr"
               placeholder="https://maps.app.goo.gl/… أو https://www.google.com/maps/…"
               value={draft.mapsUrl}
@@ -77,11 +77,12 @@ export function LocationForm({
               }}
             />
           </div>
+          <div className="grid grid-cols-2 gap-2 sm:contents">
           <Button
             type="button"
             size="sm"
             variant="outline"
-            className="shrink-0"
+            className="min-h-11 shrink-0 touch-manipulation sm:min-h-9"
             disabled={geoBusy || !draft.mapsUrl.trim()}
             onClick={() => void onApplyMapsUrl()}
           >
@@ -96,7 +97,7 @@ export function LocationForm({
             type="button"
             size="sm"
             variant="outline"
-            className="shrink-0"
+            className="min-h-11 shrink-0 touch-manipulation sm:min-h-9"
             disabled={geoBusy}
             onClick={() => void onUseMyLocation()}
           >
@@ -107,6 +108,7 @@ export function LocationForm({
             )}
             {t("admin.useMyLocation")}
           </Button>
+          </div>
         </div>
         <p className="text-xs text-muted-foreground">
           {t("admin.mapsUrlHint")}

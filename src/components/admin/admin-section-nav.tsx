@@ -157,13 +157,13 @@ export function AdminSectionNav({
 
   return (
     <>
-      <div className="sticky top-[var(--chrome-sticky-top)] z-20 -mx-3 border-b border-border/50 bg-background/94 px-3 py-2 backdrop-blur-xl sm:-mx-4 sm:px-4 md:-mx-6 md:px-6 lg:hidden">
+      <div className="sticky top-[var(--chrome-sticky-top)] z-20 min-w-0 max-w-full overflow-hidden border-b border-border/50 bg-background/94 py-2 backdrop-blur-xl lg:hidden">
         <div
-          className="flex items-center gap-1.5"
+          className="flex min-w-0 items-center gap-1.5"
           role="tablist"
           aria-label={t("admin.navLabel")}
         >
-          <div className="scroll-x flex min-w-0 flex-1 gap-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="scroll-x flex min-w-0 flex-1 gap-1 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {quickItems.map((id) => {
               const item = ITEM_MAP[id];
               const Icon = item.icon;
@@ -176,23 +176,23 @@ export function AdminSectionNav({
                   aria-selected={isActive}
                   onClick={() => select(id)}
                   className={cn(
-                    "inline-flex min-h-11 shrink-0 touch-manipulation items-center gap-1.5 rounded-xl px-3 text-[12px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    "inline-flex min-h-11 shrink-0 touch-manipulation items-center gap-1.5 rounded-xl px-2.5 text-[12px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3",
                     isActive
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "bg-muted/55 text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
-                  <Icon className="h-3.5 w-3.5" aria-hidden />
-                  <span className="max-w-[6.5rem] truncate">
+                  <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <span className="max-w-[5.75rem] truncate sm:max-w-[6.5rem]">
                     {t(item.labelKey)}
                   </span>
                 </button>
               );
             })}
             {!quickItems.includes(active) ? (
-              <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl bg-primary/12 px-3 text-[12px] font-semibold text-primary">
-                <ActiveIcon className="h-3.5 w-3.5" aria-hidden />
-                <span className="max-w-[6.5rem] truncate">
+              <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl bg-primary/12 px-2.5 text-[12px] font-semibold text-primary sm:px-3">
+                <ActiveIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span className="max-w-[5.75rem] truncate sm:max-w-[6.5rem]">
                   {t(activeItem.labelKey)}
                 </span>
               </span>
@@ -202,7 +202,7 @@ export function AdminSectionNav({
           <button
             type="button"
             onClick={() => setSheetOpen(true)}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border/80 bg-card text-foreground shadow-sm transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-xl border border-border/80 bg-card text-foreground shadow-sm transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-haspopup="dialog"
             aria-expanded={sheetOpen}
             aria-label={t("admin.allSections")}

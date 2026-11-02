@@ -54,8 +54,8 @@ export function SettingsForm({
   const showSave = section !== "company" && section !== "security";
 
   return (
-    <div className="grid gap-3 sm:gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
-      <aside className="lg:sticky lg:top-20 lg:self-start">
+    <div className="grid min-w-0 max-w-full gap-3 sm:gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
+      <aside className="min-w-0 w-full max-w-full lg:sticky lg:top-20 lg:self-start">
         <SettingsNav
           navItems={navItems}
           section={section}
@@ -66,7 +66,7 @@ export function SettingsForm({
         />
       </aside>
 
-      <div className={`min-w-0 space-y-3 sm:space-y-4 ${showSave ? "pb-20 sm:pb-0" : ""}`}>
+      <div className={`min-w-0 max-w-full space-y-3 sm:space-y-4 ${showSave ? "pb-20 sm:pb-0" : ""}`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={section}

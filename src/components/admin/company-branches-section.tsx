@@ -34,25 +34,26 @@ export function CompanyBranchesSection({
           </p>
         </div>
         <div className="panel-body flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-2 text-sm">
+          <div className="flex min-w-0 flex-wrap gap-2 text-sm">
             <span className="rounded-lg border border-border bg-muted/30 px-3 py-1.5 font-mono tabular-nums">
               {loadingMeta ? "…" : hoursLabel}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 px-3 py-1.5 text-muted-foreground">
-              <Globe2 className="h-3.5 w-3.5" aria-hidden />
-              {timezone}
+            <span className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-lg border border-border bg-muted/30 px-3 py-1.5 text-muted-foreground">
+              <Globe2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <span className="truncate">{timezone}</span>
             </span>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             <Button
               type="button"
               variant="outline"
               size="sm"
+              className="min-h-11 touch-manipulation sm:min-h-9"
               onClick={() => onNavigate?.("policies")}
             >
               {t("admin.navPolicies")}
             </Button>
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="outline" size="sm" className="min-h-11 touch-manipulation sm:min-h-9">
               <Link href="/schedule">{t("settings.openSchedule")}</Link>
             </Button>
           </div>
@@ -61,12 +62,12 @@ export function CompanyBranchesSection({
 
       <section className="surface-panel overflow-hidden">
         <div className="panel-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+          <div className="min-w-0">
             <h3 className="flex items-center gap-2 text-[0.95rem] font-semibold">
-              <Building2 className="h-3.5 w-3.5 text-primary" aria-hidden />
+              <Building2 className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
               {t("admin.branches")}
             </h3>
-            <p className="mt-0.5 text-sm text-muted-foreground">
+            <p className="mt-0.5 text-[12px] text-muted-foreground sm:text-sm">
               {t("admin.branchesLiveDesc")}
             </p>
           </div>
@@ -74,6 +75,7 @@ export function CompanyBranchesSection({
             type="button"
             variant="outline"
             size="sm"
+            className="min-h-11 w-full touch-manipulation sm:min-h-9 sm:w-auto"
             onClick={() => onNavigate?.("locations")}
           >
             {t("admin.manageLocations")}

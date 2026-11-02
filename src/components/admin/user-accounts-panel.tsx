@@ -190,7 +190,7 @@ export function UserAccountsPanel() {
         </p>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="min-w-0 max-w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
         <DataTable>
           <DataTableHeader>
             <DataTableHeaderRow>

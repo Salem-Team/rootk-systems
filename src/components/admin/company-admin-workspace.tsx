@@ -227,15 +227,17 @@ export function CompanyAdminWorkspace() {
     section === "appearance";
 
   return (
-    <div className="grid gap-4 sm:gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
-      <aside className="max-lg:contents lg:sticky lg:top-20 lg:self-start">
+    <div className="grid min-w-0 max-w-full gap-3 sm:gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
+      {/* Keep a real box on mobile — `display:contents` let the tab strip
+          expand the grid past the viewport (min-width:auto). */}
+      <aside className="min-w-0 w-full max-w-full lg:sticky lg:top-20 lg:self-start">
         <AdminSectionNav active={section} onChange={setSection} />
       </aside>
 
       <div
         className={cn(
-          "min-w-0 space-y-4",
-          showSave && "max-lg:pb-16"
+          "min-w-0 max-w-full space-y-3 sm:space-y-4",
+          showSave && "max-lg:pb-20"
         )}
       >
         <AnimatePresence mode="wait">
@@ -298,7 +300,7 @@ export function CompanyAdminWorkspace() {
           <div className="pointer-events-none max-lg:fixed max-lg:inset-x-0 max-lg:bottom-[var(--mobile-action-bottom)] max-lg:z-30 max-lg:px-3 lg:flex lg:justify-end">
             <Button
               size="lg"
-              className="pointer-events-auto w-full min-h-12 shadow-[var(--shadow-float)] lg:w-auto lg:min-h-10 lg:shadow-none"
+              className="pointer-events-auto min-h-12 w-full touch-manipulation shadow-[var(--shadow-float)] lg:min-h-10 lg:w-auto lg:shadow-none"
               onClick={() => void handleSave()}
               disabled={isSaving}
             >

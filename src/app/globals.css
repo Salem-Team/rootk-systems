@@ -1012,13 +1012,20 @@
   /* Compact app-like page chrome on phones */
   @media (max-width: 639px) {
     .type-title {
-      font-size: 1.35rem;
+      font-size: 1.28rem;
       letter-spacing: -0.03em;
     }
 
     .panel-header {
       flex-wrap: wrap;
       row-gap: 0.5rem;
+    }
+
+    /* Settings / admin forms: keep LTR values readable inside RTL pages. */
+    .panel-body input,
+    .panel-body textarea,
+    .panel-body button[role="combobox"] {
+      max-width: 100%;
     }
 
     .recharts-legend-item-text {

@@ -20,25 +20,25 @@ export function SettingsNav({
   title: string;
 }) {
   return (
-    <nav aria-label={navLabel} className="surface-panel overflow-hidden">
+    <nav aria-label={navLabel} className="surface-panel min-w-0 max-w-full overflow-hidden">
       <div className="hidden border-b border-border/60 px-4 py-3 lg:block">
         <p className="section-label text-primary/70">{eyebrow}</p>
         <p className="mt-1 text-sm font-semibold tracking-tight">{title}</p>
       </div>
-      <ul className="scroll-x flex snap-x snap-mandatory gap-1.5 p-2 [scrollbar-width:none] lg:grid lg:snap-none lg:gap-0.5 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
+      <ul className="scroll-x flex min-w-0 snap-x snap-mandatory gap-1.5 overflow-x-auto overscroll-x-contain p-2 [scrollbar-width:none] lg:grid lg:snap-none lg:gap-0.5 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = section === item.id;
           return (
-            <li key={item.id} className="shrink-0 snap-start lg:w-full">
+            <li key={item.id} className="min-w-0 shrink-0 snap-start lg:w-full">
               <button
                 type="button"
                 onClick={() => setSection(item.id)}
                 aria-current={isActive ? "page" : undefined}
                 className={
                   isActive
-                    ? "relative flex min-h-11 w-full touch-manipulation items-center gap-2 rounded-xl bg-primary/[0.08] px-3 py-2.5 text-start text-[13px] font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:gap-2.5 lg:rounded-lg lg:px-2.5 lg:py-2"
-                    : "flex min-h-11 w-full touch-manipulation items-center gap-2 rounded-xl px-3 py-2.5 text-start text-[13px] font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:gap-2.5 lg:rounded-lg lg:px-2.5 lg:py-2"
+                    ? "relative flex min-h-11 w-full touch-manipulation items-center gap-2 rounded-xl bg-primary/[0.08] px-2.5 py-2.5 text-start text-[13px] font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3 lg:gap-2.5 lg:rounded-lg lg:px-2.5 lg:py-2"
+                    : "flex min-h-11 w-full touch-manipulation items-center gap-2 rounded-xl px-2.5 py-2.5 text-start text-[13px] font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3 lg:gap-2.5 lg:rounded-lg lg:px-2.5 lg:py-2"
                 }
               >
                 {isActive ? (
