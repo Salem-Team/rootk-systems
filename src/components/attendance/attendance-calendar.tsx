@@ -35,6 +35,8 @@ const KIND_STYLE: Record<CalendarDayKind, string> = {
 
 interface AttendanceCalendarProps {
   records: AttendanceRecord[];
+  month?: Date;
+  onMonthChange?: (month: Date) => void;
 }
 
 function formatTime(iso: string | undefined, dateLocale: typeof enUS): string {
@@ -42,11 +44,20 @@ function formatTime(iso: string | undefined, dateLocale: typeof enUS): string {
   return format(parseISO(iso), "h:mm a", { locale: dateLocale });
 }
 
-export function AttendanceCalendar({ records }: AttendanceCalendarProps) {
+export function AttendanceCalendar({
+  records,
+  month: controlledMonth,
+  onMonthChange,
+}: AttendanceCalendarProps) {
   const { t, locale } = useTranslation();
   const reduceMotion = useReducedMotion();
   const dateLocale = locale === "ar" ? arLocale : enUS;
-  const [month, setMonth] = useState(() => demoNow());
+  const [internalMonth, setInternalMonth] = useState(() => demoNow());
+  const month = controlledMonth ?? internalMonth;
+  const setMonth = (next: Date) => {
+    if (onMonthChange) onMonthChange(next);
+    else setInternalMonth(next);
+  };
   const [selectedDate, setSelectedDate] = useState(() => demoTodayKey());
 
   const recordsByDate = useMemo(
@@ -101,7 +112,7 @@ export function AttendanceCalendar({ records }: AttendanceCalendarProps) {
                 type="button"
                 size="icon-sm"
                 variant="outline"
-                onClick={() => setMonth((m) => subMonths(m, 1))}
+                onClick={() => setMonth(subMonths(month, 1))}
                 aria-label={t("attendance.prevMonth")}
               >
                 <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
@@ -113,7 +124,7 @@ export function AttendanceCalendar({ records }: AttendanceCalendarProps) {
                 type="button"
                 size="icon-sm"
                 variant="outline"
-                onClick={() => setMonth((m) => addMonths(m, 1))}
+                onClick={() => setMonth(addMonths(month, 1))}
                 aria-label={t("attendance.nextMonth")}
               >
                 <ChevronRight className="h-4 w-4 rtl:rotate-180" />

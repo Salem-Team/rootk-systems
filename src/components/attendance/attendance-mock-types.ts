@@ -39,10 +39,14 @@ export interface WeeklyAttendanceSummary {
 
 export interface MonthlyChartPoint {
   label: string;
+  /** Day range inside the month, e.g. "1–7". */
+  rangeLabel?: string;
   present: number;
   late: number;
   absent: number;
+  wfh?: number;
   hours: number;
+  lateMinutes?: number;
   rate: number;
 }
 

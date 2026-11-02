@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { endOfMonth, format, startOfMonth, subMonths } from "date-fns";
 import { PageHeader } from "@/components/shared/page-header";
 import { PageTransition } from "@/components/shared/page-transition";
 import { PageSkeleton } from "@/components/shared/loading-state";
@@ -23,8 +24,15 @@ import {
 } from "@/stores/session-store";
 import { useHasAnyPermission } from "@/hooks/use-permission";
 import { useTranslation } from "@/hooks/use-translation";
+import { demoNow } from "@/lib/mock-date";
 import { cn } from "@/lib/utils";
 import type { AttendanceRecord, Employee } from "@/types";
+
+function attendanceRangeAround(month: Date) {
+  const from = format(startOfMonth(subMonths(month, 2)), "yyyy-MM-dd");
+  const to = format(endOfMonth(month), "yyyy-MM-dd");
+  return { from, to };
+}
 
 function AttendancePageContent() {
   const { t } = useTranslation();
@@ -46,6 +54,7 @@ function AttendancePageContent() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [ready, setReady] = useState(false);
   const [mobileTab, setMobileTab] = useState("today");
+  const [insightsMonth, setInsightsMonth] = useState(() => demoNow());
   const [highlightRecordId, setHighlightRecordId] = useState<string | null>(
     null
   );
@@ -69,18 +78,23 @@ function AttendancePageContent() {
   }, [canViewTeamBoard]);
 
   const loadOwnHistory = useCallback(async () => {
-    const res = await getEmployeeAttendance(workEmployeeId);
+    const { from, to } = attendanceRangeAround(insightsMonth);
+    const res = await getEmployeeAttendance(workEmployeeId, from, to);
     if (res.success) setOwnHistory(res.data);
     else setOwnHistory([]);
-  }, [workEmployeeId]);
+  }, [workEmployeeId, insightsMonth]);
 
-  const loadViewHistory = useCallback(async (employeeId: string) => {
-    setHistoryLoading(true);
-    const res = await getEmployeeAttendance(employeeId);
-    if (res.success) setViewHistory(res.data);
-    else setViewHistory([]);
-    setHistoryLoading(false);
-  }, []);
+  const loadViewHistory = useCallback(
+    async (employeeId: string) => {
+      setHistoryLoading(true);
+      const { from, to } = attendanceRangeAround(insightsMonth);
+      const res = await getEmployeeAttendance(employeeId, from, to);
+      if (res.success) setViewHistory(res.data);
+      else setViewHistory([]);
+      setHistoryLoading(false);
+    },
+    [insightsMonth]
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -188,8 +202,16 @@ function AttendancePageContent() {
     <div className="space-y-4 sm:space-y-5">
       {employeePicker}
       <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
-        <AttendanceCalendar records={viewHistory} />
-        <MonthlyAnalytics records={viewHistory} />
+        <AttendanceCalendar
+          records={viewHistory}
+          month={insightsMonth}
+          onMonthChange={setInsightsMonth}
+        />
+        <MonthlyAnalytics
+          records={viewHistory}
+          month={insightsMonth}
+          onMonthChange={setInsightsMonth}
+        />
       </div>
       <AttendanceHistory
         records={viewHistory}
@@ -273,8 +295,16 @@ function AttendancePageContent() {
 
           <TabsContent value="more" className="mt-0 space-y-4">
             {canViewTeamBoard ? employeePicker : null}
-            <AttendanceCalendar records={viewHistory} />
-            <MonthlyAnalytics records={viewHistory} />
+            <AttendanceCalendar
+              records={viewHistory}
+              month={insightsMonth}
+              onMonthChange={setInsightsMonth}
+            />
+            <MonthlyAnalytics
+              records={viewHistory}
+              month={insightsMonth}
+              onMonthChange={setInsightsMonth}
+            />
             {!canViewTeamBoard ? null : (
               <AttendanceHistory
                 records={viewHistory}
