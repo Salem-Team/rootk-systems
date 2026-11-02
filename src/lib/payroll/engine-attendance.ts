@@ -36,7 +36,7 @@ export function computeAttendanceImpacts(params: {
   const attendanceImpacts: AttendanceImpactLine[] = [];
   let attendanceDeduction = 0;
   let overtimePay = 0;
-  let shiftAllowance = input.profile.allowances.shift;
+  const shiftAllowance = input.profile.allowances.shift;
 
   const builtinOverride = enabledBuiltinFields(dayRules);
   const lateRuleOverride =
