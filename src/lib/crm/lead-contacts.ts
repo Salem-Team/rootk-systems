@@ -2,6 +2,7 @@ export {
   MAX_LEAD_CONTACTS,
   allLeadContacts,
   canonicalContactKeys,
+  cleanContactLabel,
   contactSearchBlob,
   contactsMetadataPatch,
   extraContactsFromMetadata,

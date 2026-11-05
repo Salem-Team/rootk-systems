@@ -285,6 +285,22 @@ export class CrmController {
     return this.service.deleteLead(companyId, toDomainActor(user, actorId), id);
   }
 
+  @Post("leads/:id/quotation-exports")
+  logQuotationExport(
+    @CompanyId() companyId: string,
+    @ActorId() actorId: string,
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.service.logQuotationExport(
+      companyId,
+      toDomainActor(user, actorId),
+      id,
+      body
+    );
+  }
+
   @Post("leads/:id/activities")
   addActivity(
     @CompanyId() companyId: string,

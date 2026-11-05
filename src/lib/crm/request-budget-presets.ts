@@ -6,6 +6,7 @@ export const CRM_REQUEST_PRODUCTS = [
   "accounting",
   "hr",
   "mobile_app",
+  "ai",
   "attendance",
   "daily_plan",
   "tasks",
@@ -119,6 +120,9 @@ export function parseCrmRequest(raw: string): ParsedCrmRequest {
       if (p === "mobile_app") {
         return /mobile\s*app|موبايل|تطبيق/.test(lower);
       }
+      if (p === "ai") {
+        return /\bai\b|ذكاء/.test(lower);
+      }
       if (p.length <= 3) return new RegExp(`\\b${p}\\b`, "i").test(text);
       return lower.includes(p);
     });
@@ -190,6 +194,11 @@ export function matchProductToken(token: string): CrmRequestProduct | null {
     تطبيق: "mobile_app",
     تطبيق_موبايل: "mobile_app",
     mobbile_app: "mobile_app",
+    ai: "ai",
+    ذكاء: "ai",
+    ذكاء_اصطناعي: "ai",
+    artificial_intelligence: "ai",
+    artificial: "ai",
     محاسبة: "accounting",
     حسابات: "accounting",
     accounts: "accounting",

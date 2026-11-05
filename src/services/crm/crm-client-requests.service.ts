@@ -7,6 +7,11 @@ import {
 import { isProtectedAdminAccount } from "@/lib/protected-accounts";
 import { isApiMode } from "@/lib/env";
 import { enrichWithAudit, touchEntity } from "@/lib/entity";
+import {
+  formatDocumentReference,
+  parseDocumentReference,
+  withClientDocumentNumbers,
+} from "@/lib/crm/document-reference";
 import { templateDraftIssue } from "@/lib/crm/technical-proposal";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { createId } from "@/lib/id";
@@ -57,6 +62,30 @@ function canManageRequests(): boolean {
 
 function clip(value: unknown, max: number): string {
   return String(value ?? "").trim().slice(0, max);
+}
+
+function withoutReference(
+  document: TechnicalProposalDocument
+): TechnicalProposalDocument {
+  const { reference: _ignored, ...rest } = document;
+  return rest;
+}
+
+async function persistDocumentNumbers(
+  rows: CrmClientRequest[]
+): Promise<CrmClientRequest[]> {
+  const synced = withClientDocumentNumbers(rows);
+  for (let index = 0; index < synced.length; index += 1) {
+    const next = synced[index];
+    if (
+      (next.proposal?.reference ?? "") ===
+      (rows[index]?.proposal?.reference ?? "")
+    ) {
+      continue;
+    }
+    await crmClientRequestRepository.update(next.id, next);
+  }
+  return synced;
 }
 
 async function hasUnreadNotice(
@@ -127,8 +156,8 @@ export async function listCrmClientRequests(query?: {
 }): Promise<ApiResponse<CrmClientRequest[]>> {
   if (isApiMode()) return fetchCrmClientRequests(query);
   try {
-    const all = (await crmClientRequestRepository.findAll()).filter(
-      (row) => !row.deletedAt
+    const all = await persistDocumentNumbers(
+      (await crmClientRequestRepository.findAll()).filter((row) => !row.deletedAt)
     );
     let rows = all;
     if (query?.leadId) {
@@ -186,7 +215,7 @@ export async function createCrmClientRequest(
     const proposal =
       (input.kind === "technical_proposal" || input.kind === "contract") &&
       input.document
-        ? input.document
+        ? withoutReference(input.document)
         : null;
     if (proposal && templateDraftIssue(proposal)) {
       throw new ValidationError("Proposal document is incomplete");
@@ -214,8 +243,11 @@ export async function createCrmClientRequest(
       actorId
     );
     await crmClientRequestRepository.create(row);
+    const synced = await persistDocumentNumbers(
+      (await crmClientRequestRepository.findAll()).filter((item) => !item.deletedAt)
+    );
     await notifyManager(lead.name, input.kind, row.id, false);
-    return ok(row);
+    return ok(synced.find((item) => item.id === row.id) ?? row);
   } catch (error) {
     return fromError(error, null);
   }
@@ -254,14 +286,29 @@ export async function replyCrmClientRequest(
       },
       actorId
     );
+    const stored = parseDocumentReference(current.proposal?.reference);
     const next = touchEntity(current, actorId, {
       status: fromManagement ? "answered" : "open",
       replies: [...(current.replies ?? []), reply],
       leadName: lead.name,
       leadPhone: lead.phone,
-      ...(fromManagement && document ? { proposal: document } : {}),
+      ...(fromManagement && document
+        ? {
+            proposal: stored
+              ? { ...document, reference: formatDocumentReference(stored) }
+              : withoutReference(document),
+          }
+        : {}),
     });
     await crmClientRequestRepository.update(requestId, next);
+    const synced = document
+      ? await persistDocumentNumbers(
+          (await crmClientRequestRepository.findAll()).filter(
+            (item) => !item.deletedAt
+          )
+        )
+      : null;
+    const saved = synced?.find((item) => item.id === requestId) ?? next;
     if (fromManagement) {
       const users = await userRepository.findAll();
       const requester = users.find(
@@ -269,7 +316,7 @@ export async function replyCrmClientRequest(
       );
       if (requester && requester.id !== actorId) {
         const titleKey = "notifications.crmClientRequestReplyTitle";
-        if (await hasUnreadNotice([requester.id], requestId, titleKey)) return ok(next);
+        if (await hasUnreadNotice([requester.id], requestId, titleKey)) return ok(saved);
         await notifyQuietly({
           titleKey,
           bodyKey: "notifications.crmClientRequestReplyBody",
@@ -287,7 +334,7 @@ export async function replyCrmClientRequest(
     } else {
       await notifyManager(lead.name, current.kind, requestId, true);
     }
-    return ok(next);
+    return ok(saved);
   } catch (error) {
     return fromError(error, null);
   }
@@ -319,14 +366,21 @@ export async function saveCrmTechnicalProposal(
       await assertLeadAccess(lead);
     }
     const actorId = getSessionUserId() || "system";
+    const stored = parseDocumentReference(current.proposal?.reference);
     const next = touchEntity(current, actorId, {
       ...(fromManagement ? { status: "answered" as const } : {}),
-      proposal: document,
+      proposal: stored
+        ? { ...document, reference: formatDocumentReference(stored) }
+        : withoutReference(document),
       leadName: lead.name,
       leadPhone: lead.phone,
     });
     await crmClientRequestRepository.update(requestId, next);
-    if (!fromManagement) return ok(next);
+    const synced = await persistDocumentNumbers(
+      (await crmClientRequestRepository.findAll()).filter((item) => !item.deletedAt)
+    );
+    const saved = synced.find((item) => item.id === requestId) ?? next;
+    if (!fromManagement) return ok(saved);
     const users = await userRepository.findAll();
     const requester = users.find(
       (user) => user.employeeId === current.requestedByEmployeeId
@@ -349,7 +403,7 @@ export async function saveCrmTechnicalProposal(
         });
       }
     }
-    return ok(next);
+    return ok(saved);
   } catch (error) {
     return fromError(error, null);
   }

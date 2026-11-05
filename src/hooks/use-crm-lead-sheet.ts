@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { CrmLossReasonPayload } from "@/components/crm/crm-loss-reason-dialog";
 import { useTranslation } from "@/hooks/use-translation";
+import { CRM_UPDATED_EVENT } from "@/lib/events";
 import { formatMaybeDateTime } from "@/lib/crm/format";
 import { appendLossReasonNote } from "@/lib/crm/loss-reason";
 import { ensureLeadFeedbackList, ensureLeadTimeline } from "@/lib/crm-normalize";
@@ -123,6 +124,17 @@ export function useCrmLeadSheet({
       setPendingLostStageId(null);
     }
   }, [open, leadId, reload, initialTab]);
+
+  useEffect(() => {
+    if (!open || !leadId) return;
+    const onUpdate = () => {
+      void getCrmLeadTimeline(leadId).then((res) => {
+        if (res.success) setTimeline(ensureLeadTimeline(res.data));
+      });
+    };
+    window.addEventListener(CRM_UPDATED_EVENT, onUpdate);
+    return () => window.removeEventListener(CRM_UPDATED_EVENT, onUpdate);
+  }, [open, leadId]);
 
   const stage = lead ? stageMap.get(lead.stageId) : undefined;
   const pendingLostStage = pendingLostStageId

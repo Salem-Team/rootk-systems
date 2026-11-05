@@ -297,6 +297,15 @@ export async function postCrmLeadActivity(
   );
 }
 
+export async function postCrmQuotationExport(
+  leadId: string,
+  body: { reference?: string }
+): Promise<ApiResponse<{ ok: boolean } | null>> {
+  return emitIfOk(
+    await api.post(API_ROUTES.crm.leadQuotationExport(leadId), body, null)
+  );
+}
+
 export async function fetchCrmLeadTimeline(
   leadId: string
 ): Promise<ApiResponse<CrmLeadActivity[]>> {

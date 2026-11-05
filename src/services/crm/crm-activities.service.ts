@@ -5,6 +5,7 @@ import {
   fetchCrmLeadTimeline,
   postCrmLeadActivity,
   postCrmLeadFeedback,
+  postCrmQuotationExport,
 } from "@/api/crm.api";
 import { isApiMode } from "@/lib/env";
 import { enrichWithAudit, touchEntity } from "@/lib/entity";
@@ -22,7 +23,7 @@ import {
   crmLeadFeedbackRepository,
   crmLeadRepository,
 } from "@/repositories/crm.repository";
-import { userRepository } from "@/repositories";
+import { activityRepository, userRepository } from "@/repositories";
 import {
   leadActivitySchema,
   leadFeedbackSchema,
@@ -32,7 +33,7 @@ import {
 import { fromError, ok } from "@/services/api-result";
 import { simulateDelay } from "@/services/fake-api";
 import { notifyCrmFeedbackMentions } from "@/services/notify-crm.service";
-import { getSessionUserId } from "@/stores/session-store";
+import { getSessionUserId, useSessionStore } from "@/stores/session-store";
 import type { ApiResponse } from "@/types";
 import type { CrmLeadActivity, CrmLeadFeedback } from "@/types/crm";
 import {
@@ -86,6 +87,72 @@ export async function addCrmLeadActivity(
     });
     emitCrmUpdated();
     return ok(row);
+  } catch (error) {
+    return fromError(error, null);
+  }
+}
+
+export async function logCrmQuotationExport(
+  leadId: string,
+  input: { reference?: string } = {}
+): Promise<ApiResponse<{ ok: boolean } | null>> {
+  if (isApiMode()) return postCrmQuotationExport(leadId, input);
+  try {
+    assertCap("edit");
+    const lead = await findReadableCrmLead(leadId);
+    if (!lead || lead.deletedAt) throw new NotFoundError("Lead not found");
+    await assertLeadAccess(lead);
+    const actorId = getSessionUserId() || "system";
+    const actorName = resolveAccountFullName(useSessionStore.getState().user) || "";
+    const reference = String(input.reference ?? "").trim().slice(0, 40);
+    const now = new Date().toISOString();
+    const title = "تصدير كوتشين PDF";
+    const description = reference ? `رقم الملف ${reference}` : "تم تصدير الكوتشين PDF";
+    await crmLeadActivityRepository.create(
+      enrichWithAudit(
+        {
+          id: createId("crm-act"),
+          leadId,
+          type: "other" as const,
+          title,
+          description,
+          actorEmployeeId: actorEmployeeId(),
+          actorName,
+          occurredAt: now,
+        },
+        actorId
+      )
+    );
+    await crmLeadRepository.update(
+      lead.id,
+      touchEntity(lead, actorId, { lastActivityAt: now })
+    );
+    await writeHistory({
+      leadId,
+      action: "activity_added",
+      actorId,
+      actorName,
+      note: title,
+      previousValue: null,
+      newValue: reference || "quotation_pdf",
+    });
+    await activityRepository.create(
+      enrichWithAudit(
+        {
+          id: createId("act"),
+          type: "crm_quotation_exported",
+          title,
+          description: reference
+            ? `${actorName || "—"} · ${lead.name} · ${reference}`
+            : `${actorName || "—"} · ${lead.name}`,
+          employeeId: actorEmployeeId() || lead.ownerEmployeeId || undefined,
+          timestamp: now,
+        },
+        actorId
+      )
+    );
+    emitCrmUpdated();
+    return ok({ ok: true });
   } catch (error) {
     return fromError(error, null);
   }

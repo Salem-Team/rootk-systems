@@ -164,6 +164,7 @@ export const API_ROUTES = {
     leadsImport: "/crm/leads/import",
     leadsExport: "/crm/leads/export",
     leadActivities: (id: string) => `/crm/leads/${id}/activities`,
+    leadQuotationExport: (id: string) => `/crm/leads/${id}/quotation-exports`,
     leadTimeline: (id: string) => `/crm/leads/${id}/timeline`,
     leadFeedback: (id: string) => `/crm/leads/${id}/feedback`,
     leadCalls: (id: string) => `/crm/leads/${id}/calls`,

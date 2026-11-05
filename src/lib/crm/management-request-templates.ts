@@ -37,9 +37,9 @@ export function buildManagementTemplate(
 
   if (input.kind === "price_exception") {
     return {
-      title: "موافقة استثناء سعر",
+      title: "كوتشين",
       subtitle: client,
-      intro: `بناءً على طلب فريق المبيعات بخصوص ${client}، راجعت الإدارة استثناء السعر التالي.`,
+      intro: `كوتشين استثناء سعر خاص بالعميل ${client}. هذا ليس عرض سعر عامًا ولا عقدًا.`,
       sections: [
         section("price-request", "تفاصيل الطلب", request, [
           `السعر الحالي: ${text(input.listedPrice, "—")}`,

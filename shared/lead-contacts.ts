@@ -6,10 +6,14 @@ import {
 
 export const MAX_LEAD_CONTACTS = 8;
 
+export const MAX_CONTACT_LABEL = 80;
+
 export type LeadContactRecord = {
   kind: CrmContactKind;
   phone: string;
   phoneNormalized: string | null;
+  /** Optional name for this number, used on extra contacts. */
+  label?: string | null;
 };
 
 export type LeadFormContactDraft = {
@@ -18,7 +22,15 @@ export type LeadFormContactDraft = {
   value: string;
   /** ISO country when kind is phone. Defaults to Egypt in the form. */
   country?: string;
+  /** Name of an extra number (who it belongs to). */
+  label?: string;
 };
+
+export function cleanContactLabel(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const label = raw.trim().replace(/\s+/g, " ").slice(0, MAX_CONTACT_LABEL);
+  return label || null;
+}
 
 function asMeta(raw: unknown): Record<string, unknown> {
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {
@@ -39,7 +51,10 @@ function parseStoredContact(raw: unknown): LeadContactRecord | null {
   const kind = isCrmContactKind(row.kind)
     ? row.kind
     : detectContactKind(phone, phoneNormalized);
-  return { kind, phone, phoneNormalized };
+  const label = cleanContactLabel(row.label);
+  return label
+    ? { kind, phone, phoneNormalized, label }
+    : { kind, phone, phoneNormalized };
 }
 
 export function extraContactsFromMetadata(metadata: unknown): LeadContactRecord[] {
@@ -77,7 +92,9 @@ export function allLeadContacts(
 
 export function contactSearchBlob(extras: LeadContactRecord[]): string {
   return extras
-    .map((row) => `${row.phone} ${row.phoneNormalized ?? ""}`.trim())
+    .map((row) =>
+      `${row.label ?? ""} ${row.phone} ${row.phoneNormalized ?? ""}`.trim()
+    )
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
@@ -89,11 +106,15 @@ export function contactsMetadataPatch(
 ): Record<string, unknown> {
   const meta = asMeta(current);
   const clean = extras
-    .map((row) => ({
-      kind: row.kind,
-      phone: row.phone.trim(),
-      phoneNormalized: row.phoneNormalized,
-    }))
+    .map((row) => {
+      const label = cleanContactLabel(row.label);
+      return {
+        kind: row.kind,
+        phone: row.phone.trim(),
+        phoneNormalized: row.phoneNormalized,
+        ...(label ? { label } : {}),
+      };
+    })
     .filter((row) => row.phone);
   if (clean.length === 0) {
     delete meta.contacts;

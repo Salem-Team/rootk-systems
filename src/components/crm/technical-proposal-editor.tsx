@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Download, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import {
   newProposalSection,
   templateDraftIssue,
 } from "@/lib/crm/technical-proposal";
-import { openTechnicalProposalPrint } from "@/lib/crm/technical-proposal-print";
+import { downloadTechnicalProposalPdf } from "@/lib/crm/technical-proposal-print";
 import type {
   CrmClientRequestKind,
   TechnicalProposalDocument,
@@ -26,6 +27,7 @@ export function TechnicalProposalEditor({
   saving = false,
   onChange,
   onSave,
+  onExported,
 }: {
   kind: CrmClientRequestKind;
   leadName: string;
@@ -36,15 +38,18 @@ export function TechnicalProposalEditor({
   saving?: boolean;
   onChange?: (next: TechnicalProposalDocument) => void;
   onSave?: () => void;
+  onExported?: (doc: TechnicalProposalDocument) => void;
 }) {
   const { t } = useTranslation();
+  const [downloading, setDownloading] = useState(false);
 
   function patch(next: Partial<TechnicalProposalDocument>) {
     if (!doc || !onChange) return;
     onChange({ ...doc, ...next });
   }
 
-  function preview(source: TechnicalProposalDocument) {
+  async function preview(source: TechnicalProposalDocument) {
+    if (downloading) return;
     const issue = templateDraftIssue(source);
     if (issue) {
       toast.error(
@@ -54,8 +59,26 @@ export function TechnicalProposalEditor({
       );
       return;
     }
-    const opened = openTechnicalProposalPrint(source, leadName);
-    if (!opened) toast.error(t("crm.clientRequests.proposal.popup"));
+    setDownloading(true);
+    try {
+      await downloadTechnicalProposalPdf(source, leadName, kind);
+      if (kind === "price_exception") onExported?.(source);
+    } catch {
+      toast.error(t("crm.clientRequests.proposal.popup"));
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  function referenceLine(reference?: string) {
+    const value = reference?.trim();
+    if (!value) return null;
+    return (
+      <p className="text-[12px] font-semibold text-primary">
+        {t("crm.clientRequests.proposal.reference")}{" "}
+        <span dir="ltr">{value}</span>
+      </p>
+    );
   }
 
   if (!canEdit) {
@@ -67,15 +90,23 @@ export function TechnicalProposalEditor({
       );
     }
     return (
+      <div className="space-y-2">
+        {referenceLine(saved.reference)}
       <Button
         type="button"
         variant="outline"
         className="h-11 w-full"
-        onClick={() => preview(saved)}
+        disabled={downloading}
+        onClick={() => void preview(saved)}
       >
-        <Download className="h-4 w-4" />
+        {downloading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Download className="h-4 w-4" />
+        )}
         {t("crm.clientRequests.proposal.download")}
       </Button>
+      </div>
     );
   }
 
@@ -90,6 +121,7 @@ export function TechnicalProposalEditor({
         <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground">
           {hint || t("crm.clientRequests.proposal.editHint")}
         </p>
+        {referenceLine(doc.reference)}
       </div>
       <label className="grid gap-1 text-[12px] font-medium">
         {t("crm.clientRequests.proposal.title")}
@@ -293,9 +325,14 @@ export function TechnicalProposalEditor({
         type="button"
         variant="outline"
         className="h-11 w-full"
-        onClick={() => preview(doc)}
+        disabled={downloading}
+        onClick={() => void preview(doc)}
       >
-        <Download className="h-4 w-4" />
+        {downloading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Download className="h-4 w-4" />
+        )}
         {t("crm.clientRequests.proposal.download")}
       </Button>
     </div>

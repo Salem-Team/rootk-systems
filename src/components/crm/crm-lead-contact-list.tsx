@@ -1,9 +1,25 @@
 "use client";
 
 import { CrmPhoneActions } from "@/components/crm/crm-phone-actions";
-import { allLeadContacts } from "@/lib/crm/lead-contacts";
+import { detectContactKind } from "@/lib/crm/contact-identity";
+import {
+  allLeadContacts,
+  type LeadContactRecord,
+} from "@/lib/crm/lead-contacts";
 import { cn } from "@/lib/utils";
 import type { CrmLead } from "@/types/crm";
+
+/** Table/card cell: phone if the lead has one, otherwise the WhatsApp username. */
+function compactContact(rows: LeadContactRecord[]): LeadContactRecord | null {
+  const phone = rows.find(
+    (row) => detectContactKind(row.phone, row.phoneNormalized) === "phone"
+  );
+  if (phone) return phone;
+  const whatsapp = rows.find(
+    (row) => detectContactKind(row.phone, row.phoneNormalized) === "whatsapp"
+  );
+  return whatsapp ?? rows[0] ?? null;
+}
 
 interface CrmLeadContactListProps {
   lead: Pick<
@@ -30,20 +46,28 @@ export function CrmLeadContactList({
     return <span className={cn("text-muted-foreground", className)}>—</span>;
   }
 
-  const visible = compact ? rows.slice(0, 1) : rows;
-  const extra = compact ? rows.length - 1 : 0;
+  const picked = compact ? compactContact(rows) : null;
+  const visible = compact ? (picked ? [picked] : []) : rows;
+  const extra = compact ? Math.max(0, rows.length - visible.length) : 0;
 
   return (
     <div className={cn("grid gap-0.5", className)}>
       {visible.map((row) => (
-        <CrmPhoneActions
-          key={`${row.kind}:${row.phoneNormalized || row.phone}`}
-          phone={row.phone}
-          phoneNormalized={row.phoneNormalized}
-          leadId={lead.id}
-          leadName={lead.name}
-          className="text-[12px]"
-        />
+        <span
+          key={`${row.kind}:${row.phoneNormalized || row.phone}:${row.label ?? ""}`}
+          className="inline-flex min-w-0 flex-wrap items-baseline gap-x-1.5"
+        >
+          {!compact && row.label ? (
+            <span className="text-foreground/80">{row.label}</span>
+          ) : null}
+          <CrmPhoneActions
+            phone={row.phone}
+            phoneNormalized={row.phoneNormalized}
+            leadId={lead.id}
+            leadName={lead.name}
+            className="text-[12px]"
+          />
+        </span>
       ))}
       {extra > 0 ? (
         <span className="text-[11px] text-muted-foreground">+{extra}</span>

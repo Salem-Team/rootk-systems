@@ -1,3 +1,4 @@
+import { extractHandle, looksLikeHandle } from "@/lib/crm/contact-identity";
 import { isNativeApp, nativePlatform } from "@/lib/native/platform";
 import {
   canUseNativeWhatsappOpen,
@@ -16,6 +17,19 @@ export type OpenWhatsappResult =
 export function whatsappDigits(phone: string): string | null {
   const parsed = normalizePhone(phone);
   return parsed.ok ? parsed.digits : null;
+}
+
+/**
+ * WhatsApp username (not a phone). Official chat link is `https://wa.me/username`.
+ * Accepts `@user`, `user`, or a pasted `wa.me/user` link.
+ */
+export function whatsappUsername(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed || whatsappDigits(trimmed)) return null;
+  if (!looksLikeHandle(trimmed)) return null;
+  const handle = extractHandle(trimmed);
+  if (!handle || !/[a-z]/i.test(handle)) return null;
+  return handle;
 }
 
 /**
@@ -47,17 +61,43 @@ function androidPackage(app: WhatsappClientApp): string {
  * install (personal vs Business). Package-scoped intents matter on Android when
  * both apps are installed (company line often lives in Business).
  */
+function buildWhatsappUsernameUrl(
+  username: string,
+  app: WhatsappClientApp,
+  platform: OpenWhatsappPlatform,
+  text: string
+): string {
+  const web = text
+    ? `https://wa.me/${username}?text=${encodeURIComponent(text)}`
+    : `https://wa.me/${username}`;
+  if (platform === "android") {
+    const pkg = androidPackage(app);
+    const fallback = encodeURIComponent(web);
+    const query = text ? `?text=${encodeURIComponent(text)}` : "";
+    // Same package pin as phone chats. Username chats use the official wa.me link.
+    return `intent://wa.me/${username}${query}#Intent;scheme=https;package=${pkg};S.browser_fallback_url=${fallback};end`;
+  }
+  // iOS and desktop: wa.me/username is the link WhatsApp itself shares.
+  // Tapping it opens the chat the same way as wa.me/<phone>.
+  return web;
+}
+
 export function buildWhatsappOpenUrl(
   toPhone: string,
   app: WhatsappClientApp = "whatsapp",
   opts?: { text?: string; platform?: OpenWhatsappPlatform; userAgent?: string }
 ): string | null {
   const digits = whatsappDigits(toPhone);
-  if (!digits) return null;
+  const username = digits ? null : whatsappUsername(toPhone);
+  if (!digits && !username) return null;
   const text = opts?.text?.trim() ?? "";
   const textQuery = text ? `&text=${encodeURIComponent(text)}` : "";
   const platform =
     opts?.platform ?? resolveWhatsappPlatform(opts?.userAgent);
+
+  if (username) {
+    return buildWhatsappUsernameUrl(username, app, platform, text);
+  }
 
   if (platform === "android") {
     const pkg = androidPackage(app);
@@ -141,7 +181,8 @@ export async function openWhatsappChat(
   opts?: { text?: string; fallbackHref?: string }
 ): Promise<OpenWhatsappResult> {
   const digits = whatsappDigits(toPhone);
-  if (!digits && !opts?.fallbackHref?.trim()) {
+  const username = digits ? null : whatsappUsername(toPhone);
+  if (!digits && !username && !opts?.fallbackHref?.trim()) {
     return { ok: false, reason: "invalid_phone" };
   }
 
@@ -168,7 +209,7 @@ export async function openWhatsappChat(
   }
 
   const url =
-    (digits ? buildWhatsappOpenUrl(toPhone, app, opts) : null) ||
+    (digits || username ? buildWhatsappOpenUrl(toPhone, app, opts) : null) ||
     opts?.fallbackHref?.trim() ||
     null;
   if (!url) return { ok: false, reason: "invalid_phone" };

@@ -29,6 +29,10 @@ import {
   extraContactsFromMetadata,
 } from "../lib/lead-contacts";
 import { CrmSharedService } from "./crm-shared.service";
+import {
+  describeRequestBudgetChange,
+  requestBudgetChange,
+} from "./request-budget-change";
 
 @Injectable()
 export class CrmLeadUpdateService {
@@ -253,7 +257,28 @@ export class CrmLeadUpdateService {
         previousStatus: current.status,
       });
     }
-    if (!stageChanged && !ownerChanged) {
+    const budgetChange = requestBudgetChange({
+      previousRequest: current.request ?? "",
+      previousBudget: current.budget ?? "",
+      nextRequest:
+        body.request !== undefined ? String(body.request ?? "") : undefined,
+      nextBudget:
+        body.budget !== undefined ? String(body.budget ?? "") : undefined,
+      requestTouched: body.request !== undefined,
+      budgetTouched: body.budget !== undefined,
+    });
+    if (budgetChange) {
+      await this.recordRequestBudgetChange(companyId, actor, {
+        id,
+        row,
+        nameLabel,
+        change: budgetChange,
+      });
+    }
+    const onlyRequestBudget = Object.keys(body).every(
+      (key) => key === "request" || key === "budget"
+    );
+    if (!stageChanged && !ownerChanged && !(onlyRequestBudget && budgetChange)) {
       await this.shared.writeHistory(companyId, {
         leadId: id,
         action: "lead_updated",
@@ -363,6 +388,44 @@ export class CrmLeadUpdateService {
         stageId: ctx.row.stageId,
         ownerEmployeeId: ctx.row.ownerEmployeeId,
       },
+    });
+  }
+
+  private async recordRequestBudgetChange(
+    companyId: string,
+    actor: Actor,
+    ctx: {
+      id: string;
+      row: { name: string; ownerEmployeeId: string | null };
+      nameLabel: string;
+      change: NonNullable<ReturnType<typeof requestBudgetChange>>;
+    }
+  ) {
+    const detail = describeRequestBudgetChange(ctx.change);
+    await this.shared.writeHistory(companyId, {
+      leadId: ctx.id,
+      action: "lead_updated",
+      actorId: actor.userId,
+      actorName: ctx.nameLabel,
+      note: detail.title,
+      previousValue: detail.previousValue,
+      newValue: detail.newValue,
+    });
+    await this.shared.writeLeadActivity(companyId, {
+      leadId: ctx.id,
+      type: CrmActivityType.other,
+      title: detail.title,
+      description: detail.description,
+      actorEmployeeId: actor.employeeId,
+      actorId: actor.userId,
+    });
+    await writeActivity(this.prisma, {
+      companyId,
+      type: "crm_lead_updated",
+      title: `CRM ${detail.title.charAt(0).toLowerCase()}${detail.title.slice(1)}`,
+      description: `${ctx.row.name}\n${detail.description}`,
+      employeeId: ctx.row.ownerEmployeeId ?? undefined,
+      actorId: actor.userId,
     });
   }
 

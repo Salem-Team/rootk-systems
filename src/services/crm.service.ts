@@ -34,6 +34,7 @@ export {
 
 export {
   addCrmLeadActivity,
+  logCrmQuotationExport,
   getCrmLeadTimeline,
   addCrmLeadFeedback,
   getCrmFeedbackList,

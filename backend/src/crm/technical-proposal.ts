@@ -14,6 +14,7 @@ export type TechnicalProposalDocument = {
   sections: TechnicalProposalSection[];
   noteTitle: string;
   note: string;
+  reference?: string;
 };
 
 function clip(value: unknown, max: number): string {
@@ -31,12 +32,20 @@ export function readTechnicalProposal(
   const doc = raw as Record<string, unknown>;
   if (typeof doc.title !== "string" || !doc.title.trim()) return null;
   const sections = Array.isArray(doc.sections) ? doc.sections : [];
+  const referenceMatch = String(doc.reference ?? "")
+    .trim()
+    .toUpperCase()
+    .match(/^RK-(\d+)$/);
+  const referenceSerial = referenceMatch ? Number(referenceMatch[1]) : 0;
   return {
     title: doc.title,
     subtitle: String(doc.subtitle ?? ""),
     intro: String(doc.intro ?? ""),
     noteTitle: String(doc.noteTitle ?? ""),
     note: String(doc.note ?? ""),
+    ...(referenceSerial > 0
+      ? { reference: `RK-${String(referenceSerial).padStart(4, "0")}` }
+      : {}),
     sections: sections
       .filter(
         (row): row is Record<string, unknown> =>

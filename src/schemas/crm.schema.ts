@@ -84,6 +84,7 @@ const leadWritableFields = z.object({
           ])
           .optional(),
         phone: z.string().trim().min(1),
+        label: z.string().trim().max(80).optional().or(z.literal("")),
       })
     )
     .max(8)

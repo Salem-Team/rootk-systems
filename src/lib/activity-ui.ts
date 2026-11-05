@@ -44,6 +44,7 @@ const ACTIVITY_VISUAL: Record<string, ActivityVisual> = {
   crm_lead_updated: { icon: BriefcaseBusiness, tone: TONE.muted },
   crm_lead_deleted: { icon: BriefcaseBusiness, tone: TONE.danger },
   crm_activity_added: { icon: BriefcaseBusiness, tone: TONE.brand },
+  crm_quotation_exported: { icon: FileCheck, tone: TONE.brand },
   crm_feedback_added: { icon: BriefcaseBusiness, tone: TONE.warning },
 };
 

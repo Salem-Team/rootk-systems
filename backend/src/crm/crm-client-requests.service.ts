@@ -22,8 +22,14 @@ import { PrismaService } from "../prisma/prisma.service";
 import { assertCap, type Actor } from "./crm-access";
 import { CrmSharedService } from "./crm-shared.service";
 import {
+  formatDocumentReference,
+  parseDocumentReference,
+  syncClientDocumentReferences,
+} from "./document-reference";
+import {
   readTechnicalProposal,
   sanitizeTechnicalProposal,
+  type TechnicalProposalDocument,
 } from "./technical-proposal";
 
 const KINDS = new Set<string>(Object.values(CrmClientRequestKind));
@@ -71,6 +77,39 @@ function proposalMetadata(
       ? (metadata as Record<string, unknown>)
       : {};
   return { ...base, proposal } as Prisma.InputJsonValue;
+}
+
+function proposalForStore(
+  proposal: TechnicalProposalDocument,
+  stored: string | null | undefined
+): TechnicalProposalDocument {
+  const serial = parseDocumentReference(stored);
+  if (!serial) {
+    const { reference: _ignored, ...rest } = proposal;
+    return rest;
+  }
+  return { ...proposal, reference: formatDocumentReference(serial) };
+}
+
+function leadsNeedingReference(rows: RequestRow[]): string[] {
+  const needs = new Set<string>();
+  const seen = new Map<string, string>();
+  for (const row of rows) {
+    if (
+      row.kind !== CrmClientRequestKind.technical_proposal &&
+      row.kind !== CrmClientRequestKind.contract
+    ) {
+      continue;
+    }
+    const proposal = readTechnicalProposal(row.metadata);
+    if (!proposal) continue;
+    const reference = proposal.reference ?? "";
+    if (!parseDocumentReference(reference)) needs.add(row.leadId);
+    const previous = seen.get(row.leadId);
+    if (previous && previous !== reference) needs.add(row.leadId);
+    if (reference) seen.set(row.leadId, reference);
+  }
+  return [...needs];
 }
 
 function mapRequest(row: RequestRow) {
@@ -133,7 +172,24 @@ export class CrmClientRequestsService {
       orderBy: { updatedAt: "desc" },
       take: 100,
     });
-    return rows.map(mapRequest);
+    const needs = leadsNeedingReference(rows);
+    if (needs.length === 0) return rows.map(mapRequest);
+    await syncClientDocumentReferences(this.prisma, companyId, needs);
+    const refreshed = await this.prisma.crmClientRequest.findMany({
+      where: {
+        companyId,
+        deletedAt: null,
+        ...(leadId ? { leadId } : {}),
+        ...(status ? { status } : {}),
+        ...(ownerIds
+          ? { lead: { ownerEmployeeId: { in: ownerIds } } }
+          : {}),
+      },
+      include: requestInclude,
+      orderBy: { updatedAt: "desc" },
+      take: 100,
+    });
+    return refreshed.map(mapRequest);
   }
 
   async create(
@@ -187,8 +243,16 @@ export class CrmClientRequestsService {
       include: requestInclude,
     });
 
+    if (proposal) {
+      await syncClientDocumentReferences(this.prisma, companyId, [leadId]);
+    }
     await this.notifyManagement(companyId, actor, row, false);
-    return mapRequest(row);
+    if (!proposal) return mapRequest(row);
+    const fresh = await this.prisma.crmClientRequest.findFirst({
+      where: { id: row.id, companyId, deletedAt: null },
+      include: requestInclude,
+    });
+    return mapRequest(fresh ?? row);
   }
 
   async reply(
@@ -218,7 +282,10 @@ export class CrmClientRequestsService {
 
     const proposal =
       fromManagement && body.document != null
-        ? sanitizeTechnicalProposal(body.document)
+        ? proposalForStore(
+            sanitizeTechnicalProposal(body.document),
+            readTechnicalProposal(current.metadata)?.reference
+          )
         : null;
 
     const replyRow = await this.prisma.crmClientRequestReply.create({
@@ -248,14 +315,24 @@ export class CrmClientRequestsService {
       include: requestInclude,
     });
 
+    if (proposal) {
+      await syncClientDocumentReferences(this.prisma, companyId, [current.leadId]);
+    }
+    const fresh = proposal
+      ? await this.prisma.crmClientRequest.findFirst({
+          where: { id: requestId, companyId, deletedAt: null },
+          include: requestInclude,
+        })
+      : row;
+
     if (fromManagement) {
-      await this.notifyRequester(companyId, actor, row);
+      await this.notifyRequester(companyId, actor, fresh ?? row);
     } else {
-      await this.notifyManagement(companyId, actor, row, true);
+      await this.notifyManagement(companyId, actor, fresh ?? row, true);
     }
 
     return {
-      ...mapRequest(row),
+      ...mapRequest(fresh ?? row),
       reply: mapReply(replyRow),
     };
   }
@@ -267,12 +344,15 @@ export class CrmClientRequestsService {
     body: unknown
   ) {
     const fromManagement = canManageRequests(actor);
-    const proposal = sanitizeTechnicalProposal(body);
     const current = await this.prisma.crmClientRequest.findFirst({
       where: { id: requestId, companyId, deletedAt: null },
       include: requestInclude,
     });
     if (!current) throw new NotFoundException("Request not found");
+    const proposal = proposalForStore(
+      sanitizeTechnicalProposal(body),
+      readTechnicalProposal(current.metadata)?.reference
+    );
     if (!fromManagement) {
       if (
         current.kind !== CrmClientRequestKind.technical_proposal &&
@@ -298,10 +378,15 @@ export class CrmClientRequestsService {
       },
       include: requestInclude,
     });
+    await syncClientDocumentReferences(this.prisma, companyId, [current.leadId]);
+    const fresh = await this.prisma.crmClientRequest.findFirst({
+      where: { id: requestId, companyId, deletedAt: null },
+      include: requestInclude,
+    });
     if (fromManagement) {
-      await this.notifyRequester(companyId, actor, row, true);
+      await this.notifyRequester(companyId, actor, fresh ?? row, true);
     }
-    return mapRequest(row);
+    return mapRequest(fresh ?? row);
   }
 
   private async hasUnreadNotice(

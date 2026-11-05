@@ -83,6 +83,48 @@ export class CrmActivitiesService {
     return mapLeadActivity(row);
   }
 
+  async logQuotationExport(
+    companyId: string,
+    actor: Actor,
+    leadId: string,
+    body: Record<string, unknown>
+  ) {
+    const lead = await this.shared.requireLead(companyId, actor, leadId);
+    await this.shared.assertCanEditLead(companyId, actor, lead);
+    const reference = String(body.reference ?? "").trim().slice(0, 40);
+    const actorName = await this.shared.actorName(actor);
+    const title = "تصدير كوتشين PDF";
+    const description = reference ? `رقم الملف ${reference}` : "تم تصدير الكوتشين PDF";
+
+    await this.shared.writeLeadActivity(companyId, {
+      leadId,
+      type: CrmActivityType.other,
+      title,
+      description,
+      actorEmployeeId: actor.employeeId,
+      actorId: actor.userId,
+    });
+    await this.shared.writeHistory(companyId, {
+      leadId,
+      action: "activity_added",
+      actorId: actor.userId,
+      actorName,
+      note: title,
+      newValue: reference || "quotation_pdf",
+    });
+    await writeActivity(this.prisma, {
+      companyId,
+      type: "crm_quotation_exported",
+      title,
+      description: reference
+        ? `${actorName} · ${lead.name} · ${reference}`
+        : `${actorName} · ${lead.name}`,
+      employeeId: actor.employeeId || lead.ownerEmployeeId || undefined,
+      actorId: actor.userId,
+    });
+    return { ok: true };
+  }
+
   async getTimeline(companyId: string, actor: Actor, leadId: string) {
     await this.shared.requireLead(companyId, actor, leadId, {
       includeDeleted: true,

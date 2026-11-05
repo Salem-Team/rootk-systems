@@ -6,6 +6,7 @@ import {
   buildWhatsappOpenUrl,
   resolveWhatsappPlatform,
   whatsappDigits,
+  whatsappUsername,
 } from "../src/lib/crm/open-whatsapp";
 
 const CUSTOMER = "+201012345678";
@@ -110,6 +111,32 @@ assert(
   !personalAndroid.includes("wa.me/"),
   "android personal fallback must not use wa.me"
 );
+
+const USER = "@Salem.Rootk";
+assert(whatsappUsername(USER) === "salem.rootk", "username is normalized");
+assert(whatsappDigits(USER) === null, "username is not a phone");
+
+const userDesktop = buildWhatsappOpenUrl(USER, "whatsapp", { platform: "web" });
+assert(
+  userDesktop === "https://wa.me/salem.rootk",
+  `desktop username: ${userDesktop}`
+);
+const userAndroid = buildWhatsappOpenUrl(USER, "whatsapp", {
+  platform: "android",
+});
+assert(
+  Boolean(userAndroid?.startsWith("intent://wa.me/salem.rootk#Intent;scheme=https;package=com.whatsapp;")),
+  `android username must pin personal WhatsApp: ${userAndroid}`
+);
+const userBusiness = buildWhatsappOpenUrl(USER, "business", {
+  platform: "android",
+});
+assert(
+  Boolean(userBusiness?.includes("package=com.whatsapp.w4b;")),
+  `android username business package: ${userBusiness}`
+);
+const userIos = buildWhatsappOpenUrl(USER, "whatsapp", { platform: "ios" });
+assert(userIos === "https://wa.me/salem.rootk", `ios username: ${userIos}`);
 
 console.log("verify-whatsapp-open: OK");
 console.log("  android personal →", personalAndroid.slice(0, 72) + "…");

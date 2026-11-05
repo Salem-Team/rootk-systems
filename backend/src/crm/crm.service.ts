@@ -180,6 +180,15 @@ export class CrmService {
     return this.activities.addActivity(companyId, actor, leadId, body);
   }
 
+  logQuotationExport(
+    companyId: string,
+    actor: Actor,
+    leadId: string,
+    body: Record<string, unknown>
+  ) {
+    return this.activities.logQuotationExport(companyId, actor, leadId, body);
+  }
+
   getTimeline(companyId: string, actor: Actor, leadId: string) {
     return this.activities.getTimeline(companyId, actor, leadId);
   }

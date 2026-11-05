@@ -1,4 +1,5 @@
-import type { TechnicalProposalDocument } from "@/types/crm";
+import { quotationHtml } from "@/lib/crm/quotation-print";
+import type { CrmClientRequestKind, TechnicalProposalDocument } from "@/types/crm";
 
 const NAVY = "#082868";
 const BLUE = "#1A4A9E";
@@ -112,7 +113,7 @@ export function technicalProposalHtml(
       right: 0;
       z-index: 2;
     }
-    .sheet-head { top: 0; height: 34mm; }
+    .sheet-head { top: 0; height: 38mm; }
     .sheet-foot {
       bottom: 0;
       height: 28mm;
@@ -180,6 +181,14 @@ export function technicalProposalHtml(
     .head-space { height: 42mm; }
     .foot-space { height: 32mm; }
     .content { padding: 0 16mm; }
+    .doc-ref {
+      margin: 0 0 3.2mm;
+      text-align: center;
+      color: ${NAVY};
+      font-size: 11pt;
+      font-weight: 700;
+    }
+    .doc-ref b { letter-spacing: 0.06em; }
     h1 {
       margin: 0;
       text-align: center;
@@ -300,6 +309,23 @@ export function technicalProposalHtml(
       body { background: #fff; }
       .paper { margin: 0; width: auto; min-height: 0; box-shadow: none; }
     }
+    body.capture .toolbar { display: none !important; }
+    body.capture .paper {
+      margin: 0;
+      min-height: 0;
+      box-shadow: none;
+      width: 210mm;
+    }
+    body.capture .sheet-head,
+    body.capture .sheet-foot {
+      position: relative;
+      top: auto;
+      right: auto;
+      bottom: auto;
+      left: auto;
+      transform: none;
+      width: 210mm;
+    }
   </style>
 </head>
 <body>
@@ -328,6 +354,11 @@ export function technicalProposalHtml(
       <tfoot><tr><td><div class="foot-space"></div></td></tr></tfoot>
       <tbody><tr><td>
         <div class="content">
+          ${
+            doc.reference?.trim()
+              ? `<p class="doc-ref">رقم الملف <b dir="ltr">${escapeHtml(doc.reference.trim())}</b></p>`
+              : ""
+          }
           <h1>${title}</h1>
           <div class="rule"></div>
           ${doc.subtitle.trim() ? `<p class="subtitle">${escapeHtml(doc.subtitle.trim())}</p>` : ""}
@@ -368,9 +399,13 @@ export function technicalProposalHtml(
 function proposalMarkup(
   doc: TechnicalProposalDocument,
   leadName: string,
-  autoPrint: boolean
+  autoPrint: boolean,
+  kind?: CrmClientRequestKind
 ): string {
   const logoUrl = `${window.location.origin}/rootk-logo.png`;
+  if (kind === "price_exception") {
+    return quotationHtml(doc, leadName, logoUrl, autoPrint);
+  }
   return technicalProposalHtml(doc, leadName, logoUrl, autoPrint);
 }
 
@@ -412,4 +447,291 @@ export function openTechnicalProposalPrint(
     return true;
   }
   return printInFrame(proposalMarkup(doc, leadName, false));
+}
+
+const PAGE_W = 210;
+const PAGE_H = 297;
+const BAND_MM = 11;
+const HEADER_GAP_MM = 4;
+const FOOTER_GAP_MM = 4;
+
+function pdfFileName(doc: TechnicalProposalDocument, leadName: string): string {
+  const clean = (value: string) =>
+    value
+      .trim()
+      .replace(/[\\/:*?"<>|]+/g, "")
+      .replace(/\s+/g, "-");
+  const title = clean(doc.title) || "الملحق-الفني";
+  const reference = clean(doc.reference ?? "");
+  const client = clean(leadName);
+  return [title, reference, client].filter(Boolean).join("-") + ".pdf";
+}
+
+function waitForAssets(doc: Document): Promise<void> {
+  const fonts = doc.fonts?.ready ?? Promise.resolve();
+  const images = [...doc.images].map(
+    (img) =>
+      img.complete
+        ? Promise.resolve()
+        : new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          })
+  );
+  return Promise.race([
+    Promise.all([fonts, ...images]).then(() => undefined),
+    new Promise<void>((resolve) => window.setTimeout(resolve, 4000)),
+  ]);
+}
+
+function mountProposal(html: string): Promise<{ doc: Document; cleanup: () => void }> {
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.cssText =
+    "position:fixed;left:0;top:0;width:210mm;height:2000mm;border:0;opacity:0;pointer-events:none;z-index:-1;";
+  const ready = new Promise<void>((resolve, reject) => {
+    iframe.addEventListener("load", () => resolve(), { once: true });
+    iframe.addEventListener("error", () => reject(new Error("pdf-frame")), { once: true });
+  });
+  iframe.srcdoc = html;
+  document.body.appendChild(iframe);
+  return ready.then(() => {
+    const doc = iframe.contentDocument;
+    if (!doc?.querySelector(".content")) {
+      iframe.remove();
+      return Promise.reject(new Error("pdf-frame"));
+    }
+    return waitForAssets(doc).then(
+      () =>
+        new Promise((resolve) => {
+          window.requestAnimationFrame(() => {
+            resolve({ doc, cleanup: () => iframe.remove() });
+          });
+        })
+    );
+  });
+}
+
+function paintMode(frame: Document, mode: "head" | "foot" | "content") {
+  frame.body.classList.add("capture");
+  const head = frame.querySelector(".sheet-head");
+  const foot = frame.querySelector(".sheet-foot");
+  const table = frame.querySelector(".frame");
+  if (head instanceof frame.defaultView!.HTMLElement) {
+    head.style.display = mode === "head" ? "block" : "none";
+  }
+  if (foot instanceof frame.defaultView!.HTMLElement) {
+    foot.style.display = mode === "foot" ? "block" : "none";
+  }
+  if (table instanceof frame.defaultView!.HTMLElement) {
+    table.style.display = mode === "content" ? "table" : "none";
+  }
+  frame.querySelectorAll(".head-space, .foot-space").forEach((node) => {
+    if (node instanceof frame.defaultView!.HTMLElement) node.style.display = "none";
+  });
+  frame.defaultView?.scrollTo(0, 0);
+}
+
+function looksBlank(canvas: HTMLCanvasElement): boolean {
+  const ctx = canvas.getContext("2d");
+  if (!ctx || canvas.width < 2 || canvas.height < 2) return true;
+  const sample = ctx.getImageData(
+    0,
+    0,
+    canvas.width,
+    Math.min(canvas.height, 90)
+  ).data;
+  let ink = 0;
+  for (let i = 0; i < sample.length; i += 16) {
+    if (sample[i] < 248 || sample[i + 1] < 248 || sample[i + 2] < 248) ink += 1;
+  }
+  return ink < 8;
+}
+
+type CanvasShot = (
+  element: Element,
+  foreignObject: boolean
+) => Promise<HTMLCanvasElement>;
+
+async function capturePiece(
+  shot: CanvasShot,
+  element: Element
+): Promise<HTMLCanvasElement> {
+  try {
+    const foreign = await shot(element, true);
+    if (!looksBlank(foreign)) return foreign;
+  } catch {
+    // The foreign-object path fails when a stylesheet is cross-origin.
+  }
+  return shot(element, false);
+}
+
+function snapCut(canvas: HTMLCanvasElement, fromY: number, idealEnd: number): number {
+  const end = Math.min(canvas.height, Math.round(idealEnd));
+  if (end >= canvas.height - 1) return canvas.height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return end;
+  const lookback = Math.min(48, end - fromY);
+  if (lookback <= 0) return end;
+  const start = end - lookback;
+  const image = ctx.getImageData(0, start, canvas.width, lookback);
+  const step = 10;
+  for (let row = lookback - 1; row >= 0; row -= 1) {
+    let white = 0;
+    let samples = 0;
+    for (let x = 0; x < canvas.width; x += step) {
+      const i = (row * canvas.width + x) * 4;
+      const alpha = image.data[i + 3];
+      if (
+        alpha < 12 ||
+        (image.data[i] > 248 && image.data[i + 1] > 248 && image.data[i + 2] > 248)
+      ) {
+        white += 1;
+      }
+      samples += 1;
+    }
+    if (samples > 0 && white / samples > 0.985) return start + row;
+  }
+  return end;
+}
+
+function keepBlocksTogether(
+  blocks: Array<{ top: number; bottom: number }>,
+  scale: number,
+  fromY: number,
+  cut: number,
+  windowPx: number
+): number {
+  for (const block of blocks) {
+    const top = block.top * scale;
+    const bottom = block.bottom * scale;
+    const inside = cut > top + 1 && cut < bottom - 1;
+    const fits = bottom - top <= windowPx;
+    if (inside && fits && top > fromY + 8) return Math.round(top);
+  }
+  return cut;
+}
+
+function hasInk(canvas: HTMLCanvasElement): boolean {
+  const ctx = canvas.getContext("2d");
+  if (!ctx || canvas.width < 2 || canvas.height < 2) return false;
+  const step = 16;
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  let ink = 0;
+  for (let i = 0; i < data.length; i += 4 * step) {
+    if (data[i] < 246 || data[i + 1] < 246 || data[i + 2] < 246) {
+      ink += 1;
+      if (ink > 24) return true;
+    }
+  }
+  return false;
+}
+
+function sliceCanvas(
+  source: HTMLCanvasElement,
+  y: number,
+  height: number
+): HTMLCanvasElement {
+  const slice = document.createElement("canvas");
+  slice.width = source.width;
+  slice.height = Math.max(1, Math.round(height));
+  const ctx = slice.getContext("2d");
+  if (!ctx) return slice;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, slice.width, slice.height);
+  ctx.drawImage(source, 0, y, source.width, height, 0, 0, source.width, height);
+  return slice;
+}
+
+export async function downloadTechnicalProposalPdf(
+  doc: TechnicalProposalDocument,
+  leadName: string,
+  kind?: CrmClientRequestKind
+): Promise<void> {
+  const html2canvas = (await import("html2canvas")).default;
+  const { jsPDF } = await import("jspdf");
+  const { doc: frame, cleanup } = await mountProposal(
+    proposalMarkup(doc, leadName, false, kind)
+  );
+  try {
+    frame.querySelectorAll(".toolbar").forEach((node) => {
+      if (node instanceof frame.defaultView!.HTMLElement) node.style.display = "none";
+    });
+    frame.querySelectorAll('link[rel="stylesheet"]').forEach((node) => node.remove());
+    const head = frame.querySelector(".sheet-head");
+    const foot = frame.querySelector(".sheet-foot");
+    const content = frame.querySelector(".content");
+    if (!head || !foot || !content) throw new Error("pdf-layout");
+    const shot: CanvasShot = (element, foreignObject) =>
+      html2canvas(element as HTMLElement, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        foreignObjectRendering: foreignObject,
+        logging: false,
+      });
+    paintMode(frame, "head");
+    const headCanvas = await capturePiece(shot, head);
+    paintMode(frame, "foot");
+    const footCanvas = await capturePiece(shot, foot);
+    paintMode(frame, "content");
+    const contentCanvas = await capturePiece(shot, content);
+    if (looksBlank(contentCanvas) && content.textContent?.trim()) {
+      throw new Error("pdf-blank");
+    }
+    const pxPerMm = headCanvas.width / PAGE_W;
+    const headerMm = headCanvas.height / pxPerMm;
+    const footerMm = footCanvas.height / pxPerMm;
+    const windowMm = PAGE_H - BAND_MM - footerMm - FOOTER_GAP_MM - headerMm - HEADER_GAP_MM;
+    const windowPx = Math.max(40, windowMm * pxPerMm);
+    const contentTop = content.getBoundingClientRect().top;
+    const blocks = [...content.querySelectorAll(".block")].map((node) => {
+      const box = node.getBoundingClientRect();
+      return { top: box.top - contentTop, bottom: box.bottom - contentTop };
+    });
+    const contentHeight = content instanceof HTMLElement ? content.offsetHeight : content.getBoundingClientRect().height;
+    const blockScale = contentHeight > 0 ? contentCanvas.height / contentHeight : 2;
+    const pdf = new jsPDF({ unit: "mm", format: "a4", compress: true });
+    let y = 0;
+    let page = 0;
+    while (y < contentCanvas.height - 1 && page < 40) {
+      const ideal = Math.min(contentCanvas.height, y + windowPx);
+      let cut = snapCut(contentCanvas, y, ideal);
+      cut = keepBlocksTogether(blocks, blockScale, y, cut, windowPx);
+      if (cut <= y + 8) cut = ideal;
+      const slice = sliceCanvas(contentCanvas, y, cut - y);
+      y = cut;
+      if (!hasInk(slice)) continue;
+      if (page > 0) pdf.addPage();
+      page += 1;
+      const sliceMm = slice.height / pxPerMm;
+      pdf.addImage(headCanvas.toDataURL("image/png"), "PNG", 0, 0, PAGE_W, headerMm);
+      pdf.addImage(
+        slice.toDataURL("image/png"),
+        "PNG",
+        0,
+        headerMm + HEADER_GAP_MM,
+        PAGE_W,
+        sliceMm
+      );
+      pdf.addImage(
+        footCanvas.toDataURL("image/png"),
+        "PNG",
+        0,
+        PAGE_H - BAND_MM - footerMm,
+        PAGE_W,
+        footerMm
+      );
+      pdf.setFillColor(8, 40, 104);
+      pdf.rect(0, PAGE_H - BAND_MM, PAGE_W, BAND_MM, "F");
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(11);
+      pdf.text(String(page), PAGE_W / 2, PAGE_H - 4.1, { align: "center" });
+    }
+    if (page === 0) throw new Error("pdf-blank");
+    pdf.save(pdfFileName(doc, leadName));
+  } finally {
+    cleanup();
+  }
 }

@@ -7,6 +7,8 @@ export type CrmLeadContact = {
   kind: CrmContactKind;
   phone: string;
   phoneNormalized: string | null;
+  /** Name of an extra number. */
+  label?: string | null;
 };
 
 export type CrmLeadStatus = "active" | "inactive" | "archived";
@@ -244,6 +246,8 @@ export interface TechnicalProposalDocument {
   sections: TechnicalProposalSection[];
   noteTitle: string;
   note: string;
+  /** Shared sequential file number for this client's annex and contract, e.g. RK-0007. */
+  reference?: string;
 }
 
 export interface CrmClientRequestReply extends BaseEntity {

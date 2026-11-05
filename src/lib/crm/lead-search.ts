@@ -153,6 +153,7 @@ export function leadMatchesSearch(
     ...(lead.tags ?? []),
     extraText,
     ...(lead.contacts ?? []).flatMap((row) => [
+      row.label ?? "",
       row.phone,
       row.phoneNormalized ?? "",
     ]),

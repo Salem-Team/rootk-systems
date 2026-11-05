@@ -38,7 +38,9 @@ interface CrmLeadFormFieldsProps {
   contacts: LeadFormContactDraft[];
   onPatchContact: (
     id: string,
-    patch: Partial<Pick<LeadFormContactDraft, "kind" | "value" | "country">>
+    patch: Partial<
+      Pick<LeadFormContactDraft, "kind" | "value" | "country" | "label">
+    >
   ) => void;
   onAddContact: () => void;
   onRemoveContact: (id: string) => void;
@@ -154,7 +156,30 @@ export function CrmLeadFormFields({
         <Label>{t("crm.leadForm.contact")}</Label>
         <div className="grid gap-2">
           {contacts.map((row, index) => (
-            <div key={row.id} className="grid gap-1">
+            <div
+              key={row.id}
+              className={
+                index > 0
+                  ? "grid gap-1.5 rounded-xl border border-border/70 bg-muted/20 p-2"
+                  : "grid gap-1"
+              }
+            >
+              {index > 0 ? (
+                <div className="grid gap-1">
+                  <Label className="text-[12px] text-muted-foreground">
+                    {t("crm.leadForm.contactLabel")}
+                  </Label>
+                  <Input
+                    value={row.label ?? ""}
+                    onChange={(e) =>
+                      onPatchContact(row.id, { label: e.target.value })
+                    }
+                    placeholder={t("crm.leadForm.contactLabelPlaceholder")}
+                    aria-label={t("crm.leadForm.contactLabel")}
+                    className="h-11 w-full min-w-0 text-base sm:h-9 sm:text-sm"
+                  />
+                </div>
+              ) : null}
               <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-stretch">
                 <Select
                   value={row.kind}
@@ -194,7 +219,11 @@ export function CrmLeadFormFields({
                       onChange={(e) =>
                         onPatchContact(row.id, { value: e.target.value })
                       }
-                      placeholder={t("crm.leadForm.handlePlaceholder")}
+                      placeholder={
+                        row.kind === "whatsapp"
+                          ? t("crm.leadForm.whatsappUsernamePlaceholder")
+                          : t("crm.leadForm.handlePlaceholder")
+                      }
                       autoComplete="username"
                     />
                   )}
@@ -227,9 +256,11 @@ export function CrmLeadFormFields({
             {t("crm.leadForm.addContact")}
           </Button>
         ) : null}
-        <p className="text-[12px] text-muted-foreground">
-          {t("crm.leadForm.phoneHint")}
-        </p>
+        {contacts.some((row) => row.kind === "phone") ? (
+          <p className="text-[12px] text-muted-foreground">
+            {t("crm.leadForm.phoneHint")}
+          </p>
+        ) : null}
         <p className="text-[12px] text-muted-foreground">
           {t("crm.leadForm.contactsHint")}
         </p>

@@ -181,6 +181,9 @@ export function CrmRequestBudgetFields({
                 publishRequest(next, industries, notes);
               }}
             >
+              {id === "ai" ? (
+                <Sparkles className="me-1 h-3 w-3 opacity-90" aria-hidden />
+              ) : null}
               {t(`crm.requestBudget.products.${id}`)}
             </Chip>
           ))}

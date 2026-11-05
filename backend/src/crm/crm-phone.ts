@@ -7,6 +7,7 @@ import {
   type CrmContactKind,
 } from "../lib/contact-identity";
 import {
+  cleanContactLabel,
   MAX_LEAD_CONTACTS,
   type LeadContactRecord,
 } from "../lib/lead-contacts";
@@ -236,7 +237,8 @@ export function resolveIncomingContactList(
         }
         seen.add(next.phoneNormalized);
       }
-      resolved.push(next);
+      const label = index === 0 ? null : cleanContactLabel(row.label);
+      resolved.push(label ? { ...next, label } : next);
     }
     if (resolved.length === 0) {
       throw new BadRequestException("phone is required");

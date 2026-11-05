@@ -14,7 +14,8 @@ import {
 } from "@/components/dashboard/dashboard-mock-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getEmployeeActivityReport } from "@/services/daily-report.service";
-import { getDashboardSummary } from "@/services/dashboard.service";
+import { getActivities, getDashboardSummary } from "@/services/dashboard.service";
+import { CRM_UPDATED_EVENT } from "@/lib/events";
 import { getWorkforceEmployees } from "@/services/employees.service";
 import { getTodayAttendance } from "@/services/attendance.service";
 import { getLeaveRequests } from "@/services/leave.service";
@@ -139,6 +140,16 @@ export function AdminDashboard() {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    const onUpdate = () => {
+      void getActivities().then((res) => {
+        if (res.success) setActivities(res.data ?? []);
+      });
+    };
+    window.addEventListener(CRM_UPDATED_EVENT, onUpdate);
+    return () => window.removeEventListener(CRM_UPDATED_EVENT, onUpdate);
   }, []);
 
   const deptStats = useMemo(

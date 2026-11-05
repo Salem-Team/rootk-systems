@@ -6,12 +6,18 @@ import {
   detectContactKind,
   resolveCrmContact,
 } from "@/lib/crm/contact-identity";
-import { canonicalContactKeys } from "@/lib/crm/lead-contacts";
+import { canonicalContactKeys, cleanContactLabel } from "@/lib/crm/lead-contacts";
 import { canonicalPhoneOrNull } from "@/lib/phone-normalize";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { createId } from "@/lib/id";
 import { canCrm, mustOwnCreatedCrmLead } from "@/lib/crm-policies";
+import {
+  describeRequestBudgetChange,
+  requestBudgetChange,
+} from "@/lib/crm/request-budget-change";
 import { emitCrmUpdated } from "@/lib/events";
+import { resolveAccountFullName } from "@/lib/user-display-name";
+import { activityRepository } from "@/repositories/activity.repository";
 import {
   crmLeadActivityRepository,
   crmLeadRepository,
@@ -28,6 +34,7 @@ import {
   authPermissionSet,
   getSessionRole,
   getSessionUserId,
+  useSessionStore,
 } from "@/stores/session-store";
 import type { ApiResponse } from "@/types";
 import type { CrmLead } from "@/types/crm";
@@ -53,12 +60,16 @@ function leadCanonicalKeys(lead: CrmLead): string[] {
 }
 
 function resolvePayloadContacts(
-  parsed: { phone: string; contactKind?: unknown; contacts?: Array<{ phone: string; kind?: unknown }> },
+  parsed: {
+    phone: string;
+    contactKind?: unknown;
+    contacts?: Array<{ phone: string; kind?: unknown; label?: unknown }>;
+  },
   previous?: CrmLead
 ) {
   if (parsed.contacts && parsed.contacts.length > 0) {
-    const rows = parsed.contacts.map((row, index) =>
-      resolveLeadContact(
+    const rows = parsed.contacts.map((row, index) => {
+      const resolved = resolveLeadContact(
         row.phone,
         row.kind,
         index === 0
@@ -66,8 +77,10 @@ function resolvePayloadContacts(
             ? { phone: previous.phone, phoneNormalized: previous.phoneNormalized }
             : undefined
           : undefined
-      )
-    );
+      );
+      const label = index === 0 ? null : cleanContactLabel(row.label);
+      return label ? { ...resolved, label } : resolved;
+    });
     const keys = canonicalContactKeys(rows);
     if (keys.length !== new Set(keys).size) {
       throw new ValidationError("Duplicate contact on the same lead", {
@@ -448,6 +461,56 @@ export async function updateCrmLead(
       clearLocalCrmFollowUpReminders(id);
     }
     await crmLeadRepository.update(updated.id, updated);
+    const budgetChange = requestBudgetChange({
+      previousRequest: existing.request ?? "",
+      previousBudget: existing.budget ?? "",
+      nextRequest: parsed.request,
+      nextBudget: parsed.budget,
+      requestTouched: parsed.request !== undefined,
+      budgetTouched: parsed.budget !== undefined,
+    });
+    if (budgetChange) {
+      const detail = describeRequestBudgetChange(budgetChange);
+      const actorName =
+        resolveAccountFullName(useSessionStore.getState().user) || "";
+      const occurredAt = new Date().toISOString();
+      await writeHistory({
+        leadId: id,
+        action: "lead_updated",
+        actorId,
+        actorName,
+        note: detail.title,
+        previousValue: detail.previousValue,
+        newValue: detail.newValue,
+      });
+      await crmLeadActivityRepository.create(
+        enrichWithAudit(
+          {
+            id: createId("crm-act"),
+            leadId: id,
+            type: "other" as const,
+            title: detail.title,
+            description: detail.description,
+            actorEmployeeId: empId,
+            occurredAt,
+          },
+          actorId
+        )
+      );
+      await activityRepository.create(
+        enrichWithAudit(
+          {
+            id: createId("act"),
+            type: "crm_lead_updated",
+            title: `CRM ${detail.title.charAt(0).toLowerCase()}${detail.title.slice(1)}`,
+            description: `${updated.name}\n${detail.description}`,
+            employeeId: updated.ownerEmployeeId ?? undefined,
+            timestamp: occurredAt,
+          },
+          actorId
+        )
+      );
+    }
     if (
       parsed.ownerEmployeeId !== undefined &&
       parsed.ownerEmployeeId &&

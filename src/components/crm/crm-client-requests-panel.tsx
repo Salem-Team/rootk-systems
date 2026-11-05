@@ -29,6 +29,7 @@ import {
   replyCrmClientRequest,
   saveCrmTechnicalProposal,
 } from "@/services/crm/crm-client-requests.service";
+import { logCrmQuotationExport } from "@/services/crm.service";
 import { useSessionStore } from "@/stores/session-store";
 import type { Employee } from "@/types";
 import type {
@@ -189,8 +190,28 @@ export function CrmClientRequestsPanel({
     return true;
   }
 
+  function recordQuotationExport(targetLeadId: string | undefined, reference?: string) {
+    const id = (targetLeadId || leadId || "").trim();
+    if (!id) return;
+    void logCrmQuotationExport(id, { reference }).then((res) => {
+      if (!res.success) toast.error(res.message || t("common.error"));
+    });
+  }
+
+  function clientReference(): string {
+    for (const item of items) {
+      if (!isSalesLetter(item.kind)) continue;
+      const reference = item.proposal?.reference?.trim();
+      if (reference) return reference;
+    }
+    return "";
+  }
+
   function composeDocument(): TechnicalProposalDocument {
-    return composeByKind[kind] ?? letterDraft(kind, leadName);
+    const draft = composeByKind[kind] ?? letterDraft(kind, leadName);
+    const reference = draft.reference?.trim() || clientReference();
+    if (!reference || draft.reference === reference) return draft;
+    return { ...draft, reference };
   }
 
   async function submitRequest() {
@@ -371,17 +392,14 @@ export function CrmClientRequestsPanel({
 
       {variant === "lead" && !readOnly ? (
         <section className="rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
-          <h3 className="text-[13px] font-semibold">
-            {kind === "contract"
-              ? t("crm.clientRequests.proposal.composeTitleContract")
-              : kind === "technical_proposal"
-                ? t("crm.clientRequests.proposal.composeTitle")
-                : t("crm.clientRequests.newTitle")}
-          </h3>
-          {isSalesLetter(kind) ? null : (
-            <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground">
-              {t("crm.clientRequests.newHint")}
-            </p>
+          {kind === "price_exception" ? null : (
+            <>
+              <h3 className="text-[13px] font-semibold">
+                {kind === "contract"
+                  ? t("crm.clientRequests.proposal.composeTitleContract")
+                  : t("crm.clientRequests.proposal.composeTitle")}
+              </h3>
+            </>
           )}
           <div className="mt-3 grid grid-cols-3 gap-1.5">
             {KINDS.map((item) => {
@@ -408,25 +426,42 @@ export function CrmClientRequestsPanel({
             })}
           </div>
           {kind === "price_exception" ? (
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <label className="grid gap-1 text-[12px] font-medium">
-                {t("crm.clientRequests.listedPrice")}
-                <Input
-                  value={listedPrice}
-                  onChange={(event) => setListedPrice(event.target.value)}
-                  placeholder={t("crm.clientRequests.pricePlaceholder")}
-                  className="h-11"
-                />
-              </label>
-              <label className="grid gap-1 text-[12px] font-medium">
-                {t("crm.clientRequests.requestedPrice")}
-                <Input
-                  value={requestedPrice}
-                  onChange={(event) => setRequestedPrice(event.target.value)}
-                  placeholder={t("crm.clientRequests.pricePlaceholder")}
-                  className="h-11"
-                />
-              </label>
+            <div className="mt-3 overflow-hidden rounded-2xl border border-primary/15">
+              <div className="flex items-center justify-between gap-3 bg-primary px-3 py-3 text-primary-foreground">
+                <div>
+                  <p className="text-[10px] font-semibold tracking-[0.16em]" dir="ltr">
+                    QUOTATION
+                  </p>
+                  <p className="text-[15px] font-bold leading-tight">كوتشين</p>
+                </div>
+                <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold">
+                  استثناء سعر
+                </span>
+              </div>
+              <div className="h-1.5 bg-gradient-to-l from-[#C8962E] to-primary" />
+              <div className="grid gap-2 bg-[#f8f4ea] p-3 sm:grid-cols-2">
+                <label className="grid gap-1 rounded-xl border border-primary/10 bg-white px-3 py-2 text-[12px] font-medium">
+                  {t("crm.clientRequests.listedPrice")}
+                  <Input
+                    value={listedPrice}
+                    onChange={(event) => setListedPrice(event.target.value)}
+                    placeholder={t("crm.clientRequests.pricePlaceholder")}
+                    className="h-11 border-0 bg-transparent px-0 text-[16px] font-semibold shadow-none focus-visible:ring-0"
+                  />
+                </label>
+                <label className="grid gap-1 rounded-xl border border-[#C8962E]/50 bg-white px-3 py-2 text-[12px] font-medium">
+                  {t("crm.clientRequests.requestedPrice")}
+                  <Input
+                    value={requestedPrice}
+                    onChange={(event) => setRequestedPrice(event.target.value)}
+                    placeholder={t("crm.clientRequests.pricePlaceholder")}
+                    className="h-11 border-0 bg-transparent px-0 text-[16px] font-semibold shadow-none focus-visible:ring-0"
+                  />
+                </label>
+              </div>
+              <p className="px-3 py-2 text-[12px] leading-snug text-muted-foreground">
+                {t("crm.clientRequests.quotationHint")}
+              </p>
             </div>
           ) : null}
           {isSalesLetter(kind) ? (
@@ -447,6 +482,7 @@ export function CrmClientRequestsPanel({
                 onChange={(next) =>
                   setComposeByKind((prev) => ({ ...prev, [kind]: next }))
                 }
+                onExported={(doc) => recordQuotationExport(leadId, doc.reference)}
               />
             </div>
           ) : (
@@ -532,6 +568,14 @@ export function CrmClientRequestsPanel({
                       <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary">
                         {t(`crm.clientRequests.kinds.${item.kind}`)}
                       </span>
+                      {item.proposal?.reference ? (
+                        <span
+                          dir="ltr"
+                          className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary"
+                        >
+                          {item.proposal.reference}
+                        </span>
+                      ) : null}
                       <span
                         className={cn(
                           "rounded-md px-1.5 py-0.5 text-[11px] font-semibold",
@@ -569,13 +613,16 @@ export function CrmClientRequestsPanel({
                     <TechnicalProposalEditor
                       kind={item.kind}
                       leadName={item.leadName}
-                      doc={
-                        canEditAnnex
-                          ? (drafts[item.id] ??
-                            item.proposal ??
-                            buildManagementTemplate(item))
-                          : null
-                      }
+                      doc={(() => {
+                        if (!canEditAnnex) return null;
+                        const draft =
+                          drafts[item.id] ??
+                          item.proposal ??
+                          buildManagementTemplate(item);
+                        const reference = item.proposal?.reference?.trim();
+                        if (!reference || draft.reference) return draft;
+                        return { ...draft, reference };
+                      })()}
                       saved={item.proposal ?? null}
                       canEdit={canEditAnnex}
                       hint={
@@ -594,23 +641,26 @@ export function CrmClientRequestsPanel({
                       onChange={(next) =>
                         setDrafts((prev) => ({ ...prev, [item.id]: next }))
                       }
+                      onExported={(doc) =>
+                        recordQuotationExport(item.leadId, doc.reference)
+                      }
                     />
                     {item.kind === "price_exception" &&
                     (item.listedPrice || item.requestedPrice) ? (
                       <dl className="grid grid-cols-2 gap-2">
-                        <div className="rounded-xl bg-muted/50 px-2.5 py-2">
+                        <div className="rounded-xl border border-primary/10 bg-white px-2.5 py-2">
                           <dt className="text-[11px] text-muted-foreground">
                             {t("crm.clientRequests.listedPrice")}
                           </dt>
-                          <dd className="mt-0.5 text-[13px] font-semibold">
+                          <dd className="mt-0.5 text-[14px] font-semibold text-primary">
                             {item.listedPrice || "—"}
                           </dd>
                         </div>
-                        <div className="rounded-xl bg-muted/50 px-2.5 py-2">
+                        <div className="rounded-xl border border-[#C8962E]/40 bg-[#fbf7ee] px-2.5 py-2">
                           <dt className="text-[11px] text-muted-foreground">
                             {t("crm.clientRequests.requestedPrice")}
                           </dt>
-                          <dd className="mt-0.5 text-[13px] font-semibold">
+                          <dd className="mt-0.5 text-[14px] font-semibold">
                             {item.requestedPrice || "—"}
                           </dd>
                         </div>

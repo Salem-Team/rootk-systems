@@ -18,6 +18,7 @@ import {
 import {
   MAX_LEAD_CONTACTS,
   allLeadContacts,
+  cleanContactLabel,
   type LeadFormContactDraft,
 } from "@/lib/crm/lead-contacts";
 import { getWorkEmployeeId, getSessionRole, authPermissionSet } from "@/stores/session-store";
@@ -65,6 +66,7 @@ function draftsFromLead(lead: CrmLead): LeadFormContactDraft[] {
       kind: row.kind,
       value: parts.value,
       country: parts.country,
+      label: row.label ?? "",
     };
   });
 }
@@ -218,7 +220,7 @@ export function useCrmLeadForm({
 
   function patchContact(
     id: string,
-    patch: Partial<Pick<LeadFormContactDraft, "kind" | "value">>
+    patch: Partial<Pick<LeadFormContactDraft, "kind" | "value" | "country" | "label">>
   ) {
     setContacts((prev) =>
       prev.map((row) => {
@@ -242,6 +244,7 @@ export function useCrmLeadForm({
           kind: "phone" as const,
           value: "",
           country: "EG",
+          label: "",
         },
       ];
     });
@@ -259,7 +262,11 @@ export function useCrmLeadForm({
       toast.error(t("crm.leadForm.validation"));
       return;
     }
-    const resolvedContacts: Array<{ kind: CrmContactKind; phone: string }> = [];
+    const resolvedContacts: Array<{
+      kind: CrmContactKind;
+      phone: string;
+      label?: string;
+    }> = [];
     const seen = new Set<string>();
     for (const [index, row] of filled.entries()) {
       const raw =
@@ -281,7 +288,12 @@ export function useCrmLeadForm({
           }
           seen.add(resolved.phoneNormalized);
         }
-        resolvedContacts.push({ kind: resolved.kind, phone: resolved.phone });
+        const label = index === 0 ? null : cleanContactLabel(row.label);
+        resolvedContacts.push({
+          kind: resolved.kind,
+          phone: resolved.phone,
+          ...(label ? { label } : {}),
+        });
       } catch (error) {
         if (error instanceof ContactIdentityError) {
           toast.error(
