@@ -127,7 +127,7 @@ export function quotationHtml(
       flex: none; width: 16mm; height: 16mm; border-radius: 50%; background: #fff;
       display: flex; align-items: center; justify-content: center;
     }
-    .logo-badge img { width: 11mm; height: 11mm; object-fit: contain; }
+    .logo-badge img { display: block; width: 11mm; height: 11mm; }
     .brand-copy { min-width: 0; }
     .kicker {
       margin: 0; font-size: 8pt; font-weight: 700; letter-spacing: 0.16em; opacity: 0.78;

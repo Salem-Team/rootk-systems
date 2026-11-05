@@ -21,6 +21,10 @@ function clip(value: unknown, max: number): string {
   return String(value ?? "").replace(/\r\n/g, "\n").trim().slice(0, max);
 }
 
+function plain(value: unknown): string {
+  return String(value ?? "").replace(/\r\n/g, "\n").trim();
+}
+
 export function readTechnicalProposal(
   metadata: unknown
 ): TechnicalProposalDocument | null {
@@ -82,11 +86,10 @@ export function sanitizeTechnicalProposal(
     if (!item || typeof item !== "object" || Array.isArray(item)) continue;
     const row = item as Record<string, unknown>;
     const sectionTitle = clip(row.title, 180);
-    const intro = clip(row.intro, 4000);
+    const intro = plain(row.intro);
     const bullets = (Array.isArray(row.bullets) ? row.bullets : [])
-      .map((bullet) => clip(bullet, 500))
-      .filter((bullet) => bullet.length > 0)
-      .slice(0, 40);
+      .map((bullet) => plain(bullet))
+      .filter((bullet) => bullet.length > 0);
     if (!sectionTitle && !intro && bullets.length === 0) continue;
     if (sectionTitle.length < 2) {
       throw new BadRequestException("Each section needs a title");
@@ -105,9 +108,9 @@ export function sanitizeTechnicalProposal(
   return {
     title,
     subtitle: clip(raw.subtitle, 240),
-    intro: clip(raw.intro, 4000),
+    intro: plain(raw.intro),
     sections,
     noteTitle: clip(raw.noteTitle, 80),
-    note: clip(raw.note, 4000),
+    note: plain(raw.note),
   };
 }

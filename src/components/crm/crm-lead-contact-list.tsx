@@ -52,13 +52,13 @@ export function CrmLeadContactList({
   const extra = compact ? Math.max(0, rows.length - visible.length) : 0;
 
   return (
-    <div className={cn("grid gap-0.5", className)}>
+    <div className={cn("grid min-w-0 max-w-full gap-0.5", className)}>
       {visible.map((row) => {
         const kind = detectContactKind(row.phone, row.phoneNormalized);
         return (
         <span
           key={`${row.kind}:${row.phoneNormalized || row.phone}:${row.label ?? ""}`}
-          className="inline-flex min-w-0 items-center gap-x-1.5"
+          className="flex min-w-0 max-w-full items-center gap-x-1.5"
         >
           {!compact && row.label ? (
             <span className="text-foreground/80">{row.label}</span>

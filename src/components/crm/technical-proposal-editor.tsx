@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Download, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/hooks/use-translation";
+import { cn } from "@/lib/utils";
 import {
   newProposalSection,
   templateDraftIssue,
@@ -16,6 +17,43 @@ import type {
   CrmClientRequestKind,
   TechnicalProposalDocument,
 } from "@/types/crm";
+
+function ProposalTextarea({
+  value,
+  onChange,
+  placeholder,
+  rows = 4,
+  className,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  rows?: number;
+  className?: string;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    element.style.height = "auto";
+    element.style.height = `${element.scrollHeight}px`;
+  }, [value]);
+
+  return (
+    <Textarea
+      ref={ref}
+      value={value}
+      placeholder={placeholder}
+      rows={rows}
+      onChange={(event) => onChange(event.target.value)}
+      className={cn(
+        "min-h-36 resize-none overflow-hidden text-[16px] leading-8",
+        className
+      )}
+    />
+  );
+}
 
 export function TechnicalProposalEditor({
   kind,
@@ -142,11 +180,10 @@ export function TechnicalProposalEditor({
       </label>
       <label className="grid gap-1 text-[12px] font-medium">
         {t("crm.clientRequests.proposal.intro")}
-        <Textarea
+        <ProposalTextarea
           value={doc.intro}
-          onChange={(event) => patch({ intro: event.target.value })}
+          onChange={(value) => patch({ intro: value })}
           placeholder={t("crm.clientRequests.proposal.introPlaceholder")}
-          className="min-h-20 text-[14px]"
         />
       </label>
 
@@ -194,34 +231,32 @@ export function TechnicalProposalEditor({
               placeholder={t("crm.clientRequests.proposal.sectionTitle")}
               className="h-11"
             />
-            <Textarea
+            <ProposalTextarea
               value={section.intro}
-              onChange={(event) =>
+              onChange={(value) =>
                 patch({
                   sections: doc.sections.map((row) =>
                     row.id === section.id
-                      ? { ...row, intro: event.target.value }
+                      ? { ...row, intro: value }
                       : row
                   ),
                 })
               }
               placeholder={t("crm.clientRequests.proposal.sectionIntro")}
-              className="min-h-16 text-[14px]"
+              className="min-h-48"
             />
             {section.bullets.map((bullet, bulletIndex) => (
-              <div key={`${section.id}-${bulletIndex}`} className="flex gap-1.5">
-                <Input
+              <div key={`${section.id}-${bulletIndex}`} className="flex items-start gap-1.5">
+                <ProposalTextarea
                   value={bullet}
-                  onChange={(event) =>
+                  onChange={(value) =>
                     patch({
                       sections: doc.sections.map((row) =>
                         row.id === section.id
                           ? {
                               ...row,
                               bullets: row.bullets.map((item, itemIndex) =>
-                                itemIndex === bulletIndex
-                                  ? event.target.value
-                                  : item
+                                itemIndex === bulletIndex ? value : item
                               ),
                             }
                           : row
@@ -229,7 +264,8 @@ export function TechnicalProposalEditor({
                     })
                   }
                   placeholder={t("crm.clientRequests.proposal.bullet")}
-                  className="h-11"
+                  rows={2}
+                  className="min-h-16 min-w-0 flex-1"
                 />
                 {section.bullets.length > 1 ? (
                   <button
@@ -297,10 +333,9 @@ export function TechnicalProposalEditor({
       </label>
       <label className="grid gap-1 text-[12px] font-medium">
         {t("crm.clientRequests.proposal.note")}
-        <Textarea
+        <ProposalTextarea
           value={doc.note}
-          onChange={(event) => patch({ note: event.target.value })}
-          className="min-h-20 text-[14px]"
+          onChange={(value) => patch({ note: value })}
         />
       </label>
 

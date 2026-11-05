@@ -134,7 +134,7 @@ export function technicalProposalHtml(
       justify-content: center;
       box-shadow: 0 1.2mm 3.5mm rgba(8, 40, 104, 0.16);
     }
-    .logo-badge img { width: 11.5mm; height: 11.5mm; object-fit: contain; }
+    .logo-badge img { display: block; width: 11.5mm; height: 11.5mm; }
     .company-name {
       position: absolute;
       top: 29.2mm;
@@ -396,13 +396,44 @@ export function technicalProposalHtml(
 </html>`;
 }
 
-function proposalMarkup(
+let logoDataUrl: Promise<string> | null = null;
+
+/** Inline the mark so PDF capture does not depend on a cross-origin image fetch. */
+function rootkLogoDataUrl(): Promise<string> {
+  if (!logoDataUrl) {
+    logoDataUrl = fetch("/rootk-logo.png")
+      .then((res) => {
+        if (!res.ok) throw new Error("logo");
+        return res.blob();
+      })
+      .then(
+        (blob) =>
+          new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ""));
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(blob);
+          })
+      )
+      .then((url) => {
+        if (!url.startsWith("data:image/")) throw new Error("logo");
+        return url;
+      })
+      .catch((error) => {
+        logoDataUrl = null;
+        throw error;
+      });
+  }
+  return logoDataUrl;
+}
+
+async function proposalMarkup(
   doc: TechnicalProposalDocument,
   leadName: string,
   autoPrint: boolean,
   kind?: CrmClientRequestKind
-): string {
-  const logoUrl = `${window.location.origin}/rootk-logo.png`;
+): Promise<string> {
+  const logoUrl = await rootkLogoDataUrl();
   if (kind === "price_exception") {
     return quotationHtml(doc, leadName, logoUrl, autoPrint);
   }
@@ -436,17 +467,18 @@ function printInFrame(html: string): boolean {
   return true;
 }
 
-export function openTechnicalProposalPrint(
+export async function openTechnicalProposalPrint(
   doc: TechnicalProposalDocument,
   leadName: string
-): boolean {
+): Promise<boolean> {
   const popup = window.open("", "_blank");
+  const html = await proposalMarkup(doc, leadName, true);
   if (popup) {
-    writePrintDocument(popup.document, proposalMarkup(doc, leadName, true));
+    writePrintDocument(popup.document, html);
     popup.focus();
     return true;
   }
-  return printInFrame(proposalMarkup(doc, leadName, false));
+  return printInFrame(await proposalMarkup(doc, leadName, false));
 }
 
 const PAGE_W = 210;
@@ -553,6 +585,32 @@ type CanvasShot = (
   foreignObject: boolean
 ) => Promise<HTMLCanvasElement>;
 
+/** html2canvas drops the badge image inside the print frame. Paint it on the header shot. */
+async function stampLogo(
+  canvas: HTMLCanvasElement,
+  head: Element
+): Promise<void> {
+  const img = head.querySelector(".logo-badge img");
+  if (!(img instanceof HTMLImageElement)) return;
+  if (typeof img.decode === "function") {
+    await img.decode().catch(() => undefined);
+  }
+  if (!img.naturalWidth) return;
+  const host = head.getBoundingClientRect();
+  const box = img.getBoundingClientRect();
+  if (host.width < 1 || box.width < 1) return;
+  const scale = canvas.width / host.width;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.drawImage(
+    img,
+    (box.left - host.left) * scale,
+    (box.top - host.top) * scale,
+    box.width * scale,
+    box.height * scale
+  );
+}
+
 async function capturePiece(
   shot: CanvasShot,
   element: Element
@@ -651,7 +709,7 @@ export async function downloadTechnicalProposalPdf(
   const html2canvas = (await import("html2canvas")).default;
   const { jsPDF } = await import("jspdf");
   const { doc: frame, cleanup } = await mountProposal(
-    proposalMarkup(doc, leadName, false, kind)
+    await proposalMarkup(doc, leadName, false, kind)
   );
   try {
     frame.querySelectorAll(".toolbar").forEach((node) => {
@@ -672,6 +730,7 @@ export async function downloadTechnicalProposalPdf(
       });
     paintMode(frame, "head");
     const headCanvas = await capturePiece(shot, head);
+    await stampLogo(headCanvas, head);
     paintMode(frame, "foot");
     const footCanvas = await capturePiece(shot, foot);
     paintMode(frame, "content");

@@ -95,7 +95,7 @@ export function CrmPhoneActions({
         <button
           type="button"
           className={cn(
-            "inline-flex items-center whitespace-nowrap text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "inline-flex min-w-0 max-w-full items-center text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             isPhone && "font-mono tabular-nums",
             className
           )}
@@ -104,7 +104,7 @@ export function CrmPhoneActions({
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <LtrNum>{label}</LtrNum>
+          <LtrNum className="min-w-0 truncate">{label}</LtrNum>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

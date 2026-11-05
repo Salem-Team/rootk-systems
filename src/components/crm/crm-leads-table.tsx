@@ -100,6 +100,22 @@ export function CrmLeadsTable({
     return formatBudgetCompact(raw ?? "");
   }
 
+  /** Fixed columns so request text cannot paint over the phone. */
+  const col = {
+    check: "w-9",
+    lead: "min-w-0",
+    phone: "w-[10.25rem] px-2 sm:px-2",
+    request: "min-w-0",
+    budget: "w-[4.5rem]",
+    source: "hidden w-[7.25rem] xl:table-cell",
+    sales: "hidden w-[8rem] 2xl:table-cell",
+    stage: "w-[7.5rem]",
+    activity: "hidden w-[7.25rem] 2xl:table-cell",
+    follow: "hidden w-[7.25rem] 2xl:table-cell",
+    status: "hidden w-[5.5rem] 2xl:table-cell",
+    actions: "w-[8.75rem] px-1.5 sm:px-1.5",
+  };
+
   function SelectAllCheckbox({ className }: { className?: string }) {
     return (
       <input
@@ -197,7 +213,7 @@ export function CrmLeadsTable({
                         <BidiText text={lead.name.trim() || lead.phone} />
                       </p>
                       <div
-                        className="mt-1"
+                        className="mt-1 min-w-0 max-w-full overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                         onPointerDown={(e) => e.stopPropagation()}
                       >
@@ -291,39 +307,25 @@ export function CrmLeadsTable({
       </ul>
 
       <div className="hidden md:block">
-      <DataTable>
+      <DataTable className="table-fixed min-w-0 md:min-w-0">
         <DataTableHeader>
           <DataTableHeaderRow>
-            <DataTableHead className="w-10">
+            <DataTableHead className={col.check}>
               <SelectAllCheckbox />
             </DataTableHead>
-            <DataTableHead>{t("crm.leads.colLead")}</DataTableHead>
-            <DataTableHead className="hidden whitespace-nowrap sm:table-cell">
+            <DataTableHead className={col.lead}>{t("crm.leads.colLead")}</DataTableHead>
+            <DataTableHead className={cn(col.phone, "whitespace-nowrap")}>
               {t("crm.leads.colPhone")}
             </DataTableHead>
-            <DataTableHead className="max-w-[11rem]">
-              {t("crm.leads.colRequest")}
-            </DataTableHead>
-            <DataTableHead className="w-[5.5rem]">
-              {t("crm.leads.colBudget")}
-            </DataTableHead>
-            <DataTableHead className="hidden md:table-cell">
-              {t("crm.leads.colSource")}
-            </DataTableHead>
-            <DataTableHead className="hidden xl:table-cell">
-              {t("crm.leads.colSales")}
-            </DataTableHead>
-            <DataTableHead>{t("crm.leads.colStage")}</DataTableHead>
-            <DataTableHead className="hidden 2xl:table-cell">
-              {t("crm.leads.colLastActivity")}
-            </DataTableHead>
-            <DataTableHead className="hidden xl:table-cell">
-              {t("crm.leads.colNextFollowUp")}
-            </DataTableHead>
-            <DataTableHead className="hidden lg:table-cell">
-              {t("crm.leads.colStatus")}
-            </DataTableHead>
-            <DataTableHead className="w-[7.5rem] text-end">
+            <DataTableHead className={col.request}>{t("crm.leads.colRequest")}</DataTableHead>
+            <DataTableHead className={col.budget}>{t("crm.leads.colBudget")}</DataTableHead>
+            <DataTableHead className={col.source}>{t("crm.leads.colSource")}</DataTableHead>
+            <DataTableHead className={col.sales}>{t("crm.leads.colSales")}</DataTableHead>
+            <DataTableHead className={col.stage}>{t("crm.leads.colStage")}</DataTableHead>
+            <DataTableHead className={col.activity}>{t("crm.leads.colLastActivity")}</DataTableHead>
+            <DataTableHead className={col.follow}>{t("crm.leads.colNextFollowUp")}</DataTableHead>
+            <DataTableHead className={col.status}>{t("crm.leads.colStatus")}</DataTableHead>
+            <DataTableHead className={cn(col.actions, "text-end")}>
               {t("crm.leads.colActions")}
             </DataTableHead>
           </DataTableHeaderRow>
@@ -341,6 +343,7 @@ export function CrmLeadsTable({
                 onClick={() => onRowClick(lead)}
               >
                 <DataTableCell
+                  className={col.check}
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
@@ -353,38 +356,45 @@ export function CrmLeadsTable({
                     className="h-3.5 w-3.5 accent-primary"
                   />
                 </DataTableCell>
-                <DataTableCell>
+                <DataTableCell className={cn(col.lead, "overflow-hidden")}>
                   <div className="min-w-0">
                     <p className="truncate text-[13px] font-semibold">
-                      <BidiText text={lead.name.trim() || lead.phone} />
+                      <BidiText
+                        className="block truncate"
+                        text={lead.name.trim() || lead.phone}
+                      />
                     </p>
                     {lead.companyName ? (
                       <p className="truncate text-[11px] text-muted-foreground">
-                        <BidiText text={lead.companyName} />
+                        <BidiText className="block truncate" text={lead.companyName} />
                       </p>
                     ) : null}
                   </div>
                 </DataTableCell>
                 <DataTableCell
-                  className="hidden whitespace-nowrap sm:table-cell"
+                  className={cn(col.phone, "overflow-hidden")}
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
-                  <CrmLeadContactList lead={lead} compact />
+                  <CrmLeadContactList
+                    lead={lead}
+                    compact
+                    className="max-w-full"
+                  />
                 </DataTableCell>
-                <DataTableCell className="max-w-[11rem]">
+                <DataTableCell className={cn(col.request, "overflow-hidden")}>
                   {lead.request ? (
-                    <p
-                      className="truncate text-[12px] leading-snug text-muted-foreground"
-                      title={lead.request}
-                    >
-                      <BidiText text={requestPreview(lead.request)} />
-                    </p>
+                    <span className="block min-w-0" title={lead.request}>
+                      <BidiText
+                        className="block truncate text-[12px] leading-snug text-muted-foreground"
+                        text={requestPreview(lead.request)}
+                      />
+                    </span>
                   ) : (
                     <span className="text-[12px] text-muted-foreground/50">—</span>
                   )}
                 </DataTableCell>
-                <DataTableCell>
+                <DataTableCell className={cn(col.budget, "overflow-hidden")}>
                   {lead.budget ? (
                     <LtrNum
                       className="inline-flex rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[12px] font-semibold tabular-nums tracking-tight text-primary"
@@ -396,20 +406,24 @@ export function CrmLeadsTable({
                     <span className="text-[12px] text-muted-foreground/50">—</span>
                   )}
                 </DataTableCell>
-                <DataTableCell className="hidden text-[12px] md:table-cell">
-                  {t(`crm.source.${lead.source}`)}
+                <DataTableCell className={cn(col.source, "overflow-hidden text-[12px]")}>
+                  <span className="block truncate" title={t(`crm.source.${lead.source}`)}>
+                    {t(`crm.source.${lead.source}`)}
+                  </span>
                 </DataTableCell>
-                <DataTableCell className="hidden text-[12px] xl:table-cell">
-                  {lead.ownerEmployeeId
-                    ? (employeeMap.get(lead.ownerEmployeeId) ??
-                      t("crm.leads.unassigned"))
-                    : t("crm.leads.unassigned")}
+                <DataTableCell className={cn(col.sales, "overflow-hidden text-[12px]")}>
+                  <span className="block truncate">
+                    {lead.ownerEmployeeId
+                      ? (employeeMap.get(lead.ownerEmployeeId) ??
+                        t("crm.leads.unassigned"))
+                      : t("crm.leads.unassigned")}
+                  </span>
                 </DataTableCell>
-                <DataTableCell>
+                <DataTableCell className={cn(col.stage, "overflow-hidden")}>
                   <div className="min-w-0">
                     <Badge
                       variant="outline"
-                      className="max-w-[140px] truncate border-border/70 font-normal"
+                      className="block max-w-full truncate border-border/70 font-normal"
                       style={
                         stage?.color
                           ? {
@@ -427,27 +441,27 @@ export function CrmLeadsTable({
                       </p>
                     ) : null}
                     {lossReasonLabel(lead) ? (
-                      <p className="mt-0.5 max-w-[140px] truncate text-[11px] font-medium text-destructive">
+                      <p className="mt-0.5 max-w-full truncate text-[11px] font-medium text-destructive">
                         {lossReasonLabel(lead)}
                       </p>
                     ) : null}
                   </div>
                 </DataTableCell>
-                <DataTableCell className="hidden text-[12px] text-muted-foreground 2xl:table-cell">
-                  <LtrNum>{formatMaybeDate(lead.lastActivityAt)}</LtrNum>
+                <DataTableCell className={cn(col.activity, "overflow-hidden text-[12px] text-muted-foreground")}>
+                  <LtrNum className="block truncate">{formatMaybeDate(lead.lastActivityAt)}</LtrNum>
                 </DataTableCell>
-                <DataTableCell className="hidden text-[12px] text-muted-foreground xl:table-cell">
-                  <LtrNum>{formatMaybeDate(lead.nextFollowUpAt)}</LtrNum>
+                <DataTableCell className={cn(col.follow, "overflow-hidden text-[12px] text-muted-foreground")}>
+                  <LtrNum className="block truncate">{formatMaybeDate(lead.nextFollowUpAt)}</LtrNum>
                 </DataTableCell>
-                <DataTableCell className="hidden lg:table-cell">
-                  <span className={cn("text-[12px]", lead.deletedAt && "font-medium text-rose-600 dark:text-rose-400")}>
+                <DataTableCell className={cn(col.status, "overflow-hidden")}>
+                  <span className={cn("block truncate text-[12px]", lead.deletedAt && "font-medium text-rose-600 dark:text-rose-400")}>
                     {lead.deletedAt
                       ? t("crm.status.deleted")
                       : t(`crm.status.${lead.status}`)}
                   </span>
                 </DataTableCell>
                 <DataTableCell
-                  className="text-end"
+                  className={cn(col.actions, "text-end")}
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
