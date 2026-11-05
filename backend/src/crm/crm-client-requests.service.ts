@@ -161,6 +161,12 @@ export class CrmClientRequestsService {
       kind === CrmClientRequestKind.price_exception
         ? clip(body.requestedPrice, 80)
         : "";
+    const proposal =
+      (kind === CrmClientRequestKind.technical_proposal ||
+        kind === CrmClientRequestKind.contract) &&
+      body.document != null
+        ? sanitizeTechnicalProposal(body.document)
+        : null;
 
     const row = await this.prisma.crmClientRequest.create({
       data: {
@@ -172,6 +178,9 @@ export class CrmClientRequestsService {
         listedPrice,
         requestedPrice,
         requestedByEmployeeId: actor.employeeId || null,
+        ...(proposal
+          ? { metadata: proposalMetadata(null, proposal) }
+          : {}),
         createdBy: actor.userId,
         updatedBy: actor.userId,
       },
@@ -257,27 +266,41 @@ export class CrmClientRequestsService {
     requestId: string,
     body: unknown
   ) {
-    if (!canManageRequests(actor)) {
-      throw new ForbiddenException("Only management can edit the proposal");
-    }
+    const fromManagement = canManageRequests(actor);
     const proposal = sanitizeTechnicalProposal(body);
     const current = await this.prisma.crmClientRequest.findFirst({
       where: { id: requestId, companyId, deletedAt: null },
       include: requestInclude,
     });
     if (!current) throw new NotFoundException("Request not found");
+    if (!fromManagement) {
+      if (
+        current.kind !== CrmClientRequestKind.technical_proposal &&
+        current.kind !== CrmClientRequestKind.contract
+      ) {
+        throw new ForbiddenException("Only management can edit this template");
+      }
+      const lead = await this.shared.requireLead(
+        companyId,
+        actor,
+        current.leadId
+      );
+      await this.shared.assertCanEditLead(companyId, actor, lead);
+    }
 
     const row = await this.prisma.crmClientRequest.update({
       where: { id: requestId },
       data: {
-        status: CrmClientRequestStatus.answered,
+        ...(fromManagement ? { status: CrmClientRequestStatus.answered } : {}),
         metadata: proposalMetadata(current.metadata, proposal),
         updatedBy: actor.userId,
         version: { increment: 1 },
       },
       include: requestInclude,
     });
-    await this.notifyRequester(companyId, actor, row, true);
+    if (fromManagement) {
+      await this.notifyRequester(companyId, actor, row, true);
+    }
     return mapRequest(row);
   }
 

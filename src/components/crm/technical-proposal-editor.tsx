@@ -1,12 +1,15 @@
 "use client";
 
-import { Download, Plus, Trash2 } from "lucide-react";
+import { Download, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/hooks/use-translation";
-import { newProposalSection } from "@/lib/crm/technical-proposal";
+import {
+  newProposalSection,
+  templateDraftIssue,
+} from "@/lib/crm/technical-proposal";
 import { openTechnicalProposalPrint } from "@/lib/crm/technical-proposal-print";
 import type {
   CrmClientRequestKind,
@@ -19,14 +22,20 @@ export function TechnicalProposalEditor({
   doc,
   saved,
   canEdit,
+  hint,
+  saving = false,
   onChange,
+  onSave,
 }: {
   kind: CrmClientRequestKind;
   leadName: string;
   doc: TechnicalProposalDocument | null;
   saved: TechnicalProposalDocument | null;
   canEdit: boolean;
+  hint?: string;
+  saving?: boolean;
   onChange?: (next: TechnicalProposalDocument) => void;
+  onSave?: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -36,8 +45,17 @@ export function TechnicalProposalEditor({
   }
 
   function preview(source: TechnicalProposalDocument) {
-    const popup = openTechnicalProposalPrint(source, leadName);
-    if (!popup) toast.error(t("crm.clientRequests.proposal.popup"));
+    const issue = templateDraftIssue(source);
+    if (issue) {
+      toast.error(
+        issue === "title"
+          ? t("crm.clientRequests.proposal.invalid.title")
+          : t("crm.clientRequests.proposal.invalid.section")
+      );
+      return;
+    }
+    const opened = openTechnicalProposalPrint(source, leadName);
+    if (!opened) toast.error(t("crm.clientRequests.proposal.popup"));
   }
 
   if (!canEdit) {
@@ -70,7 +88,7 @@ export function TechnicalProposalEditor({
           {t(`crm.clientRequests.templateTitles.${kind}`)}
         </p>
         <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground">
-          {t("crm.clientRequests.proposal.editHint")}
+          {hint || t("crm.clientRequests.proposal.editHint")}
         </p>
       </div>
       <label className="grid gap-1 text-[12px] font-medium">
@@ -254,6 +272,23 @@ export function TechnicalProposalEditor({
         />
       </label>
 
+      {onSave ? (
+        <Button
+          type="button"
+          className="h-11 w-full"
+          disabled={saving}
+          onClick={onSave}
+        >
+          {saving ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : null}
+          {t(
+            kind === "contract"
+              ? "crm.clientRequests.proposal.saveContract"
+              : "crm.clientRequests.proposal.save"
+          )}
+        </Button>
+      ) : null}
       <Button
         type="button"
         variant="outline"
@@ -261,7 +296,7 @@ export function TechnicalProposalEditor({
         onClick={() => preview(doc)}
       >
         <Download className="h-4 w-4" />
-        {t("crm.clientRequests.proposal.preview")}
+        {t("crm.clientRequests.proposal.download")}
       </Button>
     </div>
   );

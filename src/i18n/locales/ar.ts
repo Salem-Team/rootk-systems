@@ -4050,7 +4050,7 @@ export const ar: TranslationKeys = {
       newHint: "اختار نوع الطلب واكتب المطلوب. الرد هيوصلك هنا.",
       kinds: {
         price_exception: "استثناء سعر",
-        technical_proposal: "عرض فني",
+        technical_proposal: "ملحق فني",
         contract: "عقد",
       },
       listedPrice: "السعر الحالي",
@@ -4082,8 +4082,8 @@ export const ar: TranslationKeys = {
       sendTemplate: "إرسال التمبلت والكومنت",
       templateTitles: {
         price_exception: "تمبلت استثناء السعر",
-        technical_proposal: "تمبلت العرض الفني",
-        contract: "تمبلت العقد",
+        technical_proposal: "الملحق الفني",
+        contract: "العقد",
       },
       defaultComments: {
         price_exception:
@@ -4100,6 +4100,10 @@ export const ar: TranslationKeys = {
       proposal: {
         editTitle: "التمبلت الجاهز",
         editHint: "التمبلت متعمل قبل كده. عدّل اللي محتاج تعديل، واكتب الكومنت، وابعت الاتنين مع بعض.",
+        salesHint: "اكتب تفاصيل الملحق الفني، احفظه، وصدّره PDF للعميل.",
+        salesHintContract: "اكتب بنود العقد، احفظه، وصدّره PDF للعميل.",
+        composeTitle: "الملحق الفني",
+        composeTitleContract: "العقد",
         title: "العنوان",
         subtitle: "العنوان الفرعي",
         subtitlePlaceholder: "مثال: نظام ERP لإدارة متجر الورد",
@@ -4115,8 +4119,10 @@ export const ar: TranslationKeys = {
         noteTitle: "عنوان الملاحظة",
         note: "الملاحظة",
         save: "حفظ الملحق",
+        saveContract: "حفظ العقد",
         saved: "الملحق اتحفظ",
-        download: "تحميل PDF",
+        savedContract: "العقد اتحفظ",
+        download: "تصدير PDF",
         preview: "معاينة PDF",
         waiting: "الإدارة بتجهّز التمبلت، وهتقدر تحمّله من هنا.",
         popup: "اسمح بالنوافذ المنبثقة عشان ملف الـ PDF يفتح.",

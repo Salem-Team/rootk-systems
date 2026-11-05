@@ -31,7 +31,9 @@ export function buildManagementTemplate(
   input: TemplateInput
 ): TechnicalProposalDocument {
   const client = text(input.leadName, "العميل");
-  const request = text(input.message, "حسب طلب فريق المبيعات.");
+  const request =
+    (input.message ?? "").trim() ||
+    (input.kind === "price_exception" ? "حسب طلب فريق المبيعات." : "");
 
   if (input.kind === "price_exception") {
     return {
@@ -67,12 +69,12 @@ export function buildManagementTemplate(
 
   if (input.kind === "contract") {
     return {
-      title: "مسودة عقد",
+      title: "عقد",
       subtitle: client,
-      intro: `مسودة عقد تقديم خدمات برمجية بين روتك والعميل ${client}. عدّل البنود قبل الإرسال.`,
+      intro: `عقد تقديم خدمات برمجية بين Rootk Systems والعميل ${client}.`,
       sections: [
         section("contract-parties", "أطراف العقد", "", [
-          "الطرف الأول: روتك",
+          "الطرف الأول: Rootk Systems",
           `الطرف الثاني: ${client}`,
         ]),
         section("contract-scope", "نطاق العمل", request, [

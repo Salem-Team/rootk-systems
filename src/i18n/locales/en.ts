@@ -4062,7 +4062,7 @@ export const en = {
       newHint: "Pick a type and describe what you need. The reply shows up here.",
       kinds: {
         price_exception: "Price exception",
-        technical_proposal: "Technical proposal",
+        technical_proposal: "Technical annex",
         contract: "Contract",
       },
       listedPrice: "Current price",
@@ -4094,8 +4094,8 @@ export const en = {
       sendTemplate: "Send template and comment",
       templateTitles: {
         price_exception: "Price exception template",
-        technical_proposal: "Technical proposal template",
-        contract: "Contract template",
+        technical_proposal: "Technical annex",
+        contract: "Contract",
       },
       defaultComments: {
         price_exception:
@@ -4112,6 +4112,10 @@ export const en = {
       proposal: {
         editTitle: "Ready template",
         editHint: "The template is already prepared. Edit what you need, write the comment, and send both.",
+        salesHint: "Write the technical annex, save it, and export the PDF for the client.",
+        salesHintContract: "Write the contract terms, save it, and export the PDF for the client.",
+        composeTitle: "Technical annex",
+        composeTitleContract: "Contract",
         title: "Title",
         subtitle: "Subtitle",
         subtitlePlaceholder: "e.g. ERP for a flower shop",
@@ -4127,8 +4131,10 @@ export const en = {
         noteTitle: "Note title",
         note: "Note",
         save: "Save annex",
+        saveContract: "Save contract",
         saved: "Annex saved",
-        download: "Download PDF",
+        savedContract: "Contract saved",
+        download: "Export PDF",
         preview: "Preview PDF",
         waiting: "Management is preparing the template. You can download it here.",
         popup: "Allow pop-ups so the PDF can open.",

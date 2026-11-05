@@ -434,6 +434,7 @@ export async function postCrmClientRequest(
     message: string;
     listedPrice?: string;
     requestedPrice?: string;
+    document?: TechnicalProposalDocument;
   }
 ): Promise<ApiResponse<CrmClientRequest | null>> {
   return emitIfOk(

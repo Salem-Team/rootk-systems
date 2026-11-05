@@ -303,6 +303,7 @@ export function CrmLeadSheetTabs({
         <TabsContent value="requests" className="mt-3 outline-none">
           <CrmClientRequestsPanel
             leadId={lead.id}
+            leadName={lead.name}
             variant="lead"
             readOnly={Boolean(lead.deletedAt)}
             employees={employees}

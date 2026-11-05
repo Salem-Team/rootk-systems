@@ -7,7 +7,8 @@ import {
 import { isProtectedAdminAccount } from "@/lib/protected-accounts";
 import { isApiMode } from "@/lib/env";
 import { enrichWithAudit, touchEntity } from "@/lib/entity";
-import { NotFoundError, ValidationError } from "@/lib/errors";
+import { templateDraftIssue } from "@/lib/crm/technical-proposal";
+import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { createId } from "@/lib/id";
 import {
   clientRequestInboxHref,
@@ -167,6 +168,7 @@ export async function createCrmClientRequest(
     message: string;
     listedPrice?: string;
     requestedPrice?: string;
+    document?: TechnicalProposalDocument;
   }
 ): Promise<ApiResponse<CrmClientRequest | null>> {
   if (isApiMode()) return postCrmClientRequest(leadId, input);
@@ -180,6 +182,14 @@ export async function createCrmClientRequest(
     const message = clip(input.message, 2000);
     if (message.length < 2) {
       throw new ValidationError("Request details are required");
+    }
+    const proposal =
+      (input.kind === "technical_proposal" || input.kind === "contract") &&
+      input.document
+        ? input.document
+        : null;
+    if (proposal && templateDraftIssue(proposal)) {
+      throw new ValidationError("Proposal document is incomplete");
     }
     const actorId = getSessionUserId() || "system";
     const row = enrichWithAudit(
@@ -199,7 +209,7 @@ export async function createCrmClientRequest(
             : "",
         requestedByEmployeeId: actorEmployeeId() ?? "",
         replies: [] as CrmClientRequestReply[],
-        proposal: null,
+        proposal,
       },
       actorId
     );
@@ -289,8 +299,9 @@ export async function saveCrmTechnicalProposal(
 ): Promise<ApiResponse<CrmClientRequest | null>> {
   if (isApiMode()) return putCrmClientRequestProposal(requestId, document);
   try {
-    if (!canManageRequests()) {
-      throw new ValidationError("Only management can edit the proposal");
+    const fromManagement = canManageRequests();
+    if (templateDraftIssue(document)) {
+      throw new ValidationError("Proposal document is incomplete");
     }
     const current = await crmClientRequestRepository.findById(requestId);
     if (!current || current.deletedAt) {
@@ -298,14 +309,24 @@ export async function saveCrmTechnicalProposal(
     }
     const lead = await findReadableCrmLead(current.leadId);
     if (!lead) throw new NotFoundError("Lead not found");
+    if (!fromManagement) {
+      if (
+        current.kind !== "technical_proposal" &&
+        current.kind !== "contract"
+      ) {
+        throw new ForbiddenError("Only management can edit this template");
+      }
+      await assertLeadAccess(lead);
+    }
     const actorId = getSessionUserId() || "system";
     const next = touchEntity(current, actorId, {
-      status: "answered",
+      ...(fromManagement ? { status: "answered" as const } : {}),
       proposal: document,
       leadName: lead.name,
       leadPhone: lead.phone,
     });
     await crmClientRequestRepository.update(requestId, next);
+    if (!fromManagement) return ok(next);
     const users = await userRepository.findAll();
     const requester = users.find(
       (user) => user.employeeId === current.requestedByEmployeeId
