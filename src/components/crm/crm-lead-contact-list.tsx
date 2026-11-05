@@ -1,5 +1,6 @@
 "use client";
 
+import { MessageCircle } from "lucide-react";
 import { CrmPhoneActions } from "@/components/crm/crm-phone-actions";
 import { detectContactKind } from "@/lib/crm/contact-identity";
 import {
@@ -52,13 +53,21 @@ export function CrmLeadContactList({
 
   return (
     <div className={cn("grid gap-0.5", className)}>
-      {visible.map((row) => (
+      {visible.map((row) => {
+        const kind = detectContactKind(row.phone, row.phoneNormalized);
+        return (
         <span
           key={`${row.kind}:${row.phoneNormalized || row.phone}:${row.label ?? ""}`}
-          className="inline-flex min-w-0 flex-wrap items-baseline gap-x-1.5"
+          className="inline-flex min-w-0 items-center gap-x-1.5"
         >
           {!compact && row.label ? (
             <span className="text-foreground/80">{row.label}</span>
+          ) : null}
+          {compact && kind === "whatsapp" ? (
+            <MessageCircle
+              className="h-3.5 w-3.5 shrink-0 text-emerald-600"
+              aria-hidden
+            />
           ) : null}
           <CrmPhoneActions
             phone={row.phone}
@@ -68,7 +77,8 @@ export function CrmLeadContactList({
             className="text-[12px]"
           />
         </span>
-      ))}
+        );
+      })}
       {extra > 0 ? (
         <span className="text-[11px] text-muted-foreground">+{extra}</span>
       ) : null}
