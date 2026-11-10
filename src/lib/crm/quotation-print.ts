@@ -1,3 +1,8 @@
+import {
+  isQuotationPriceBullet,
+  QUOTATION_PRICE_FIELDS,
+  readQuotationPrices,
+} from "@/lib/crm/quotation-prices";
 import type { TechnicalProposalDocument } from "@/types/crm";
 
 const NAVY = "#082868";
@@ -22,35 +27,6 @@ function paragraphs(value: string): string {
   return blocks.map((line) => `<p>${escapeHtml(line)}</p>`).join("");
 }
 
-const PRICE_FIELDS = [
-  { key: "listed", label: "السعر الحالي" },
-  { key: "requested", label: "السعر المطلوب" },
-  { key: "approved", label: "السعر المعتمد" },
-] as const;
-
-function readPrices(doc: TechnicalProposalDocument): Record<string, string> {
-  const found: Record<string, string> = {};
-  for (const section of doc.sections) {
-    for (const bullet of section.bullets) {
-      const trimmed = bullet.trim();
-      for (const field of PRICE_FIELDS) {
-        if (!trimmed.startsWith(field.label) || found[field.key]) continue;
-        const value = trimmed
-          .slice(field.label.length)
-          .replace(/^[:：\-–\s]+/, "")
-          .trim();
-        found[field.key] = value || "—";
-      }
-    }
-  }
-  return found;
-}
-
-function isPriceBullet(bullet: string): boolean {
-  const trimmed = bullet.trim();
-  return PRICE_FIELDS.some((field) => trimmed.startsWith(field.label));
-}
-
 export function quotationHtml(
   doc: TechnicalProposalDocument,
   leadName: string,
@@ -61,11 +37,11 @@ export function quotationHtml(
   const pageTitle = escapeHtml(
     `كوتشين${leadName.trim() ? ` - ${leadName.trim()}` : ""}`
   );
-  const prices = readPrices(doc);
+  const prices = readQuotationPrices(doc);
   const reference = doc.reference?.trim()
     ? `<p class="ref">رقم الملف <b dir="ltr">${escapeHtml(doc.reference.trim())}</b></p>`
     : "";
-  const priceCards = PRICE_FIELDS.map((field) => {
+  const priceCards = QUOTATION_PRICE_FIELDS.map((field) => {
     const value = escapeHtml(prices[field.key] || "—");
     return `<article class="price ${field.key}">
       <span>${field.label}</span>
@@ -77,7 +53,7 @@ export function quotationHtml(
     .map((section) => {
       const bullets = section.bullets
         .map((bullet) => bullet.trim())
-        .filter((bullet) => bullet && !isPriceBullet(bullet))
+        .filter((bullet) => bullet && !isQuotationPriceBullet(bullet))
         .map((bullet) => `<li>${escapeHtml(bullet)}</li>`)
         .join("");
       const intro = paragraphs(section.intro);

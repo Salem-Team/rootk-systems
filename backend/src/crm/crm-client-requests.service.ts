@@ -50,6 +50,34 @@ function clip(value: unknown, max: number): string {
   return String(value ?? "").trim().slice(0, max);
 }
 
+const QUOTATION_PRICE_LABELS = [
+  { key: "listed", label: "السعر الحالي" },
+  { key: "requested", label: "السعر المطلوب" },
+] as const;
+
+function readQuotationPricesFromProposal(
+  proposal: TechnicalProposalDocument
+): { listed: string; requested: string } {
+  const found: Partial<Record<"listed" | "requested", string>> = {};
+  for (const section of proposal.sections) {
+    for (const bullet of section.bullets) {
+      const trimmed = bullet.trim();
+      for (const field of QUOTATION_PRICE_LABELS) {
+        if (!trimmed.startsWith(field.label) || found[field.key]) continue;
+        const value = trimmed
+          .slice(field.label.length)
+          .replace(/^[:：\-–\s]+/, "")
+          .trim();
+        found[field.key] = value === "—" ? "" : value;
+      }
+    }
+  }
+  return {
+    listed: found.listed ?? "",
+    requested: found.requested ?? "",
+  };
+}
+
 function canManageRequests(actor: Actor): boolean {
   return isProtectedAdminAccount({
     userId: actor.userId,
@@ -209,20 +237,20 @@ export class CrmClientRequestsService {
     if (message.length < 2) {
       throw new BadRequestException("Request details are required");
     }
+    const proposal =
+      body.document != null ? sanitizeTechnicalProposal(body.document) : null;
+    const proposalPrices =
+      kind === CrmClientRequestKind.price_exception && proposal
+        ? readQuotationPricesFromProposal(proposal)
+        : null;
     const listedPrice =
       kind === CrmClientRequestKind.price_exception
-        ? clip(body.listedPrice, 80)
+        ? clip(body.listedPrice || proposalPrices?.listed, 80)
         : "";
     const requestedPrice =
       kind === CrmClientRequestKind.price_exception
-        ? clip(body.requestedPrice, 80)
+        ? clip(body.requestedPrice || proposalPrices?.requested, 80)
         : "";
-    const proposal =
-      (kind === CrmClientRequestKind.technical_proposal ||
-        kind === CrmClientRequestKind.contract) &&
-      body.document != null
-        ? sanitizeTechnicalProposal(body.document)
-        : null;
 
     const row = await this.prisma.crmClientRequest.create({
       data: {
@@ -356,7 +384,8 @@ export class CrmClientRequestsService {
     if (!fromManagement) {
       if (
         current.kind !== CrmClientRequestKind.technical_proposal &&
-        current.kind !== CrmClientRequestKind.contract
+        current.kind !== CrmClientRequestKind.contract &&
+        current.kind !== CrmClientRequestKind.price_exception
       ) {
         throw new ForbiddenException("Only management can edit this template");
       }
@@ -368,11 +397,22 @@ export class CrmClientRequestsService {
       await this.shared.assertCanEditLead(companyId, actor, lead);
     }
 
+    const prices =
+      current.kind === CrmClientRequestKind.price_exception
+        ? readQuotationPricesFromProposal(proposal)
+        : null;
+
     const row = await this.prisma.crmClientRequest.update({
       where: { id: requestId },
       data: {
         ...(fromManagement ? { status: CrmClientRequestStatus.answered } : {}),
         metadata: proposalMetadata(current.metadata, proposal),
+        ...(prices
+          ? {
+              listedPrice: clip(prices.listed, 80),
+              requestedPrice: clip(prices.requested, 80),
+            }
+          : {}),
         updatedBy: actor.userId,
         version: { increment: 1 },
       },

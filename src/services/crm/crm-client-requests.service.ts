@@ -12,6 +12,7 @@ import {
   parseDocumentReference,
   withClientDocumentNumbers,
 } from "@/lib/crm/document-reference";
+import { readQuotationPrices } from "@/lib/crm/quotation-prices";
 import { templateDraftIssue } from "@/lib/crm/technical-proposal";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { createId } from "@/lib/id";
@@ -212,11 +213,7 @@ export async function createCrmClientRequest(
     if (message.length < 2) {
       throw new ValidationError("Request details are required");
     }
-    const proposal =
-      (input.kind === "technical_proposal" || input.kind === "contract") &&
-      input.document
-        ? withoutReference(input.document)
-        : null;
+    const proposal = input.document ? withoutReference(input.document) : null;
     if (proposal && templateDraftIssue(proposal)) {
       throw new ValidationError("Proposal document is incomplete");
     }
@@ -359,7 +356,8 @@ export async function saveCrmTechnicalProposal(
     if (!fromManagement) {
       if (
         current.kind !== "technical_proposal" &&
-        current.kind !== "contract"
+        current.kind !== "contract" &&
+        current.kind !== "price_exception"
       ) {
         throw new ForbiddenError("Only management can edit this template");
       }
@@ -367,11 +365,21 @@ export async function saveCrmTechnicalProposal(
     }
     const actorId = getSessionUserId() || "system";
     const stored = parseDocumentReference(current.proposal?.reference);
+    const prices =
+      current.kind === "price_exception"
+        ? readQuotationPrices(document)
+        : null;
     const next = touchEntity(current, actorId, {
       ...(fromManagement ? { status: "answered" as const } : {}),
       proposal: stored
         ? { ...document, reference: formatDocumentReference(stored) }
         : withoutReference(document),
+      ...(prices
+        ? {
+            listedPrice: clip(prices.listed, 80),
+            requestedPrice: clip(prices.requested, 80),
+          }
+        : {}),
       leadName: lead.name,
       leadPhone: lead.phone,
     });

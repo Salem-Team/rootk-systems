@@ -56,16 +56,16 @@ export const updateWorkTaskStatusSchema = z.object({
 });
 
 export const createWorkTaskSchema = z.object({
-  title: z.string().trim().min(2).max(200),
-  description: z.string().trim().max(4000).default(""),
+  title: z.string().trim().min(2).max(240),
+  description: z.string().trim().max(8000).default(""),
   status: taskStatusSchema.default("todo"),
   priority: taskPrioritySchema.default("medium"),
   /** Optional — empty string means no due date. */
   dueDate: optionalDueDateSchema,
   tag: z.string().trim().max(80).default(""),
   /** Optional — 0 means no time estimate. */
-  estimateMin: z.number().int().min(0).max(480).optional().default(0),
-  assigneeIds: z.array(z.string().min(1)).min(1),
+  estimateMin: z.number().int().min(0).max(100000).optional().default(0),
+  assigneeIds: z.array(z.string().min(1)).max(30).default([]),
   relatedMeetingId: z.string().min(1).optional(),
   origin: workOriginSchema.default("assigned"),
   requireEvidenceLinks: z.boolean().optional(),

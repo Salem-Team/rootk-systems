@@ -16,6 +16,11 @@ export interface WorkProjectTask {
   assigneeIds: string[];
   /** Real work-task id once the row is promoted into the task system. */
   workTaskId?: string;
+  externalId?: string;
+  epicKey?: string;
+  epicName?: string;
+  deps?: string[];
+  subItems?: Array<{ id: string; label: string; done: boolean }>;
 }
 
 export interface WorkProjectPhase {

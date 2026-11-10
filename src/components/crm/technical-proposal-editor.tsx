@@ -9,6 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/hooks/use-translation";
 import { cn } from "@/lib/utils";
 import {
+  isQuotationPriceBullet,
+  readQuotationPrices,
+  writeQuotationPrice,
+  type QuotationPriceKey,
+} from "@/lib/crm/quotation-prices";
+import {
   newProposalSection,
   templateDraftIssue,
 } from "@/lib/crm/technical-proposal";
@@ -17,6 +23,16 @@ import type {
   CrmClientRequestKind,
   TechnicalProposalDocument,
 } from "@/types/crm";
+
+const QUOTATION_PRICE_INPUTS: {
+  key: QuotationPriceKey;
+  labelKey: "listedPrice" | "requestedPrice" | "approvedPrice";
+  accent?: boolean;
+}[] = [
+  { key: "listed", labelKey: "listedPrice" },
+  { key: "requested", labelKey: "requestedPrice" },
+  { key: "approved", labelKey: "approvedPrice", accent: true },
+];
 
 function ProposalTextarea({
   value,
@@ -150,6 +166,9 @@ export function TechnicalProposalEditor({
 
   if (!doc) return null;
 
+  const quotationPrices =
+    kind === "price_exception" ? readQuotationPrices(doc) : null;
+
   return (
     <div className="space-y-2.5 rounded-xl border border-primary/20 bg-primary/[0.03] p-2.5">
       <div>
@@ -157,10 +176,40 @@ export function TechnicalProposalEditor({
           {t(`crm.clientRequests.templateTitles.${kind}`)}
         </p>
         <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground">
-          {hint || t("crm.clientRequests.proposal.editHint")}
+          {hint ||
+            (kind === "price_exception"
+              ? t("crm.clientRequests.quotationHint")
+              : t("crm.clientRequests.proposal.editHint"))}
         </p>
         {referenceLine(doc.reference)}
       </div>
+
+      {quotationPrices ? (
+        <div className="grid gap-2 sm:grid-cols-3">
+          {QUOTATION_PRICE_INPUTS.map((field) => (
+            <label
+              key={field.key}
+              className={cn(
+                "grid gap-1 rounded-xl border bg-card px-3 py-2 text-[12px] font-medium",
+                field.accent ? "border-primary/40" : "border-border/70"
+              )}
+            >
+              {t(`crm.clientRequests.${field.labelKey}`)}
+              <Input
+                value={quotationPrices[field.key]}
+                onChange={(event) =>
+                  onChange?.(
+                    writeQuotationPrice(doc, field.key, event.target.value)
+                  )
+                }
+                placeholder={t("crm.clientRequests.pricePlaceholder")}
+                className="h-11 border-0 bg-transparent px-0 text-[16px] font-semibold shadow-none focus-visible:ring-0"
+              />
+            </label>
+          ))}
+        </div>
+      ) : null}
+
       <label className="grid gap-1 text-[12px] font-medium">
         {t("crm.clientRequests.proposal.title")}
         <Input
@@ -245,53 +294,68 @@ export function TechnicalProposalEditor({
               placeholder={t("crm.clientRequests.proposal.sectionIntro")}
               className="min-h-48"
             />
-            {section.bullets.map((bullet, bulletIndex) => (
-              <div key={`${section.id}-${bulletIndex}`} className="flex items-start gap-1.5">
-                <ProposalTextarea
-                  value={bullet}
-                  onChange={(value) =>
-                    patch({
-                      sections: doc.sections.map((row) =>
-                        row.id === section.id
-                          ? {
-                              ...row,
-                              bullets: row.bullets.map((item, itemIndex) =>
-                                itemIndex === bulletIndex ? value : item
-                              ),
-                            }
-                          : row
-                      ),
-                    })
-                  }
-                  placeholder={t("crm.clientRequests.proposal.bullet")}
-                  rows={2}
-                  className="min-h-16 min-w-0 flex-1"
-                />
-                {section.bullets.length > 1 ? (
-                  <button
-                    type="button"
-                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground"
-                    onClick={() =>
+            {section.bullets.map((bullet, bulletIndex) => {
+              if (
+                kind === "price_exception" &&
+                isQuotationPriceBullet(bullet)
+              ) {
+                return null;
+              }
+              const editableBullets = section.bullets.filter(
+                (item) =>
+                  !(kind === "price_exception" && isQuotationPriceBullet(item))
+              );
+              return (
+                <div
+                  key={`${section.id}-${bulletIndex}`}
+                  className="flex items-start gap-1.5"
+                >
+                  <ProposalTextarea
+                    value={bullet}
+                    onChange={(value) =>
                       patch({
                         sections: doc.sections.map((row) =>
                           row.id === section.id
                             ? {
                                 ...row,
-                                bullets: row.bullets.filter(
-                                  (_, itemIndex) => itemIndex !== bulletIndex
+                                bullets: row.bullets.map((item, itemIndex) =>
+                                  itemIndex === bulletIndex ? value : item
                                 ),
                               }
                             : row
                         ),
                       })
                     }
-                    aria-label={t("crm.clientRequests.proposal.remove")}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                ) : null}
-              </div>
-            ))}
+                    placeholder={t("crm.clientRequests.proposal.bullet")}
+                    rows={2}
+                    className="min-h-16 min-w-0 flex-1"
+                  />
+                  {editableBullets.length > 1 ? (
+                    <button
+                      type="button"
+                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground"
+                      onClick={() =>
+                        patch({
+                          sections: doc.sections.map((row) =>
+                            row.id === section.id
+                              ? {
+                                  ...row,
+                                  bullets: row.bullets.filter(
+                                    (_, itemIndex) => itemIndex !== bulletIndex
+                                  ),
+                                }
+                              : row
+                          ),
+                        })
+                      }
+                      aria-label={t("crm.clientRequests.proposal.remove")}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })}
             <button
               type="button"
               className="inline-flex h-9 items-center gap-1 text-[12px] font-semibold text-primary"
@@ -352,7 +416,9 @@ export function TechnicalProposalEditor({
           {t(
             kind === "contract"
               ? "crm.clientRequests.proposal.saveContract"
-              : "crm.clientRequests.proposal.save"
+              : kind === "price_exception"
+                ? "crm.clientRequests.proposal.saveQuotation"
+                : "crm.clientRequests.proposal.save"
           )}
         </Button>
       ) : null}

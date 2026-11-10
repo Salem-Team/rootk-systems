@@ -97,24 +97,24 @@ export function AdminWorkProjectsPanel({
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <div className="relative">
         <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder={t("workAdmin.projects.search")}
-          className="h-11 rounded-xl ps-9 sm:h-10"
+          className="h-11 rounded-xl ps-9 text-base sm:h-10 sm:text-sm"
         />
       </div>
-      <div className="flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="-mx-0.5 flex gap-1.5 overflow-x-auto overscroll-x-contain px-0.5 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {chips.map((chip) => (
           <Button
             key={chip}
             type="button"
             size="sm"
             variant={statusFilter === chip ? "default" : "outline"}
-            className="h-9 shrink-0 rounded-full px-3.5 text-[12px] font-semibold"
+            className="h-9 shrink-0 touch-manipulation rounded-full px-3.5 text-[12px] font-semibold"
             onClick={() => setStatusFilter(chip)}
           >
             {chip === "all"
@@ -178,10 +178,10 @@ export function AdminWorkProjectsPanel({
                 key={project.id}
                 type="button"
                 onClick={() => onOpen(project)}
-                className="rounded-2xl border border-border/70 bg-card p-4 text-start shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-primary/25 hover:shadow-[var(--shadow-card)]"
+                className="min-w-0 touch-manipulation rounded-2xl border border-border/70 bg-card p-3.5 text-start shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-primary/25 hover:shadow-[var(--shadow-card)] active:scale-[0.99] sm:p-4"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                     <Badge variant={STATUS_VARIANT[project.status]}>
                       {t(STATUS_KEY[project.status])}
                     </Badge>
@@ -192,15 +192,17 @@ export function AdminWorkProjectsPanel({
                       </Badge>
                     ) : null}
                   </div>
-                  <span className="font-mono text-[11px] text-muted-foreground">
+                  <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
                     {summary.pct}%
                   </span>
                 </div>
-                <h3 className="font-display mt-3 text-[1.05rem] font-semibold tracking-tight">
+                <h3 className="font-display mt-3 break-words text-[1.05rem] font-semibold tracking-tight">
                   {project.name}
                 </h3>
                 {when ? (
-                  <p className="mt-1 text-[12px] text-muted-foreground">{when}</p>
+                  <p className="mt-1 break-words text-[12px] text-muted-foreground">
+                    {when}
+                  </p>
                 ) : null}
                 {project.description ? (
                   <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">
@@ -229,7 +231,7 @@ export function AdminWorkProjectsPanel({
                     employees={employeeMap}
                     ids={project.memberIds}
                   />
-                  <span className="truncate text-[12px] text-muted-foreground">
+                  <span className="min-w-0 truncate text-[12px] text-muted-foreground">
                     {lead
                       ? t("workAdmin.projects.leadName", { name: lead.name })
                       : t("workAdmin.projects.members", {

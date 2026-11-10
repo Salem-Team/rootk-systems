@@ -15,12 +15,12 @@ import { BidiText } from "@/components/shared/bidi-text";
 import { TechnicalProposalEditor } from "@/components/crm/technical-proposal-editor";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/hooks/use-translation";
 import { CLIENT_REQUEST_OPEN_EVENT } from "@/lib/events";
 import { buildManagementTemplate } from "@/lib/crm/management-request-templates";
 import { isProtectedAdminAccount } from "@/lib/protected-accounts";
+import { readQuotationPrices } from "@/lib/crm/quotation-prices";
 import { templateDraftIssue } from "@/lib/crm/technical-proposal";
 import { cn } from "@/lib/utils";
 import {
@@ -40,7 +40,50 @@ import type {
 } from "@/types/crm";
 
 function isSalesLetter(kind: CrmClientRequestKind): boolean {
-  return kind === "technical_proposal" || kind === "contract";
+  return (
+    kind === "technical_proposal" ||
+    kind === "contract" ||
+    kind === "price_exception"
+  );
+}
+
+function salesHintKey(kind: CrmClientRequestKind) {
+  if (kind === "contract") return "crm.clientRequests.proposal.salesHintContract";
+  if (kind === "price_exception") {
+    return "crm.clientRequests.proposal.salesHintQuotation";
+  }
+  return "crm.clientRequests.proposal.salesHint";
+}
+
+function composeTitleKey(kind: CrmClientRequestKind) {
+  if (kind === "contract") return "crm.clientRequests.proposal.composeTitleContract";
+  if (kind === "price_exception") {
+    return "crm.clientRequests.proposal.composeTitleQuotation";
+  }
+  return "crm.clientRequests.proposal.composeTitle";
+}
+
+function letterMessage(
+  kind: CrmClientRequestKind,
+  document: TechnicalProposalDocument
+): string {
+  return (
+    document.intro.trim() ||
+    document.title.trim() ||
+    (kind === "contract"
+      ? "عقد"
+      : kind === "price_exception"
+        ? "كوتشين"
+        : "الملحق الفني")
+  );
+}
+
+function savedToastKey(kind: CrmClientRequestKind) {
+  if (kind === "contract") return "crm.clientRequests.proposal.savedContract";
+  if (kind === "price_exception") {
+    return "crm.clientRequests.proposal.savedQuotation";
+  }
+  return "crm.clientRequests.proposal.saved";
 }
 
 function letterDraft(
@@ -100,9 +143,6 @@ export function CrmClientRequestsPanel({
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<CrmClientRequestStatus | "all">("open");
   const [kind, setKind] = useState<CrmClientRequestKind>("price_exception");
-  const [message, setMessage] = useState("");
-  const [listedPrice, setListedPrice] = useState("");
-  const [requestedPrice, setRequestedPrice] = useState("");
   const [sending, setSending] = useState(false);
   const [replyFor, setReplyFor] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, string>>({});
@@ -200,7 +240,12 @@ export function CrmClientRequestsPanel({
 
   function clientReference(): string {
     for (const item of items) {
-      if (!isSalesLetter(item.kind)) continue;
+      if (
+        item.kind !== "technical_proposal" &&
+        item.kind !== "contract"
+      ) {
+        continue;
+      }
       const reference = item.proposal?.reference?.trim();
       if (reference) return reference;
     }
@@ -209,6 +254,7 @@ export function CrmClientRequestsPanel({
 
   function composeDocument(): TechnicalProposalDocument {
     const draft = composeByKind[kind] ?? letterDraft(kind, leadName);
+    if (kind === "price_exception") return draft;
     const reference = draft.reference?.trim() || clientReference();
     if (!reference || draft.reference === reference) return draft;
     return { ...draft, reference };
@@ -216,24 +262,17 @@ export function CrmClientRequestsPanel({
 
   async function submitRequest() {
     if (!leadId) return;
-    const letter = isSalesLetter(kind);
-    const document = letter ? composeDocument() : undefined;
-    const text = letter
-      ? document!.intro.trim() ||
-        document!.title.trim() ||
-        (kind === "contract" ? "عقد" : "الملحق الفني")
-      : message.trim();
-    if (!letter && text.length < 2) {
-      toast.error(t("crm.clientRequests.validation"));
-      return;
-    }
-    if (letter && document && annexIssue(document)) return;
+    const document = composeDocument();
+    const text = letterMessage(kind, document);
+    if (annexIssue(document)) return;
+    const prices =
+      kind === "price_exception" ? readQuotationPrices(document) : null;
     setSending(true);
     const res = await createCrmClientRequest(leadId, {
       kind,
       message: text,
-      listedPrice,
-      requestedPrice,
+      listedPrice: prices?.listed ?? "",
+      requestedPrice: prices?.requested ?? "",
       document,
     });
     setSending(false);
@@ -241,24 +280,13 @@ export function CrmClientRequestsPanel({
       toast.error(res.message || t("common.error"));
       return;
     }
-    setMessage("");
-    setListedPrice("");
-    setRequestedPrice("");
-    if (letter) {
-      setComposeByKind((prev) => {
-        const next = { ...prev };
-        delete next[kind];
-        return next;
-      });
-    }
+    setComposeByKind((prev) => {
+      const next = { ...prev };
+      delete next[kind];
+      return next;
+    });
     setItems((prev) => [res.data!, ...prev.filter((row) => row.id !== res.data!.id)]);
-    toast.success(
-      kind === "contract"
-        ? t("crm.clientRequests.proposal.savedContract")
-        : letter
-          ? t("crm.clientRequests.proposal.saved")
-          : t("crm.clientRequests.sent")
-    );
+    toast.success(t(savedToastKey(kind)));
   }
 
   async function saveAnnex(item: CrmClientRequest) {
@@ -275,11 +303,7 @@ export function CrmClientRequestsPanel({
     setItems((prev) =>
       prev.map((row) => (row.id === res.data!.id ? res.data! : row))
     );
-    toast.success(
-      item.kind === "contract"
-        ? t("crm.clientRequests.proposal.savedContract")
-        : t("crm.clientRequests.proposal.saved")
-    );
+    toast.success(t(savedToastKey(item.kind)));
   }
 
   function ensureDraft(item: CrmClientRequest): TechnicalProposalDocument {
@@ -392,15 +416,7 @@ export function CrmClientRequestsPanel({
 
       {variant === "lead" && !readOnly ? (
         <section className="rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
-          {kind === "price_exception" ? null : (
-            <>
-              <h3 className="text-[13px] font-semibold">
-                {kind === "contract"
-                  ? t("crm.clientRequests.proposal.composeTitleContract")
-                  : t("crm.clientRequests.proposal.composeTitle")}
-              </h3>
-            </>
-          )}
+          <h3 className="text-[13px] font-semibold">{t(composeTitleKey(kind))}</h3>
           <div className="mt-3 grid grid-cols-3 gap-1.5">
             {KINDS.map((item) => {
               const Icon = item.icon;
@@ -425,94 +441,22 @@ export function CrmClientRequestsPanel({
               );
             })}
           </div>
-          {kind === "price_exception" ? (
-            <div className="mt-3 overflow-hidden rounded-2xl border border-primary/15">
-              <div className="flex items-center justify-between gap-3 bg-primary px-3 py-3 text-primary-foreground">
-                <div>
-                  <p className="text-[10px] font-semibold tracking-[0.16em]" dir="ltr">
-                    QUOTATION
-                  </p>
-                  <p className="text-[15px] font-bold leading-tight">كوتشين</p>
-                </div>
-                <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold">
-                  استثناء سعر
-                </span>
-              </div>
-              <div className="h-1.5 bg-gradient-to-l from-[#C8962E] to-primary" />
-              <div className="grid gap-2 bg-[#f8f4ea] p-3 sm:grid-cols-2">
-                <label className="grid gap-1 rounded-xl border border-primary/10 bg-white px-3 py-2 text-[12px] font-medium">
-                  {t("crm.clientRequests.listedPrice")}
-                  <Input
-                    value={listedPrice}
-                    onChange={(event) => setListedPrice(event.target.value)}
-                    placeholder={t("crm.clientRequests.pricePlaceholder")}
-                    className="h-11 border-0 bg-transparent px-0 text-[16px] font-semibold shadow-none focus-visible:ring-0"
-                  />
-                </label>
-                <label className="grid gap-1 rounded-xl border border-[#C8962E]/50 bg-white px-3 py-2 text-[12px] font-medium">
-                  {t("crm.clientRequests.requestedPrice")}
-                  <Input
-                    value={requestedPrice}
-                    onChange={(event) => setRequestedPrice(event.target.value)}
-                    placeholder={t("crm.clientRequests.pricePlaceholder")}
-                    className="h-11 border-0 bg-transparent px-0 text-[16px] font-semibold shadow-none focus-visible:ring-0"
-                  />
-                </label>
-              </div>
-              <p className="px-3 py-2 text-[12px] leading-snug text-muted-foreground">
-                {t("crm.clientRequests.quotationHint")}
-              </p>
-            </div>
-          ) : null}
-          {isSalesLetter(kind) ? (
-            <div className="mt-3">
-              <TechnicalProposalEditor
-                kind={kind}
-                leadName={leadName || composeDocument().subtitle}
-                doc={composeDocument()}
-                saved={null}
-                canEdit
-                hint={t(
-                  kind === "contract"
-                    ? "crm.clientRequests.proposal.salesHintContract"
-                    : "crm.clientRequests.proposal.salesHint"
-                )}
-                saving={sending}
-                onSave={() => void submitRequest()}
-                onChange={(next) =>
-                  setComposeByKind((prev) => ({ ...prev, [kind]: next }))
-                }
-                onExported={(doc) => recordQuotationExport(leadId, doc.reference)}
-              />
-            </div>
-          ) : (
-            <Textarea
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              placeholder={t(`crm.clientRequests.placeholders.${kind}`)}
-              className="mt-3 min-h-24 resize-y text-[14px]"
+          <div className="mt-3">
+            <TechnicalProposalEditor
+              kind={kind}
+              leadName={leadName || composeDocument().subtitle}
+              doc={composeDocument()}
+              saved={null}
+              canEdit
+              hint={t(salesHintKey(kind))}
+              saving={sending}
+              onSave={() => void submitRequest()}
+              onChange={(next) =>
+                setComposeByKind((prev) => ({ ...prev, [kind]: next }))
+              }
+              onExported={(doc) => recordQuotationExport(leadId, doc.reference)}
             />
-          )}
-          {isSalesLetter(kind) ? null : (
-            <>
-              <p className="mt-2 text-[12px] leading-snug text-muted-foreground">
-                {t("crm.clientRequests.proposal.sendHint")}
-              </p>
-              <Button
-                type="button"
-                className="mt-3 h-11 w-full"
-                disabled={sending}
-                onClick={() => void submitRequest()}
-              >
-                {sending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                ) : (
-                  <Send className="h-4 w-4" aria-hidden />
-                )}
-                {t("crm.clientRequests.send")}
-              </Button>
-            </>
-          )}
+          </div>
         </section>
       ) : null}
 
@@ -625,15 +569,7 @@ export function CrmClientRequestsPanel({
                       })()}
                       saved={item.proposal ?? null}
                       canEdit={canEditAnnex}
-                      hint={
-                        salesAnnex
-                          ? t(
-                              item.kind === "contract"
-                                ? "crm.clientRequests.proposal.salesHintContract"
-                                : "crm.clientRequests.proposal.salesHint"
-                            )
-                          : undefined
-                      }
+                      hint={salesAnnex ? t(salesHintKey(item.kind)) : undefined}
                       saving={savingAnnexId === item.id}
                       onSave={
                         salesAnnex ? () => void saveAnnex(item) : undefined
@@ -645,28 +581,6 @@ export function CrmClientRequestsPanel({
                         recordQuotationExport(item.leadId, doc.reference)
                       }
                     />
-                    {item.kind === "price_exception" &&
-                    (item.listedPrice || item.requestedPrice) ? (
-                      <dl className="grid grid-cols-2 gap-2">
-                        <div className="rounded-xl border border-primary/10 bg-white px-2.5 py-2">
-                          <dt className="text-[11px] text-muted-foreground">
-                            {t("crm.clientRequests.listedPrice")}
-                          </dt>
-                          <dd className="mt-0.5 text-[14px] font-semibold text-primary">
-                            {item.listedPrice || "—"}
-                          </dd>
-                        </div>
-                        <div className="rounded-xl border border-[#C8962E]/40 bg-[#fbf7ee] px-2.5 py-2">
-                          <dt className="text-[11px] text-muted-foreground">
-                            {t("crm.clientRequests.requestedPrice")}
-                          </dt>
-                          <dd className="mt-0.5 text-[14px] font-semibold">
-                            {item.requestedPrice || "—"}
-                          </dd>
-                        </div>
-                      </dl>
-                    ) : null}
-
                     <ul className="space-y-2">
                       {(item.replies ?? []).map((reply) => (
                         <li

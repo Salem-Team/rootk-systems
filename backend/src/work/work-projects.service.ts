@@ -39,6 +39,12 @@ type ProjectTask = {
   estimateMin: number;
   assigneeIds: string[];
   workTaskId: string;
+  /** Stable source id (e.g. P0-E01-T01) when imported from engineering plans. */
+  externalId?: string;
+  epicKey?: string;
+  epicName?: string;
+  deps?: string[];
+  subItems?: Array<{ id: string; label: string; done: boolean }>;
 };
 
 function cleanDate(value: unknown): string {
@@ -90,24 +96,42 @@ export function sanitizeProjectPhases(
 ): ProjectPhase[] {
   if (!Array.isArray(raw)) return [];
   const allowed = new Set(memberIds);
-  return raw.slice(0, 24).flatMap((item, phaseIndex) => {
+  return raw.slice(0, 40).flatMap((item, phaseIndex) => {
     if (!item || typeof item !== "object") return [];
     const phase = item as Record<string, unknown>;
-    const name = clip(phase.name, 120);
+    const name = clip(phase.name, 200);
     if (!name) return [];
     const tasksRaw = Array.isArray(phase.tasks) ? phase.tasks : [];
-    const tasks = tasksRaw.slice(0, 40).flatMap((taskItem, taskIndex) => {
+    const tasks = tasksRaw.slice(0, 500).flatMap((taskItem, taskIndex) => {
       if (!taskItem || typeof taskItem !== "object") return [];
       const task = taskItem as Record<string, unknown>;
-      const title = clip(task.title, 160);
+      const title = clip(task.title, 240);
       if (!title) return [];
       const assigneeIds = cleanAssigneeIds(task.assigneeIds, allowed, restrictAssignees);
       const estimate = Number(task.estimateMin);
+      const subItems = Array.isArray(task.subItems)
+        ? task.subItems.flatMap((rawSub, subIndex) => {
+            if (!rawSub || typeof rawSub !== "object") return [];
+            const sub = rawSub as Record<string, unknown>;
+            const label = clip(sub.label, 200);
+            if (!label) return [];
+            return [
+              {
+                id: clip(sub.id, 40) || `sub_${phaseIndex}_${taskIndex}_${subIndex}`,
+                label,
+                done: Boolean(sub.done),
+              },
+            ];
+          })
+        : [];
+      const deps = Array.isArray(task.deps)
+        ? task.deps.map((d) => clip(d, 80)).filter(Boolean).slice(0, 50)
+        : [];
       return [
         {
           id: clip(task.id, 40) || `pt_${phaseIndex}_${taskIndex}`,
           title,
-          description: clip(task.description, 2000),
+          description: clip(task.description, 8000),
           status: TASK_STATUSES.has(String(task.status))
             ? String(task.status)
             : "todo",
@@ -121,6 +145,11 @@ export function sanitizeProjectPhases(
               : 0,
           assigneeIds,
           workTaskId: clip(task.workTaskId, 80),
+          externalId: clip(task.externalId, 80) || undefined,
+          epicKey: clip(task.epicKey, 80) || undefined,
+          epicName: clip(task.epicName, 200) || undefined,
+          deps: deps.length ? deps : undefined,
+          subItems: subItems.length ? subItems : undefined,
         },
       ];
     });
@@ -131,7 +160,7 @@ export function sanitizeProjectPhases(
       {
         id: clip(phase.id, 40) || `ph_${phaseIndex}`,
         name,
-        description: clip(phase.description, 2000),
+        description: clip(phase.description, 8000),
         status: PHASE_STATUSES.has(String(phase.status))
           ? String(phase.status)
           : "upcoming",

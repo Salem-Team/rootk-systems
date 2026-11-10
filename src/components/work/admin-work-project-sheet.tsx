@@ -62,9 +62,9 @@ function SectionCard({
   children: ReactNode;
 }) {
   return (
-    <section className="grid gap-3 rounded-2xl border border-border/70 bg-card p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-      <div className="flex items-start justify-between gap-3">
-        <div>
+    <section className="grid gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-4">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+        <div className="min-w-0">
           <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             {title}
           </h3>
@@ -74,7 +74,9 @@ function SectionCard({
             </p>
           ) : null}
         </div>
-        {action}
+        {action ? (
+          <div className="flex w-full shrink-0 sm:w-auto">{action}</div>
+        ) : null}
       </div>
       {children}
     </section>
@@ -153,23 +155,25 @@ export function AdminWorkProjectSheet({
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[min(94dvh,880px)] w-full max-w-none flex-col gap-0 overflow-hidden p-0 sm:w-[min(92vw,42rem)] sm:max-w-[min(92vw,42rem)] sm:p-0">
-        <DialogHeader className="shrink-0 border-b border-border/55 px-4 pb-3.5 pt-1 sm:px-5 sm:pt-5">
-          <DialogTitle className="flex items-center gap-2.5">
+      <DialogContent className="flex max-h-[min(94dvh,100%)] w-full max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-h-[min(94dvh,880px)] sm:w-[min(92vw,42rem)] sm:max-w-[min(92vw,42rem)] sm:p-0">
+        <DialogHeader className="shrink-0 border-b border-border/55 px-3.5 pb-3 pt-1 sm:px-5 sm:pb-3.5 sm:pt-5">
+          <DialogTitle className="flex min-w-0 items-center gap-2.5 pe-1">
             <span className="icon-well h-9 w-9 shrink-0">
               <FolderKanban className="h-4 w-4" aria-hidden />
             </span>
-            {isEditing
-              ? t("workAdmin.projects.editTitle")
-              : t("workAdmin.projects.createTitle")}
+            <span className="min-w-0 truncate">
+              {isEditing
+                ? t("workAdmin.projects.editTitle")
+                : t("workAdmin.projects.createTitle")}
+            </span>
           </DialogTitle>
           <DialogDescription className="text-[13px] leading-relaxed">
             {t("workAdmin.projects.formDesc")}
           </DialogDescription>
         </DialogHeader>
 
-        <DialogBody className="bg-muted/20 px-4 py-4 sm:px-5">
-          <div className="grid gap-4">
+        <DialogBody className="bg-muted/20 px-3.5 py-3.5 sm:px-5 sm:py-4">
+          <div className="grid min-w-0 gap-3.5 sm:gap-4">
             <SectionCard title={t("workAdmin.sectionBasics")}>
               <Field label={t("workAdmin.projects.fieldName")} htmlFor="project-name">
                 <Input
@@ -194,10 +198,10 @@ export function AdminWorkProjectSheet({
                   onChange={(event) =>
                     setForm({ ...form, description: event.target.value })
                   }
-                  className="min-h-[72px] rounded-xl"
+                  className="min-h-[72px] rounded-xl text-base sm:text-sm"
                 />
               </Field>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid min-w-0 gap-3 sm:grid-cols-3">
                 <Field
                   label={t("workAdmin.projects.fieldStatus")}
                   htmlFor="project-status"
@@ -220,31 +224,38 @@ export function AdminWorkProjectSheet({
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field
-                  label={t("workAdmin.projects.fieldStart")}
-                  htmlFor="project-start"
-                >
-                  <Input
-                    id="project-start"
-                    type="date"
-                    value={form.startDate}
-                    onChange={(event) =>
-                      setForm({ ...form, startDate: event.target.value })
-                    }
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label={t("workAdmin.projects.fieldEnd")} htmlFor="project-end">
-                  <Input
-                    id="project-end"
-                    type="date"
-                    value={form.endDate}
-                    onChange={(event) =>
-                      setForm({ ...form, endDate: event.target.value })
-                    }
-                    className={inputClass}
-                  />
-                </Field>
+                <div className="grid min-w-0 grid-cols-2 gap-2.5 sm:contents">
+                  <Field
+                    label={t("workAdmin.projects.fieldStart")}
+                    htmlFor="project-start"
+                    className="min-w-0"
+                  >
+                    <Input
+                      id="project-start"
+                      type="date"
+                      value={form.startDate}
+                      onChange={(event) =>
+                        setForm({ ...form, startDate: event.target.value })
+                      }
+                      className={cn(inputClass, "min-w-0 max-w-full")}
+                    />
+                  </Field>
+                  <Field
+                    label={t("workAdmin.projects.fieldEnd")}
+                    htmlFor="project-end"
+                    className="min-w-0"
+                  >
+                    <Input
+                      id="project-end"
+                      type="date"
+                      value={form.endDate}
+                      onChange={(event) =>
+                        setForm({ ...form, endDate: event.target.value })
+                      }
+                      className={cn(inputClass, "min-w-0 max-w-full")}
+                    />
+                  </Field>
+                </div>
               </div>
             </SectionCard>
 
@@ -263,7 +274,7 @@ export function AdminWorkProjectSheet({
                   onChange={(event) =>
                     setForm({ ...form, technicalDetails: event.target.value })
                   }
-                  className="min-h-[140px] rounded-xl"
+                  className="min-h-[120px] rounded-xl text-base sm:min-h-[140px] sm:text-sm"
                 />
               </Field>
               <Field
@@ -277,7 +288,7 @@ export function AdminWorkProjectSheet({
                   onChange={(event) =>
                     setForm({ ...form, fullDescription: event.target.value })
                   }
-                  className="min-h-[180px] rounded-xl"
+                  className="min-h-[140px] rounded-xl text-base sm:min-h-[180px] sm:text-sm"
                 />
               </Field>
             </SectionCard>
@@ -318,7 +329,7 @@ export function AdminWorkProjectSheet({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-8 rounded-lg"
+                  className="h-10 w-full touch-manipulation rounded-xl sm:h-8 sm:w-auto sm:rounded-lg"
                   onClick={() =>
                     setForm({
                       ...form,
@@ -346,12 +357,15 @@ export function AdminWorkProjectSheet({
           </div>
         </DialogBody>
 
-        <DialogFooter className="bg-card px-4 py-3 sm:px-5">
+        <DialogFooter className="gap-2 bg-card px-3.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:flex-row sm:justify-end sm:px-5 sm:pb-4">
           {isEditing ? (
             <Button
               type="button"
               variant="ghost"
-              className={cn("h-11 rounded-xl text-destructive sm:me-auto sm:h-10")}
+              className={cn(
+                "h-11 w-full touch-manipulation rounded-xl text-destructive",
+                "sm:me-auto sm:h-10 sm:w-auto"
+              )}
               disabled={busy}
               onClick={onDelete}
             >
@@ -360,7 +374,7 @@ export function AdminWorkProjectSheet({
           ) : null}
           <Button
             type="button"
-            className="h-11 rounded-xl sm:h-10"
+            className="h-11 w-full touch-manipulation rounded-xl sm:h-10 sm:w-auto"
             disabled={busy}
             onClick={onSave}
           >

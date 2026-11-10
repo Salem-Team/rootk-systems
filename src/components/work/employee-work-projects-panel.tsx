@@ -159,10 +159,10 @@ export function EmployeeWorkProjectsPanel({
               key={project.id}
               type="button"
               onClick={() => setOpenId(project.id)}
-              className="rounded-2xl border border-border/70 bg-card p-4 text-start shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-primary/25"
+              className="min-w-0 touch-manipulation rounded-2xl border border-border/70 bg-card p-3.5 text-start shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-primary/25 active:scale-[0.99] sm:p-4"
             >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                   <Badge variant={project.status === "completed" ? "success" : "default"}>
                     {t(PROJECT_STATUS[project.status])}
                   </Badge>
@@ -174,12 +174,12 @@ export function EmployeeWorkProjectsPanel({
                   ) : null}
                 </div>
                 {mine > 0 ? (
-                  <span className="text-[12px] font-semibold text-primary">
+                  <span className="shrink-0 text-[12px] font-semibold text-primary">
                     {t("workHub.projectsMineCount", { count: mine })}
                   </span>
                 ) : null}
               </div>
-              <h3 className="font-display mt-3 text-[1.05rem] font-semibold tracking-tight">
+              <h3 className="font-display mt-3 break-words text-[1.05rem] font-semibold tracking-tight">
                 {project.name}
               </h3>
               {lead ? (
@@ -199,7 +199,7 @@ export function EmployeeWorkProjectsPanel({
       </div>
 
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setOpenId(null)}>
-        <DialogContent className="flex max-h-[min(94dvh,880px)] w-full max-w-none flex-col gap-0 overflow-hidden p-0 sm:w-[min(92vw,42rem)] sm:max-w-[min(92vw,42rem)]">
+        <DialogContent className="flex max-h-[min(94dvh,100%)] w-full max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-h-[min(94dvh,880px)] sm:w-[min(92vw,42rem)] sm:max-w-[min(92vw,42rem)] sm:p-0">
           {selected ? (
             <ProjectReadView
               project={selected}
@@ -271,18 +271,18 @@ function ProjectReadView({
 
   return (
     <>
-      <DialogHeader className="shrink-0 border-b border-border/55 px-4 pb-3.5 pt-1 sm:px-5 sm:pt-5">
-        <DialogTitle className="flex items-center gap-2.5">
+      <DialogHeader className="shrink-0 border-b border-border/55 px-3.5 pb-3 pt-1 sm:px-5 sm:pb-3.5 sm:pt-5">
+        <DialogTitle className="flex min-w-0 items-center gap-2.5">
           <span className="icon-well h-9 w-9 shrink-0">
             <FolderKanban className="h-4 w-4" aria-hidden />
           </span>
-          {project.name}
+          <span className="min-w-0 break-words">{project.name}</span>
         </DialogTitle>
-        <DialogDescription className="line-clamp-2">
+        <DialogDescription className="line-clamp-3 sm:line-clamp-2">
           {project.description || t("workHub.projectsOpen")}
         </DialogDescription>
       </DialogHeader>
-      <DialogBody className="grid gap-4 px-4 py-4 sm:px-5">
+      <DialogBody className="grid gap-3.5 px-3.5 py-3.5 pb-[max(1rem,env(safe-area-inset-bottom))] sm:gap-4 sm:px-5 sm:py-4 sm:pb-4">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={project.status === "completed" ? "success" : "default"}>
             {t(PROJECT_STATUS[project.status])}
@@ -296,7 +296,7 @@ function ProjectReadView({
 
         <ProjectAnnexReadout project={project} />
 
-        <section className="grid gap-2 rounded-2xl border border-border/70 bg-card p-4">
+        <section className="grid gap-2 rounded-2xl border border-border/70 bg-card p-3.5 sm:p-4">
           <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             {t("workHub.projectsTeam")}
           </h3>
@@ -322,13 +322,13 @@ function ProjectReadView({
         </section>
 
         {mine.length > 0 ? (
-          <section className="grid gap-2 rounded-2xl border border-primary/25 bg-primary/[0.04] p-4">
+          <section className="grid gap-2 rounded-2xl border border-primary/25 bg-primary/[0.04] p-3.5 sm:p-4">
             <h3 className="text-[13px] font-semibold text-primary">
               {t("workHub.projectsYourTasks")}
             </h3>
             <ul className="grid gap-2">
               {mine.map(({ key, phaseName, task, onOpen }) => (
-                <li key={key}>
+                <li key={key} className="min-w-0">
                   <TaskLine
                     task={task}
                     phaseName={phaseName}
@@ -350,10 +350,12 @@ function ProjectReadView({
           {project.phases.map((phase) => (
             <article
               key={phase.id}
-              className="grid gap-2.5 rounded-2xl border border-border/70 bg-card p-4"
+              className="grid min-w-0 gap-2.5 rounded-2xl border border-border/70 bg-card p-3.5 sm:p-4"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h4 className="text-[15px] font-semibold">{phase.name}</h4>
+                <h4 className="min-w-0 break-words text-[15px] font-semibold">
+                  {phase.name}
+                </h4>
                 <Badge variant="outline">{t(PHASE_STATUS[phase.status])}</Badge>
               </div>
               {phase.startDate || phase.endDate ? (
@@ -438,18 +440,23 @@ function TaskLine({
 }) {
   const { t } = useTranslation();
   const className = cn(
-    "w-full rounded-xl border px-3 py-2.5 text-start",
+    "w-full min-w-0 rounded-xl border px-3 py-2.5 text-start",
     mine ? "border-primary/35 bg-background" : "border-border/60"
   );
   const body = (
     <>
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[13px] font-semibold leading-snug">{task.title}</p>
-        <Badge variant={task.status === "completed" ? "success" : "outline"}>
+        <p className="min-w-0 flex-1 break-words text-[13px] font-semibold leading-snug">
+          {task.title}
+        </p>
+        <Badge
+          variant={task.status === "completed" ? "success" : "outline"}
+          className="shrink-0"
+        >
           {t(statusLabelKey(task.status))}
         </Badge>
       </div>
-      <p className="mt-1 text-[12px] text-muted-foreground">
+      <p className="mt-1 break-words text-[12px] text-muted-foreground">
         {mine ? t("workHub.projectsYourTask") : owner}
         {phaseName ? ` · ${phaseName}` : ""}
         {task.dueDate ? (
@@ -463,7 +470,11 @@ function TaskLine({
   );
   if (onOpen) {
     return (
-      <button type="button" className={className} onClick={onOpen}>
+      <button
+        type="button"
+        className={cn(className, "touch-manipulation")}
+        onClick={onOpen}
+      >
         {body}
       </button>
     );
