@@ -70,6 +70,7 @@ export function mapLead(row: CrmLead) {
     name: row.name,
     phone: row.phone,
     phoneNormalized: row.phoneNormalized ?? null,
+    websiteSubmissionId: row.websiteSubmissionId ?? null,
     contactKind: detectContactKind(row.phone, row.phoneNormalized),
     contacts: extraContactsFromMetadata(row.metadata),
     email: row.email,

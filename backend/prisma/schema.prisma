@@ -1452,6 +1452,9 @@ model CrmLead {
   phone            String
   /// E.164 Egyptian mobile (`+2010…`) when valid; null if unparseable.
   phoneNormalized  String?
+  /// Website submission id. Null on every lead that did not arrive through
+  /// the website ingest contract, including all historical rows. Never backfilled.
+  websiteSubmissionId String?
   email            String         @default("")
   companyName      String         @default("")
   /** Free-text company location / city / address. */
@@ -1494,6 +1497,7 @@ model CrmLead {
   calls           CrmCall[]
   clientRequests  CrmClientRequest[]
 
+  @@unique([companyId, websiteSubmissionId])
   @@index([companyId, ownerEmployeeId])
   @@index([companyId, phoneNormalized])
   @@index([companyId, stageId])

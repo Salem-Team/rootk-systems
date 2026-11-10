@@ -26,6 +26,10 @@ import {
 } from "./crm-phone";
 import { canonicalContactKeys, contactsMetadataPatch } from "../lib/lead-contacts";
 import { CrmSharedService } from "./crm-shared.service";
+import {
+  WebsiteSubmissionReplayError,
+  normalizeWebsiteSubmissionId,
+} from "./website-submission";
 
 @Injectable()
 export class CrmLeadCreateService {
@@ -131,7 +135,18 @@ export class CrmLeadCreateService {
     }
 
     const now = new Date();
-    const row = await this.prisma.$transaction(async (tx) => {
+    const websiteSubmissionId = normalizeWebsiteSubmissionId(
+      body.websiteSubmissionId
+    );
+    const stored = await this.prisma.$transaction(async (tx) => {
+      if (websiteSubmissionId) {
+        const lockKey = `website-lead:${companyId}:${phoneNormalized ?? phone}`;
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`;
+        const prior = await tx.crmLead.findFirst({
+          where: { companyId, websiteSubmissionId, deletedAt: null },
+        });
+        if (prior) return { replay: true as const, row: prior };
+      }
       await assertContactsAvailable(
         tx,
         companyId,
@@ -142,12 +157,13 @@ export class CrmLeadCreateService {
           recordType,
         }
       );
-      return tx.crmLead.create({
+      const row = await tx.crmLead.create({
         data: {
           companyId,
           name,
           phone,
           phoneNormalized,
+          websiteSubmissionId,
           metadata: contactsMetadataPatch(extras) as Prisma.InputJsonValue,
           email: String(body.email ?? "").trim(),
           companyName: String(body.companyName ?? "").trim(),
@@ -187,7 +203,12 @@ export class CrmLeadCreateService {
           updatedBy: actor.userId,
         },
       });
+      return { replay: false as const, row };
     });
+    if (stored.replay) {
+      throw new WebsiteSubmissionReplayError(stored.row);
+    }
+    const row = stored.row;
 
     const nameLabel = await this.shared.actorName(actor);
     const kindLabel = recordType === CrmRecordType.cold_call ? "cold call" : "lead";

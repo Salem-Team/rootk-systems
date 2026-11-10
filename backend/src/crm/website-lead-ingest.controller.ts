@@ -1,26 +1,32 @@
 import {
   BadRequestException,
   Body,
-  ConflictException,
   Controller,
   Headers,
   Post,
   UnauthorizedException,
 } from "@nestjs/common";
+import type { CrmLead } from "@prisma/client";
 import { Public } from "../common/public.decorator";
 import { AppRole } from "../common/roles";
+import { PrismaService } from "../prisma/prisma.service";
 import { CrmService } from "./crm.service";
 import { CrmWebsiteAutoAssignService } from "./crm-website-auto-assign.service";
 import type { Actor } from "./crm-access";
+import { mapLead } from "./crm-mappers";
+import { executeWebsiteLeadIngest } from "./website-lead-ingest";
 
 /**
  * Unauthenticated website → CRM lead ingest (API key).
  * Keeps class-level JWT off this controller on purpose.
+ * The company is the integration key's configured company. A companyId in
+ * the body is never the tenant that gets the lead.
  */
 @Controller("integrations/website")
 export class WebsiteLeadIngestController {
   constructor(
     private readonly crm: CrmService,
+    private readonly prisma: PrismaService,
     private readonly autoAssign: CrmWebsiteAutoAssignService
   ) {}
 
@@ -43,14 +49,6 @@ export class WebsiteLeadIngestController {
       throw new BadRequestException("DEFAULT_COMPANY_ID is not configured");
     }
 
-    const name = String(body.name ?? body.contactName ?? "").trim();
-    const phone = String(body.phone ?? "").trim();
-    if (!name || !phone) {
-      throw new BadRequestException("name and phone are required");
-    }
-
-    const notes = String(body.notes ?? "").trim().slice(0, 2000);
-
     const actor: Actor = {
       userId: "website-ingest",
       employeeId: "",
@@ -62,34 +60,27 @@ export class WebsiteLeadIngestController {
       ],
     };
 
-    const ownerEmployeeId = await this.autoAssign.claimNextOwner(companyId);
+    const decision = await executeWebsiteLeadIngest(
+      {
+        companyId,
+        findBySubmissionId: (submissionId) =>
+          this.prisma.crmLead.findFirst({
+            where: { companyId, websiteSubmissionId: submissionId, deletedAt: null },
+          }),
+        createLead: (leadBody) => this.crm.createLead(companyId, actor, leadBody),
+        claimOwner: () => this.autoAssign.claimNextOwner(companyId),
+      },
+      body
+    );
 
-    try {
-      const lead = await this.crm.createLead(companyId, actor, {
-        name,
-        phone,
-        email: String(body.email ?? "").trim(),
-        companyName: String(body.companyName ?? body.company ?? "").trim(),
-        source: body.source ?? "website",
-        notes,
-        tags: Array.isArray(body.tags) ? body.tags : ["website", "campaign"],
-        nextAction: "follow_up",
-        ...(ownerEmployeeId ? { ownerEmployeeId } : {}),
-      });
-      return {
-        ok: true,
-        lead,
-        autoAssignedTo: ownerEmployeeId ?? null,
-      };
-    } catch (error) {
-      if (error instanceof ConflictException) {
-        return {
-          ok: true,
-          duplicate: true,
-          message: "phone already exists in CRM",
-        };
-      }
-      throw error;
-    }
+    return {
+      ok: true,
+      replay: decision.kind === "replay",
+      submissionId: decision.submissionId,
+      lead: decision.mapped ? decision.lead : mapLead(decision.lead as CrmLead),
+      ...(decision.kind === "created"
+        ? { autoAssignedTo: decision.autoAssignedTo }
+        : {}),
+    };
   }
 }
