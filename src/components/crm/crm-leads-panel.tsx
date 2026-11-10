@@ -2,7 +2,6 @@
 
 import { useState, type Dispatch, type SetStateAction } from "react";
 import {
-  ChevronDown,
   Download,
   Search,
   SlidersHorizontal,
@@ -120,7 +119,6 @@ export function CrmLeadsPanel({
   const isCold = variant === "coldCalls";
   const [importOpen, setImportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [toolsOpen, setToolsOpen] = useState(false);
   const filterCount = countBadgeFilters(filters, filterBadgeExclude);
   const showOwnerFilter = canFilterCrmByOwner({
     canAssign,
@@ -153,13 +151,13 @@ export function CrmLeadsPanel({
         type="button"
         size="sm"
         variant="outline"
-        className="min-h-11 touch-manipulation sm:min-h-8"
+        className="h-11 shrink-0 touch-manipulation rounded-xl px-3 sm:h-8 sm:rounded-lg"
         disabled={exporting}
         onClick={() => void onExport()}
         aria-label={t("crm.actions.export")}
       >
-        <Download className="h-3.5 w-3.5 sm:me-1.5" />
-        <span className="sm:inline">{t("crm.actions.export")}</span>
+        <Download className="me-1.5 h-3.5 w-3.5" />
+        {t("crm.actions.export")}
       </Button>
       {canImport && !isCold ? (
         <CrmLeadsBulkAdd
@@ -169,7 +167,7 @@ export function CrmLeadsPanel({
           canAssign={canAssign}
           onImported={onImported}
           size="sm"
-          className="min-h-11 sm:min-h-8"
+          className="h-11 shrink-0 rounded-xl sm:h-8 sm:rounded-lg"
         />
       ) : null}
       {canImport ? (
@@ -177,16 +175,14 @@ export function CrmLeadsPanel({
           type="button"
           size="sm"
           variant={isCold ? "default" : "outline"}
-          className="min-h-11 touch-manipulation sm:min-h-8"
+          className="h-11 shrink-0 touch-manipulation rounded-xl px-3 sm:h-8 sm:rounded-lg"
           onClick={() => setImportOpen(true)}
           aria-label={
             isCold ? t("crm.coldCalls.importExcel") : t("crm.actions.import")
           }
         >
-          <Upload className="h-3.5 w-3.5 sm:me-1.5" />
-          <span className="sm:inline">
-            {isCold ? t("crm.coldCalls.importExcel") : t("crm.actions.import")}
-          </span>
+          <Upload className="me-1.5 h-3.5 w-3.5" />
+          {isCold ? t("crm.coldCalls.importExcel") : t("crm.actions.import")}
         </Button>
       ) : null}
     </>
@@ -195,15 +191,15 @@ export function CrmLeadsPanel({
   return (
     <section
       className={cn(
-        "surface-panel overflow-hidden",
+        "surface-panel min-w-0 overflow-hidden",
         "max-sm:-mx-3 max-sm:rounded-none max-sm:border-x-0",
         className
       )}
     >
       <div className="panel-header flex flex-col gap-2.5 !px-0 sm:gap-3 sm:!px-5">
         {!hideTitle ? (
-          <div className="hidden items-center gap-2 px-5 sm:flex">
-            <h2 className="text-sm font-semibold tracking-tight">
+          <div className="flex items-center gap-2 px-3 sm:px-0">
+            <h2 className="text-[15px] font-semibold tracking-tight sm:text-sm">
               {t(isCold ? "crm.coldCalls.title" : "crm.leads.title")}
             </h2>
             {isCold ? (
@@ -214,7 +210,7 @@ export function CrmLeadsPanel({
           </div>
         ) : null}
 
-        <div className="flex w-full flex-col gap-2.5">
+        <div className="flex w-full min-w-0 flex-col gap-2.5">
           <div className="relative w-full min-w-0 px-3 sm:px-0">
             <Search className="pointer-events-none absolute start-[1.625rem] top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground sm:start-3 sm:h-3.5 sm:w-3.5" />
             <Input
@@ -264,18 +260,18 @@ export function CrmLeadsPanel({
             ) : null}
           </div>
 
-          <div className="flex w-full items-center gap-2 px-3 sm:w-auto sm:shrink-0 sm:px-0">
+          <div className="flex w-full min-w-0 items-stretch gap-2 px-3 sm:flex-wrap sm:items-center sm:px-0">
             <Button
               type="button"
               size="sm"
               variant={filterCount > 0 ? "default" : "outline"}
-              className="relative h-11 min-w-11 flex-1 touch-manipulation rounded-xl px-3 sm:h-9 sm:min-w-9 sm:flex-none lg:hidden"
+              className="relative h-11 min-w-0 flex-1 touch-manipulation rounded-xl px-3 sm:h-9 sm:w-auto sm:flex-none lg:hidden"
               onClick={() => panel.setFiltersOpen(true)}
               aria-expanded={panel.filtersOpen}
               aria-label={t("crm.filters.title")}
             >
-              <SlidersHorizontal className="h-4 w-4" />
-              <span className="ms-1.5 text-sm font-medium sm:hidden">
+              <SlidersHorizontal className="h-4 w-4 shrink-0" />
+              <span className="ms-1.5 truncate text-sm font-medium">
                 {t("crm.filters.title")}
               </span>
               {filterCount > 0 ? (
@@ -296,7 +292,7 @@ export function CrmLeadsPanel({
                 }
               >
                 <SelectTrigger
-                  className="h-11 min-w-0 flex-1 rounded-xl border-border/70 sm:h-9 sm:w-[10.5rem] sm:flex-none sm:rounded-lg"
+                  className="h-11 min-w-0 flex-[1.2] rounded-xl border-border/70 sm:h-9 sm:w-[10.5rem] sm:flex-none sm:rounded-lg"
                   aria-label={t("crm.filters.byUser")}
                 >
                   <SelectValue placeholder={t("crm.filters.byUser")} />
@@ -314,33 +310,10 @@ export function CrmLeadsPanel({
                 </SelectContent>
               </Select>
             ) : null}
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-11 shrink-0 touch-manipulation rounded-xl px-2.5 sm:hidden"
-              aria-expanded={toolsOpen}
-              aria-label={t("crm.actions.moreTools")}
-              onClick={() => setToolsOpen((v) => !v)}
-            >
-              <ChevronDown
-                className={cn(
-                  "h-4 w-4 transition-transform",
-                  toolsOpen && "rotate-180"
-                )}
-              />
-            </Button>
           </div>
         </div>
 
-        {/* Collapsed tools on phones; always visible from sm+ */}
-        <div
-          className={cn(
-            "flex flex-wrap items-center gap-2 px-3 sm:px-0",
-            toolsOpen ? "flex" : "hidden",
-            "sm:flex"
-          )}
-        >
+        <div className="scroll-x flex w-full min-w-0 items-center gap-2 px-3 pb-0.5 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
           {toolButtons}
         </div>
       </div>

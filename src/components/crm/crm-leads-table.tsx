@@ -104,16 +104,16 @@ export function CrmLeadsTable({
   const col = {
     check: "w-9",
     lead: "min-w-0",
-    phone: "w-[10.25rem] px-2 sm:px-2",
+    phone: "w-[10.25rem] px-2",
     request: "min-w-0",
-    budget: "w-[4.5rem]",
+    budget: "hidden w-[4.5rem] xl:table-cell",
     source: "hidden w-[7.25rem] xl:table-cell",
     sales: "hidden w-[8rem] 2xl:table-cell",
     stage: "w-[7.5rem]",
     activity: "hidden w-[7.25rem] 2xl:table-cell",
     follow: "hidden w-[7.25rem] 2xl:table-cell",
     status: "hidden w-[5.5rem] 2xl:table-cell",
-    actions: "w-[8.75rem] px-1.5 sm:px-1.5",
+    actions: "w-[7.5rem] px-1.5",
   };
 
   function SelectAllCheckbox({ className }: { className?: string }) {
@@ -166,11 +166,11 @@ export function CrmLeadsTable({
 
   return (
     <>
-      <div className="flex items-center gap-2.5 border-b border-border/50 px-3 py-2 md:hidden">
+      <div className="flex items-center gap-2.5 border-b border-border/50 px-3 py-2.5 lg:hidden">
         <SelectAllCheckbox className="h-4 w-4 accent-primary" />
         <button
           type="button"
-          className="min-w-0 flex-1 text-start text-[13px] font-medium text-foreground"
+          className="min-w-0 flex-1 touch-manipulation text-start text-[13px] font-medium text-foreground"
           onClick={onToggleAll}
         >
           {allSelected
@@ -178,23 +178,32 @@ export function CrmLeadsTable({
             : t("crm.actions.selectAll")}
         </button>
         {selected.size > 0 ? (
-          <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+          <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-primary">
             {t("crm.actions.selected", { count: String(selected.size) })}
           </span>
         ) : null}
       </div>
 
-      <ul className="grid gap-2 p-2.5 pb-3 md:hidden">
+      <ul className="grid gap-2.5 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
         {items.map((lead) => {
           const stage = stageMap.get(lead.stageId);
+          const ownerLabel = lead.ownerEmployeeId
+            ? (employeeMap.get(lead.ownerEmployeeId) ??
+              t("crm.leads.unassigned"))
+            : t("crm.leads.unassigned");
           return (
-            <li key={lead.id}>
+            <li key={lead.id} className="min-w-0">
               <article
-                className="flex cursor-pointer gap-2.5 rounded-2xl border border-border/60 bg-card/80 px-3 py-3.5 shadow-[0_1px_0_rgba(255,255,255,0.03)_inset] transition-colors touch-manipulation active:bg-muted/40"
+                className={cn(
+                  "flex min-w-0 cursor-pointer gap-2.5 rounded-2xl border border-border/60 bg-card px-3 py-3.5",
+                  "shadow-[0_1px_0_rgba(255,255,255,0.04)_inset] transition-[background-color,border-color,transform]",
+                  "touch-manipulation active:scale-[0.995] active:bg-muted/35",
+                  selected.has(lead.id) && "border-primary/35 bg-primary/[0.04]"
+                )}
                 onClick={() => onRowClick(lead)}
               >
                 <div
-                  className="flex min-h-12 min-w-11 items-start justify-center pt-1"
+                  className="flex min-h-11 min-w-10 shrink-0 items-start justify-center pt-0.5"
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
@@ -203,26 +212,35 @@ export function CrmLeadsTable({
                     checked={selected.has(lead.id)}
                     onChange={() => onToggleOne(lead.id)}
                     aria-label={lead.name.trim() || lead.phone}
-                    className="mt-0.5 h-5 w-5 accent-primary"
+                    className="mt-1 h-5 w-5 accent-primary"
                   />
                 </div>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 overflow-hidden">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate text-[14px] font-semibold leading-snug tracking-tight">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[15px] font-semibold leading-snug tracking-tight">
                         <BidiText text={lead.name.trim() || lead.phone} />
                       </p>
+                      {lead.companyName ? (
+                        <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
+                          <BidiText text={lead.companyName} />
+                        </p>
+                      ) : null}
                       <div
-                        className="mt-1 min-w-0 max-w-full overflow-hidden"
+                        className="mt-1.5 min-w-0 max-w-full overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                         onPointerDown={(e) => e.stopPropagation()}
                       >
-                        <CrmLeadContactList lead={lead} compact />
+                        <CrmLeadContactList
+                          lead={lead}
+                          compact
+                          className="text-[13px]"
+                        />
                       </div>
                     </div>
                     <Badge
                       variant="outline"
-                      className="max-w-[6.75rem] shrink-0 truncate rounded-full border-border/70 px-2 py-0.5 text-[10px] font-medium"
+                      className="max-w-[7rem] shrink-0 truncate rounded-full border-border/70 px-2.5 py-1 text-[10px] font-semibold"
                       style={
                         stage?.color
                           ? {
@@ -241,34 +259,29 @@ export function CrmLeadsTable({
                     </p>
                   ) : null}
 
-                  <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
-                    <span>{t(`crm.source.${lead.source}`)}</span>
-                    <span aria-hidden>·</span>
-                    <span className="truncate">
-                      {lead.ownerEmployeeId
-                        ? (employeeMap.get(lead.ownerEmployeeId) ??
-                          t("crm.leads.unassigned"))
-                        : t("crm.leads.unassigned")}
+                  <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                    <span className="inline-flex max-w-full truncate rounded-lg bg-muted/55 px-2 py-1 text-[11px] text-muted-foreground">
+                      {t(`crm.source.${lead.source}`)}
+                    </span>
+                    <span className="inline-flex max-w-[9rem] truncate rounded-lg bg-muted/55 px-2 py-1 text-[11px] text-muted-foreground">
+                      {ownerLabel}
                     </span>
                     {lead.nextFollowUpAt ? (
-                      <>
-                        <span aria-hidden>·</span>
-                        <LtrNum className="tabular-nums">
-                          {formatMaybeDate(lead.nextFollowUpAt)}
-                        </LtrNum>
-                      </>
+                      <LtrNum className="inline-flex rounded-lg bg-amber-500/10 px-2 py-1 text-[11px] font-medium tabular-nums text-amber-700 dark:text-amber-300">
+                        {formatMaybeDate(lead.nextFollowUpAt)}
+                      </LtrNum>
                     ) : null}
                   </div>
 
                   {(lead.request || lead.budget) ? (
-                    <div className="mt-2 flex items-start gap-2 rounded-xl bg-muted/40 px-2.5 py-1.5">
+                    <div className="mt-2.5 flex min-w-0 items-start gap-2 rounded-xl bg-muted/40 px-2.5 py-2">
                       {lead.budget ? (
                         <LtrNum className="shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold tabular-nums text-primary">
                           {budgetPreview(lead.budget) || "—"}
                         </LtrNum>
                       ) : null}
                       {lead.request ? (
-                        <p className="min-w-0 flex-1 truncate text-[11px] leading-snug text-muted-foreground">
+                        <p className="min-w-0 flex-1 line-clamp-2 text-[12px] leading-snug text-muted-foreground">
                           <BidiText text={requestPreview(lead.request)} />
                         </p>
                       ) : null}
@@ -276,13 +289,13 @@ export function CrmLeadsTable({
                   ) : null}
 
                   <div
-                    className="mt-2.5 flex items-center justify-between gap-2 border-t border-border/40 pt-2"
+                    className="mt-3 flex items-center justify-between gap-2 border-t border-border/40 pt-2.5"
                     onClick={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
                   >
                     <span
                       className={cn(
-                        "text-[11px] font-medium",
+                        "truncate text-[11px] font-semibold",
                         lead.deletedAt
                           ? "text-rose-600 dark:text-rose-400"
                           : lead.status === "active"
@@ -297,6 +310,7 @@ export function CrmLeadsTable({
                     <CrmLeadRowActions
                       lead={lead}
                       onViewHistory={openHistory}
+                      density="comfortable"
                     />
                   </div>
                 </div>
@@ -306,8 +320,8 @@ export function CrmLeadsTable({
         })}
       </ul>
 
-      <div className="hidden md:block">
-      <DataTable className="table-fixed min-w-0 md:min-w-0">
+      <div className="hidden min-w-0 overflow-hidden lg:block">
+      <DataTable className="table-fixed min-w-0 sm:min-w-0 md:min-w-0 lg:min-w-0">
         <DataTableHeader>
           <DataTableHeaderRow>
             <DataTableHead className={col.check}>
@@ -478,37 +492,39 @@ export function CrmLeadsTable({
       </div>
 
       {page.totalPages > 1 ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 px-3 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-3">
           <p className="text-[12px] text-muted-foreground">
             {t("crm.leads.pageOf", {
               page: String(page.page),
               total: String(page.totalPages),
             })}
           </p>
-          <div className="flex gap-1">
+          <div className="flex gap-1.5">
             <Button
               type="button"
               size="sm"
               variant="outline"
+              className="min-h-11 touch-manipulation rounded-xl px-3 sm:min-h-8 sm:rounded-lg"
               disabled={page.page <= 1}
               onClick={() =>
                 onFiltersChange((prev) => ({ ...prev, page: page.page - 1 }))
               }
             >
-              <ChevronLeft className="h-3.5 w-3.5" />
+              <ChevronLeft className="h-3.5 w-3.5 rtl:rotate-180" />
               {t("crm.leads.prev")}
             </Button>
             <Button
               type="button"
               size="sm"
               variant="outline"
+              className="min-h-11 touch-manipulation rounded-xl px-3 sm:min-h-8 sm:rounded-lg"
               disabled={page.page >= page.totalPages}
               onClick={() =>
                 onFiltersChange((prev) => ({ ...prev, page: page.page + 1 }))
               }
             >
               {t("crm.leads.next")}
-              <ChevronRight className="h-3.5 w-3.5" />
+              <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" />
             </Button>
           </div>
         </div>

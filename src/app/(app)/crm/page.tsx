@@ -287,12 +287,13 @@ export default function CrmPage() {
           ) : null}
 
           {hub.tab === "leads" && hub.leadsView === "table" ? (
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="min-w-0 space-y-3">
+              <div className="flex flex-wrap items-center gap-2 px-0.5">
                 <Button
                   type="button"
                   size="sm"
                   variant="ghost"
+                  className="min-h-11 touch-manipulation rounded-xl px-3 sm:min-h-8 sm:rounded-lg"
                   onClick={hub.backToLeadsCards}
                 >
                   <ArrowLeft className="me-1.5 h-3.5 w-3.5 rtl:rotate-180" />
@@ -344,12 +345,13 @@ export default function CrmPage() {
           ) : null}
 
           {hub.tab === "coldCalls" && hub.coldCallsView === "table" ? (
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="min-w-0 space-y-3">
+              <div className="flex flex-wrap items-center gap-2 px-0.5">
                 <Button
                   type="button"
                   size="sm"
                   variant="ghost"
+                  className="min-h-11 touch-manipulation rounded-xl px-3 sm:min-h-8 sm:rounded-lg"
                   onClick={hub.backToColdCallCards}
                 >
                   <ArrowLeft className="me-1.5 h-3.5 w-3.5 rtl:rotate-180" />

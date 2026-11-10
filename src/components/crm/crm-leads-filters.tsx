@@ -471,17 +471,19 @@ export function CrmLeadsFilters({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
           className={cn(
-            "inset-x-0 bottom-0 top-auto h-auto max-h-[min(88dvh,40rem)] max-w-none gap-0 rounded-t-2xl border-s-0 border-t p-0",
+            "inset-x-0 bottom-0 top-auto flex h-auto max-h-[min(90dvh,42rem)] max-w-none flex-col gap-0 rounded-t-2xl border-s-0 border-t p-0",
             "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
             "rtl:data-[state=closed]:slide-out-to-bottom rtl:data-[state=open]:slide-in-from-bottom"
           )}
         >
-          <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border/80" aria-hidden />
-          <SheetHeader className="border-b border-border/60 px-4 py-3 pe-14">
-            <SheetTitle>{t("crm.filters.title")}</SheetTitle>
-            <SheetDescription>{t("crm.filters.sheetHint")}</SheetDescription>
+          <div className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-border/80" aria-hidden />
+          <SheetHeader className="shrink-0 border-b border-border/60 px-4 py-3 pe-14 text-start">
+            <SheetTitle className="text-[1.05rem]">{t("crm.filters.title")}</SheetTitle>
+            <SheetDescription className="text-[13px]">
+              {t("crm.filters.sheetHint")}
+            </SheetDescription>
           </SheetHeader>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3.5">
             <FilterControls
               filters={filters}
               stages={stages}
@@ -497,10 +499,10 @@ export function CrmLeadsFilters({
               onClearFilters={onClearFilters}
             />
           </div>
-          <div className="shrink-0 border-t border-border/60 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="shrink-0 border-t border-border/60 bg-card/95 px-4 py-3 pb-[max(0.85rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
             <Button
               type="button"
-              className="min-h-11 w-full touch-manipulation"
+              className="min-h-12 w-full touch-manipulation rounded-xl text-[0.95rem]"
               onClick={() => onOpenChange(false)}
             >
               {t("crm.filters.done")}

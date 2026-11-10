@@ -32,10 +32,12 @@ interface CrmLeadRowActionsProps {
   lead: CrmLead;
   onViewHistory: (lead: CrmLead) => void;
   className?: string;
+  /** Mobile cards use comfortable targets; desktop table stays compact. */
+  density?: "comfortable" | "compact";
 }
 
 const actionBtnClass =
-  "inline-flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-xl text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-35 md:h-8 md:w-8 md:rounded-md";
+  "inline-flex shrink-0 touch-manipulation items-center justify-center text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-35";
 
 function ActionTip({
   label,
@@ -59,9 +61,17 @@ export function CrmLeadRowActions({
   lead,
   onViewHistory,
   className,
+  density = "compact",
 }: CrmLeadRowActionsProps) {
   const { t } = useTranslation();
   const [whatsappOpen, setWhatsappOpen] = useState(false);
+  const comfortable = density === "comfortable";
+  const btnSize = comfortable
+    ? "h-11 w-11 rounded-xl"
+    : "h-8 w-8 rounded-md max-lg:h-11 max-lg:w-11 max-lg:rounded-xl";
+  const iconSize = comfortable
+    ? "h-4 w-4"
+    : "h-3.5 w-3.5 max-lg:h-4 max-lg:w-4";
   const primary = allLeadContacts(
     lead.phone,
     lead.phoneNormalized,
@@ -91,7 +101,11 @@ export function CrmLeadRowActions({
   return (
     <TooltipProvider delayDuration={250}>
       <div
-        className={cn("inline-flex items-center justify-end gap-1 md:gap-0.5", className)}
+        className={cn(
+          "inline-flex items-center justify-end gap-0.5",
+          comfortable && "gap-1",
+          className
+        )}
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
       >
@@ -102,9 +116,13 @@ export function CrmLeadRowActions({
                 <button
                   type="button"
                   aria-label={t("crm.nextAction.call")}
-                  className={cn(actionBtnClass, "hover:bg-muted hover:text-foreground")}
+                  className={cn(
+                    actionBtnClass,
+                    btnSize,
+                    "hover:bg-muted hover:text-foreground"
+                  )}
                 >
-                  <Phone className="h-4 w-4 md:h-3.5 md:w-3.5" aria-hidden />
+                  <Phone className={iconSize} aria-hidden />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -139,9 +157,9 @@ export function CrmLeadRowActions({
               type="button"
               disabled
               aria-label={t("crm.nextAction.call")}
-              className={actionBtnClass}
+              className={cn(actionBtnClass, btnSize)}
             >
-              <Phone className="h-4 w-4 md:h-3.5 md:w-3.5" aria-hidden />
+              <Phone className={iconSize} aria-hidden />
             </button>
           )}
         </ActionTip>
@@ -153,20 +171,21 @@ export function CrmLeadRowActions({
               aria-label={t("crm.nextAction.whatsapp")}
               className={cn(
                 actionBtnClass,
+                btnSize,
                 "hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400"
               )}
               onClick={() => setWhatsappOpen(true)}
             >
-              <MessageCircle className="h-4 w-4 md:h-3.5 md:w-3.5" aria-hidden />
+              <MessageCircle className={iconSize} aria-hidden />
             </button>
           ) : (
             <button
               type="button"
               disabled
               aria-label={t("crm.nextAction.whatsapp")}
-              className={actionBtnClass}
+              className={cn(actionBtnClass, btnSize)}
             >
-              <MessageCircle className="h-4 w-4 md:h-3.5 md:w-3.5" aria-hidden />
+              <MessageCircle className={iconSize} aria-hidden />
             </button>
           )}
         </ActionTip>
@@ -175,10 +194,14 @@ export function CrmLeadRowActions({
           <button
             type="button"
             aria-label={t("crm.leads.viewHistory")}
-            className={cn(actionBtnClass, "hover:bg-muted hover:text-foreground")}
+            className={cn(
+              actionBtnClass,
+              btnSize,
+              "hover:bg-muted hover:text-foreground"
+            )}
             onClick={() => onViewHistory(lead)}
           >
-            <History className="h-4 w-4 md:h-3.5 md:w-3.5" aria-hidden />
+            <History className={iconSize} aria-hidden />
           </button>
         </ActionTip>
       </div>
