@@ -28,6 +28,13 @@ function store() {
       async claimOwner() {
         return null;
       },
+      async findPhoneOwner(phone: string) {
+        const owned = leads.find(
+          (lead) => lead.companyId === companyId && lead.phone === phone
+        );
+        if (!owned) return null;
+        return { websiteSubmissionId: owned.websiteSubmissionId };
+      },
       async createLead(body: Record<string, unknown>) {
         const submissionId = String(body.websiteSubmissionId);
         const phone = String(body.phone);
@@ -77,7 +84,7 @@ describe("website lead ingest contract", () => {
     assert.equal(world.leads[0].websiteSubmissionId, submission);
   });
 
-  it("does not attach a new submission id to a historical lead with the same phone", async () => {
+  it("leaves a historical null submission id unverifiable and unchanged", async () => {
     const world = store();
     world.leads.push({
       id: "lead_historical",
@@ -95,15 +102,48 @@ describe("website lead ingest contract", () => {
         }),
       (error: unknown) => {
         assert.ok(error instanceof ConflictException);
-        const body = error.getResponse() as { code?: string; details?: { accepted?: boolean } };
-        assert.equal(body.code, "PHONE_OWNED_BY_OTHER_SUBMISSION");
+        const body = error.getResponse() as {
+          code?: string;
+          details?: { accepted?: boolean; verifiable?: boolean; submissionId?: string };
+        };
+        assert.equal(body.code, "LEGACY_MATCH_UNVERIFIABLE");
         assert.equal(body.details?.accepted, false);
+        assert.equal(body.details?.verifiable, false);
+        assert.equal(body.details?.submissionId, submission);
+        assert.equal("id" in (body.details ?? {}), false);
         return true;
       }
     );
     assert.equal(world.leads.length, 1);
     assert.equal(world.leads[0].id, "lead_historical");
     assert.equal(world.leads[0].websiteSubmissionId, null);
+  });
+
+  it("reports a phone owned by a different stored submission as a real conflict", async () => {
+    const world = store();
+    world.leads.push({
+      id: "lead_other",
+      companyId: "cmp_rootk_001",
+      phone: "01012345678",
+      websiteSubmissionId: "sub_1730000000001_zzzzzz",
+    });
+
+    await assert.rejects(
+      () =>
+        executeWebsiteLeadIngest(world.deps("cmp_rootk_001"), {
+          name: "Ahmed",
+          phone: "01012345678",
+          submissionId: submission,
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof ConflictException);
+        const body = error.getResponse() as { code?: string };
+        assert.equal(body.code, "PHONE_OWNED_BY_OTHER_SUBMISSION");
+        return true;
+      }
+    );
+    assert.equal(world.leads.length, 1);
+    assert.equal(world.leads[0].websiteSubmissionId, "sub_1730000000001_zzzzzz");
   });
 
   it("returns the stored lead when the insert loses a unique-key race", async () => {
@@ -155,6 +195,17 @@ describe("website lead ingest contract", () => {
     assert.equal(first.kind, "created");
     assert.equal(second.kind, "created");
     assert.equal(world.leads.length, 2);
+    const replay = await executeWebsiteLeadIngest(world.deps("cmp_rootk_001"), {
+      name: "Ahmed",
+      phone: "01012345678",
+      submissionId: submission,
+    });
+    assert.equal(replay.kind, "replay");
+    assert.equal(world.leads.length, 2);
+    assert.notEqual(
+      (replay as { lead: { id?: string } }).lead.id,
+      world.leads.find((lead) => lead.companyId === "cmp_other")?.id
+    );
   });
 
   it("rejects a body companyId that does not match the integration company", async () => {

@@ -14,6 +14,8 @@ import { CrmService } from "./crm.service";
 import { CrmWebsiteAutoAssignService } from "./crm-website-auto-assign.service";
 import type { Actor } from "./crm-access";
 import { mapLead } from "./crm-mappers";
+import { findLeadByCanonicalPhone } from "./crm-phone";
+import { canonicalPhoneOrNull } from "../lib/phone-normalize";
 import { executeWebsiteLeadIngest } from "./website-lead-ingest";
 
 /**
@@ -67,6 +69,17 @@ export class WebsiteLeadIngestController {
           this.prisma.crmLead.findFirst({
             where: { companyId, websiteSubmissionId: submissionId, deletedAt: null },
           }),
+        findPhoneOwner: async (phone) => {
+          const phoneNormalized = canonicalPhoneOrNull(phone);
+          if (!phoneNormalized) return null;
+          const owner = await findLeadByCanonicalPhone(
+            this.prisma,
+            companyId,
+            phoneNormalized
+          );
+          if (!owner) return null;
+          return { websiteSubmissionId: owner.websiteSubmissionId ?? null };
+        },
         createLead: (leadBody) => this.crm.createLead(companyId, actor, leadBody),
         claimOwner: () => this.autoAssign.claimNextOwner(companyId),
       },

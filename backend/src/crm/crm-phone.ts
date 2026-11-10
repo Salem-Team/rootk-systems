@@ -132,6 +132,7 @@ export async function findLeadByCanonicalPhone(
       phoneNormalized: true,
       ownerEmployeeId: true,
       stageId: true,
+      websiteSubmissionId: true,
     },
   });
 }

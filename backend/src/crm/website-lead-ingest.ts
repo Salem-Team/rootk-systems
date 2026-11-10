@@ -18,9 +18,14 @@ export type WebsiteIngestDecision =
       autoAssignedTo: string | null;
     };
 
+type PhoneOwner = {
+  websiteSubmissionId: string | null;
+};
+
 type IngestDeps = {
   companyId: string;
   findBySubmissionId: (submissionId: string) => Promise<unknown | null>;
+  findPhoneOwner: (phone: string) => Promise<PhoneOwner | null>;
   createLead: (body: WebsiteIngestBody) => Promise<unknown>;
   claimOwner: () => Promise<string | null>;
 };
@@ -35,8 +40,9 @@ function isUniqueConflict(error: unknown): boolean {
 
 /**
  * Company comes from the authenticated integration, never from the body.
- * A matching submission id is a replay. A phone owned by another submission
- * is an explicit conflict and does not attach this id to the older lead.
+ * A matching submission id is a replay. A phone owned by a different stored
+ * submission id is an explicit conflict. A phone on a lead with no submission
+ * id is unverifiable and is not attached to this submission.
  */
 export async function executeWebsiteLeadIngest(
   deps: IngestDeps,
@@ -106,14 +112,57 @@ export async function executeWebsiteLeadIngest(
         return { kind: "replay", submissionId, lead: stored, mapped: false };
       }
       if (error instanceof ConflictException) {
-        throw new ConflictException({
-          message: "phone belongs to a different submission",
-          code: "PHONE_OWNED_BY_OTHER_SUBMISSION",
-          error: "Conflict",
-          details: { accepted: false, submissionId },
-        });
+        const owner = await deps.findPhoneOwner(phone);
+        if (owner?.websiteSubmissionId === submissionId) {
+          const storedAgain = await deps.findBySubmissionId(submissionId);
+          if (storedAgain) {
+            return {
+              kind: "replay",
+              submissionId,
+              lead: storedAgain,
+              mapped: false,
+            };
+          }
+        }
+        throw phoneConflictForOwner(owner, submissionId);
       }
     }
     throw error;
   }
+}
+
+/**
+ * The response identifies the situation without the other lead's phone, name,
+ * or database id. A null submission id is not proof of a different submission.
+ */
+function phoneConflictForOwner(
+  owner: PhoneOwner | null,
+  submissionId: string
+): ConflictException {
+  if (owner && owner.websiteSubmissionId === null) {
+    return new ConflictException({
+      message: "phone matches a lead created before submission ids",
+      code: "LEGACY_MATCH_UNVERIFIABLE",
+      error: "Conflict",
+      details: { accepted: false, verifiable: false, submissionId },
+    });
+  }
+  if (
+    owner &&
+    typeof owner.websiteSubmissionId === "string" &&
+    owner.websiteSubmissionId !== submissionId
+  ) {
+    return new ConflictException({
+      message: "phone belongs to a different submission",
+      code: "PHONE_OWNED_BY_OTHER_SUBMISSION",
+      error: "Conflict",
+      details: { accepted: false, submissionId },
+    });
+  }
+  return new ConflictException({
+    message: "phone conflict could not be classified",
+    code: "PHONE_CONFLICT_UNVERIFIED",
+    error: "Conflict",
+    details: { accepted: false, submissionId },
+  });
 }
