@@ -79,10 +79,10 @@ export function CrmDashboardKpis({
       aria-label={t("crm.kpi.groupLabel")}
     >
       {kpiItems.map((item) => (
-        <StaggerItem key={item.key} preset="rise" role="listitem">
+        <StaggerItem key={item.key} preset="rise" role="listitem" className="min-w-0">
           <button
             type="button"
-            className="w-full text-start"
+            className="w-full min-w-0 touch-manipulation text-start"
             onClick={() => onNavigateLeads(item.filter)}
           >
             <KpiCard

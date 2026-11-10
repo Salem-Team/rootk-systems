@@ -36,9 +36,9 @@ export function EmployeeCallStats({ rows }: { rows: DailyReportRow[] }) {
   const topRows = ranked.slice(0, 6);
 
   return (
-    <section className="surface-panel flex h-full flex-col overflow-hidden">
+    <section className="surface-panel flex h-full min-w-0 flex-col overflow-hidden">
       <div className="panel-header">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="text-[0.95rem] font-semibold tracking-tight">
               {t("dashboard.callStatsTitle")}
@@ -50,11 +50,11 @@ export function EmployeeCallStats({ rows }: { rows: DailyReportRow[] }) {
           <PhoneCall className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
         </div>
 
-        <div className="mt-3 flex items-center gap-3 sm:mt-4 sm:gap-4">
+        <div className="mt-3 flex min-w-0 items-center gap-2.5 sm:mt-4 sm:gap-4">
           <CallRing active={totals.active} inactive={totals.inactive} total={totalCalls} />
-          <dl className="grid flex-1 grid-cols-1 gap-2">
+          <dl className="grid min-w-0 flex-1 grid-cols-1 gap-2">
             <CallKpi label={t("reports.colCalls")} value={totalCalls} />
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid min-w-0 grid-cols-2 gap-2">
               <CallKpi
                 label={t("reports.colActiveCalls")}
                 value={totals.active}
@@ -79,38 +79,37 @@ export function EmployeeCallStats({ rows }: { rows: DailyReportRow[] }) {
         />
       ) : (
         <>
-          <ul className="grid gap-2 p-3 md:hidden">
+          <ul className="grid gap-2 p-2.5 sm:p-3 lg:hidden">
             {topRows.map((row) => {
               const total =
                 (row.crmActiveCalls ?? 0) + (row.crmInactiveCalls ?? 0);
               return (
                 <li
                   key={row.employeeId}
-                  className="rounded-xl border border-border/70 bg-card px-3 py-2.5"
+                  className="min-w-0 rounded-xl border border-border/70 bg-card px-3 py-2.5"
                 >
-                  <p className="truncate text-[13px] font-semibold">{row.name}</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {row.department}
-                  </p>
-                  <dl className="mt-2 grid grid-cols-3 gap-1.5 text-center">
-                    <div className="rounded-lg bg-muted/50 px-1.5 py-1.5">
-                      <dt className="line-clamp-2 text-[10px] leading-tight text-muted-foreground">
-                        {t("reports.colCalls")}
-                      </dt>
-                      <dd className="font-mono text-[13px] font-semibold tabular-nums">
-                        {total}
-                      </dd>
+                  <div className="flex min-w-0 items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-[13px] font-semibold">{row.name}</p>
+                      <p className="truncate text-[11px] text-muted-foreground">
+                        {row.department}
+                      </p>
                     </div>
-                    <div className="rounded-lg bg-muted/50 px-1.5 py-1.5">
-                      <dt className="line-clamp-2 text-[10px] leading-tight text-muted-foreground">
+                    <span className="shrink-0 font-mono text-sm font-semibold tabular-nums">
+                      {total}
+                    </span>
+                  </div>
+                  <dl className="mt-2 grid grid-cols-2 gap-1.5">
+                    <div className="rounded-lg bg-muted/50 px-2 py-1.5">
+                      <dt className="line-clamp-1 text-[10px] leading-tight text-muted-foreground">
                         {t("reports.colActiveCalls")}
                       </dt>
                       <dd className="font-mono text-[13px] tabular-nums text-emerald-700 dark:text-emerald-300">
                         {row.crmActiveCalls ?? 0}
                       </dd>
                     </div>
-                    <div className="rounded-lg bg-muted/50 px-1.5 py-1.5">
-                      <dt className="line-clamp-2 text-[10px] leading-tight text-muted-foreground">
+                    <div className="rounded-lg bg-muted/50 px-2 py-1.5">
+                      <dt className="line-clamp-1 text-[10px] leading-tight text-muted-foreground">
                         {t("reports.colInactiveCalls")}
                       </dt>
                       <dd className="font-mono text-[13px] tabular-nums text-rose-700 dark:text-rose-300">
@@ -123,7 +122,7 @@ export function EmployeeCallStats({ rows }: { rows: DailyReportRow[] }) {
             })}
           </ul>
 
-          <div className="hidden flex-1 overflow-auto md:block">
+          <div className="hidden min-w-0 flex-1 overflow-auto lg:block">
             <DataTable embedded className="min-w-0">
               <DataTableHeader>
                 <DataTableHeaderRow>
@@ -161,7 +160,12 @@ export function EmployeeCallStats({ rows }: { rows: DailyReportRow[] }) {
           </div>
 
           <div className="border-t border-border/60 px-3 py-2.5 sm:px-4">
-            <Button asChild variant="ghost" size="sm" className="w-full justify-center">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="h-10 w-full justify-center touch-manipulation sm:h-9"
+            >
               <Link href="/reports">{t("dashboard.viewCallReports")}</Link>
             </Button>
           </div>
@@ -180,7 +184,7 @@ function CallRing({
   inactive: number;
   total: number;
 }) {
-  const size = 72;
+  const size = 64;
   const stroke = 7;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -188,11 +192,7 @@ function CallRing({
   const inactiveLen = total > 0 ? (inactive / total) * circumference : 0;
 
   return (
-    <div
-      className="relative shrink-0"
-      style={{ width: size, height: size }}
-      aria-hidden
-    >
+    <div className="relative shrink-0" style={{ width: size, height: size }} aria-hidden>
       <svg width={size} height={size} className="-rotate-90">
         <circle
           cx={size / 2}
@@ -250,13 +250,13 @@ function CallKpi({
   tone?: "ok" | "warn";
 }) {
   return (
-    <div className="rounded-lg bg-muted/45 px-2.5 py-1.5">
-      <dt className="line-clamp-2 text-[10px] font-medium leading-tight text-muted-foreground">
+    <div className="min-w-0 rounded-lg bg-muted/45 px-2 py-1.5 sm:px-2.5">
+      <dt className="line-clamp-1 text-[10px] font-medium leading-tight text-muted-foreground">
         {label}
       </dt>
       <dd
         className={cn(
-          "mt-0.5 font-mono text-base font-semibold tabular-nums",
+          "mt-0.5 font-mono text-[15px] font-semibold tabular-nums sm:text-base",
           tone === "ok" && "text-emerald-700 dark:text-emerald-300",
           tone === "warn" && "text-rose-700 dark:text-rose-300"
         )}

@@ -24,7 +24,7 @@ export function CrmDashboardStageCards({
           {t("crm.dashboard.stageCards")}
         </h3>
       </div>
-      <div className="scroll-x flex gap-3 px-3 pb-3 pt-1 [scrollbar-width:thin]">
+      <div className="scroll-x flex snap-x snap-mandatory gap-2.5 px-3 pb-3 pt-1 [scrollbar-width:thin] sm:gap-3">
         {stageCards.length === 0 ? (
           <p className="px-1 py-4 text-sm text-muted-foreground">
             {t("crm.empty.chart")}
@@ -38,7 +38,7 @@ export function CrmDashboardStageCards({
                 key={card.id}
                 type="button"
                 onClick={() => onNavigateLeads({ stageId: card.id })}
-                className="min-w-[160px] shrink-0 rounded-xl border border-border/70 bg-background px-3.5 py-3 text-start transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="min-w-[min(70vw,11.5rem)] shrink-0 snap-start rounded-xl border border-border/70 bg-background px-3.5 py-3 text-start touch-manipulation transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-w-[160px]"
               >
                 <div className="flex items-center gap-2">
                   <span

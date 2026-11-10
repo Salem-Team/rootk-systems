@@ -82,9 +82,9 @@ export function KpiCard({
 
   const content = (
     <>
-      <div className="flex items-start justify-between gap-2 sm:gap-3">
+      <div className="flex min-w-0 items-start justify-between gap-2 sm:gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
+          <div className="flex min-w-0 items-center gap-1.5">
             <p className="section-label !mb-0 line-clamp-2 leading-snug">{label}</p>
             {badge ? (
               <>
@@ -102,7 +102,7 @@ export function KpiCard({
               </>
             ) : null}
           </div>
-          <p className="stat-value mt-2 text-[1.45rem] leading-none sm:mt-2.5 sm:text-[1.55rem] md:text-[1.7rem]">
+          <p className="stat-value mt-2 text-[1.35rem] leading-none sm:mt-2.5 sm:text-[1.55rem] md:text-[1.7rem]">
             <AnimatedCounter
               value={value}
               suffix={suffix}
@@ -135,7 +135,7 @@ export function KpiCard({
             </p>
           ) : null}
         </div>
-        <div className="flex flex-col items-end gap-2.5">
+        <div className="flex shrink-0 flex-col items-end gap-2.5">
           <motion.div
             initial={reduceMotion ? false : "rest"}
             whileHover={reduceMotion ? undefined : "hover"}
@@ -151,14 +151,14 @@ export function KpiCard({
   );
 
   const shellClass = cn(
-    "kpi-tile group relative block h-full overflow-hidden",
+    "kpi-tile group relative block h-full min-w-0 max-w-full overflow-hidden touch-manipulation",
     href && "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
     className
   );
 
   if (href) {
     return (
-      <div className="h-full">
+      <div className="h-full min-w-0">
         <Link href={href} className={shellClass} aria-label={label}>
           {content}
         </Link>

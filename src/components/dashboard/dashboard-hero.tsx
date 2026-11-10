@@ -51,12 +51,26 @@ export function DashboardHero({
 
   return (
     <header className="min-w-0 max-w-full">
-      <div className="flex min-w-0 flex-col gap-3.5 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
-        <div className="min-w-0 space-y-1.5">
+      <div className="flex min-w-0 flex-col gap-3 sm:gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">
+              <span
+                className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500"
+                aria-hidden
+              />
+              <span className="tabular-nums">
+                {present}/{totalEmployees}
+              </span>
+              <span className="text-emerald-700/80 dark:text-emerald-300/80">
+                {t("dashboard.liveNow")}
+              </span>
+            </span>
+          </div>
           <h1 className="type-title break-words">
             {t("dashboard.welcomeTitle", { name: firstName || t("common.admin") })}
           </h1>
-          <p className="type-subtitle max-w-xl">
+          <p className="type-subtitle max-w-xl text-[13px] leading-relaxed sm:text-sm">
             {t("dashboard.welcomeSubtitle", {
               present,
               total: totalEmployees,
@@ -66,7 +80,7 @@ export function DashboardHero({
 
         <nav
           aria-label={t("dashboard.quickActions")}
-          className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end"
+          className="grid min-w-0 grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end lg:max-w-[min(100%,28rem)]"
         >
           {QUICK_LINKS.map((link) => {
             const Icon = link.icon;
@@ -75,9 +89,9 @@ export function DashboardHero({
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "flex min-h-12 min-w-0 items-center gap-2.5 rounded-2xl border border-border/80 bg-card px-3 text-[13px] font-semibold leading-tight touch-manipulation",
+                  "flex min-h-12 min-w-0 items-center gap-2.5 rounded-2xl border border-border/80 bg-card px-3 py-2.5 text-[13px] font-semibold leading-tight touch-manipulation",
                   "shadow-[0_1px_2px_rgba(11,20,36,0.04)] transition-colors",
-                  "sm:inline-flex sm:h-9 sm:min-h-0 sm:w-auto sm:gap-2 sm:rounded-lg sm:px-3 sm:font-medium",
+                  "sm:inline-flex sm:h-9 sm:min-h-0 sm:w-auto sm:gap-2 sm:rounded-lg sm:px-3 sm:py-0 sm:font-medium",
                   "hover:border-primary/30 hover:bg-primary/[0.04] hover:text-primary",
                   "active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
                 )}

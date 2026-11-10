@@ -221,14 +221,14 @@ export function AdminDashboard() {
 
       <section
         aria-label={t("dashboard.moreInsights")}
-        className="min-w-0 space-y-3"
+        className="min-w-0 space-y-2.5 sm:space-y-3"
       >
         <div className="flex items-baseline justify-between gap-3 px-0.5">
           <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
             {t("dashboard.moreInsights")}
           </h2>
         </div>
-        <div className="grid min-w-0 gap-3 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
+        <div className="grid min-w-0 gap-3 md:grid-cols-2 md:gap-5 xl:grid-cols-4">
           <Reveal preset="scale" className="min-w-0">
             <TopDepartments stats={deptStats} />
           </Reveal>

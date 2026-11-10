@@ -27,19 +27,26 @@ export function RecentLeavePanel({ requests }: { requests: LeaveRequest[] }) {
       aria-labelledby="recent-leave-heading"
     >
       <div className="panel-header flex flex-wrap items-start justify-between gap-2 sm:gap-3">
-        <div className="min-w-0 flex-1 basis-40">
+        <div className="min-w-0 flex-1 basis-[min(100%,10rem)]">
           <h3
             id="recent-leave-heading"
-            className="flex items-center gap-2 text-[0.95rem] font-semibold tracking-tight"
+            className="flex min-w-0 items-center gap-2 text-[0.95rem] font-semibold tracking-tight"
           >
-            <FileText className="h-3.5 w-3.5 text-primary" aria-hidden />
-            {t("dashboard.recentLeaveRequests")}
+            <FileText className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+            <span className="min-w-0 truncate">
+              {t("dashboard.recentLeaveRequests")}
+            </span>
           </h3>
           <p className="mt-0.5 hidden text-sm text-muted-foreground sm:block">
             {t("dashboard.recentLeaveRequestsDesc")}
           </p>
         </div>
-        <Button asChild variant="ghost" size="sm" className="shrink-0">
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="h-9 shrink-0 touch-manipulation"
+        >
           <Link href="/leave">{t("dashboard.viewAll")}</Link>
         </Button>
       </div>
@@ -61,13 +68,13 @@ export function RecentLeavePanel({ requests }: { requests: LeaveRequest[] }) {
               <motion.li
                 key={leave.id}
                 variants={fadeInUp}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/60 bg-muted/20 px-3 py-2.5"
+                className="flex min-w-0 items-start justify-between gap-2 rounded-xl border border-border/60 bg-muted/20 px-3 py-2.5 sm:items-center"
               >
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="truncate text-[13px] font-semibold">
                     {t(`leaveTypes.${leave.type}`)}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
                     {format(parseISO(leave.startDate), "MMM d", {
                       locale: dateLocale,
                     })}
@@ -79,7 +86,7 @@ export function RecentLeavePanel({ requests }: { requests: LeaveRequest[] }) {
                     · {t("leave.daysCount", { count: leave.days })}
                   </p>
                 </div>
-                <StatusBadge status={leave.status} />
+                <StatusBadge status={leave.status} className="shrink-0" />
               </motion.li>
             ))}
           </motion.ul>

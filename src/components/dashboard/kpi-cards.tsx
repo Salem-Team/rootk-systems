@@ -79,12 +79,17 @@ export function KpiCards({ stats }: { stats: DashboardStats }) {
   return (
     <StaggerRoot
       speed="fast"
-      className="grid min-w-0 auto-rows-fr grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-6"
+      className="grid min-w-0 auto-rows-fr grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 xl:grid-cols-6"
       role="list"
       aria-label={t("dashboard.executiveOverview")}
     >
       {items.map((item) => (
-        <StaggerItem key={item.key} preset="rise" role="listitem" className="h-full">
+        <StaggerItem
+          key={item.key}
+          preset="rise"
+          role="listitem"
+          className="min-w-0 h-full"
+        >
           <KpiCard
             label={item.label}
             value={item.value}

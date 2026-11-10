@@ -53,7 +53,7 @@ export function ActivityFeed({
       aria-labelledby="activity-feed-heading"
     >
       <div className="panel-header flex flex-wrap items-start justify-between gap-2 sm:gap-3">
-        <div className="min-w-0 flex-1 basis-40">
+        <div className="min-w-0 flex-1 basis-[min(100%,10rem)]">
           <h3
             id="activity-feed-heading"
             className="text-[0.95rem] font-semibold tracking-tight"
@@ -65,7 +65,12 @@ export function ActivityFeed({
           </p>
         </div>
         {viewAllHref ? (
-          <Button asChild variant="ghost" size="sm" className="shrink-0 gap-1">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="h-9 shrink-0 gap-1 touch-manipulation"
+          >
             <Link href={viewAllHref}>
               {t("dashboard.viewAll")}
               <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
@@ -84,15 +89,15 @@ export function ActivityFeed({
         </div>
       ) : (
         <div className="p-2 sm:p-3">
-          <ScrollArea className="h-[min(340px,55vh)] pe-2 sm:h-[340px]">
+          <ScrollArea className="h-[min(300px,50vh)] pe-1.5 sm:h-[340px] sm:pe-2">
             <motion.div
               variants={reduceMotion ? undefined : staggerContainer}
               initial={reduceMotion ? false : "hidden"}
               animate={reduceMotion ? undefined : "visible"}
-              className="space-y-4"
+              className="space-y-3.5 sm:space-y-4"
             >
               {groups.map((group) => (
-                <div key={group.dayKey}>
+                <div key={group.dayKey} className="min-w-0">
                   <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                     {dayLabel(group.dayKey, t, dateLocale)}
                   </p>
@@ -103,7 +108,7 @@ export function ActivityFeed({
                       );
                       const copy = localizedActivity(activity, t);
                       const row = (
-                        <SoftListRow className="flex items-center gap-3 !py-2.5">
+                        <SoftListRow className="flex min-w-0 items-center gap-2.5 !px-2.5 !py-2.5 sm:gap-3 sm:!px-3.5">
                           <div
                             className={cn(
                               "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",

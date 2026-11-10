@@ -96,9 +96,9 @@ export function CompanyCalendarMini({
           {format(parseISO(`${monthKey}-01`), "MMMM yyyy", { locale: dateLocale })}
         </p>
       </div>
-      <div className="panel-body space-y-4">
+      <div className="panel-body space-y-3 sm:space-y-4">
         <div
-          className="grid grid-cols-7 gap-1"
+          className="grid grid-cols-7 gap-0.5 sm:gap-1"
           role="grid"
           aria-label={t("dashboard.companyCalendar")}
         >
@@ -113,7 +113,8 @@ export function CompanyCalendarMini({
           ].map((d) => (
             <div
               key={d}
-              className="truncate px-0 pb-1 text-center text-[10px] font-medium leading-none text-muted-foreground"
+              title={d}
+              className="truncate px-0 pb-1 text-center text-[9px] font-semibold leading-none text-muted-foreground sm:text-[10px] sm:font-medium"
             >
               {d}
             </div>
@@ -123,7 +124,7 @@ export function CompanyCalendarMini({
               key={cell.date}
               role="gridcell"
               className={cn(
-                "flex aspect-square flex-col items-center justify-center overflow-hidden rounded-md border border-transparent p-0.5 text-center text-[10px] tabular-nums leading-none",
+                "flex min-h-9 flex-col items-center justify-center overflow-hidden rounded-md border border-transparent p-0.5 text-center text-[10px] tabular-nums leading-none sm:aspect-square sm:min-h-0 sm:text-[11px]",
                 cell.inMonth
                   ? "bg-muted/30 text-foreground"
                   : "text-muted-foreground/30",
@@ -148,14 +149,14 @@ export function CompanyCalendarMini({
           {upcoming.map((e) => (
             <li
               key={e.id}
-              className="flex items-center gap-2 rounded-lg border border-border/60 px-2.5 py-2 text-xs"
+              className="flex min-w-0 items-center gap-2 rounded-lg border border-border/60 px-2.5 py-2 text-xs"
             >
               <span
-                className={cn("h-2 w-2 rounded-full", KIND_DOT[e.kind])}
+                className={cn("h-2 w-2 shrink-0 rounded-full", KIND_DOT[e.kind])}
                 aria-hidden
               />
               <span className="min-w-0 flex-1 truncate font-medium">{e.title}</span>
-              <time className="shrink-0 text-muted-foreground" dateTime={e.date}>
+              <time className="shrink-0 tabular-nums text-muted-foreground" dateTime={e.date}>
                 {format(parseISO(e.date), "MMM d", { locale: dateLocale })}
               </time>
             </li>

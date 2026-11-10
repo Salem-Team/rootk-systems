@@ -71,12 +71,12 @@ export function Announcements({
           </p>
         ) : null}
       </div>
-      <div className="p-2.5 sm:p-4">
+      <div className="min-w-0 p-2.5 sm:p-4">
         <motion.div
           variants={staggerContainer}
           initial="hidden"
           animate="visible"
-          className="space-y-2"
+          className="min-w-0 space-y-2"
         >
           {ordered.length === 0 ? (
             <p className="px-1 py-6 text-center text-sm text-muted-foreground">

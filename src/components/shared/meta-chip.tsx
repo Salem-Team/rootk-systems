@@ -45,7 +45,7 @@ export function SoftListRow({
   onClick,
 }: SoftListRowProps) {
   const shared = cn(
-    "list-row w-full px-3.5 py-3 text-start",
+    "list-row w-full min-w-0 max-w-full px-3.5 py-3 text-start",
     active && "list-row-active",
     className
   );

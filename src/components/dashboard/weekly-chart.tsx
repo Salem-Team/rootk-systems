@@ -46,7 +46,7 @@ export function WeeklyChart({ data }: { data: WeeklyStat[] }) {
   return (
     <Reveal preset="scale" inView={false}>
       <section className="surface-panel h-full min-w-0 overflow-hidden">
-        <div className="panel-header flex min-w-0 items-start justify-between gap-2 sm:gap-3">
+        <div className="panel-header flex min-w-0 flex-wrap items-start justify-between gap-2 sm:gap-3">
           <div className="min-w-0">
             <h3 className="text-[0.95rem] font-semibold tracking-tight">
               {t("dashboard.weeklyTitle")}
@@ -59,80 +59,85 @@ export function WeeklyChart({ data }: { data: WeeklyStat[] }) {
             {t("dashboard.last7Days")}
           </span>
         </div>
-        <div className="panel-body min-w-0">
+        <div className="panel-body min-w-0 !px-2.5 sm:!px-5">
           <div
-            className="chart-frame h-[220px] sm:h-[300px] md:h-[320px]"
+            className="chart-frame h-[210px] sm:h-[300px] md:h-[320px]"
             role="img"
             aria-label={t("dashboard.weeklyTitle")}
           >
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="presentFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={CHART.present} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={CHART.present} stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="wfhFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={CHART.wfh} stopOpacity={0.25} />
-                  <stop offset="95%" stopColor={CHART.wfh} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-              <XAxis
-                dataKey="day"
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 10, fill: MUTED }}
-                interval={0}
-                minTickGap={0}
-              />
-              <YAxis
-                width={28}
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 10, fill: MUTED }}
-              />
-              <Tooltip contentStyle={chartTooltipStyle} />
-              <Area
-                type="monotone"
-                dataKey="present"
-                name={t("charts.present")}
-                stroke={CHART.present}
-                fill="url(#presentFill)"
-                strokeWidth={2.25}
-                animationDuration={reduceMotion ? 0 : 900}
-              />
-              <Area
-                type="monotone"
-                dataKey="wfh"
-                name={t("charts.wfh")}
-                stroke={CHART.wfh}
-                fill="url(#wfhFill)"
-                strokeWidth={2}
-                animationDuration={reduceMotion ? 0 : 1100}
-              />
-              <Area
-                type="monotone"
-                dataKey="late"
-                name={t("charts.late")}
-                stroke={CHART.late}
-                fill="transparent"
-                strokeWidth={2}
-                animationDuration={reduceMotion ? 0 : 1200}
-              />
-              <Area
-                type="monotone"
-                dataKey="absent"
-                name={t("charts.absent")}
-                stroke={CHART.absent}
-                fill="transparent"
-                strokeWidth={2}
-                animationDuration={reduceMotion ? 0 : 1300}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={chartData}
+                margin={{ top: 8, right: 2, left: -8, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="presentFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={CHART.present} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={CHART.present} stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="wfhFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={CHART.wfh} stopOpacity={0.25} />
+                    <stop offset="95%" stopColor={CHART.wfh} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+                <XAxis
+                  dataKey="day"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 10, fill: MUTED }}
+                  interval={0}
+                  minTickGap={0}
+                  tickMargin={6}
+                />
+                <YAxis
+                  width={24}
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 10, fill: MUTED }}
+                  allowDecimals={false}
+                />
+                <Tooltip contentStyle={chartTooltipStyle} />
+                <Area
+                  type="monotone"
+                  dataKey="present"
+                  name={t("charts.present")}
+                  stroke={CHART.present}
+                  fill="url(#presentFill)"
+                  strokeWidth={2.25}
+                  animationDuration={reduceMotion ? 0 : 900}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="wfh"
+                  name={t("charts.wfh")}
+                  stroke={CHART.wfh}
+                  fill="url(#wfhFill)"
+                  strokeWidth={2}
+                  animationDuration={reduceMotion ? 0 : 1100}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="late"
+                  name={t("charts.late")}
+                  stroke={CHART.late}
+                  fill="transparent"
+                  strokeWidth={2}
+                  animationDuration={reduceMotion ? 0 : 1200}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="absent"
+                  name={t("charts.absent")}
+                  stroke={CHART.absent}
+                  fill="transparent"
+                  strokeWidth={2}
+                  animationDuration={reduceMotion ? 0 : 1300}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
-          <ul className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5">
+          <ul className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 px-1">
             {(
               [
                 ["present", CHART.present, t("charts.present")],
