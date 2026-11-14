@@ -39,32 +39,48 @@ export function useEmployeeWorkHubActions({
   const [editingMeeting, setEditingMeeting] = useState<WorkMeeting | null>(null);
   const [evidenceTask, setEvidenceTask] = useState<WorkTask | null>(null);
 
-  async function cycleTaskStatus(id: string) {
-    const task = tasks.find((x) => x.id === id);
+  function resolveTask(idOrTask: string | WorkTask): WorkTask | undefined {
+    if (typeof idOrTask !== "string") return idOrTask;
+    return tasks.find((x) => x.id === idOrTask);
+  }
+
+  async function cycleTaskStatus(idOrTask: string | WorkTask) {
+    const task = resolveTask(idOrTask);
     if (!task) return;
     const next = nextTaskStatus(task.status);
     if (next === "completed") {
       setEvidenceTask(task);
       return;
     }
-    setTasks((prev) =>
-      prev.map((x) => (x.id === id ? { ...x, status: next } : x))
-    );
-    const res = await updateWorkTaskStatus(id, next);
+    setTasks((prev) => {
+      const exists = prev.some((x) => x.id === task.id);
+      if (!exists) return [...prev, { ...task, status: next }];
+      return prev.map((x) => (x.id === task.id ? { ...x, status: next } : x));
+    });
+    const res = await updateWorkTaskStatus(task.id, next);
     if (!res.success) await reload();
+    else if (res.data) {
+      setTasks((prev) => {
+        const exists = prev.some((x) => x.id === res.data!.id);
+        if (!exists) return [...prev, res.data!];
+        return prev.map((x) => (x.id === res.data!.id ? res.data! : x));
+      });
+    }
   }
 
   /** One-tap Done: always collect mandatory notes before completing. */
-  function markTaskDone(id: string) {
-    const task = tasks.find((x) => x.id === id);
+  function markTaskDone(idOrTask: string | WorkTask) {
+    const task = resolveTask(idOrTask);
     if (!task || task.status === "completed") return;
     setEvidenceTask(task);
   }
 
   function handleEvidenceCompleted(updated: WorkTask) {
-    setTasks((prev) =>
-      prev.map((x) => (x.id === updated.id ? updated : x))
-    );
+    setTasks((prev) => {
+      const exists = prev.some((x) => x.id === updated.id);
+      if (!exists) return [...prev, updated];
+      return prev.map((x) => (x.id === updated.id ? updated : x));
+    });
     setEvidenceTask(null);
   }
 

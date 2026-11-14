@@ -73,6 +73,8 @@ interface TaskViewSheetProps {
   onOpenChange: (open: boolean) => void;
   employees: Map<string, Employee>;
   onEdit?: (task: WorkTask) => void;
+  /** Cycle todo → in progress → done (same as employee task detail). */
+  onCycleStatus?: (task: WorkTask) => void;
 }
 
 /** Read-only work-task sheet with completion percentage. */
@@ -82,6 +84,7 @@ export function TaskViewSheet({
   onOpenChange,
   employees,
   onEdit,
+  onCycleStatus,
 }: TaskViewSheetProps) {
   const { t, locale } = useTranslation();
   const dateLocale = locale === "ar" ? arLocale : enUS;
@@ -295,6 +298,20 @@ export function TaskViewSheet({
             </div>
 
             <div className="shrink-0 flex flex-col-reverse gap-2 border-t border-border/60 px-4 py-3 pb-[max(0.85rem,env(safe-area-inset-bottom))] sm:flex-row sm:flex-wrap sm:px-6">
+              {onCycleStatus ? (
+                <Button
+                  type="button"
+                  className="h-12 w-full touch-manipulation rounded-xl text-[15px] font-semibold sm:h-9 sm:w-auto sm:flex-none sm:rounded-lg sm:text-sm"
+                  variant={task.status === "in_progress" ? "default" : "outline"}
+                  onClick={() => onCycleStatus(task)}
+                >
+                  {task.status === "completed"
+                    ? t("workEvidence.reopen")
+                    : task.status === "todo"
+                      ? t("workEvidence.startWork")
+                      : t("workEvidence.done")}
+                </Button>
+              ) : null}
               {onEdit ? (
                 <Button
                   type="button"

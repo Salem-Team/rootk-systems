@@ -568,6 +568,8 @@ export const ar: TranslationKeys = {
     projectsTeam: "الفريق",
     projectsPhases: "المراحل",
     projectsNoTasks: "مفيش مهام في المرحلة دي",
+    projectsPhaseTaskCount: "{count} مهام",
+    projectsEpicTaskCount: "{count} مهام",
     projectsMineCount: "{count} مهام ليك",
     projectsOpen: "اعرض المشروع",
     taskDetail: "تفاصيل المهمة",

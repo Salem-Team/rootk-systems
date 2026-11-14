@@ -576,6 +576,8 @@ export const en = {
     projectsTeam: "Team",
     projectsPhases: "Phases",
     projectsNoTasks: "No tasks in this phase",
+    projectsPhaseTaskCount: "{count} tasks",
+    projectsEpicTaskCount: "{count} tasks",
     projectsMineCount: "{count} tasks for you",
     projectsOpen: "View project",
     taskDetail: "Task details",

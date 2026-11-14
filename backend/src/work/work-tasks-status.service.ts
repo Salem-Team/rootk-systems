@@ -30,6 +30,7 @@ import {
   type Actor,
 } from "./work-mappers";
 import { assertCanMutateWorkTask, canWidenTaskAssignees } from "./work-access";
+import { actorIsProjectParticipant } from "./work-task-visibility";
 import {
   parseStoredMedia,
   resolveTaskMediaPayload,
@@ -272,19 +273,49 @@ export class WorkTasksStatusService {
       where: { id, companyId, deletedAt: null },
     });
     if (!current) throw new NotFoundException("Task not found");
+
+    const selfId = actor.employeeId?.trim() || "";
+    let working = current;
     if (
       actor.role === "employee" &&
-      !current.assigneeIds.includes(actor.employeeId)
+      selfId &&
+      !current.assigneeIds.includes(selfId)
     ) {
-      throw new ForbiddenException("You can only update tasks assigned to you");
+      const openSeat = current.assigneeIds.length === 0;
+      const onProject =
+        openSeat &&
+        (await actorIsProjectParticipant(
+          this.prisma,
+          companyId,
+          selfId,
+          current.projectId
+        ));
+      if (!onProject) {
+        throw new ForbiddenException("You can only update tasks assigned to you");
+      }
+      // Project members may claim an unassigned project task, then progress it.
+      working = await this.prisma.workTask.update({
+        where: { id },
+        data: {
+          assigneeIds: [selfId],
+          assigneeProgress: syncAssigneeProgress(
+            [selfId],
+            resolveTaskAssigneeProgress(current),
+            { status: TaskStatus.todo }
+          ) as unknown as Prisma.InputJsonValue,
+          updatedBy: actor.userId,
+          version: { increment: 1 },
+        },
+      });
     }
-    if (actor.role === "employee" && ownsPersonalTask(current, actor)) {
+
+    if (actor.role === "employee" && ownsPersonalTask(working, actor)) {
       let evidenceMediaResolved: ReturnType<typeof parseStoredMedia> | undefined;
       if (evidence?.media !== undefined) {
         evidenceMediaResolved = await resolveTaskMediaPayload(
           companyId,
           evidence.media,
-          parseStoredMedia(current.evidenceMedia)
+          parseStoredMedia(working.evidenceMedia)
         );
       }
       return this.updateTask(companyId, actor, id, {
@@ -297,7 +328,7 @@ export class WorkTasksStatusService {
       });
     }
 
-    let progress = resolveTaskAssigneeProgress(current);
+    let progress = resolveTaskAssigneeProgress(working);
     const evidenceLinks =
       evidence?.links !== undefined
         ? sanitizeEvidenceLinks(evidence.links)
@@ -311,16 +342,16 @@ export class WorkTasksStatusService {
       evidenceMediaResolved = await resolveTaskMediaPayload(
         companyId,
         evidence.media,
-        mineBefore?.evidenceMedia ?? parseStoredMedia(current.evidenceMedia)
+        mineBefore?.evidenceMedia ?? parseStoredMedia(working.evidenceMedia)
       );
     }
 
     if (actor.role === "admin") {
       if (
         status === TaskStatus.completed &&
-        current.status !== TaskStatus.completed
+        working.status !== TaskStatus.completed
       ) {
-        assertCompletionEvidence(current, evidence, actor.role);
+        assertCompletionEvidence(working, evidence, actor.role);
       }
       progress = applyStatusToAllAssignees(progress, status, {
         links: evidenceLinks,
@@ -335,10 +366,10 @@ export class WorkTasksStatusService {
       ) {
         assertCompletionEvidence(
           {
-            ...current,
-            evidenceLinks: mine?.evidenceLinks ?? current.evidenceLinks,
-            evidenceNotes: mine?.evidenceNotes ?? current.evidenceNotes,
-            evidenceMedia: mine?.evidenceMedia ?? current.evidenceMedia,
+            ...working,
+            evidenceLinks: mine?.evidenceLinks ?? working.evidenceLinks,
+            evidenceNotes: mine?.evidenceNotes ?? working.evidenceNotes,
+            evidenceMedia: mine?.evidenceMedia ?? working.evidenceMedia,
           },
           {
             links: evidence?.links,
@@ -370,7 +401,7 @@ export class WorkTasksStatusService {
       progress[0];
 
     const prevMine = findAssigneeProgress(
-      resolveTaskAssigneeProgress(current),
+      resolveTaskAssigneeProgress(working),
       actor.employeeId
     );
 
@@ -410,11 +441,11 @@ export class WorkTasksStatusService {
       actor.role === "employee" &&
       status === TaskStatus.completed &&
       prevMine?.status !== TaskStatus.completed &&
-      !isPersonal(current.origin);
+      !isPersonal(working.origin);
     const becameFullyComplete =
       rolledStatus === TaskStatus.completed &&
-      current.status !== TaskStatus.completed &&
-      !isPersonal(current.origin);
+      working.status !== TaskStatus.completed &&
+      !isPersonal(working.origin);
 
     if (justCompletedSelf || becameFullyComplete) {
       const useFullCompleteKeys =
@@ -455,7 +486,7 @@ export class WorkTasksStatusService {
       });
     }
 
-    if (row.targetId && current.status !== row.status) {
+    if (row.targetId && working.status !== row.status) {
       await this.targets.onLinkedTaskStatusChanged(
         companyId,
         row.id,

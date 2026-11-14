@@ -17,7 +17,7 @@ import {
 import type { ApiResponse } from "@/types";
 import type { TaskStatus, WorkTask } from "@/types/work";
 
-/** Local-mode mirror of backend visibility: assignee, creator, reports, project lead. */
+/** Local-mode mirror of backend visibility: assignee, creator, reports, project participant. */
 async function filterVisibleWorkTasks(
   tasks: WorkTask[],
   selfId: string,
@@ -33,16 +33,20 @@ async function filterVisibleWorkTasks(
   }
 
   const projects = await workProjectRepository.list();
-  const ledProjectIds = new Set(
+  const projectIds = new Set(
     projects
-      .filter((project) => !project.deletedAt && project.leadId === selfId)
+      .filter(
+        (project) =>
+          !project.deletedAt &&
+          (project.leadId === selfId || project.memberIds.includes(selfId))
+      )
       .map((project) => project.id)
   );
 
   return tasks.filter((task) => {
     if (task.assigneeIds.some((id) => reportIds.has(id))) return true;
     if (task.createdBy === userId || task.createdBy === selfId) return true;
-    if (task.projectId && ledProjectIds.has(task.projectId)) return true;
+    if (task.projectId && projectIds.has(task.projectId)) return true;
     return false;
   });
 }
@@ -61,7 +65,7 @@ export async function getWorkTasks(filters: {
     const res = await fetchWorkTasks({
       employeeId: filters.employeeId,
       status: filters.status,
-      // Server applies assignee / team-lead / project-lead visibility from permissions.
+      // Server applies assignee / team-lead / project participant visibility.
       team: !companyWide || filters.team ? true : undefined,
     });
     if (!res.success) return res;

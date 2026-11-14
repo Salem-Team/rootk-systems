@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
-import { FileText, FolderKanban } from "lucide-react";
+import { CheckCircle2, FileText, FolderKanban } from "lucide-react";
 import { ProjectAnnexReadout } from "@/components/work/project-annex-readout";
 import { LtrNum } from "@/components/shared/ltr-num";
 import { statusLabelKey } from "@/components/work/employee-work-hub-types";
 import { TaskViewSheet } from "@/components/work/task-view-sheet";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogBody,
@@ -20,12 +21,18 @@ import {
 import { useTranslation } from "@/hooks/use-translation";
 import type { TranslationPath } from "@/i18n";
 import { projectHasTechnicalAnnex, summarizePhases } from "@/lib/work-project";
-import { getWorkProjects } from "@/services/work.service";
+import { getWorkProjects, getWorkTasks } from "@/services/work.service";
 import { WORK_UPDATED_EVENT } from "@/lib/events";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
 import type { WorkTask } from "@/types/work";
-import type { ProjectPhaseStatus, ProjectStatus, WorkProject, WorkProjectPhase, WorkProjectTask } from "@/types/work-project";
+import type {
+  ProjectPhaseStatus,
+  ProjectStatus,
+  WorkProject,
+  WorkProjectPhase,
+  WorkProjectTask,
+} from "@/types/work-project";
 
 const PROJECT_STATUS: Record<ProjectStatus, TranslationPath> = {
   planning: "workAdmin.projects.statusPlanning",
@@ -38,6 +45,17 @@ const PHASE_STATUS: Record<ProjectPhaseStatus, TranslationPath> = {
   upcoming: "workAdmin.projects.phaseUpcoming",
   active: "workAdmin.projects.phaseActive",
   done: "workAdmin.projects.phaseDone",
+};
+
+type PhaseRow = {
+  key: string;
+  plan: WorkProjectTask | null;
+  live: WorkTask | null;
+  title: string;
+  status: WorkTask["status"];
+  assigneeIds: string[];
+  dueDate: string;
+  epicName: string;
 };
 
 function formatDay(value: string, locale: typeof arLocale) {
@@ -53,27 +71,85 @@ function ownsTask(task: { assigneeIds: string[] }, employeeId: string) {
   return Boolean(employeeId) && task.assigneeIds.includes(employeeId);
 }
 
-function livePhaseTasks(
-  phase: WorkProjectPhase,
-  projectId: string,
-  workTasks: WorkTask[]
-) {
-  return workTasks.filter(
-    (task) => task.projectId === projectId && task.phaseId === phase.id
+function isProjectMember(project: WorkProject, employeeId: string) {
+  if (!employeeId) return false;
+  return (
+    project.leadId === employeeId || project.memberIds.includes(employeeId)
   );
 }
 
-function draftPhaseTasks(
+/** Engineer may progress: assigned to them, or unassigned on a project they belong to. */
+function canActOnTask(
+  task: WorkTask,
+  employeeId: string,
+  project: WorkProject
+): boolean {
+  if (!employeeId) return false;
+  if (ownsTask(task, employeeId)) return true;
+  return (
+    task.assigneeIds.length === 0 && isProjectMember(project, employeeId)
+  );
+}
+
+function resolvePhaseRows(
   phase: WorkProjectPhase,
-  live: WorkTask[]
-) {
-  const ids = new Set(live.map((task) => task.id));
-  const titles = new Set(live.map((task) => task.title.trim()));
-  return phase.tasks.filter((task) => {
-    if (!task.title.trim()) return false;
-    if (task.workTaskId && ids.has(task.workTaskId)) return false;
-    return !titles.has(task.title.trim());
-  });
+  projectId: string,
+  workTasks: WorkTask[]
+): PhaseRow[] {
+  const byId = new Map(workTasks.map((task) => [task.id, task]));
+  const linked = workTasks.filter(
+    (task) => task.projectId === projectId && task.phaseId === phase.id
+  );
+  const used = new Set<string>();
+  const rows: PhaseRow[] = [];
+
+  for (const plan of phase.tasks) {
+    if (!plan.title.trim()) continue;
+    const live =
+      (plan.workTaskId ? byId.get(plan.workTaskId) : undefined) ??
+      linked.find((task) => task.title.trim() === plan.title.trim()) ??
+      null;
+    if (live) used.add(live.id);
+    rows.push({
+      key: live?.id ?? plan.id,
+      plan,
+      live,
+      title: live?.title ?? plan.title,
+      status: live?.status ?? plan.status,
+      assigneeIds: live?.assigneeIds?.length
+        ? live.assigneeIds
+        : plan.assigneeIds,
+      dueDate: live?.dueDate || plan.dueDate || "",
+      epicName: plan.epicName?.trim() || plan.epicKey?.trim() || "",
+    });
+  }
+
+  for (const live of linked) {
+    if (used.has(live.id)) continue;
+    rows.push({
+      key: live.id,
+      plan: null,
+      live,
+      title: live.title,
+      status: live.status,
+      assigneeIds: live.assigneeIds,
+      dueDate: live.dueDate || "",
+      epicName: "",
+    });
+  }
+
+  return rows;
+}
+
+function groupRowsByEpic(rows: PhaseRow[]) {
+  const groups = new Map<string, PhaseRow[]>();
+  for (const row of rows) {
+    const epic = row.epicName || "";
+    const list = groups.get(epic) ?? [];
+    list.push(row);
+    groups.set(epic, list);
+  }
+  return Array.from(groups.entries());
 }
 
 /** Read-only projects for people on the team or assigned a task inside it. */
@@ -81,14 +157,19 @@ export function EmployeeWorkProjectsPanel({
   employeeId,
   employees,
   workTasks = [],
+  onMarkDone,
+  onCycleStatus,
 }: {
   employeeId: string;
   employees: Employee[];
   workTasks?: WorkTask[];
+  onMarkDone?: (task: WorkTask) => void;
+  onCycleStatus?: (task: WorkTask) => void;
 }) {
   const { t, locale } = useTranslation();
   const dateLocale = locale === "ar" ? arLocale : enUS;
   const [projects, setProjects] = useState<WorkProject[]>([]);
+  const [projectTasks, setProjectTasks] = useState<WorkTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
   const [viewing, setViewing] = useState<WorkTask | null>(null);
@@ -97,32 +178,56 @@ export function EmployeeWorkProjectsPanel({
     [employees]
   );
 
+  const loadProjects = useCallback(async () => {
+    const res = await getWorkProjects();
+    if (res.success) setProjects(res.data);
+  }, []);
+
+  const loadProjectTasks = useCallback(async () => {
+    // Visible project-member tasks (not only assignee-scoped "mine").
+    const res = await getWorkTasks({ team: true });
+    if (res.success) setProjectTasks(res.data ?? []);
+  }, []);
+
   useEffect(() => {
     let mounted = true;
     async function load() {
-      const res = await getWorkProjects();
-      if (!mounted) return;
-      if (res.success) setProjects(res.data);
-      setLoading(false);
+      await Promise.all([loadProjects(), loadProjectTasks()]);
+      if (mounted) setLoading(false);
     }
     void load();
     const onUpdate = () => {
-      void load();
+      void loadProjects();
+      void loadProjectTasks();
     };
     window.addEventListener(WORK_UPDATED_EVENT, onUpdate);
     return () => {
       mounted = false;
       window.removeEventListener(WORK_UPDATED_EVENT, onUpdate);
     };
-  }, []);
+  }, [loadProjects, loadProjectTasks]);
+
+  const allTasks = useMemo(() => {
+    const map = new Map<string, WorkTask>();
+    for (const task of workTasks) map.set(task.id, task);
+    for (const task of projectTasks) map.set(task.id, task);
+    return Array.from(map.values());
+  }, [projectTasks, workTasks]);
+
+  useEffect(() => {
+    if (!viewing) return;
+    const fresh = allTasks.find((task) => task.id === viewing.id);
+    if (fresh && fresh !== viewing) setViewing(fresh);
+  }, [allTasks, viewing]);
 
   const selected = projects.find((project) => project.id === openId) ?? null;
 
   if (loading) {
     return (
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <div className="h-36 animate-pulse rounded-2xl bg-muted" />
         <div className="h-36 animate-pulse rounded-2xl bg-muted" />
+        <div className="hidden h-36 animate-pulse rounded-2xl bg-muted xl:block" />
       </div>
     );
   }
@@ -145,14 +250,15 @@ export function EmployeeWorkProjectsPanel({
 
   return (
     <>
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {projects.map((project) => {
           const summary = summarizePhases(project.phases);
-          const mine = project.phases.reduce(
-            (count, phase) =>
-              count + phase.tasks.filter((task) => ownsTask(task, employeeId)).length,
-            0
+          const rows = project.phases.flatMap((phase) =>
+            resolvePhaseRows(phase, project.id, allTasks)
           );
+          const mine = rows.filter((row) =>
+            ownsTask({ assigneeIds: row.assigneeIds }, employeeId)
+          ).length;
           const lead = names.get(project.leadId);
           return (
             <button
@@ -190,7 +296,7 @@ export function EmployeeWorkProjectsPanel({
               <p className="mt-2 text-[12px] text-muted-foreground">
                 {t("workAdmin.projects.meta", {
                   phases: summary.phases,
-                  tasks: summary.tasks,
+                  tasks: Math.max(summary.tasks, rows.length),
                 })}
               </p>
             </button>
@@ -199,15 +305,17 @@ export function EmployeeWorkProjectsPanel({
       </div>
 
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setOpenId(null)}>
-        <DialogContent className="flex max-h-[min(94dvh,100%)] w-full max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-h-[min(94dvh,880px)] sm:w-[min(92vw,42rem)] sm:max-w-[min(92vw,42rem)] sm:p-0">
+        <DialogContent className="flex max-h-[min(96dvh,100%)] w-full max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-h-[min(94dvh,920px)] sm:w-[min(96vw,56rem)] sm:max-w-[min(96vw,56rem)] sm:p-0 lg:w-[min(94vw,64rem)] lg:max-w-[min(94vw,64rem)]">
           {selected ? (
             <ProjectReadView
               project={selected}
               employeeId={employeeId}
               names={names}
               dateLocale={dateLocale}
-              workTasks={workTasks}
+              workTasks={allTasks}
               onOpenTask={setViewing}
+              onMarkDone={onMarkDone}
+              onCycleStatus={onCycleStatus}
             />
           ) : null}
         </DialogContent>
@@ -219,6 +327,17 @@ export function EmployeeWorkProjectsPanel({
           if (!open) setViewing(null);
         }}
         employees={new Map(employees.map((employee) => [employee.id, employee]))}
+        onCycleStatus={
+          viewing && selected && canActOnTask(viewing, employeeId, selected)
+            ? (task) => {
+                if (task.status === "in_progress") {
+                  onMarkDone?.(task);
+                  return;
+                }
+                onCycleStatus?.(task);
+              }
+            : undefined
+        }
       />
     </>
   );
@@ -231,6 +350,8 @@ function ProjectReadView({
   dateLocale,
   workTasks,
   onOpenTask,
+  onMarkDone,
+  onCycleStatus,
 }: {
   project: WorkProject;
   employeeId: string;
@@ -238,35 +359,25 @@ function ProjectReadView({
   dateLocale: typeof arLocale;
   workTasks: WorkTask[];
   onOpenTask: (task: WorkTask) => void;
+  onMarkDone?: (task: WorkTask) => void;
+  onCycleStatus?: (task: WorkTask) => void;
 }) {
   const { t } = useTranslation();
-  const mine = project.phases.flatMap((phase) => {
-    const live = livePhaseTasks(phase, project.id, workTasks).filter((task) =>
-      ownsTask(task, employeeId)
-    );
-    const drafts = draftPhaseTasks(phase, livePhaseTasks(phase, project.id, workTasks)).filter(
-      (task) => ownsTask(task, employeeId)
-    );
-    return [
-      ...live.map((task) => ({
-        key: task.id,
-        phaseName: phase.name,
-        task,
-        onOpen: () => onOpenTask(task),
-      })),
-      ...drafts.map((task) => ({
-        key: task.id,
-        phaseName: phase.name,
-        task,
-        onOpen: undefined,
-      })),
-    ];
-  });
+  const mineRows = project.phases.flatMap((phase) =>
+    resolvePhaseRows(phase, project.id, workTasks)
+      .filter((row) => ownsTask({ assigneeIds: row.assigneeIds }, employeeId))
+      .map((row) => ({ ...row, phaseName: phase.name }))
+  );
   const team = Array.from(new Set([project.leadId, ...project.memberIds])).filter(Boolean);
   const range = [project.startDate, project.endDate].filter(Boolean);
 
   function person(id: string) {
     return names.get(id) || t("workAdmin.projects.taskUnassigned");
+  }
+
+  function ownerLabel(assigneeIds: string[]) {
+    if (!assigneeIds[0]) return t("workAdmin.projects.taskUnassigned");
+    return person(assigneeIds[0]);
   }
 
   return (
@@ -321,21 +432,34 @@ function ProjectReadView({
           </div>
         </section>
 
-        {mine.length > 0 ? (
+        {mineRows.length > 0 ? (
           <section className="grid gap-2 rounded-2xl border border-primary/25 bg-primary/[0.04] p-3.5 sm:p-4">
             <h3 className="text-[13px] font-semibold text-primary">
               {t("workHub.projectsYourTasks")}
             </h3>
             <ul className="grid gap-2">
-              {mine.map(({ key, phaseName, task, onOpen }) => (
-                <li key={key} className="min-w-0">
+              {mineRows.map((row) => (
+                <li key={`mine:${row.key}`} className="min-w-0">
                   <TaskLine
-                    task={task}
-                    phaseName={phaseName}
-                    owner={person(task.assigneeIds[0] ?? "")}
+                    row={row}
+                    phaseName={row.phaseName}
+                    owner={ownerLabel(row.assigneeIds)}
                     mine
                     dateLocale={dateLocale}
-                    onOpen={onOpen}
+                    canAct={Boolean(row.live && canActOnTask(row.live, employeeId, project))}
+                    onOpen={row.live ? () => onOpenTask(row.live!) : undefined}
+                    onMarkDone={
+                      row.live && canActOnTask(row.live, employeeId, project)
+                        ? () => onMarkDone?.(row.live!)
+                        : undefined
+                    }
+                    onStart={
+                      row.live &&
+                      row.live.status === "todo" &&
+                      canActOnTask(row.live, employeeId, project)
+                        ? () => onCycleStatus?.(row.live!)
+                        : undefined
+                    }
                   />
                 </li>
               ))}
@@ -347,76 +471,97 @@ function ProjectReadView({
           <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             {t("workHub.projectsPhases")}
           </h3>
-          {project.phases.map((phase) => (
-            <article
-              key={phase.id}
-              className="grid min-w-0 gap-2.5 rounded-2xl border border-border/70 bg-card p-3.5 sm:p-4"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h4 className="min-w-0 break-words text-[15px] font-semibold">
-                  {phase.name}
-                </h4>
-                <Badge variant="outline">{t(PHASE_STATUS[phase.status])}</Badge>
-              </div>
-              {phase.startDate || phase.endDate ? (
-                <LtrNum className="text-[12px] text-muted-foreground">
-                  {[phase.startDate, phase.endDate]
-                    .filter(Boolean)
-                    .map((day) => formatDay(day, dateLocale))
-                    .join(" – ")}
-                </LtrNum>
-              ) : null}
-              {phase.description ? (
-                <p className="text-[13px] leading-relaxed text-muted-foreground">
-                  {phase.description}
-                </p>
-              ) : null}
-              {(() => {
-                const live = livePhaseTasks(phase, project.id, workTasks);
-                const drafts = draftPhaseTasks(phase, live);
-                if (live.length + drafts.length === 0) {
-                  return (
-                    <p className="text-[12px] text-muted-foreground">
-                      {t("workHub.projectsNoTasks")}
-                    </p>
-                  );
-                }
-                return (
-                  <ul className="grid gap-2">
-                    {live.map((task) => (
-                      <li key={task.id}>
-                        <TaskLine
-                          task={task}
-                          owner={
-                            task.assigneeIds[0]
-                              ? person(task.assigneeIds[0])
-                              : t("workAdmin.projects.taskUnassigned")
-                          }
-                          mine={ownsTask(task, employeeId)}
-                          dateLocale={dateLocale}
-                          onOpen={() => onOpenTask(task)}
-                        />
-                      </li>
+          {project.phases.map((phase) => {
+            const rows = resolvePhaseRows(phase, project.id, workTasks);
+            return (
+              <article
+                key={phase.id}
+                className="grid min-w-0 gap-2.5 rounded-2xl border border-border/70 bg-card p-3.5 sm:p-4"
+              >
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                  <h4 className="min-w-0 break-words text-[15px] font-semibold">
+                    {phase.name}
+                  </h4>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline">{t(PHASE_STATUS[phase.status])}</Badge>
+                    <span className="text-[12px] text-muted-foreground">
+                      {t("workHub.projectsPhaseTaskCount", { count: rows.length })}
+                    </span>
+                  </div>
+                </div>
+                {phase.startDate || phase.endDate ? (
+                  <LtrNum className="text-[12px] text-muted-foreground">
+                    {[phase.startDate, phase.endDate]
+                      .filter(Boolean)
+                      .map((day) => formatDay(day, dateLocale))
+                      .join(" – ")}
+                  </LtrNum>
+                ) : null}
+                {phase.description ? (
+                  <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-muted-foreground">
+                    {phase.description}
+                  </p>
+                ) : null}
+                {rows.length === 0 ? (
+                  <p className="text-[12px] text-muted-foreground">
+                    {t("workHub.projectsNoTasks")}
+                  </p>
+                ) : (
+                  <div className="grid gap-3">
+                    {groupRowsByEpic(rows).map(([epicName, epicRows]) => (
+                      <div key={`${phase.id}:${epicName || "general"}`} className="grid gap-2">
+                        {epicName ? (
+                          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                            {epicName}
+                            <span className="ms-2 font-medium normal-case tracking-normal">
+                              {t("workHub.projectsEpicTaskCount", {
+                                count: epicRows.length,
+                              })}
+                            </span>
+                          </p>
+                        ) : null}
+                        <ul className="grid gap-2">
+                          {epicRows.map((row) => (
+                            <li key={row.key} className="min-w-0">
+                              <TaskLine
+                                row={row}
+                                owner={ownerLabel(row.assigneeIds)}
+                                mine={ownsTask(
+                                  { assigneeIds: row.assigneeIds },
+                                  employeeId
+                                )}
+                                dateLocale={dateLocale}
+                                canAct={Boolean(
+                                  row.live &&
+                                    canActOnTask(row.live, employeeId, project)
+                                )}
+                                onOpen={
+                                  row.live ? () => onOpenTask(row.live!) : undefined
+                                }
+                                onMarkDone={
+                                  row.live &&
+                                  canActOnTask(row.live, employeeId, project)
+                                    ? () => onMarkDone?.(row.live!)
+                                    : undefined
+                                }
+                                onStart={
+                                  row.live &&
+                                  row.live.status === "todo" &&
+                                  canActOnTask(row.live, employeeId, project)
+                                    ? () => onCycleStatus?.(row.live!)
+                                    : undefined
+                                }
+                              />
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     ))}
-                    {drafts.map((task) => (
-                      <li key={task.id}>
-                        <TaskLine
-                          task={task}
-                          owner={
-                            task.assigneeIds[0]
-                              ? person(task.assigneeIds[0])
-                              : t("workAdmin.projects.taskUnassigned")
-                          }
-                          mine={ownsTask(task, employeeId)}
-                          dateLocale={dateLocale}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                );
-              })()}
-            </article>
-          ))}
+                  </div>
+                )}
+              </article>
+            );
+          })}
         </section>
       </DialogBody>
     </>
@@ -424,60 +569,118 @@ function ProjectReadView({
 }
 
 function TaskLine({
-  task,
+  row,
   owner,
   mine,
   phaseName,
   dateLocale,
+  canAct,
   onOpen,
+  onMarkDone,
+  onStart,
 }: {
-  task: Pick<WorkProjectTask, "title" | "status" | "assigneeIds" | "dueDate">;
+  row: PhaseRow;
   owner: string;
   mine: boolean;
   phaseName?: string;
   dateLocale: typeof arLocale;
+  canAct?: boolean;
   onOpen?: () => void;
+  onMarkDone?: () => void;
+  onStart?: () => void;
 }) {
   const { t } = useTranslation();
+  const done = row.status === "completed";
   const className = cn(
     "w-full min-w-0 rounded-xl border px-3 py-2.5 text-start",
-    mine ? "border-primary/35 bg-background" : "border-border/60"
+    mine ? "border-primary/35 bg-background" : "border-border/60",
+    done && "opacity-80"
   );
-  const body = (
-    <>
-      <div className="flex items-start justify-between gap-2">
-        <p className="min-w-0 flex-1 break-words text-[13px] font-semibold leading-snug">
-          {task.title}
-        </p>
-        <Badge
-          variant={task.status === "completed" ? "success" : "outline"}
-          className="shrink-0"
-        >
-          {t(statusLabelKey(task.status))}
-        </Badge>
-      </div>
-      <p className="mt-1 break-words text-[12px] text-muted-foreground">
-        {mine ? t("workHub.projectsYourTask") : owner}
-        {phaseName ? ` · ${phaseName}` : ""}
-        {task.dueDate ? (
+  const meta = (
+    <p className="mt-1 break-words text-[12px] text-muted-foreground">
+      {mine ? t("workHub.projectsYourTask") : owner}
+      {phaseName ? ` · ${phaseName}` : ""}
+      {row.dueDate ? (
+        <>
+          {" · "}
+          <LtrNum>{formatDay(row.dueDate, dateLocale)}</LtrNum>
+        </>
+      ) : null}
+    </p>
+  );
+
+  return (
+    <div className={cn(className, "flex flex-col gap-2.5 sm:flex-row sm:items-stretch sm:gap-2")}>
+      <div className="min-w-0 flex-1">
+        {onOpen ? (
+          <button
+            type="button"
+            className="w-full touch-manipulation text-start"
+            onClick={onOpen}
+          >
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
+              <p className="min-w-0 flex-1 break-words text-[13px] font-semibold leading-snug">
+                {row.title}
+              </p>
+              <Badge
+                variant={done ? "success" : "outline"}
+                className="w-fit shrink-0"
+              >
+                {t(statusLabelKey(row.status))}
+              </Badge>
+            </div>
+            {meta}
+          </button>
+        ) : (
           <>
-            {" · "}
-            <LtrNum>{formatDay(task.dueDate, dateLocale)}</LtrNum>
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
+              <p className="min-w-0 flex-1 break-words text-[13px] font-semibold leading-snug">
+                {row.title}
+              </p>
+              <Badge
+                variant={done ? "success" : "outline"}
+                className="w-fit shrink-0"
+              >
+                {t(statusLabelKey(row.status))}
+              </Badge>
+            </div>
+            {meta}
           </>
-        ) : null}
-      </p>
-    </>
+        )}
+      </div>
+      {canAct && !done ? (
+        <div className="flex shrink-0 flex-col gap-1.5 sm:justify-center">
+          {onStart ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-10 w-full touch-manipulation rounded-xl sm:h-9 sm:min-w-[7.5rem]"
+              onClick={(event) => {
+                event.stopPropagation();
+                onStart();
+              }}
+            >
+              {t("workEvidence.startWork")}
+            </Button>
+          ) : null}
+          {onMarkDone ? (
+            <Button
+              type="button"
+              size="sm"
+              variant={row.status === "in_progress" ? "default" : "outline"}
+              className="h-10 w-full touch-manipulation rounded-xl sm:h-9 sm:min-w-[7.5rem]"
+              onClick={(event) => {
+                event.stopPropagation();
+                onMarkDone();
+              }}
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              {t("workEvidence.done")}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
-  if (onOpen) {
-    return (
-      <button
-        type="button"
-        className={cn(className, "touch-manipulation")}
-        onClick={onOpen}
-      >
-        {body}
-      </button>
-    );
-  }
-  return <div className={className}>{body}</div>;
 }

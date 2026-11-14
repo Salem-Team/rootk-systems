@@ -180,3 +180,52 @@ export function assertEmployeeCanTouchTaskProgress(task: WorkTask): void {
   if (isAssignedTo(task.assigneeIds, employeeId)) return;
   throw new ForbiddenError("You can only update tasks assigned to you");
 }
+
+/** Unassigned project task that a project lead/member may claim. */
+export async function claimUnassignedProjectTaskIfAllowed(
+  task: WorkTask
+): Promise<WorkTask> {
+  const { employeeId, userId } = actorContext();
+  if (!employeeId || task.assigneeIds.length > 0 || !task.projectId) {
+    return task;
+  }
+  if (isAssignedTo(task.assigneeIds, employeeId)) return task;
+
+  const { workProjectRepository } = await import(
+    "@/repositories/work.repository"
+  );
+  const { touchEntity } = await import("@/lib/entity");
+  const { syncAssigneeProgress } = await import(
+    "@/lib/task-assignee-progress"
+  );
+  const projects = await workProjectRepository.list();
+  const project = projects.find(
+    (row) =>
+      row.id === task.projectId &&
+      !row.deletedAt &&
+      (row.leadId === employeeId || row.memberIds.includes(employeeId))
+  );
+  if (!project) return task;
+
+  const next = touchEntity(task, userId, {
+    assigneeIds: [employeeId],
+    assigneeProgress: syncAssigneeProgress(
+      [employeeId],
+      task.assigneeProgress ?? [],
+      { status: "todo" }
+    ),
+  });
+  const { workTaskRepository } = await import("@/repositories/work.repository");
+  return (await workTaskRepository.update(task.id, next)) ?? next;
+}
+
+export async function assertEmployeeCanTouchOrClaimTaskProgress(
+  task: WorkTask
+): Promise<WorkTask> {
+  const { employeeId } = actorContext();
+  if (canManageOthersWork()) return task;
+  if (isAssignedTo(task.assigneeIds, employeeId)) return task;
+  const claimed = await claimUnassignedProjectTaskIfAllowed(task);
+  if (isAssignedTo(claimed.assigneeIds, employeeId)) return claimed;
+  throw new ForbiddenError("You can only update tasks assigned to you");
+}

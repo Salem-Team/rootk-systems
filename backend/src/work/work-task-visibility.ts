@@ -4,12 +4,50 @@ import type { PrismaService } from "../prisma/prisma.service";
 import type { Actor } from "./work-mappers";
 import { workTaskListScope, type WorkTaskListScope } from "./work-access";
 
+/** Projects the employee leads or belongs to as a member. */
+export async function projectIdsForEmployee(
+  prisma: PrismaService,
+  companyId: string,
+  employeeId: string
+): Promise<string[]> {
+  if (!employeeId) return [];
+  const rows = await prisma.workProject.findMany({
+    where: {
+      companyId,
+      deletedAt: null,
+      OR: [{ leadId: employeeId }, { memberIds: { has: employeeId } }],
+    },
+    select: { id: true },
+  });
+  return rows.map((row) => row.id);
+}
+
+/** True when the employee leads or is a member of the project. */
+export async function actorIsProjectParticipant(
+  prisma: PrismaService,
+  companyId: string,
+  employeeId: string,
+  projectId: string | null | undefined
+): Promise<boolean> {
+  if (!employeeId || !projectId) return false;
+  const project = await prisma.workProject.findFirst({
+    where: {
+      id: projectId,
+      companyId,
+      deletedAt: null,
+      OR: [{ leadId: employeeId }, { memberIds: { has: employeeId } }],
+    },
+    select: { id: true },
+  });
+  return Boolean(project);
+}
+
 /**
  * Build OR clauses for tasks the actor may see:
  * - assigned to them
  * - created by them
  * - assigned to a direct report (team lead / manager)
- * - inside a project they lead
+ * - inside a project they lead or belong to
  *
  * Returns `null` when the actor may list the whole company (`tasks.viewAll` / admin).
  */
@@ -43,11 +81,7 @@ export async function workTaskVisibilityOr(
   }
 
   if (selfId) {
-    const ledProjects = await prisma.workProject.findMany({
-      where: { companyId, deletedAt: null, leadId: selfId },
-      select: { id: true },
-    });
-    const projectIds = ledProjects.map((row) => row.id);
+    const projectIds = await projectIdsForEmployee(prisma, companyId, selfId);
     if (projectIds.length > 0) {
       clauses.push({ projectId: { in: projectIds } });
     }
@@ -84,16 +118,12 @@ export async function actorCanSeeWorkTask(
   }
 
   if (selfId && task.projectId) {
-    const project = await prisma.workProject.findFirst({
-      where: {
-        id: task.projectId,
-        companyId,
-        deletedAt: null,
-        leadId: selfId,
-      },
-      select: { id: true },
-    });
-    if (project) return true;
+    return actorIsProjectParticipant(
+      prisma,
+      companyId,
+      selfId,
+      task.projectId
+    );
   }
 
   return false;

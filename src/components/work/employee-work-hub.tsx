@@ -164,6 +164,8 @@ export function EmployeeWorkHub() {
             employeeId={workEmployeeId}
             employees={data.employees}
             workTasks={data.tasks}
+            onMarkDone={actions.markTaskDone}
+            onCycleStatus={(task) => void actions.cycleTaskStatus(task)}
           />
         </TabsContent>
 

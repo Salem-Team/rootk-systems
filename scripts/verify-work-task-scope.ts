@@ -1,5 +1,5 @@
 /**
- * Work task visibility — assigned, team lead (reports), project lead only.
+ * Work task visibility — assigned, team lead (reports), project lead/member.
  * Run: npx tsx scripts/verify-work-task-scope.ts
  */
 import { workTaskListScope } from "../backend/src/work/work-access";

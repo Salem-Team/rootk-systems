@@ -32,7 +32,7 @@ import { isPersonalWork } from "@/lib/work-utils";
 import { AppRole } from "@/constants/roles";
 import {
   assertEmployeeCanEditTask,
-  assertEmployeeCanTouchTaskProgress,
+  assertEmployeeCanTouchOrClaimTaskProgress,
   emptyTask,
   presentWorkTaskForActor,
 } from "@/services/work/work-shared";
@@ -57,9 +57,9 @@ export async function updateWorkTaskStatus(
     if (!parsed.success) {
       throw new ValidationError("Invalid status payload", parsed.error.flatten());
     }
-    const current = await workTaskRepository.findById(id);
-    if (!current) throw new NotFoundError("Task not found");
-    assertEmployeeCanTouchTaskProgress(current);
+    const found = await workTaskRepository.findById(id);
+    if (!found) throw new NotFoundError("Task not found");
+    const current = await assertEmployeeCanTouchOrClaimTaskProgress(found);
 
     const role = getSessionRole();
     const employeeId = getWorkEmployeeId();
@@ -217,9 +217,9 @@ export async function toggleWorkTaskSubItem(
     return ok(presentWorkTaskForActor(res.data));
   }
   try {
-    const current = await workTaskRepository.findById(id);
-    if (!current) throw new NotFoundError("Task not found");
-    assertEmployeeCanTouchTaskProgress(current);
+    const found = await workTaskRepository.findById(id);
+    if (!found) throw new NotFoundError("Task not found");
+    const current = await assertEmployeeCanTouchOrClaimTaskProgress(found);
     const actor = getSessionUserId();
     const next = touchEntity(current, actor, {
       subItems: current.subItems.map((s) =>
