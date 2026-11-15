@@ -7,6 +7,10 @@ import { AdminWorkTaskDialog } from "@/components/work/admin-work-task-dialog";
 import { EmployeeMultiPicker } from "@/components/work/employee-multi-picker";
 import { Field } from "@/components/work/admin-work-field";
 import { ProjectPhaseEditor } from "@/components/work/project-phase-editor";
+import {
+  CopyTextButton,
+  DownloadTextButton,
+} from "@/components/work/project-text-actions";
 import { TaskViewSheet } from "@/components/work/task-view-sheet";
 import { useProjectPhaseTasks } from "@/components/work/use-project-phase-tasks";
 import { Button } from "@/components/ui/button";
@@ -29,7 +33,11 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/hooks/use-translation";
-import { normalizeProjectForm } from "@/lib/work-project";
+import {
+  normalizeProjectForm,
+  projectBriefingPlainText,
+  summarizePhases,
+} from "@/lib/work-project";
 import { updateWorkProject } from "@/services/work.service";
 import type { TranslationPath } from "@/i18n";
 import { emptyProjectPhase } from "@/lib/work-project";
@@ -55,14 +63,23 @@ function SectionCard({
   hint,
   action,
   children,
+  className,
 }: {
   title: string;
   hint?: string;
   action?: ReactNode;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <section className="grid gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-4">
+    <section
+      className={cn(
+        "grid gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-4",
+        "motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-safe:duration-300 motion-safe:fill-mode-both",
+        "motion-reduce:animate-none",
+        className
+      )}
+    >
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <div className="min-w-0">
           <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
@@ -142,6 +159,13 @@ export function AdminWorkProjectSheet({
     },
   });
 
+  const summary = summarizePhases(form.phases);
+  const briefing = projectBriefingPlainText(form, {
+    description: t("workAdmin.projects.fieldDescription"),
+    technicalDetails: t("workAdmin.projects.fieldTechnicalDetails"),
+    fullDescription: t("workAdmin.projects.fieldFullDescription"),
+  });
+
   function setLead(leadId: string) {
     setForm({
       ...form,
@@ -155,27 +179,65 @@ export function AdminWorkProjectSheet({
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[min(94dvh,100%)] w-full max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-h-[min(94dvh,880px)] sm:w-[min(92vw,42rem)] sm:max-w-[min(92vw,42rem)] sm:p-0">
+      <DialogContent className="flex max-h-[min(96dvh,100%)] w-full max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-h-[min(92dvh,920px)] sm:w-[min(94vw,40rem)] sm:max-w-[min(94vw,40rem)] sm:p-0 md:w-[min(94vw,68rem)] md:max-w-[min(94vw,68rem)]">
         <DialogHeader className="shrink-0 border-b border-border/55 px-3.5 pb-3 pt-1 sm:px-5 sm:pb-3.5 sm:pt-5">
-          <DialogTitle className="flex min-w-0 items-center gap-2.5 pe-1">
-            <span className="icon-well h-9 w-9 shrink-0">
-              <FolderKanban className="h-4 w-4" aria-hidden />
-            </span>
-            <span className="min-w-0 truncate">
-              {isEditing
-                ? t("workAdmin.projects.editTitle")
-                : t("workAdmin.projects.createTitle")}
-            </span>
-          </DialogTitle>
+          <div className="flex flex-wrap items-start justify-between gap-2.5">
+            <DialogTitle className="flex min-w-0 items-center gap-2.5 pe-1">
+              <span className="icon-well h-9 w-9 shrink-0">
+                <FolderKanban className="h-4 w-4" aria-hidden />
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate">
+                  {isEditing
+                    ? t("workAdmin.projects.editTitle")
+                    : t("workAdmin.projects.createTitle")}
+                </span>
+                {form.name.trim() ? (
+                  <span className="mt-0.5 block truncate text-[12px] font-medium normal-case tracking-normal text-muted-foreground">
+                    {form.name.trim()}
+                    {" · "}
+                    {t("workAdmin.projects.meta", {
+                      phases: summary.phases,
+                      tasks: summary.tasks,
+                    })}
+                  </span>
+                ) : null}
+              </span>
+            </DialogTitle>
+            <div className="flex shrink-0 gap-1.5">
+              <CopyTextButton
+                text={briefing}
+                label={t("workAdmin.projects.copyBriefing")}
+                copiedLabel={t("workAdmin.projects.copiedBriefing")}
+              />
+              <DownloadTextButton
+                text={briefing}
+                fileName={form.name}
+                label={t("workAdmin.projects.downloadBriefing")}
+                doneLabel={t("workAdmin.projects.downloadedBriefing")}
+              />
+            </div>
+          </div>
           <DialogDescription className="text-[13px] leading-relaxed">
             {t("workAdmin.projects.formDesc")}
           </DialogDescription>
         </DialogHeader>
 
         <DialogBody className="bg-muted/20 px-3.5 py-3.5 sm:px-5 sm:py-4">
-          <div className="grid min-w-0 gap-3.5 sm:gap-4">
-            <SectionCard title={t("workAdmin.sectionBasics")}>
-              <Field label={t("workAdmin.projects.fieldName")} htmlFor="project-name">
+          <div className="grid min-w-0 gap-3.5 sm:gap-4 md:grid-cols-2 md:items-start">
+            <SectionCard title={t("workAdmin.sectionBasics")} className="md:col-start-1">
+              <Field
+                label={t("workAdmin.projects.fieldName")}
+                htmlFor="project-name"
+                action={
+                  <CopyTextButton
+                    text={form.name}
+                    label={t("workAdmin.projects.copyField")}
+                    copiedLabel={t("workAdmin.projects.copiedBriefing")}
+                    className="h-8 w-8 rounded-lg"
+                  />
+                }
+              >
                 <Input
                   id="project-name"
                   autoFocus
@@ -190,6 +252,14 @@ export function AdminWorkProjectSheet({
               <Field
                 label={t("workAdmin.projects.fieldDescription")}
                 htmlFor="project-description"
+                action={
+                  <CopyTextButton
+                    text={form.description}
+                    label={t("workAdmin.projects.copyField")}
+                    copiedLabel={t("workAdmin.projects.copiedBriefing")}
+                    className="h-8 w-8 rounded-lg"
+                  />
+                }
               >
                 <Textarea
                   id="project-description"
@@ -198,7 +268,7 @@ export function AdminWorkProjectSheet({
                   onChange={(event) =>
                     setForm({ ...form, description: event.target.value })
                   }
-                  className="min-h-[72px] rounded-xl text-base sm:text-sm"
+                  className="min-h-[7.5rem] resize-y rounded-xl text-base leading-relaxed sm:text-sm"
                 />
               </Field>
               <div className="grid min-w-0 gap-3 sm:grid-cols-3">
@@ -262,10 +332,19 @@ export function AdminWorkProjectSheet({
             <SectionCard
               title={t("workAdmin.projects.sectionAnnex")}
               hint={t("workAdmin.projects.annexHint")}
+              className="md:col-start-2 md:row-span-2 md:row-start-1"
             >
               <Field
                 label={t("workAdmin.projects.fieldTechnicalDetails")}
                 htmlFor="project-technical-details"
+                action={
+                  <CopyTextButton
+                    text={form.technicalDetails}
+                    label={t("workAdmin.projects.copyField")}
+                    copiedLabel={t("workAdmin.projects.copiedBriefing")}
+                    className="h-8 w-8 rounded-lg"
+                  />
+                }
               >
                 <Textarea
                   id="project-technical-details"
@@ -274,12 +353,20 @@ export function AdminWorkProjectSheet({
                   onChange={(event) =>
                     setForm({ ...form, technicalDetails: event.target.value })
                   }
-                  className="min-h-[120px] rounded-xl text-base sm:min-h-[140px] sm:text-sm"
+                  className="min-h-[8.5rem] resize-y rounded-xl text-base leading-relaxed sm:min-h-[9.5rem] sm:text-sm"
                 />
               </Field>
               <Field
                 label={t("workAdmin.projects.fieldFullDescription")}
                 htmlFor="project-full-description"
+                action={
+                  <CopyTextButton
+                    text={form.fullDescription}
+                    label={t("workAdmin.projects.copyField")}
+                    copiedLabel={t("workAdmin.projects.copiedBriefing")}
+                    className="h-8 w-8 rounded-lg"
+                  />
+                }
               >
                 <Textarea
                   id="project-full-description"
@@ -288,7 +375,7 @@ export function AdminWorkProjectSheet({
                   onChange={(event) =>
                     setForm({ ...form, fullDescription: event.target.value })
                   }
-                  className="min-h-[140px] rounded-xl text-base sm:min-h-[180px] sm:text-sm"
+                  className="min-h-[10rem] resize-y rounded-xl text-base leading-relaxed sm:min-h-[12rem] sm:text-sm"
                 />
               </Field>
             </SectionCard>
@@ -296,6 +383,7 @@ export function AdminWorkProjectSheet({
             <SectionCard
               title={t("workAdmin.projects.sectionTeam")}
               hint={t("workAdmin.projects.membersHint")}
+              className="md:col-start-1 md:row-start-2"
             >
               <Field label={t("workAdmin.projects.fieldLead")} htmlFor="project-lead">
                 <Select value={form.leadId || undefined} onValueChange={setLead}>
@@ -322,6 +410,7 @@ export function AdminWorkProjectSheet({
             </SectionCard>
 
             <SectionCard
+              className="md:col-span-2"
               title={t("workAdmin.projects.sectionPhases")}
               hint={t("workAdmin.projects.phasesHint")}
               action={

@@ -9,15 +9,20 @@ export function Field({
   htmlFor,
   children,
   className,
+  action,
 }: {
   label: string;
   htmlFor: string;
   children: ReactNode;
   className?: string;
+  action?: ReactNode;
 }) {
   return (
     <div className={cn("space-y-1.5", className)}>
-      <Label htmlFor={htmlFor}>{label}</Label>
+      <div className="flex items-center justify-between gap-2">
+        <Label htmlFor={htmlFor}>{label}</Label>
+        {action}
+      </div>
       {children}
     </div>
   );
