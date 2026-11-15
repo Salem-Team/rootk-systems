@@ -718,6 +718,10 @@ model WorkProject {
   technicalDetails String       @default("") @db.Text
   /// The full project write-up shown with the technical annex.
   fullDescription  String       @default("") @db.Text
+  pdfFileName    String?
+  pdfStorageKey  String?
+  pdfUploadedAt  DateTime?
+  pdfUploadedBy  String?
   status      WorkProjectStatus @default(planning)
   startDate   DateTime?         @db.Date
   endDate     DateTime?         @db.Date

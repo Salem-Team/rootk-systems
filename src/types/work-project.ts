@@ -41,6 +41,7 @@ export interface WorkProject extends BaseEntity {
   technicalDetails: string;
   /** Technical annex: the full project write-up. */
   fullDescription: string;
+  projectPdf?: { fileName: string; uploadedAt: string } | null;
   status: ProjectStatus;
   startDate: string;
   endDate: string;

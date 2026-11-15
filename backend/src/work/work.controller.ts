@@ -287,6 +287,46 @@ export class WorkController {
     return this.service.updateProject(companyId, toActor(user), id, body);
   }
 
+  @Post("projects/:id/pdf")
+  @RequirePermission("tasks.viewOwn", "tasks.viewTeam", "tasks.viewAll", "tasks.assign")
+  uploadProjectPdf(
+    @CompanyId() companyId: string,
+    @CurrentUser() user: JwtPayload | undefined,
+    @Param("id") id: string,
+    @Body() body: Record<string, unknown>
+  ) {
+    return this.service.uploadProjectPdf(companyId, toActor(user), id, body);
+  }
+
+  @Get("projects/:id/pdf")
+  @RequirePermission("tasks.viewOwn", "tasks.viewTeam", "tasks.viewAll", "tasks.assign")
+  async openProjectPdf(
+    @CompanyId() companyId: string,
+    @CurrentUser() user: JwtPayload | undefined,
+    @Param("id") id: string,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const pdf = await this.service.openProjectPdf(companyId, toActor(user), id);
+    const asciiName = pdf.fileName.replace(/[^\x20-\x7E]/g, "_").replace(/["\\]/g, "");
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${asciiName || "project.pdf"}"; filename*=UTF-8''${encodeURIComponent(pdf.fileName)}`
+    );
+    res.setHeader("Cache-Control", "private, no-store");
+    return pdf.file;
+  }
+
+  @Delete("projects/:id/pdf")
+  @RequirePermission("tasks.viewOwn", "tasks.viewTeam", "tasks.viewAll", "tasks.assign")
+  removeProjectPdf(
+    @CompanyId() companyId: string,
+    @CurrentUser() user: JwtPayload | undefined,
+    @Param("id") id: string
+  ) {
+    return this.service.removeProjectPdf(companyId, toActor(user), id);
+  }
+
   @Delete("projects/:id")
   @RequirePermission("tasks.assign", "tasks.deleteOthers")
   deleteProject(

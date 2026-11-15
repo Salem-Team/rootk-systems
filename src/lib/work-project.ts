@@ -42,6 +42,7 @@ export function emptyWorkProject(id = ""): WorkProject {
     leadId: "",
     memberIds: [],
     phases: [],
+    projectPdf: null,
     companyId: "",
     createdAt: "",
     updatedAt: "",

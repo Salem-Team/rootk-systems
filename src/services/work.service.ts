@@ -31,6 +31,9 @@ export {
   createWorkProject,
   updateWorkProject,
   deleteWorkProject,
+  uploadWorkProjectPdf,
+  removeWorkProjectPdf,
+  openWorkProjectPdf,
 } from "@/services/work/work-projects.service";
 
 export type {

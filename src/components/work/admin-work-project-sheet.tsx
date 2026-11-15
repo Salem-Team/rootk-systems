@@ -11,6 +11,7 @@ import {
   CopyTextButton,
   DownloadTextButton,
 } from "@/components/work/project-text-actions";
+import { ProjectPdfCard } from "@/components/work/project-pdf-card";
 import { TaskViewSheet } from "@/components/work/task-view-sheet";
 import { useProjectPhaseTasks } from "@/components/work/use-project-phase-tasks";
 import { Button } from "@/components/ui/button";
@@ -113,6 +114,7 @@ export function AdminWorkProjectSheet({
   meetings,
   reloadTasks,
   tasksReady,
+  projectPdf,
   onSave,
   onDelete,
 }: {
@@ -128,6 +130,7 @@ export function AdminWorkProjectSheet({
   meetings: WorkMeeting[];
   reloadTasks: () => Promise<void>;
   tasksReady: boolean;
+  projectPdf?: { fileName: string; uploadedAt: string } | null;
   onSave: () => void;
   onDelete: () => void;
 }) {
@@ -225,6 +228,17 @@ export function AdminWorkProjectSheet({
 
         <DialogBody className="bg-muted/20 px-3.5 py-3.5 sm:px-5 sm:py-4">
           <div className="grid min-w-0 gap-3.5 sm:gap-4 md:grid-cols-2 md:items-start">
+            {projectId ? (
+              <ProjectPdfCard
+                projectId={projectId}
+                fileName={projectPdf?.fileName}
+                className="md:col-span-2"
+              />
+            ) : (
+              <p className="rounded-2xl border border-dashed border-border px-3 py-3 text-[13px] text-muted-foreground md:col-span-2">
+                {t("workAdmin.projects.pdfSaveFirst")}
+              </p>
+            )}
             <SectionCard title={t("workAdmin.sectionBasics")} className="md:col-start-1">
               <Field
                 label={t("workAdmin.projects.fieldName")}

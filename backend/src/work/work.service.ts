@@ -140,4 +140,21 @@ export class WorkService {
   deleteProject(companyId: string, actor: Actor, id: string) {
     return this.projects.deleteProject(companyId, actor, id);
   }
+
+  uploadProjectPdf(
+    companyId: string,
+    actor: Actor,
+    id: string,
+    body: Record<string, unknown>
+  ) {
+    return this.projects.uploadProjectPdf(companyId, actor, id, body);
+  }
+
+  openProjectPdf(companyId: string, actor: Actor, id: string) {
+    return this.projects.openProjectPdf(companyId, actor, id);
+  }
+
+  removeProjectPdf(companyId: string, actor: Actor, id: string) {
+    return this.projects.removeProjectPdf(companyId, actor, id);
+  }
 }

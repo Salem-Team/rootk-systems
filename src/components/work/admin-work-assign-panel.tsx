@@ -297,6 +297,10 @@ export function AdminWorkAssignPanel() {
         meetings={data.meetings}
         reloadTasks={data.reload}
         tasksReady={!data.loading}
+        projectPdf={
+          projects.projects.find((project) => project.id === projects.editingId)
+            ?.projectPdf ?? null
+        }
         onSave={() => void projects.save()}
         onDelete={() => {
           const current = projects.projects.find(

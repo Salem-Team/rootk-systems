@@ -3,11 +3,20 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  StreamableFile,
 } from "@nestjs/common";
+import { createReadStream } from "fs";
+import { stat } from "fs/promises";
 import { Prisma, WorkProjectStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { auditFields, dateOnly } from "../common/mappers";
 import type { Actor } from "./work-mappers";
+import {
+  assertProjectPdfPayload,
+  deleteCompanyProjectPdf,
+  projectPdfAbsolutePath,
+  saveCompanyProjectPdf,
+} from "./work-project-pdf-storage";
 
 const PROJECT_STATUSES = new Set<string>([
   "planning",
@@ -261,12 +270,88 @@ export class WorkProjectsService {
     return this.mapProject(row);
   }
 
+  async uploadProjectPdf(
+    companyId: string,
+    actor: Actor,
+    id: string,
+    body: Record<string, unknown>
+  ) {
+    const current = await this.requirePdfProject(companyId, actor, id);
+    const payload = assertProjectPdfPayload({
+      dataBase64: String(body.dataBase64 ?? ""),
+      mimeType: String(body.mimeType ?? ""),
+      fileName: String(body.fileName ?? ""),
+    });
+    const storageKey = await saveCompanyProjectPdf(companyId, payload.buffer);
+    const uploadedAt = new Date();
+    const row = await this.prisma.workProject.update({
+      where: { id },
+      data: {
+        pdfFileName: payload.fileName,
+        pdfStorageKey: storageKey,
+        pdfUploadedAt: uploadedAt,
+        pdfUploadedBy: actor.userId,
+        updatedBy: actor.userId,
+        version: { increment: 1 },
+      },
+    });
+    if (current.pdfStorageKey && current.pdfStorageKey !== storageKey) {
+      await deleteCompanyProjectPdf(companyId, current.pdfStorageKey);
+    }
+    return this.pdfView(row);
+  }
+
+  async openProjectPdf(companyId: string, actor: Actor, id: string) {
+    const current = await this.requirePdfProject(companyId, actor, id);
+    if (!current.pdfStorageKey || !current.pdfFileName) {
+      throw new NotFoundException("Project PDF was not found");
+    }
+    const abs = projectPdfAbsolutePath(companyId, current.pdfStorageKey);
+    let size = 0;
+    try {
+      size = (await stat(abs)).size;
+    } catch {
+      throw new NotFoundException("Project PDF was not found");
+    }
+    return {
+      file: new StreamableFile(createReadStream(abs), {
+        type: "application/pdf",
+        disposition: "inline",
+        length: size,
+      }),
+      fileName: current.pdfFileName,
+      size,
+    };
+  }
+
+  async removeProjectPdf(companyId: string, actor: Actor, id: string) {
+    const current = await this.requirePdfProject(companyId, actor, id);
+    if (current.pdfStorageKey) {
+      await deleteCompanyProjectPdf(companyId, current.pdfStorageKey);
+    }
+    await this.prisma.workProject.update({
+      where: { id },
+      data: {
+        pdfFileName: null,
+        pdfStorageKey: null,
+        pdfUploadedAt: null,
+        pdfUploadedBy: null,
+        updatedBy: actor.userId,
+        version: { increment: 1 },
+      },
+    });
+    return null;
+  }
+
   async deleteProject(companyId: string, actor: Actor, id: string) {
     this.assertCanManage(actor);
     const current = await this.prisma.workProject.findFirst({
       where: { id, companyId, deletedAt: null },
     });
     if (!current) throw new NotFoundException("Project not found");
+    if (current.pdfStorageKey) {
+      await deleteCompanyProjectPdf(companyId, current.pdfStorageKey);
+    }
     await this.prisma.workProject.update({
       where: { id },
       data: {
@@ -309,6 +394,48 @@ export class WorkProjectsService {
       permissions.includes("tasks.viewAll") ||
       permissions.includes("tasks.assign")
     );
+  }
+
+  private canUploadProjectPdf(actor: Actor) {
+    if (actor.role !== "employee") return true;
+    const permissions = actor.permissions ?? [];
+    return (
+      permissions.includes("tasks.assign") ||
+      permissions.includes("tasks.editOthers")
+    );
+  }
+
+  private async requirePdfProject(companyId: string, actor: Actor, id: string) {
+    const current = await this.prisma.workProject.findFirst({
+      where: { id, companyId, deletedAt: null },
+    });
+    if (!current) throw new NotFoundException("Project not found");
+    if (this.canUploadProjectPdf(actor)) return current;
+    if (projectVisibleToEmployee(current, actor.employeeId)) return current;
+    const linked = await this.prisma.workTask.findFirst({
+      where: {
+        companyId,
+        deletedAt: null,
+        projectId: id,
+        assigneeIds: { has: actor.employeeId },
+      },
+      select: { id: true },
+    });
+    if (linked) return current;
+    throw new ForbiddenException(
+      "Only people assigned to this project can upload its PDF"
+    );
+  }
+
+  private pdfView(row: {
+    pdfFileName: string | null;
+    pdfUploadedAt: Date | null;
+  }) {
+    if (!row.pdfFileName || !row.pdfUploadedAt) return null;
+    return {
+      fileName: row.pdfFileName,
+      uploadedAt: row.pdfUploadedAt.toISOString(),
+    };
   }
 
   private assertCanManage(actor: Actor) {
@@ -363,6 +490,8 @@ export class WorkProjectsService {
     description: string;
     technicalDetails: string;
     fullDescription: string;
+    pdfFileName: string | null;
+    pdfUploadedAt: Date | null;
     status: WorkProjectStatus;
     startDate: Date | null;
     endDate: Date | null;
@@ -385,6 +514,7 @@ export class WorkProjectsService {
       description: row.description,
       technicalDetails: row.technicalDetails ?? "",
       fullDescription: row.fullDescription ?? "",
+      projectPdf: this.pdfView(row),
       status: row.status,
       startDate: row.startDate ? dateOnly(row.startDate) : "",
       endDate: row.endDate ? dateOnly(row.endDate) : "",

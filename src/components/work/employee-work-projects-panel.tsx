@@ -5,6 +5,7 @@ import { format, parseISO } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
 import { CheckCircle2, FileText, FolderKanban } from "lucide-react";
 import { ProjectAnnexReadout } from "@/components/work/project-annex-readout";
+import { ProjectPdfCard } from "@/components/work/project-pdf-card";
 import { LtrNum } from "@/components/shared/ltr-num";
 import { statusLabelKey } from "@/components/work/employee-work-hub-types";
 import { TaskViewSheet } from "@/components/work/task-view-sheet";
@@ -272,6 +273,12 @@ export function EmployeeWorkProjectsPanel({
                   <Badge variant={project.status === "completed" ? "success" : "default"}>
                     {t(PROJECT_STATUS[project.status])}
                   </Badge>
+                  {project.projectPdf?.fileName ? (
+                    <Badge variant="outline" className="gap-1">
+                      <FileText className="h-3 w-3" aria-hidden />
+                      PDF
+                    </Badge>
+                  ) : null}
                   {projectHasTechnicalAnnex(project) ? (
                     <Badge variant="outline" className="gap-1">
                       <FileText className="h-3 w-3" aria-hidden />
@@ -394,6 +401,7 @@ function ProjectReadView({
         </DialogDescription>
       </DialogHeader>
       <DialogBody className="grid gap-3.5 px-3.5 py-3.5 pb-[max(1rem,env(safe-area-inset-bottom))] sm:gap-4 sm:px-5 sm:py-4 sm:pb-4">
+        <ProjectPdfCard projectId={project.id} fileName={project.projectPdf?.fileName} />
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={project.status === "completed" ? "success" : "default"}>
             {t(PROJECT_STATUS[project.status])}
