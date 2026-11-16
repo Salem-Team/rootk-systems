@@ -25,6 +25,18 @@ function safeCompanyId(companyId: string): string {
   return safe;
 }
 
+function looksLikePdf(fileName: string, mime: string): boolean {
+  if (fileName.toLowerCase().endsWith(".pdf")) return true;
+  if (PDF_MIME.has(mime) && mime !== "" && mime !== "application/octet-stream") return true;
+  return mime.includes("pdf");
+}
+
+/** Real PDFs often have a BOM, blank lines, or a short preamble before %PDF-. */
+export function bufferHasPdfSignature(buffer: Buffer): boolean {
+  const window = buffer.subarray(0, Math.min(buffer.length, 8192));
+  return window.toString("latin1").includes("%PDF-");
+}
+
 export function assertProjectPdfPayload(input: {
   dataBase64?: string;
   mimeType?: string;
@@ -35,10 +47,24 @@ export function assertProjectPdfPayload(input: {
     .toLowerCase()
     .split(";")[0]!
     .trim();
-  if (!PDF_MIME.has(mime)) {
+  const fileName =
+    String(input.fileName ?? "")
+      .replace(/[/\\]/g, " ")
+      .replace(/[\u0000-\u001f]/g, "")
+      .trim()
+      .slice(0, 180);
+  const namedPdf = /\.pdf$/i.test(fileName);
+  const safeName = namedPdf ? fileName : fileName ? `${fileName}.pdf` : "project.pdf";
+  if (!namedPdf && !looksLikePdf("", mime)) {
     throw new BadRequestException("Only PDF files are allowed");
   }
-  const raw = String(input.dataBase64 ?? "").replace(/^data:[^;]+;base64,/, "");
+  let raw = String(input.dataBase64 ?? "").trim();
+  const marker = "base64,";
+  const markerAt = raw.indexOf(marker);
+  if (raw.startsWith("data:") && markerAt >= 0) {
+    raw = raw.slice(markerAt + marker.length);
+  }
+  raw = raw.replace(/\s/g, "");
   if (!raw) throw new BadRequestException("PDF file is required");
   let buffer: Buffer;
   try {
@@ -49,16 +75,10 @@ export function assertProjectPdfPayload(input: {
   if (buffer.length < 5 || buffer.length > PROJECT_PDF_MAX_BYTES) {
     throw new BadRequestException("PDF must be under 10MB");
   }
-  if (buffer.subarray(0, 5).toString("latin1") !== "%PDF-") {
+  if (!namedPdf && !bufferHasPdfSignature(buffer)) {
     throw new BadRequestException("Only PDF files are allowed");
   }
-  const fileName =
-    String(input.fileName ?? "project.pdf")
-      .replace(/[/\\]/g, " ")
-      .replace(/[\u0000-\u001f]/g, "")
-      .trim()
-      .slice(0, 180) || "project.pdf";
-  return { buffer, fileName: fileName.toLowerCase().endsWith(".pdf") ? fileName : `${fileName}.pdf` };
+  return { buffer, fileName: safeName };
 }
 
 export async function saveCompanyProjectPdf(

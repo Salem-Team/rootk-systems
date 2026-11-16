@@ -182,7 +182,8 @@ export async function uploadWorkProjectPdf(
     if (isApiMode()) {
       const res = await postWorkProjectPdf(id, {
         fileName: file.name,
-        mimeType: file.type || "application/pdf",
+        mimeType:
+          /\.pdf$/i.test(file.name) || !file.type ? "application/pdf" : file.type,
         dataBase64,
       });
       if (res.success) emitWorkUpdated();
