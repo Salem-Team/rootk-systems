@@ -50,6 +50,13 @@ echo '== backend npm install =='
 cd backend
 npm install 2>&1 | tail -12
 
+echo '== playwright chromium (PDF engine) =='
+npx playwright install chromium 2>&1 | tail -20
+# System libs needed by Chromium on Ubuntu (safe to re-run).
+if command -v apt-get >/dev/null 2>&1; then
+  npx playwright install-deps chromium 2>&1 | tail -20 || true
+fi
+
 echo '== prisma generate + migrate =='
 npx prisma generate 2>&1 | tail -6
 npx prisma migrate deploy 2>&1 | tail -20

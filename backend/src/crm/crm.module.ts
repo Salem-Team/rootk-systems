@@ -21,6 +21,7 @@ import { CrmStagesService } from "./crm-stages.service";
 import { CrmSubStagesService } from "./crm-sub-stages.service";
 import { CrmWebsiteAutoAssignService } from "./crm-website-auto-assign.service";
 import { CrmService } from "./crm.service";
+import { ProposalPdfService } from "./proposal-pdf.service";
 import { RolesGuard } from "../common/roles.guard";
 import { NotificationsModule } from "../notifications/notifications.module";
 
@@ -33,6 +34,7 @@ import { NotificationsModule } from "../notifications/notifications.module";
   ],
   providers: [
     RolesGuard,
+    ProposalPdfService,
     CrmSharedService,
     CrmStagesService,
     CrmSubStagesService,

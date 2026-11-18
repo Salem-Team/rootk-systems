@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -8,10 +9,14 @@ import {
   Post,
   Put,
   Query,
+  Res,
+  StreamableFile,
   UseGuards,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
+import type { Response } from "express";
 import { CrmService } from "./crm.service";
+import { ProposalPdfService } from "./proposal-pdf.service";
 import { ActorId, CompanyId } from "../common/tenant";
 import { CurrentUser, type JwtPayload } from "../common/decorators/current-user";
 import { Roles } from "../common/roles.decorator";
@@ -23,7 +28,10 @@ import { RequirePermission } from "../common/permissions.decorator";
 @Controller("crm")
 @UseGuards(AuthGuard("jwt"), RolesGuard)
 export class CrmController {
-  constructor(private readonly service: CrmService) {}
+  constructor(
+    private readonly service: CrmService,
+    private readonly proposalPdf: ProposalPdfService
+  ) {}
 
   // ── Stages ──────────────────────────────────────────────────────────────
 
@@ -511,5 +519,41 @@ export class CrmController {
       requestId,
       body
     );
+  }
+
+  /** Server-side Chromium PDF for technical annex / quotation / contract. */
+  @Post("documents/pdf")
+  async renderDocumentPdf(
+    @Body() body: Record<string, unknown>,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const html = typeof body.html === "string" ? body.html.trim() : "";
+    if (!html || html.length < 32) {
+      throw new BadRequestException("html is required");
+    }
+    if (html.length > 8_000_000) {
+      throw new BadRequestException("html is too large");
+    }
+    const rawName =
+      typeof body.fileName === "string" && body.fileName.trim()
+        ? body.fileName.trim()
+        : "document.pdf";
+    const fileName = rawName.toLowerCase().endsWith(".pdf")
+      ? rawName
+      : `${rawName}.pdf`;
+    const asciiName = fileName
+      .replace(/[^\x20-\x7E]/g, "_")
+      .replace(/["\\]/g, "")
+      .slice(0, 120);
+
+    const pdf = await this.proposalPdf.renderHtmlToPdf(html);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${asciiName || "document.pdf"}"; filename*=UTF-8''${encodeURIComponent(fileName)}`
+    );
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("Content-Length", String(pdf.byteLength));
+    return new StreamableFile(pdf);
   }
 }

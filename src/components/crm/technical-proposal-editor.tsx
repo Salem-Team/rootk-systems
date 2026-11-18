@@ -18,11 +18,29 @@ import {
   newProposalSection,
   templateDraftIssue,
 } from "@/lib/crm/technical-proposal";
-import { downloadTechnicalProposalPdf } from "@/lib/crm/technical-proposal-print";
+import {
+  downloadTechnicalProposalPdf,
+  savePdfBlob,
+  type PdfDownloadProgress,
+  type PreparedProposalPdf,
+} from "@/lib/crm/technical-proposal-print";
 import type {
   CrmClientRequestKind,
   TechnicalProposalDocument,
 } from "@/types/crm";
+
+function progressLabelKey(phase: PdfDownloadProgress["phase"]) {
+  switch (phase) {
+    case "prepare":
+      return "crm.clientRequests.proposal.progress.prepare" as const;
+    case "render":
+      return "crm.clientRequests.proposal.progress.render" as const;
+    case "download":
+      return "crm.clientRequests.proposal.progress.download" as const;
+    default:
+      return "crm.clientRequests.proposal.progress.done" as const;
+  }
+}
 
 const QUOTATION_PRICE_INPUTS: {
   key: QuotationPriceKey;
@@ -96,6 +114,9 @@ export function TechnicalProposalEditor({
 }) {
   const { t } = useTranslation();
   const [downloading, setDownloading] = useState(false);
+  const [progress, setProgress] = useState<PdfDownloadProgress | null>(null);
+  const [readyPdf, setReadyPdf] = useState<PreparedProposalPdf | null>(null);
+  const [savingReady, setSavingReady] = useState(false);
 
   function patch(next: Partial<TechnicalProposalDocument>) {
     if (!doc || !onChange) return;
@@ -103,7 +124,7 @@ export function TechnicalProposalEditor({
   }
 
   async function preview(source: TechnicalProposalDocument) {
-    if (downloading) return;
+    if (downloading || readyPdf) return;
     const issue = templateDraftIssue(source);
     if (issue) {
       toast.error(
@@ -114,16 +135,120 @@ export function TechnicalProposalEditor({
       return;
     }
     setDownloading(true);
+    setProgress({ phase: "prepare", percent: 4 });
+    let keepReadyStep = false;
     try {
-      toast.message(t("crm.clientRequests.proposal.downloadHint"));
-      await downloadTechnicalProposalPdf(source, leadName, kind);
+      const prepared = await downloadTechnicalProposalPdf(source, leadName, kind, {
+        onProgress: setProgress,
+      });
       if (kind === "price_exception") onExported?.(source);
+      if (prepared.mobile) {
+        keepReadyStep = true;
+        setReadyPdf(prepared);
+        setProgress({ phase: "done", percent: 100 });
+        return;
+      }
+      toast.success(t("crm.clientRequests.proposal.downloadReady"));
     } catch {
       toast.error(t("crm.clientRequests.proposal.popup"));
     } finally {
       setDownloading(false);
+      if (!keepReadyStep) setProgress(null);
     }
   }
+
+  async function confirmMobileSave() {
+    if (!readyPdf || savingReady) return;
+    setSavingReady(true);
+    try {
+      await savePdfBlob(readyPdf.blob, readyPdf.fileName);
+      toast.success(t("crm.clientRequests.proposal.downloadReady"));
+      setReadyPdf(null);
+      setProgress(null);
+    } catch {
+      toast.error(t("crm.clientRequests.proposal.popup"));
+    } finally {
+      setSavingReady(false);
+    }
+  }
+
+  const progressOverlay =
+    progress || readyPdf ? (
+      <div
+        className="fixed inset-0 z-[80] flex items-end justify-center bg-black/45 p-4 sm:items-center"
+        role="status"
+        aria-live="polite"
+        aria-busy={downloading}
+      >
+        <div className="w-full max-w-sm rounded-2xl border border-border/70 bg-card p-4 shadow-2xl">
+          <div className="flex items-center gap-3">
+            {readyPdf ? (
+              <Download className="h-5 w-5 shrink-0 text-primary" />
+            ) : (
+              <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
+            )}
+            <div className="min-w-0">
+              <p className="text-[14px] font-semibold">
+                {readyPdf
+                  ? t("crm.clientRequests.proposal.progress.readyTitle")
+                  : t("crm.clientRequests.proposal.progress.title")}
+              </p>
+              <p className="mt-0.5 text-[12px] text-muted-foreground">
+                {readyPdf
+                  ? t("crm.clientRequests.proposal.progress.readyHint")
+                  : progress
+                    ? t(progressLabelKey(progress.phase))
+                    : null}
+              </p>
+            </div>
+          </div>
+          {!readyPdf && progress ? (
+            <>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out"
+                  style={{
+                    width: `${Math.max(6, Math.min(100, progress.percent))}%`,
+                  }}
+                />
+              </div>
+              <p className="mt-2 text-center text-[12px] font-medium tabular-nums text-muted-foreground">
+                {Math.round(progress.percent)}%
+              </p>
+            </>
+          ) : null}
+          {readyPdf ? (
+            <div className="mt-3 grid gap-2">
+              <Button
+                type="button"
+                className="h-11 w-full"
+                disabled={savingReady}
+                onClick={() => void confirmMobileSave()}
+              >
+                {savingReady ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                {t("crm.clientRequests.proposal.progress.saveNow")}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-10 w-full"
+                disabled={savingReady}
+                onClick={() => {
+                  setReadyPdf(null);
+                  setProgress(null);
+                }}
+              >
+                {t("crm.clientRequests.proposal.progress.dismiss")}
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    ) : null;
 
   function referenceLine(reference?: string) {
     const value = reference?.trim();
@@ -146,21 +271,22 @@ export function TechnicalProposalEditor({
     }
     return (
       <div className="space-y-2">
+        {progressOverlay}
         {referenceLine(saved.reference)}
-      <Button
-        type="button"
-        variant="outline"
-        className="h-11 w-full"
-        disabled={downloading}
-        onClick={() => void preview(saved)}
-      >
-        {downloading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Download className="h-4 w-4" />
-        )}
-        {t("crm.clientRequests.proposal.download")}
-      </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full"
+          disabled={downloading}
+          onClick={() => void preview(saved)}
+        >
+          {downloading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          {t("crm.clientRequests.proposal.download")}
+        </Button>
       </div>
     );
   }
@@ -172,6 +298,7 @@ export function TechnicalProposalEditor({
 
   return (
     <div className="space-y-2.5 rounded-xl border border-primary/20 bg-primary/[0.03] p-2.5">
+      {progressOverlay}
       <div>
         <p className="text-[13px] font-semibold">
           {t(`crm.clientRequests.templateTitles.${kind}`)}

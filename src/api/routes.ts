@@ -173,6 +173,7 @@ export const API_ROUTES = {
     clientRequests: "/crm/client-requests",
     clientRequestReplies: (id: string) => `/crm/client-requests/${id}/replies`,
     clientRequestProposal: (id: string) => `/crm/client-requests/${id}/proposal`,
+    documentsPdf: "/crm/documents/pdf",
     leadMatch: "/crm/leads/match",
     leadDuplicates: "/crm/leads/duplicates",
     dashboard: "/crm/dashboard",

@@ -89,14 +89,14 @@ export class HttpClient {
     return this.parseSuccess<T>(response, path);
   }
 
-  /** Authenticated binary fetch (voice notes, exports). */
+  /** Authenticated binary fetch (voice notes, exports, server PDFs). */
   async requestBlob(
     path: string,
-    options: Omit<HttpRequestOptions, "body"> = {}
+    options: HttpRequestOptions = {}
   ): Promise<Blob> {
     const response = await this.rawRequest(path, {
       ...options,
-      method: options.method ?? "GET",
+      method: options.method ?? (options.body ? "POST" : "GET"),
       headers: { Accept: "*/*", ...options.headers },
     });
     if (response.status === 401 && !options.skipAuth) {
@@ -104,7 +104,7 @@ export class HttpClient {
       if (refreshOutcome === "success") {
         const retry = await this.rawRequest(path, {
           ...options,
-          method: options.method ?? "GET",
+          method: options.method ?? (options.body ? "POST" : "GET"),
           headers: { Accept: "*/*", ...options.headers },
         });
         if (retry.ok) return retry.blob();

@@ -1,5 +1,22 @@
+import { API_ROUTES } from "@/api/routes";
 import { quotationHtml } from "@/lib/crm/quotation-print";
+import { getHttpClient } from "@/lib/http-client";
 import type { CrmClientRequestKind, TechnicalProposalDocument } from "@/types/crm";
+
+export type PdfDownloadPhase =
+  | "prepare"
+  | "render"
+  | "download"
+  | "done";
+
+export type PdfDownloadProgress = {
+  phase: PdfDownloadPhase;
+  percent: number;
+};
+
+export type DownloadTechnicalProposalPdfOptions = {
+  onProgress?: (progress: PdfDownloadProgress) => void;
+};
 
 const NAVY = "#082868";
 const BLUE = "#1A4A9E";
@@ -523,15 +540,129 @@ export async function openTechnicalProposalPrint(
   return true;
 }
 
+function pdfFileName(
+  doc: TechnicalProposalDocument,
+  leadName: string,
+  kind?: CrmClientRequestKind
+): string {
+  const kindLabel =
+    kind === "price_exception"
+      ? "quotation"
+      : kind === "contract"
+        ? "contract"
+        : "technical-annex";
+  const base = [doc.title.trim() || kindLabel, leadName.trim()]
+    .filter(Boolean)
+    .join("-")
+    .replace(/[^\p{L}\p{N}._-]+/gu, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  return `${base || kindLabel}.pdf`;
+}
+
+function reportProgress(
+  onProgress: DownloadTechnicalProposalPdfOptions["onProgress"],
+  phase: PdfDownloadPhase,
+  percent: number
+) {
+  onProgress?.({ phase, percent });
+}
+
+function isMobileClient(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
+/** Mobile-first blob save: Web Share API when available, else anchor download. */
+export async function savePdfBlob(
+  blob: Blob,
+  fileName: string
+): Promise<"shared" | "downloaded" | "opened"> {
+  const typed =
+    blob.type === "application/pdf"
+      ? blob
+      : new Blob([blob], { type: "application/pdf" });
+
+  const file = new File([typed], fileName, { type: "application/pdf" });
+  const nav = navigator as Navigator & {
+    canShare?: (data?: ShareData) => boolean;
+    share?: (data: ShareData) => Promise<void>;
+  };
+  if (typeof nav.canShare === "function" && typeof nav.share === "function") {
+    try {
+      if (nav.canShare({ files: [file] })) {
+        await nav.share({ files: [file], title: fileName });
+        return "shared";
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return "shared";
+      }
+    }
+  }
+
+  const url = URL.createObjectURL(typed);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.rel = "noopener";
+  anchor.target = "_blank";
+  anchor.style.display = "none";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+
+  const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent);
+  if (isIOS) {
+    // Keep the blob URL alive so the opened tab can load the PDF.
+    window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
+    return "opened";
+  }
+  window.setTimeout(() => URL.revokeObjectURL(url), 4_000);
+  return "downloaded";
+}
+
+export type PreparedProposalPdf = {
+  blob: Blob;
+  fileName: string;
+  mobile: boolean;
+};
+
 /**
- * Save PDF via the browser print engine (Save as PDF).
- * The old html2canvas page-stitch path produced broken 10+ page raster PDFs.
+ * Server Chromium PDF → authenticated blob with progress.
+ * Replaces browser print-dialog / html2canvas paths that fail on mobile.
  */
 export async function downloadTechnicalProposalPdf(
   doc: TechnicalProposalDocument,
   leadName: string,
-  kind?: CrmClientRequestKind
-): Promise<void> {
+  kind?: CrmClientRequestKind,
+  options: DownloadTechnicalProposalPdfOptions = {}
+): Promise<PreparedProposalPdf> {
+  const { onProgress } = options;
+  reportProgress(onProgress, "prepare", 8);
   const html = await proposalMarkup(doc, leadName, false, kind);
-  await printHtmlDocument(html);
+  reportProgress(onProgress, "prepare", 22);
+
+  const fileName = pdfFileName(doc, leadName, kind);
+  reportProgress(onProgress, "render", 35);
+
+  const blob = await getHttpClient().requestBlob(API_ROUTES.crm.documentsPdf, {
+    method: "POST",
+    body: { html, fileName },
+    headers: { Accept: "application/pdf" },
+  });
+
+  if (!blob || blob.size < 64) {
+    throw new Error("pdf-empty");
+  }
+
+  const mobile = isMobileClient();
+  reportProgress(onProgress, "download", 88);
+  // Desktop: auto-download. Mobile: caller shows a tap-to-save step so the
+  // share/download keeps a fresh user gesture (iOS blocks async window.open).
+  if (!mobile) {
+    await savePdfBlob(blob, fileName);
+  }
+  reportProgress(onProgress, "done", 100);
+  return { blob, fileName, mobile };
 }
