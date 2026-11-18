@@ -649,7 +649,7 @@ function collectAvoidZones(content: Element): AvoidZone[] {
   content.querySelectorAll(".block h2").forEach((heading) => {
     const box = heading.getBoundingClientRect();
     let bottom = box.bottom - contentTop;
-    let sibling = heading.nextElementSibling;
+    const sibling = heading.nextElementSibling;
     // Glue the heading to the first body chunk (intro paragraph or list).
     if (sibling) {
       const nextBox = sibling.getBoundingClientRect();
