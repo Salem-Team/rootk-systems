@@ -233,6 +233,12 @@ export function technicalProposalHtml(
       font-weight: 700;
       line-height: 1.45;
       text-align: right;
+      break-after: avoid-page;
+      page-break-after: avoid;
+    }
+    .block li, .block p {
+      break-inside: avoid;
+      page-break-inside: avoid;
     }
     .idx {
       flex: none;
@@ -624,50 +630,93 @@ async function capturePiece(
   return shot(element, false);
 }
 
-function snapCut(canvas: HTMLCanvasElement, fromY: number, idealEnd: number): number {
-  const end = Math.min(canvas.height, Math.round(idealEnd));
-  if (end >= canvas.height - 1) return canvas.height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return end;
-  const lookback = Math.min(48, end - fromY);
-  if (lookback <= 0) return end;
-  const start = end - lookback;
-  const image = ctx.getImageData(0, start, canvas.width, lookback);
-  const step = 10;
-  for (let row = lookback - 1; row >= 0; row -= 1) {
-    let white = 0;
-    let samples = 0;
-    for (let x = 0; x < canvas.width; x += step) {
-      const i = (row * canvas.width + x) * 4;
-      const alpha = image.data[i + 3];
-      if (
-        alpha < 12 ||
-        (image.data[i] > 248 && image.data[i + 1] > 248 && image.data[i + 2] > 248)
-      ) {
-        white += 1;
-      }
-      samples += 1;
+type AvoidZone = { top: number; bottom: number };
+
+/** Keep section titles glued to the following body so page cuts never orphan headings. */
+function collectAvoidZones(content: Element): AvoidZone[] {
+  const contentTop = content.getBoundingClientRect().top;
+  const zones: AvoidZone[] = [];
+
+  const push = (node: Element) => {
+    const box = node.getBoundingClientRect();
+    const top = box.top - contentTop;
+    const bottom = box.bottom - contentTop;
+    if (bottom - top > 2) zones.push({ top, bottom });
+  };
+
+  content.querySelectorAll(".block, .intro, .note, h1, .subtitle, .doc-ref").forEach(push);
+
+  content.querySelectorAll(".block h2").forEach((heading) => {
+    const box = heading.getBoundingClientRect();
+    let bottom = box.bottom - contentTop;
+    let sibling = heading.nextElementSibling;
+    // Glue the heading to the first body chunk (intro paragraph or list).
+    if (sibling) {
+      const nextBox = sibling.getBoundingClientRect();
+      bottom = Math.max(bottom, nextBox.bottom - contentTop);
     }
-    if (samples > 0 && white / samples > 0.985) return start + row;
-  }
-  return end;
+    zones.push({ top: box.top - contentTop, bottom });
+  });
+
+  content.querySelectorAll(".block li, .block p, .intro p, .note p").forEach(push);
+  return zones;
 }
 
-function keepBlocksTogether(
-  blocks: Array<{ top: number; bottom: number }>,
-  scale: number,
-  fromY: number,
-  cut: number,
-  windowPx: number
-): number {
-  for (const block of blocks) {
-    const top = block.top * scale;
-    const bottom = block.bottom * scale;
-    const inside = cut > top + 1 && cut < bottom - 1;
-    const fits = bottom - top <= windowPx;
-    if (inside && fits && top > fromY + 8) return Math.round(top);
+/**
+ * Choose a cut that fits the page window and does not slice through avoid zones
+ * (section cards, headings + first body, list items).
+ */
+export function chooseContentCut(input: {
+  fromY: number;
+  idealEnd: number;
+  contentHeight: number;
+  windowPx: number;
+  zones: AvoidZone[];
+  scale: number;
+}): number {
+  const contentHeight = Math.max(0, input.contentHeight);
+  const fromY = Math.max(0, input.fromY);
+  const ideal = Math.min(contentHeight, Math.round(input.idealEnd));
+  if (ideal >= contentHeight - 1) return contentHeight;
+  if (ideal <= fromY + 8) return Math.min(contentHeight, fromY + Math.round(input.windowPx));
+
+  const scaled = input.zones
+    .map((zone) => ({
+      top: zone.top * input.scale,
+      bottom: zone.bottom * input.scale,
+    }))
+    .filter((zone) => zone.bottom - zone.top > 2)
+    .sort((a, b) => a.top - b.top || a.bottom - b.bottom);
+
+  let cut = ideal;
+  const minFill = fromY + input.windowPx * 0.28;
+
+  // If the ideal cut lands inside a keep-together zone, break before that zone.
+  for (const zone of scaled) {
+    if (cut > zone.top + 1 && cut < zone.bottom - 1) {
+      if (zone.top >= minFill) {
+        cut = Math.round(zone.top);
+      }
+      break;
+    }
   }
-  return cut;
+
+  // Prefer the latest safe boundary at/before the cut (block or item starts).
+  let bestBoundary = cut;
+  for (const zone of scaled) {
+    if (zone.top <= cut + 0.5 && zone.top >= minFill) {
+      bestBoundary = Math.round(zone.top);
+    }
+  }
+  // Only snap to a boundary when it stays close to the ideal page fill.
+  if (cut - bestBoundary <= input.windowPx * 0.45) {
+    cut = bestBoundary;
+  }
+
+  if (cut <= fromY + 8) {
+    cut = ideal;
+  }
+  return Math.min(contentHeight, Math.max(fromY + 8, cut));
 }
 
 function hasInk(canvas: HTMLCanvasElement): boolean {
@@ -701,6 +750,21 @@ function sliceCanvas(
   return slice;
 }
 
+function resolveCaptureSettings(): { scale: number; jpegQuality: number } {
+  if (typeof navigator === "undefined" || typeof window === "undefined") {
+    return { scale: 2, jpegQuality: 0.86 };
+  }
+  const mobile =
+    /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
+  if (!mobile) return { scale: 2, jpegQuality: 0.86 };
+  const dpr = window.devicePixelRatio || 1;
+  return {
+    scale: Math.min(1.35, Math.max(1, dpr)),
+    jpegQuality: 0.72,
+  };
+}
+
 export async function downloadTechnicalProposalPdf(
   doc: TechnicalProposalDocument,
   leadName: string,
@@ -708,6 +772,7 @@ export async function downloadTechnicalProposalPdf(
 ): Promise<void> {
   const html2canvas = (await import("html2canvas")).default;
   const { jsPDF } = await import("jspdf");
+  const capture = resolveCaptureSettings();
   const { doc: frame, cleanup } = await mountProposal(
     await proposalMarkup(doc, leadName, false, kind)
   );
@@ -722,7 +787,7 @@ export async function downloadTechnicalProposalPdf(
     if (!head || !foot || !content) throw new Error("pdf-layout");
     const shot: CanvasShot = (element, foreignObject) =>
       html2canvas(element as HTMLElement, {
-        scale: 2,
+        scale: capture.scale,
         backgroundColor: "#ffffff",
         useCORS: true,
         foreignObjectRendering: foreignObject,
@@ -743,39 +808,46 @@ export async function downloadTechnicalProposalPdf(
     const footerMm = footCanvas.height / pxPerMm;
     const windowMm = PAGE_H - BAND_MM - footerMm - FOOTER_GAP_MM - headerMm - HEADER_GAP_MM;
     const windowPx = Math.max(40, windowMm * pxPerMm);
-    const contentTop = content.getBoundingClientRect().top;
-    const blocks = [...content.querySelectorAll(".block")].map((node) => {
-      const box = node.getBoundingClientRect();
-      return { top: box.top - contentTop, bottom: box.bottom - contentTop };
-    });
-    const contentHeight = content instanceof HTMLElement ? content.offsetHeight : content.getBoundingClientRect().height;
-    const blockScale = contentHeight > 0 ? contentCanvas.height / contentHeight : 2;
+    const zones = collectAvoidZones(content);
+    const contentHeight =
+      content instanceof HTMLElement
+        ? content.offsetHeight
+        : content.getBoundingClientRect().height;
+    const blockScale =
+      contentHeight > 0 ? contentCanvas.height / contentHeight : capture.scale;
     const pdf = new jsPDF({ unit: "mm", format: "a4", compress: true });
+    const headImage = headCanvas.toDataURL("image/jpeg", capture.jpegQuality);
+    const footImage = footCanvas.toDataURL("image/jpeg", capture.jpegQuality);
     let y = 0;
     let page = 0;
     while (y < contentCanvas.height - 1 && page < 40) {
       const ideal = Math.min(contentCanvas.height, y + windowPx);
-      let cut = snapCut(contentCanvas, y, ideal);
-      cut = keepBlocksTogether(blocks, blockScale, y, cut, windowPx);
-      if (cut <= y + 8) cut = ideal;
+      const cut = chooseContentCut({
+        fromY: y,
+        idealEnd: ideal,
+        contentHeight: contentCanvas.height,
+        windowPx,
+        zones,
+        scale: blockScale,
+      });
       const slice = sliceCanvas(contentCanvas, y, cut - y);
       y = cut;
       if (!hasInk(slice)) continue;
       if (page > 0) pdf.addPage();
       page += 1;
       const sliceMm = slice.height / pxPerMm;
-      pdf.addImage(headCanvas.toDataURL("image/png"), "PNG", 0, 0, PAGE_W, headerMm);
+      pdf.addImage(headImage, "JPEG", 0, 0, PAGE_W, headerMm);
       pdf.addImage(
-        slice.toDataURL("image/png"),
-        "PNG",
+        slice.toDataURL("image/jpeg", capture.jpegQuality),
+        "JPEG",
         0,
         headerMm + HEADER_GAP_MM,
         PAGE_W,
         sliceMm
       );
       pdf.addImage(
-        footCanvas.toDataURL("image/png"),
-        "PNG",
+        footImage,
+        "JPEG",
         0,
         PAGE_H - BAND_MM - footerMm,
         PAGE_W,
