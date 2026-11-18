@@ -3761,6 +3761,7 @@ export const ar: TranslationKeys = {
       meeting: "اجتماع",
       note: "ملاحظة",
       stage_change: "تغيير مرحلة",
+      stageFromTo: "من {from} إلى {to}",
       assignment: "تعيين",
       feedback: "ملاحظات",
       follow_up: "متابعة",

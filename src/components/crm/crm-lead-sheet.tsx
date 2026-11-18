@@ -178,6 +178,7 @@ export function CrmLeadSheet({
                   lead={lead}
                   timeline={sheet.timeline}
                   feedback={sheet.feedback}
+                  stages={stages}
                   businessTypes={businessTypes}
                   employees={employees}
                   lossReasonName={sheet.lossReasonName}

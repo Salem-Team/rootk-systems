@@ -8,14 +8,16 @@ import { LtrNum } from "@/components/shared/ltr-num";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatIsoDateTime } from "@/lib/format-time";
 import { ensureCrmList } from "@/lib/crm-normalize";
+import { formatStageChangeDescription } from "@/lib/crm/stage-change-label";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/types";
-import type { CrmLead, CrmLeadActivity } from "@/types/crm";
+import type { CrmLead, CrmLeadActivity, CrmStage } from "@/types/crm";
 
 interface CrmActivitiesPanelProps {
   activities: CrmLeadActivity[];
   leads: CrmLead[];
   employees: Employee[];
+  stages?: CrmStage[];
   loading?: boolean;
   onLeadClick?: (leadId: string) => void;
   className?: string;
@@ -30,6 +32,7 @@ export function CrmActivitiesPanel({
   activities: activitiesProp,
   leads: leadsProp,
   employees: employeesProp,
+  stages: stagesProp = [],
   loading = false,
   onLeadClick,
   className,
@@ -38,6 +41,7 @@ export function CrmActivitiesPanel({
   const activities = ensureCrmList<CrmLeadActivity>(activitiesProp);
   const leads = ensureCrmList<CrmLead>(leadsProp);
   const employees = ensureCrmList<Employee>(employeesProp);
+  const stages = ensureCrmList<CrmStage>(stagesProp);
   const leadMap = useMemo(
     () => new Map(leads.map((l) => [l.id, l])),
     [leads]
@@ -45,6 +49,10 @@ export function CrmActivitiesPanel({
   const employeeMap = useMemo(
     () => new Map(employees.map((e) => [e.id, e.name])),
     [employees]
+  );
+  const stageNameById = useMemo(
+    () => new Map(stages.map((s) => [s.id, s.name])),
+    [stages]
   );
 
   if (loading) return <TableSkeleton rows={5} />;
@@ -95,7 +103,19 @@ export function CrmActivitiesPanel({
                   </div>
                   {item.description ? (
                     <BidiBlocks
-                      text={item.description}
+                      text={
+                        item.type === "stage_change"
+                          ? formatStageChangeDescription(
+                              item.description,
+                              stageNameById,
+                              (from, to) =>
+                                t("crm.activityType.stageFromTo", {
+                                  from,
+                                  to,
+                                })
+                            )
+                          : item.description
+                      }
                       className="text-[12px] text-muted-foreground"
                     />
                   ) : null}

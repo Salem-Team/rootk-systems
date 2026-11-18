@@ -422,6 +422,7 @@ export default function CrmPage() {
               activities={hub.safeActivities}
               leads={hub.safeActivityLeads}
               employees={hub.safeEmployees}
+              stages={hub.safeStages}
               loading={hub.loading}
               onLeadClick={(id) => hub.openViewLead(id)}
             />

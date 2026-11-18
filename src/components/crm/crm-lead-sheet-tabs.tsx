@@ -10,12 +10,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/hooks/use-translation";
 import { formatMaybeDateTime } from "@/lib/crm/format";
 import { businessTypeLabel } from "@/lib/crm/business-type-label";
+import { formatStageChangeDescription } from "@/lib/crm/stage-change-label";
 import type { Employee } from "@/types";
 import type {
   CrmBusinessType,
   CrmLead,
   CrmLeadActivity,
   CrmLeadFeedback,
+  CrmStage,
   CrmStageCategory,
 } from "@/types/crm";
 
@@ -66,6 +68,7 @@ interface CrmLeadSheetTabsProps {
   lead: CrmLead;
   timeline: CrmLeadActivity[];
   feedback: CrmLeadFeedback[];
+  stages?: CrmStage[];
   businessTypes?: CrmBusinessType[];
   employees?: Employee[];
   lossReasonName?: string | null;
@@ -80,6 +83,7 @@ export function CrmLeadSheetTabs({
   lead,
   timeline,
   feedback,
+  stages = [],
   businessTypes = [],
   employees = [],
   lossReasonName = null,
@@ -93,6 +97,18 @@ export function CrmLeadSheetTabs({
     return stored ? businessTypeLabel(stored, t) : "—";
   })();
   const employeeNameById = new Map(employees.map((e) => [e.id, e.name]));
+  const stageNameById = new Map(stages.map((s) => [s.id, s.name]));
+
+  function activityDescription(item: CrmLeadActivity): string {
+    if (item.type !== "stage_change" || !item.description) {
+      return item.description;
+    }
+    return formatStageChangeDescription(
+      item.description,
+      stageNameById,
+      (from, to) => t("crm.activityType.stageFromTo", { from, to })
+    );
+  }
 
   return (
     <Tabs
@@ -238,7 +254,7 @@ export function CrmLeadSheetTabs({
                   </p>
                   {item.description ? (
                     <div className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground sm:mt-1 sm:text-[12px]">
-                      <CrmMentionText text={item.description} />
+                      <CrmMentionText text={activityDescription(item)} />
                     </div>
                   ) : null}
                   <p className="mt-1.5 text-[11px] text-muted-foreground/80">

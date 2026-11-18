@@ -3773,6 +3773,7 @@ export const en = {
       meeting: "Meeting",
       note: "Note",
       stage_change: "Stage change",
+      stageFromTo: "From {from} to {to}",
       assignment: "Assignment",
       feedback: "Feedback",
       follow_up: "Follow-up",

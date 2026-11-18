@@ -309,20 +309,32 @@ export class CrmLeadUpdateService {
       previousStageId: string;
     }
   ) {
+    const stages = await this.prisma.crmStage.findMany({
+      where: {
+        companyId,
+        id: { in: [ctx.previousStageId, ctx.row.stageId] },
+      },
+      select: { id: true, name: true },
+    });
+    const stageName = new Map(stages.map((s) => [s.id, s.name]));
+    const fromName =
+      stageName.get(ctx.previousStageId)?.trim() || ctx.previousStageId;
+    const toName = stageName.get(ctx.row.stageId)?.trim() || ctx.row.stageId;
+
     await this.shared.writeHistory(companyId, {
       leadId: ctx.id,
       action: "stage_changed",
       actorId: actor.userId,
       actorName: ctx.nameLabel,
-      note: `Stage changed for ${ctx.row.name}`,
-      previousValue: ctx.previousStageId,
-      newValue: ctx.row.stageId,
+      note: `Stage changed for ${ctx.row.name}: ${fromName} → ${toName}`,
+      previousValue: fromName,
+      newValue: toName,
     });
     await this.shared.writeLeadActivity(companyId, {
       leadId: ctx.id,
       type: CrmActivityType.stage_change,
       title: "Stage changed",
-      description: `${ctx.previousStageId} → ${ctx.row.stageId}`,
+      description: `${fromName} → ${toName}`,
       actorEmployeeId: actor.employeeId,
       actorId: actor.userId,
     });
@@ -330,7 +342,7 @@ export class CrmLeadUpdateService {
       companyId,
       type: "crm_stage_changed",
       title: "CRM lead stage changed",
-      description: ctx.row.name,
+      description: `${ctx.row.name}: ${fromName} → ${toName}`,
       employeeId: ctx.row.ownerEmployeeId ?? undefined,
       actorId: actor.userId,
     });
