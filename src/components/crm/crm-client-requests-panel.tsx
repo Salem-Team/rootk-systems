@@ -154,6 +154,9 @@ export function CrmClientRequestsPanel({
     Partial<Record<CrmClientRequestKind, TechnicalProposalDocument>>
   >({});
   const [savingAnnexId, setSavingAnnexId] = useState<string | null>(null);
+  const [forceComposeKind, setForceComposeKind] = useState<CrmClientRequestKind | null>(
+    null
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -218,6 +221,13 @@ export function CrmClientRequestsPanel({
     if (variant === "lead" || status === "all") return items;
     return items.filter((item) => item.status === status);
   }, [items, status, variant]);
+
+  const existingOfKind = useMemo(
+    () => items.find((item) => item.kind === kind) ?? null,
+    [items, kind]
+  );
+  const composingDuplicate =
+    variant === "lead" && Boolean(existingOfKind) && forceComposeKind !== kind;
 
   function annexIssue(document: TechnicalProposalDocument): boolean {
     const issue = templateDraftIssue(document);
@@ -285,6 +295,7 @@ export function CrmClientRequestsPanel({
       delete next[kind];
       return next;
     });
+    setForceComposeKind(null);
     setItems((prev) => [res.data!, ...prev.filter((row) => row.id !== res.data!.id)]);
     toast.success(t(savedToastKey(kind)));
   }
@@ -425,7 +436,12 @@ export function CrmClientRequestsPanel({
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setKind(item.id)}
+                  onClick={() => {
+                    setKind(item.id);
+                    setForceComposeKind((prev) =>
+                      prev === item.id ? prev : null
+                    );
+                  }}
                   className={cn(
                     "flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-xl border px-1.5 py-2 text-center text-[11px] font-semibold leading-tight",
                     active
@@ -442,20 +458,50 @@ export function CrmClientRequestsPanel({
             })}
           </div>
           <div className="mt-3">
-            <TechnicalProposalEditor
-              kind={kind}
-              leadName={leadName || composeDocument().subtitle}
-              doc={composeDocument()}
-              saved={null}
-              canEdit
-              hint={t(salesHintKey(kind))}
-              saving={sending}
-              onSave={() => void submitRequest()}
-              onChange={(next) =>
-                setComposeByKind((prev) => ({ ...prev, [kind]: next }))
-              }
-              onExported={(doc) => recordQuotationExport(leadId, doc.reference)}
-            />
+            {composingDuplicate && existingOfKind ? (
+              <div className="space-y-2 rounded-xl border border-border/70 bg-muted/30 px-3 py-3">
+                <p className="text-[13px] leading-relaxed text-muted-foreground">
+                  {t("crm.clientRequests.proposal.alreadyExists")}
+                </p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10"
+                    onClick={() => {
+                      setFocusedId(existingOfKind.id);
+                      revealRequest(existingOfKind.id);
+                    }}
+                  >
+                    {t("crm.clientRequests.proposal.openExisting")}
+                  </Button>
+                  <Button
+                    type="button"
+                    className="h-10"
+                    onClick={() => setForceComposeKind(kind)}
+                  >
+                    {t("crm.clientRequests.proposal.createAnother")}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <TechnicalProposalEditor
+                kind={kind}
+                leadName={leadName || composeDocument().subtitle}
+                doc={composeDocument()}
+                saved={null}
+                canEdit
+                hint={t(salesHintKey(kind))}
+                saving={sending}
+                onSave={() => void submitRequest()}
+                onChange={(next) =>
+                  setComposeByKind((prev) => ({ ...prev, [kind]: next }))
+                }
+                onExported={(doc) =>
+                  recordQuotationExport(leadId, doc.reference)
+                }
+              />
+            )}
           </div>
         </section>
       ) : null}
@@ -551,9 +597,12 @@ export function CrmClientRequestsPanel({
                 {open ? (
                   <div className="space-y-2.5 border-t border-border/60 px-3 py-3">
                     <p className="text-[11px] text-muted-foreground">{author}</p>
-                    <p className="whitespace-pre-wrap text-[14px] leading-relaxed">
-                      <BidiText text={item.message} />
-                    </p>
+                    {/* Avoid duplicating annex/contract body when the editor already shows it. */}
+                    {canEditAnnex ? null : (
+                      <p className="whitespace-pre-wrap text-[14px] leading-relaxed">
+                        <BidiText text={item.message} />
+                      </p>
+                    )}
                     <TechnicalProposalEditor
                       kind={item.kind}
                       leadName={item.leadName}

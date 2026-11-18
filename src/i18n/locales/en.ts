@@ -4144,6 +4144,10 @@ export const en = {
         composeTitle: "Technical annex",
         composeTitleContract: "Contract",
         composeTitleQuotation: "Quotation",
+        alreadyExists:
+          "A saved copy of this type is already below. Edit that card instead of creating a duplicate.",
+        openExisting: "Open saved copy",
+        createAnother: "Create another",
         title: "Title",
         subtitle: "Subtitle",
         subtitlePlaceholder: "e.g. ERP for a flower shop",

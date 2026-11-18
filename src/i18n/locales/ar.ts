@@ -4132,6 +4132,10 @@ export const ar: TranslationKeys = {
         composeTitle: "الملحق الفني",
         composeTitleContract: "العقد",
         composeTitleQuotation: "كوتشين",
+        alreadyExists:
+          "فيه نسخة محفوظة تحت لنفس النوع. عدّلها من البطاقة بدل ما تعمل نسخة مكررة.",
+        openExisting: "فتح النسخة المحفوظة",
+        createAnother: "إنشاء نسخة جديدة",
         title: "العنوان",
         subtitle: "العنوان الفرعي",
         subtitlePlaceholder: "مثال: نظام ERP لإدارة متجر الورد",
