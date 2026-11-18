@@ -4169,10 +4169,11 @@ export const en = {
         savedContract: "Contract saved",
         savedQuotation: "Quotation saved",
         reference: "File no.",
-        download: "Download PDF",
+        download: "Save PDF",
+        downloadHint: "In the print dialog, choose Save as PDF",
         preview: "Preview PDF",
         waiting: "Management is preparing the template. You can download it here.",
-        popup: "The PDF could not be downloaded. Try again.",
+        popup: "Could not open Save PDF. Allow pop-ups and try again.",
         sendHint: "Management gets a ready template, edits it, and sends it back with a comment.",
         invalid: {
           title: "Add the annex title",

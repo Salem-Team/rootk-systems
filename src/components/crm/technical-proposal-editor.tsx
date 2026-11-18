@@ -115,6 +115,7 @@ export function TechnicalProposalEditor({
     }
     setDownloading(true);
     try {
+      toast.message(t("crm.clientRequests.proposal.downloadHint"));
       await downloadTechnicalProposalPdf(source, leadName, kind);
       if (kind === "price_exception") onExported?.(source);
     } catch {

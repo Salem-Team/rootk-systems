@@ -4157,10 +4157,11 @@ export const ar: TranslationKeys = {
         savedContract: "العقد اتحفظ",
         savedQuotation: "الكوتشين اتحفظ",
         reference: "رقم الملف",
-        download: "تحميل PDF",
+        download: "حفظ PDF",
+        downloadHint: "من نافذة الطباعة اختار Save as PDF / حفظ كـ PDF",
         preview: "معاينة PDF",
         waiting: "الإدارة بتجهّز التمبلت، وهتقدر تحمّله من هنا.",
-        popup: "تعذّر تحميل ملف الـ PDF. حاول مرة تانية.",
+        popup: "تعذّر فتح حفظ الـ PDF. اسمح بالنوافذ المنبثقة وحاول مرة تانية.",
         sendHint: "الإدارة هتلاقي تمبلت جاهز، تعدّله، وتبعتهولك مع الكومنت.",
         invalid: {
           title: "اكتب عنوان الملحق",
