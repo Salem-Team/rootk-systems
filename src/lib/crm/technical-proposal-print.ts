@@ -22,6 +22,14 @@ const NAVY = "#082868";
 const BLUE = "#1A4A9E";
 const WAVE = "#4E7EBF";
 
+/** Replaced on the server with a local logo — keeps mobile upload tiny. */
+export const PDF_LOGO_TOKEN = "__ROOTK_PDF_LOGO__";
+
+export type ProposalMarkupOptions = {
+  /** When false, skip Google Fonts CDN (server PDF path). Default true for browser print. */
+  externalFonts?: boolean;
+};
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -30,13 +38,116 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function paragraphs(value: string): string {
-  const blocks = value
-    .split(/\n+/)
-    .map((line) => line.trim())
+function isBulletLine(line: string): boolean {
+  return /^[-•*]\s+/.test(line) || /^\d+[-)]\s+/.test(line);
+}
+
+function bulletText(line: string): string {
+  return line.replace(/^[-•*]\s+/, "").replace(/^\d+[-)]\s+/, "").trim();
+}
+
+function isModuleHeading(line: string): boolean {
+  return /^\d+\.\s+\S/.test(line) && line.length < 120 && !line.includes("|");
+}
+
+function isLabelLine(line: string): boolean {
+  return /[:：]\s*$/.test(line) && line.length < 80 && !line.includes("|");
+}
+
+function isPipeRow(line: string): boolean {
+  return line.includes("|") && line.split("|").length >= 2;
+}
+
+function renderPipeTable(rows: string[]): string {
+  const cells = rows.map((row) =>
+    row.split("|").map((cell) => cell.trim()).filter((cell, index, all) => {
+      // Keep empty trailing cells only when the row clearly has 2+ columns.
+      return cell.length > 0 || index < all.length - 1;
+    })
+  );
+  if (cells.length === 0) return "";
+  const head = cells[0]!;
+  const body = cells.slice(1);
+  const headHtml = head
+    .map((cell) => `<th>${escapeHtml(cell)}</th>`)
+    .join("");
+  const bodyHtml = body
+    .map(
+      (row) =>
+        `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`
+    )
+    .join("");
+  return `<table class="doc-table"><thead><tr>${headHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>`;
+}
+
+function renderChunkLines(lines: string[]): string {
+  const out: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i]!;
+
+    if (isPipeRow(line)) {
+      const rows: string[] = [];
+      while (i < lines.length && isPipeRow(lines[i]!)) {
+        rows.push(lines[i]!);
+        i += 1;
+      }
+      out.push(renderPipeTable(rows));
+      continue;
+    }
+
+    if (isBulletLine(line)) {
+      const items: string[] = [];
+      while (i < lines.length && isBulletLine(lines[i]!)) {
+        items.push(`<li>${escapeHtml(bulletText(lines[i]!))}</li>`);
+        i += 1;
+      }
+      out.push(`<ul>${items.join("")}</ul>`);
+      continue;
+    }
+
+    if (isModuleHeading(line)) {
+      out.push(`<h3>${escapeHtml(line)}</h3>`);
+      i += 1;
+      continue;
+    }
+
+    if (isLabelLine(line)) {
+      out.push(`<p class="label">${escapeHtml(line)}</p>`);
+      i += 1;
+      continue;
+    }
+
+    out.push(`<p>${escapeHtml(line)}</p>`);
+    i += 1;
+  }
+  return out.join("");
+}
+
+/** Turn free-form annex text into semantic HTML that paginates cleanly. */
+function richBody(value: string): string {
+  const normalized = value.replace(/\r\n/g, "\n").trim();
+  if (!normalized) return "";
+
+  const chunks = normalized
+    .split(/\n\s*---\s*\n/)
+    .map((chunk) => chunk.trim())
     .filter(Boolean);
-  if (blocks.length === 0) return "";
-  return blocks.map((line) => `<p>${escapeHtml(line)}</p>`).join("");
+
+  return chunks
+    .map((chunk) => {
+      const lines = chunk
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+      if (lines.length === 0) return "";
+      return `<div class="chunk">${renderChunkLines(lines)}</div>`;
+    })
+    .join("");
+}
+
+function paragraphs(value: string): string {
+  return richBody(value);
 }
 
 function headerWave(): string {
@@ -59,8 +170,10 @@ export function technicalProposalHtml(
   doc: TechnicalProposalDocument,
   leadName: string,
   logoUrl: string,
-  autoPrint = true
+  autoPrint = true,
+  options: ProposalMarkupOptions = {}
 ): string {
+  const externalFonts = options.externalFonts !== false;
   const title = escapeHtml(doc.title.trim() || "الملحق الفني");
   const pageTitle = escapeHtml(
     `${doc.title.trim() || "الملحق الفني"}${leadName.trim() ? ` - ${leadName.trim()}` : ""}`
@@ -82,21 +195,25 @@ export function technicalProposalHtml(
     .join("");
   const noteTitle = doc.noteTitle.trim();
   const note = doc.note.trim();
-  const noteBlock =
-    noteTitle || note
-      ? `<section class="block note">
+  // Skip empty note shells (title-only) that leave a blank tinted box on the last page.
+  const noteBlock = note
+    ? `<section class="block note">
           ${noteTitle ? `<h2>${escapeHtml(noteTitle)}</h2>` : ""}
           ${paragraphs(note)}
         </section>`
-      : "";
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8" />
   <title>${pageTitle}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap" />
+  ${
+    externalFonts
+      ? `<link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap" />`
+      : ""
+  }
   <style>
     @page {
       size: A4;
@@ -107,7 +224,7 @@ export function technicalProposalHtml(
         content: counter(page);
         color: #fff;
         background: ${NAVY};
-        font-family: Tahoma, "Noto Sans Arabic", sans-serif;
+        font-family: "Noto Sans Arabic", "Noto Naskh Arabic", "Geeza Pro", Tahoma, sans-serif;
         font-size: 10pt;
         font-weight: 700;
       }
@@ -120,7 +237,7 @@ export function technicalProposalHtml(
       padding: 0;
       background: #fff;
       color: #142033;
-      font-family: "Noto Sans Arabic", "Geeza Pro", Tahoma, sans-serif;
+      font-family: "Noto Sans Arabic", "Noto Naskh Arabic", "Geeza Pro", Tahoma, "Segoe UI", sans-serif;
       font-size: 12.5pt;
       line-height: 1.85;
     }
@@ -229,15 +346,18 @@ export function technicalProposalHtml(
       font-weight: 700;
     }
     .intro { margin-top: 6mm; }
-    .intro p, .block p {
+    .intro p, .block p, .chunk p {
       margin: 0 0 1.6mm;
       text-align: right;
     }
     .block {
       margin-top: 7mm;
-      break-inside: avoid;
-      page-break-inside: avoid;
+      /* Sections may span pages; forcing avoid on tall blocks leaves blank pages. */
     }
+    .chunk {
+      margin-top: 4.2mm;
+    }
+    .chunk:first-child { margin-top: 0; }
     .block h2 {
       display: flex;
       align-items: center;
@@ -252,10 +372,56 @@ export function technicalProposalHtml(
       text-align: right;
       break-after: avoid-page;
       page-break-after: avoid;
-    }
-    .block li, .block p {
       break-inside: avoid;
       page-break-inside: avoid;
+    }
+    .chunk h3 {
+      margin: 0 0 2mm;
+      color: ${NAVY};
+      font-size: 12.5pt;
+      font-weight: 700;
+      line-height: 1.45;
+      text-align: right;
+      break-after: avoid-page;
+      page-break-after: avoid;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .label {
+      margin: 2.2mm 0 1.2mm !important;
+      color: ${BLUE};
+      font-weight: 700;
+      break-after: avoid-page;
+      page-break-after: avoid;
+    }
+    .doc-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 2.4mm 0 3mm;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .doc-table th,
+    .doc-table td {
+      border: 0.3mm solid #d7e3f4;
+      padding: 2mm 2.4mm;
+      text-align: right;
+      vertical-align: top;
+      font-size: 11.5pt;
+      line-height: 1.55;
+    }
+    .doc-table th {
+      background: #eef4fb;
+      color: ${NAVY};
+      font-weight: 700;
+    }
+    li {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    p, li {
+      orphans: 3;
+      widows: 3;
     }
     .idx {
       flex: none;
@@ -454,13 +620,18 @@ async function proposalMarkup(
   doc: TechnicalProposalDocument,
   leadName: string,
   autoPrint: boolean,
-  kind?: CrmClientRequestKind
+  kind?: CrmClientRequestKind,
+  options: ProposalMarkupOptions & { inlineLogo?: boolean } = {}
 ): Promise<string> {
-  const logoUrl = await rootkLogoDataUrl();
+  const inlineLogo = options.inlineLogo !== false;
+  const logoUrl = inlineLogo ? await rootkLogoDataUrl() : PDF_LOGO_TOKEN;
+  const markupOptions: ProposalMarkupOptions = {
+    externalFonts: options.externalFonts,
+  };
   if (kind === "price_exception") {
-    return quotationHtml(doc, leadName, logoUrl, autoPrint);
+    return quotationHtml(doc, leadName, logoUrl, autoPrint, markupOptions);
   }
-  return technicalProposalHtml(doc, leadName, logoUrl, autoPrint);
+  return technicalProposalHtml(doc, leadName, logoUrl, autoPrint, markupOptions);
 }
 
 function writePrintDocument(target: Document, html: string) {
@@ -630,7 +801,7 @@ export type PreparedProposalPdf = {
 
 /**
  * Server Chromium PDF → authenticated blob with progress.
- * Replaces browser print-dialog / html2canvas paths that fail on mobile.
+ * Mobile-fast path: tiny HTML (logo token, no font CDN) — server injects assets.
  */
 export async function downloadTechnicalProposalPdf(
   doc: TechnicalProposalDocument,
@@ -639,25 +810,45 @@ export async function downloadTechnicalProposalPdf(
   options: DownloadTechnicalProposalPdfOptions = {}
 ): Promise<PreparedProposalPdf> {
   const { onProgress } = options;
-  reportProgress(onProgress, "prepare", 8);
-  const html = await proposalMarkup(doc, leadName, false, kind);
-  reportProgress(onProgress, "prepare", 22);
+  const mobile = isMobileClient();
+  reportProgress(onProgress, "prepare", 6);
+
+  // Never inline the 300KB+ logo or pull Google Fonts on the export path —
+  // that was the dominant mobile delay (huge upload + networkidle on CDN).
+  const html = await proposalMarkup(doc, leadName, false, kind, {
+    inlineLogo: false,
+    externalFonts: false,
+  });
+  reportProgress(onProgress, "prepare", 18);
 
   const fileName = pdfFileName(doc, leadName, kind);
-  reportProgress(onProgress, "render", 35);
+  reportProgress(onProgress, "render", 28);
 
-  const blob = await getHttpClient().requestBlob(API_ROUTES.crm.documentsPdf, {
-    method: "POST",
-    body: { html, fileName },
-    headers: { Accept: "application/pdf" },
-  });
+  // Keep the mobile progress bar moving while the server renders.
+  let renderTick = 28;
+  const pulse = window.setInterval(() => {
+    renderTick = Math.min(78, renderTick + (mobile ? 4 : 2));
+    reportProgress(onProgress, "render", renderTick);
+  }, 350);
+
+  let blob: Blob;
+  try {
+    blob = await getHttpClient().requestBlob(API_ROUTES.crm.documentsPdf, {
+      method: "POST",
+      body: { html, fileName },
+      headers: { Accept: "application/pdf" },
+    });
+  } finally {
+    window.clearInterval(pulse);
+  }
+
+  reportProgress(onProgress, "download", 86);
 
   if (!blob || blob.size < 64) {
     throw new Error("pdf-empty");
   }
 
-  const mobile = isMobileClient();
-  reportProgress(onProgress, "download", 88);
+  reportProgress(onProgress, "download", 92);
   // Desktop: auto-download. Mobile: caller shows a tap-to-save step so the
   // share/download keeps a fresh user gesture (iOS blocks async window.open).
   if (!mobile) {

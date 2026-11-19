@@ -27,12 +27,18 @@ function paragraphs(value: string): string {
   return blocks.map((line) => `<p>${escapeHtml(line)}</p>`).join("");
 }
 
+export type QuotationMarkupOptions = {
+  externalFonts?: boolean;
+};
+
 export function quotationHtml(
   doc: TechnicalProposalDocument,
   leadName: string,
   logoUrl: string,
-  autoPrint = false
+  autoPrint = false,
+  options: QuotationMarkupOptions = {}
 ): string {
+  const externalFonts = options.externalFonts !== false;
   const client = escapeHtml(leadName.trim() || doc.subtitle.trim() || "العميل");
   const pageTitle = escapeHtml(
     `كوتشين${leadName.trim() ? ` - ${leadName.trim()}` : ""}`
@@ -83,13 +89,17 @@ export function quotationHtml(
 <head>
   <meta charset="utf-8" />
   <title>${pageTitle}</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap" />
+  ${
+    externalFonts
+      ? `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap" />`
+      : ""
+  }
   <style>
     @page { size: A4; margin: 0 0 11mm 0; }
     * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     html, body {
       margin: 0; padding: 0; background: #fff; color: ${INK};
-      font-family: "Noto Sans Arabic", "Geeza Pro", Tahoma, sans-serif;
+      font-family: "Noto Sans Arabic", "Noto Naskh Arabic", "Geeza Pro", Tahoma, "Segoe UI", sans-serif;
       font-size: 12pt; line-height: 1.8;
     }
     .sheet-head, .sheet-foot { position: fixed; left: 0; right: 0; z-index: 2; }
@@ -141,10 +151,14 @@ export function quotationHtml(
     .price.approved { background: ${NAVY}; border-color: ${NAVY}; }
     .price.approved span { color: rgba(255,255,255,0.78); }
     .price.approved strong { color: #fff; font-size: 15pt; }
-    .block { margin-top: 6mm; break-inside: avoid; page-break-inside: avoid; }
+    .block { margin-top: 6mm; }
     .block h2 {
       display: flex; align-items: center; gap: 2.4mm; margin: 0 0 1.8mm;
       color: ${NAVY}; font-size: 13pt; font-weight: 700;
+      break-after: avoid-page;
+      page-break-after: avoid;
+      break-inside: avoid;
+      page-break-inside: avoid;
     }
     .block h2::before {
       content: ""; width: 2.4mm; height: 2.4mm; border-radius: 0.7mm; background: ${GOLD}; flex: none;
