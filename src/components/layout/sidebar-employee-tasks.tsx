@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { CalendarDays, Circle, ListTodo } from "lucide-react";
 import {
   getMyWorkMeetings,
-  getMyWorkTasks,
+  getWorkTasks,
 } from "@/services/work.service";
 import { getWorkEmployeeIdFromUser, useSessionStore } from "@/stores/session-store";
 import { useTranslation } from "@/hooks/use-translation";
@@ -32,7 +32,7 @@ export function SidebarEmployeeTasks({
 
   const reload = useCallback(async () => {
     const [tasksRes, meetingsRes] = await Promise.all([
-      getMyWorkTasks(workEmployeeId),
+      getWorkTasks({ team: true }),
       getMyWorkMeetings(workEmployeeId),
     ]);
     if (tasksRes.success) setTasks(tasksRes.data);

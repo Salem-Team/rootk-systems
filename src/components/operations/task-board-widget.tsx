@@ -11,11 +11,10 @@ import {
   TaskEvidenceBadge,
 } from "@/components/work/task-completion-evidence-dialog";
 import {
-  getMyWorkTasks,
+  getWorkTasks,
   updateWorkTaskStatus,
 } from "@/services/work.service";
 import { useLiveReload } from "@/hooks/use-live-reload";
-import { getWorkEmployeeIdFromUser, useSessionStore } from "@/stores/session-store";
 import { useTranslation } from "@/hooks/use-translation";
 import { TARGETS_UPDATED_EVENT, WORK_UPDATED_EVENT } from "@/lib/events";
 import {
@@ -38,17 +37,14 @@ const PRIORITY_VARIANT = {
 export function TaskBoardWidget() {
   const { t } = useTranslation();
   const reduceMotion = useReducedMotion();
-  const workEmployeeId = useSessionStore((s) =>
-    getWorkEmployeeIdFromUser(s.user)
-  );
   const [tasks, setTasks] = useState<WorkTask[]>([]);
   const [filter, setFilter] = useState<TaskStatus | "all">("todo");
   const [evidenceTask, setEvidenceTask] = useState<WorkTask | null>(null);
 
   const reload = useCallback(async () => {
-    const res = await getMyWorkTasks(workEmployeeId);
+    const res = await getWorkTasks({ team: true });
     if (res.success) setTasks(res.data);
-  }, [workEmployeeId]);
+  }, []);
 
   useLiveReload(reload, [WORK_UPDATED_EVENT, TARGETS_UPDATED_EVENT]);
 

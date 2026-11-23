@@ -135,7 +135,11 @@ export async function getWorkTaskById(
   }
 }
 
-/** GET /work/tasks?mine=1 */
+/**
+ * Assignee-scoped list only (`employeeId` filter).
+ * Prefer `getWorkTasks({ team: true })` for employee hubs so project-member
+ * and created-by-me tasks appear with their real statuses.
+ */
 export async function getMyWorkTasks(
   employeeId = getWorkEmployeeId()
 ): Promise<ApiResponse<WorkTask[]>> {

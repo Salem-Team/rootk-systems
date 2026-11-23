@@ -7,7 +7,6 @@ import {
 import { getEmployees } from "@/services/employees.service";
 import {
   getMyWorkMeetings,
-  getMyWorkTasks,
   getWorkTasks,
 } from "@/services/work.service";
 import { WORK_UPDATED_EVENT } from "@/lib/events";
@@ -67,24 +66,26 @@ export function useEmployeeWorkHubData(workEmployeeId: string) {
   );
 
   const reload = useCallback(async () => {
-    const [tasksRes, meetingsRes, employeesRes, teamRes] = await Promise.all([
-      getMyWorkTasks(workEmployeeId),
+    // Full visibility set (assignee / creator / project member) — not
+    // assignee-only "mine", so open project tasks show with correct statuses.
+    const [tasksRes, meetingsRes, employeesRes] = await Promise.all([
+      getWorkTasks({ team: true }),
       getMyWorkMeetings(workEmployeeId),
       getEmployees(),
-      getWorkTasks({ team: true }),
     ]);
-    if (tasksRes.success) setTasks(tasksRes.data);
-    if (meetingsRes.success) setMeetings(meetingsRes.data);
-    if (employeesRes.success) setEmployees(employeesRes.data);
-    if (teamRes.success) {
+    if (tasksRes.success) {
+      const all = tasksRes.data ?? [];
+      setTasks(all);
       setTeamTasks(
-        (teamRes.data ?? []).filter((task) =>
+        all.filter((task) =>
           task.assigneeIds.some((id) => id && id !== workEmployeeId)
         )
       );
     } else {
       setTeamTasks([]);
     }
+    if (meetingsRes.success) setMeetings(meetingsRes.data);
+    if (employeesRes.success) setEmployees(employeesRes.data);
   }, [workEmployeeId]);
 
   useEffect(() => {
