@@ -4161,6 +4161,9 @@ export const ar: TranslationKeys = {
         download: "حفظ PDF",
         downloadHint: "جاري تجهيز ملف PDF على السيرفر…",
         downloadReady: "تم تجهيز الـ PDF وتحميله",
+        downloadShared: "اتفتح شيت المشاركة — احفظ الملف أو ابعتّه من هناك",
+        downloadOpened: "اتفتح الـ PDF — من هناك تقدر تحفظه أو تشاركه",
+        downloadCancelled: "اتلغى حفظ الـ PDF",
         progress: {
           title: "تجهيز ملف PDF",
           prepare: "تحضير المستند…",

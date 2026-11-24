@@ -161,8 +161,18 @@ export function TechnicalProposalEditor({
     if (!readyPdf || savingReady) return;
     setSavingReady(true);
     try {
-      await savePdfBlob(readyPdf.blob, readyPdf.fileName);
-      toast.success(t("crm.clientRequests.proposal.downloadReady"));
+      const result = await savePdfBlob(readyPdf.blob, readyPdf.fileName);
+      if (result === "cancelled") {
+        toast.message(t("crm.clientRequests.proposal.downloadCancelled"));
+        return;
+      }
+      toast.success(
+        result === "shared"
+          ? t("crm.clientRequests.proposal.downloadShared")
+          : result === "opened"
+            ? t("crm.clientRequests.proposal.downloadOpened")
+            : t("crm.clientRequests.proposal.downloadReady")
+      );
       setReadyPdf(null);
       setProgress(null);
     } catch {

@@ -4173,6 +4173,9 @@ export const en = {
         download: "Save PDF",
         downloadHint: "Preparing the PDF on the server…",
         downloadReady: "PDF is ready and downloaded",
+        downloadShared: "Share sheet opened — save or send the PDF from there",
+        downloadOpened: "PDF opened — you can save or share it from there",
+        downloadCancelled: "PDF save was cancelled",
         progress: {
           title: "Preparing PDF",
           prepare: "Building the document…",

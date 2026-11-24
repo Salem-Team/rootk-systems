@@ -744,40 +744,49 @@ function isMobileClient(): boolean {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 }
 
-/** Mobile-first blob save: Web Share API when available, else anchor download. */
-export async function savePdfBlob(
-  blob: Blob,
-  fileName: string
-): Promise<"shared" | "downloaded" | "opened"> {
-  const typed =
-    blob.type === "application/pdf"
-      ? blob
-      : new Blob([blob], { type: "application/pdf" });
+export type SavePdfBlobResult = "shared" | "downloaded" | "opened" | "cancelled";
 
-  const file = new File([typed], fileName, { type: "application/pdf" });
+function isShareAbort(error: unknown): boolean {
+  if (error instanceof DOMException && error.name === "AbortError") return true;
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" &&
+          error &&
+          "message" in error &&
+          typeof (error as { message: unknown }).message === "string"
+        ? (error as { message: string }).message
+        : String(error ?? "");
+  return /cancel|dismiss|abort/i.test(message);
+}
+
+async function sharePdfViaWebApi(
+  file: File,
+  fileName: string
+): Promise<"shared" | "cancelled" | null> {
   const nav = navigator as Navigator & {
     canShare?: (data?: ShareData) => boolean;
     share?: (data: ShareData) => Promise<void>;
   };
-  if (typeof nav.canShare === "function" && typeof nav.share === "function") {
-    try {
-      if (nav.canShare({ files: [file] })) {
-        await nav.share({ files: [file], title: fileName });
-        return "shared";
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        return "shared";
-      }
-    }
+  if (typeof nav.canShare !== "function" || typeof nav.share !== "function") {
+    return null;
   }
+  try {
+    if (!nav.canShare({ files: [file] })) return null;
+    await nav.share({ files: [file], title: fileName });
+    return "shared";
+  } catch (error) {
+    if (isShareAbort(error)) return "cancelled";
+    return null;
+  }
+}
 
-  const url = URL.createObjectURL(typed);
+function triggerAnchorDownload(blob: Blob, fileName: string): "downloaded" | "opened" {
+  const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = fileName;
   anchor.rel = "noopener";
-  anchor.target = "_blank";
   anchor.style.display = "none";
   document.body.appendChild(anchor);
   anchor.click();
@@ -785,12 +794,57 @@ export async function savePdfBlob(
 
   const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent);
   if (isIOS) {
-    // Keep the blob URL alive so the opened tab can load the PDF.
+    // iOS Safari often ignores download=; open the blob so the user can share/save.
+    window.open(url, "_blank", "noopener,noreferrer");
     window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
     return "opened";
   }
   window.setTimeout(() => URL.revokeObjectURL(url), 4_000);
   return "downloaded";
+}
+
+/**
+ * Mobile-first blob save.
+ * Native Capacitor WebViews ignore `<a download>` for blob: URLs — write to
+ * cache + OS share sheet instead. Abort/cancel must NOT look like success.
+ * Desktop keeps a plain anchor download (no share sheet).
+ */
+export async function savePdfBlob(
+  blob: Blob,
+  fileName: string
+): Promise<SavePdfBlobResult> {
+  const typed =
+    blob.type === "application/pdf"
+      ? blob
+      : new Blob([blob], { type: "application/pdf" });
+  const file = new File([typed], fileName, { type: "application/pdf" });
+  const mobile = isMobileClient();
+  const { isNativeApp } = await import("@/lib/native/platform");
+  const native = isNativeApp();
+
+  if (!mobile && !native) {
+    return triggerAnchorDownload(typed, fileName);
+  }
+
+  if (native) {
+    try {
+      const { shareBlobViaNative } = await import("@/lib/native/save-blob");
+      const shared = await shareBlobViaNative(typed, fileName);
+      if (shared === "shared" || shared === "cancelled") return shared;
+    } catch {
+      // Older APKs may not ship Filesystem/Share yet — try Web Share next.
+    }
+  }
+
+  const webShared = await sharePdfViaWebApi(file, fileName);
+  if (webShared) return webShared;
+
+  if (native) {
+    // Anchor downloads silently no-op inside Capacitor WebViews.
+    throw new Error("native-download-unavailable");
+  }
+
+  return triggerAnchorDownload(typed, fileName);
 }
 
 export type PreparedProposalPdf = {
